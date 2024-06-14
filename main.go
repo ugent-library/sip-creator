@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/samber/lo"
-	"github.com/ugent-library/meemoo-sip-creator/encoders/dc"
-	"github.com/ugent-library/meemoo-sip-creator/encoders/mets"
-	"github.com/ugent-library/meemoo-sip-creator/encoders/premis"
-	"github.com/ugent-library/meemoo-sip-creator/metadata"
+	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/encoders/mets"
+	"github.com/ugent-library/sip-creator/encoders/premis"
+	"github.com/ugent-library/sip-creator/metadata"
 )
 
 var sip string

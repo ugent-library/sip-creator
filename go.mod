@@ -1,4 +1,4 @@
-module github.com/ugent-library/meemoo-sip-creator
+module github.com/ugent-library/sip-creator
 
 go 1.22.2
 

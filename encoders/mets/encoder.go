@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ugent-library/meemoo-sip-creator/metadata"
+	"github.com/ugent-library/sip-creator/metadata"
 )
 
 var funcs = template.FuncMap{
