@@ -11,3 +11,12 @@ Create Submission Information Packages (SIP) based on [Meemoo's SIP Specificatio
 * Implements Meemoo SIP Specification v2.0
 * Provides support for the `basic` profile
 
+## How to use
+
+Assuming you have data in a `./tmp/basic` directory which you want to convert into a SIP package
+stored in a `basic-uuid` directory:
+
+```
+go build
+./sip-creator create --profile basic ./tmp/basic basic-uuid
+```
