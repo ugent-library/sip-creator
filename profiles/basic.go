@@ -3,7 +3,7 @@ package profiles
 import (
 	"fmt"
 
-	"github.com/ugent-library/sip-creator/metadata"
+	"github.com/ugent-library/sip-creator/structure"
 )
 
 func (p *Profile) Basic() {
@@ -21,7 +21,7 @@ func (p *Profile) Basic() {
 	// Step 1: Compose and parse input
 
 	// Create a new package
-	pkg := metadata.NewPackage()
+	pkg := structure.NewPackage()
 
 	// Create an entity & a representation
 	entity := p.createIntellectualEntity(fmt.Sprintf("%s/dc+schema.json", p.InDir), fmt.Sprintf("%s/metadata/descriptive/dc+schema.xml", p.BaseDir))
@@ -38,7 +38,7 @@ func (p *Profile) Basic() {
 	p.createPremisPackage(fmt.Sprintf("%s/metadata/preservation/premis.xml", p.BaseDir), pkg, entity)
 
 	// Iterate over representations
-	entity.EachRepresentation(func(r *metadata.Representation) error {
+	entity.EachRepresentation(func(r *structure.Representation) error {
 		p.createPremisRepresentation(fmt.Sprintf("%s/representations/%s/metadata/preservation/premis.xml", p.BaseDir, r.Label), r, entity)
 
 		p.createMetsRepresentation(fmt.Sprintf("%s/representations/%s/mets.xml", p.BaseDir, r.Label), r)

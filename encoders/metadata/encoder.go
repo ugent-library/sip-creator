@@ -1,18 +1,24 @@
-package dc
+package metadata
 
 import (
 	"io"
 	"text/template"
 
-	"github.com/ugent-library/sip-creator/metadata"
+	"github.com/ugent-library/sip-creator/structure"
 )
 
 var funcs = template.FuncMap{}
 
-var dc = template.Must(template.New("").Funcs(funcs).Parse(`
+var md = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ define "descriptive" -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<metadata xmlns="https://data.hetarchief.be/id/sip/1.0/basic" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xs="http://www.w3.org/2001/XMLSchema/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:edtf="http://id.loc.gov/datatypes/edtf/">
+<metadata xmlns="https://data.hetarchief.be/id/sip/1.0/basic" 
+	xmlns:dcterms="http://purl.org/dc/terms/" 
+	xmlns:xs="http://www.w3.org/2001/XMLSchema/" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:edtf="http://id.loc.gov/datatypes/edtf/"
+	xmlns:schema="https://schema.org/">
+
 	<!-- linking id between dc and premis -->
 	<dcterms:identifier>{{ .Identifier }}</dcterms:identifier>
 	
@@ -109,6 +115,6 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ end}}
 `))
 
-func EncodeDescriptive(w io.Writer, e metadata.Entity) error {
-	return dc.ExecuteTemplate(w, "descriptive", e)
+func EncodeMetadata(w io.Writer, e structure.Entity) error {
+	return md.ExecuteTemplate(w, "descriptive", e)
 }

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ugent-library/sip-creator/metadata"
+	"github.com/ugent-library/sip-creator/structure"
 )
 
 var funcs = template.FuncMap{
@@ -18,7 +18,7 @@ var funcs = template.FuncMap{
 	"now": func() string {
 		return time.Now().Format(time.RFC3339Nano)
 	},
-	"joinIdentifiers": func(files []*metadata.File) string {
+	"joinIdentifiers": func(files []*structure.File) string {
 		var tmp []string
 		for _, f := range files {
 			tmp = append(tmp, f.Identifier)
@@ -127,10 +127,10 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ end }}
 `))
 
-func EncodeRepresentation(w io.Writer, r *metadata.Representation) error {
+func EncodeRepresentation(w io.Writer, r *structure.Representation) error {
 	return dc.ExecuteTemplate(w, "representation", r)
 }
 
-func EncodePackage(w io.Writer, p *metadata.Package) error {
+func EncodePackage(w io.Writer, p *structure.Package) error {
 	return dc.ExecuteTemplate(w, "package", p)
 }

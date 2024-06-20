@@ -4,19 +4,19 @@ import (
 	"io"
 	"text/template"
 
-	"github.com/ugent-library/sip-creator/metadata"
+	"github.com/ugent-library/sip-creator/structure"
 )
 
 type representationWithEntity struct {
-	Representation *metadata.Representation
-	Entity         metadata.Entity
+	Representation *structure.Representation
+	Entity         structure.Entity
 }
 
 var funcs = template.FuncMap{
-	"fileWithRepresentation": func(f *metadata.File, r *metadata.Representation) any {
+	"fileWithRepresentation": func(f *structure.File, r *structure.Representation) any {
 		return struct {
-			File           *metadata.File
-			Representation *metadata.Representation
+			File           *structure.File
+			Representation *structure.Representation
 		}{
 			File:           f,
 			Representation: r,
@@ -149,11 +149,11 @@ var premis = template.Must(template.New("").Funcs(funcs).Parse(`
 {{- end }}
 `))
 
-func EncodeEntity(w io.Writer, e metadata.Entity) error {
+func EncodeEntity(w io.Writer, e structure.Entity) error {
 	return premis.ExecuteTemplate(w, "entity", e)
 }
 
-func EncodeRepresentation(w io.Writer, e metadata.Entity, r *metadata.Representation) error {
+func EncodeRepresentation(w io.Writer, e structure.Entity, r *structure.Representation) error {
 	return premis.ExecuteTemplate(w, "representation", &representationWithEntity{
 		Entity:         e,
 		Representation: r,

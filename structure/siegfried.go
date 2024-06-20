@@ -1,4 +1,4 @@
-package metadata
+package structure
 
 type SiegfriedFile struct {
 	Files []*SFile `json:"files"`

@@ -1,4 +1,4 @@
-package metadata
+package structure
 
 import (
 	"encoding/json"
@@ -19,7 +19,6 @@ type DublinCoreEntity struct {
 	Label           string
 	Representations []*Representation
 	Entities        []*Entity
-	PremisFile      *File
 	Description     *DublinCore
 }
 

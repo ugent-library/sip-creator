@@ -1,4 +1,4 @@
-package metadata
+package structure
 
 type Package struct {
 	Root                    Entity

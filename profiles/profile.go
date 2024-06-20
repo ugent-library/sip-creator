@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/samber/lo"
-	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/encoders/metadata"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/premis"
-	"github.com/ugent-library/sip-creator/metadata"
+	"github.com/ugent-library/sip-creator/structure"
 )
 
 type Profile struct {
@@ -32,9 +32,9 @@ func New(src, dest string) *Profile {
 	}
 }
 
-func (p *Profile) createIntellectualEntity(src, label string) metadata.Entity {
+func (p *Profile) createIntellectualEntity(src, label string) structure.Entity {
 	// Create a new intellectual entity
-	entity := metadata.NewDublinCoreEntity(label)
+	entity := structure.NewDublinCoreEntity(label)
 
 	// Parse metadata file
 	mf, err := os.Open(src)
@@ -50,8 +50,8 @@ func (p *Profile) createIntellectualEntity(src, label string) metadata.Entity {
 	return entity
 }
 
-func (p *Profile) createRepresentation(src, label string) *metadata.Representation {
-	representation := metadata.NewRepresentation(label)
+func (p *Profile) createRepresentation(src, label string) *structure.Representation {
+	representation := structure.NewRepresentation(label)
 
 	createDir(fmt.Sprintf("%s/representations/%s/data", p.BaseDir, label))
 	createDir(fmt.Sprintf("%s/representations/%s/metadata/preservation", p.BaseDir, label))
@@ -66,7 +66,7 @@ func (p *Profile) createRepresentation(src, label string) *metadata.Representati
 	}
 	defer sf.Close()
 
-	var siegfried metadata.SiegfriedFile
+	var siegfried structure.SiegfriedFile
 	bts, _ := io.ReadAll(sf)
 	json.Unmarshal(bts, &siegfried)
 
@@ -77,7 +77,7 @@ func (p *Profile) createRepresentation(src, label string) *metadata.Representati
 		}
 
 		if !lo.Contains([]string{"dc+schema.json", "dc.json", "mods.json"}, info.Name()) {
-			file := metadata.NewFile()
+			file := structure.NewFile()
 
 			// Fetch the PRONOM registry key & MD5 checksum from the siegfried output
 			sfile := siegfried.Find(fmt.Sprintf("%s/%s", label, info.Name()))
@@ -106,7 +106,7 @@ func (p *Profile) createRepresentation(src, label string) *metadata.Representati
 	return representation
 }
 
-func (p *Profile) createPremisPackage(path string, pkg *metadata.Package, root metadata.Entity) {
+func (p *Profile) createPremisPackage(path string, pkg *structure.Package, root structure.Entity) {
 	file := createMetadataFile(path, func(w io.Writer) error {
 		return premis.EncodeEntity(w, root)
 	})
@@ -114,7 +114,7 @@ func (p *Profile) createPremisPackage(path string, pkg *metadata.Package, root m
 	pkg.AddPremisFile(file)
 }
 
-func (p *Profile) createPremisRepresentation(path string, representation *metadata.Representation, entity metadata.Entity) {
+func (p *Profile) createPremisRepresentation(path string, representation *structure.Representation, entity structure.Entity) {
 	file := createMetadataFile(path, func(w io.Writer) error {
 		return premis.EncodeRepresentation(w, entity, representation)
 	})
@@ -122,13 +122,13 @@ func (p *Profile) createPremisRepresentation(path string, representation *metada
 	representation.AddPremisFile(file)
 }
 
-func (p *Profile) createMetsPackage(path string, pkg *metadata.Package) {
+func (p *Profile) createMetsPackage(path string, pkg *structure.Package) {
 	createMetadataFile(path, func(w io.Writer) error {
 		return mets.EncodePackage(w, pkg)
 	})
 }
 
-func (p *Profile) createMetsRepresentation(path string, representation *metadata.Representation) {
+func (p *Profile) createMetsRepresentation(path string, representation *structure.Representation) {
 	file := createMetadataFile(path, func(w io.Writer) error {
 		return mets.EncodeRepresentation(w, representation)
 	})
@@ -136,16 +136,16 @@ func (p *Profile) createMetsRepresentation(path string, representation *metadata
 	representation.AddMetsFile(file)
 }
 
-func (p *Profile) createDescriptionFile(path string, pkg *metadata.Package, entity metadata.Entity) {
+func (p *Profile) createDescriptionFile(path string, pkg *structure.Package, entity structure.Entity) {
 	file := createMetadataFile(path, func(w io.Writer) error {
-		return dc.EncodeDescriptive(w, entity)
+		return metadata.EncodeMetadata(w, entity)
 	})
 	pkg.AddDescriptiveFile(file)
 }
 
 type encoder func(w io.Writer) error
 
-func createMetadataFile(path string, fn encoder) *metadata.File {
+func createMetadataFile(path string, fn encoder) *structure.File {
 	hash := md5.New()
 	var buf1, buf2 bytes.Buffer
 	w := io.MultiWriter(&buf1, &buf2)
@@ -184,7 +184,7 @@ func createMetadataFile(path string, fn encoder) *metadata.File {
 		panic(err)
 	}
 
-	file := metadata.NewFile()
+	file := structure.NewFile()
 	file.Name = path
 	file.Size = strconv.Itoa(int(info.Size()))
 	file.Checksum = hex.EncodeToString(hash.Sum(nil))
