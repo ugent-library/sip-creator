@@ -1,8 +1,15 @@
-package structure
+package metadata
 
-type Metadata struct {
-	DublinCore DublinCore
-	Schema     Schema
+import (
+	"encoding/json"
+	"io"
+	"os"
+)
+
+type Description struct {
+	Identifier string
+	DublinCore
+	Schema
 }
 
 type DublinCore struct {
@@ -43,7 +50,7 @@ type Schema struct {
 
 type Text struct {
 	Value string `json:"@value"`
-	Lang  string `json:"@lang"`
+	Lang  string `json:"@language"`
 }
 
 type Contributor struct {
@@ -63,4 +70,28 @@ type CreativeWork struct {
 	Name     string         `json:"schema:name"`
 	Position int            `json:"schema:position"`
 	HasPart  []CreativeWork `json:"schema:hasPart"`
+}
+
+func Decode(src string) *Description {
+	mf, err := os.Open(src)
+	if err != nil {
+		panic(err)
+	}
+	defer mf.Close()
+
+	bts, _ := io.ReadAll(mf)
+
+	var description *Description
+
+	// TODO create a set of mutators that gets iterated over.
+	//   mutators are passed as a configuration to the decoder.
+	//   a mutator can make specific changes to the description
+	//   e.g. setting Text/@language to "nl" on an item in an array
+	//   per the Meemoo spec.
+
+	if err := json.Unmarshal(bts, &description); err != nil {
+		panic(err)
+	}
+
+	return description
 }

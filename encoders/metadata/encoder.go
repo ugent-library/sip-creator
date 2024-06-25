@@ -3,8 +3,6 @@ package metadata
 import (
 	"io"
 	"text/template"
-
-	"github.com/ugent-library/sip-creator/structure"
 )
 
 var funcs = template.FuncMap{}
@@ -22,92 +20,98 @@ var md = template.Must(template.New("").Funcs(funcs).Parse(`
 	<!-- linking id between dc and premis -->
 	<dcterms:identifier>{{ .Identifier }}</dcterms:identifier>
 	
-	{{- if .Description.Title }}
-	<dcterms:title xml:lang="{{ .Description.Title.Lang }}">{{ .Description.Title.Value }}</dcterms:title>
+	{{- if .Title }}
+	<dcterms:title xml:lang="{{ .Title.Lang }}">{{ .Title.Value }}</dcterms:title>
 	{{- end }}
 	
-	{{- if .Description.Description }}
-	<dcterms:description xml:lang="{{ .Description.Description.Lang }}">{{ .Description.Description.Value }}</dcterms:description>
+	{{- if .Description }}
+	<dcterms:description xml:lang="{{ .Description.Lang }}">{{ .Description.Value }}</dcterms:description>
 	{{- end }}
 	
-	{{- if .Description.Created }}
-	<dcterms:created xsi:type="edtf:EDTF-level1">{{ .Description.Created }}</dcterms:created>
+	{{- if .Created }}
+	<dcterms:created xsi:type="edtf:EDTF-level1">{{ .Created }}</dcterms:created>
 	{{- end }}
 
-	{{- if .Description.Alternative }}
-	{{ range .Description.Alternative }}
+	{{- if .Alternative }}
+	{{ range .Alternative }}
 	<dcterms:alternative xml:lang="nl">{{ . }}</dcterms:alternative>
 	{{ end }}
 	{{- end }}
 
-	{{- if .Description.Extent }}
-	<dcterms:extent>{{ .Description.Extent }}</dcterms:extent>
+	{{- if .Extent }}
+	<dcterms:extent>{{ .Extent }}</dcterms:extent>
 	{{- end }}
 
-	{{- if .Description.Available }}
-	<dcterms:available>{{ .Description.Available }}</dcterms:available>
+	{{- if .Available }}
+	<dcterms:available>{{ .Available }}</dcterms:available>
 	{{- end }}
 
-	{{- if .Description.Abstract }}
-	<dcterms:abstract xml:lang="{{ .Description.Abstract.Lang }}">{{ .Description.Abstract.Value }}</dcterms:abstract>
+	{{- if .Abstract }}
+	<dcterms:abstract xml:lang="{{ .Abstract.Lang }}">{{ .Abstract.Value }}</dcterms:abstract>
 	{{- end }}
 
-	{{- if .Description.Issued }}
-	<dcterms:issued xsi:type="edtf:EDTF-level1">{{ .Description.Issued }}</dcterms:issued>
+	{{- if .Issued }}
+	<dcterms:issued xsi:type="edtf:EDTF-level1">{{ .Issued }}</dcterms:issued>
 	{{- end }}
 
-	{{- if .Description.Publisher }}
-	{{ range .Description.Publisher }}
+	{{- if .DublinCore.Creator }}
+	{{ range .DublinCore.Creator }}
+	<dcterms:creator>{{ . }}</dcterms:creator>
+	{{ end }}
+	{{- end}}	
+
+	{{- if .DublinCore.Publisher }}
+	{{ range .DublinCore.Publisher }}
 	<dcterms:publisher>{{ . }}</dcterms:publisher>
 	{{ end }}
 	{{- end}}
 
-	{{- if .Description.Contributor }}
-	{{ range .Description.Contributor }}
+	{{- if .DublinCore.Contributor }}
+	{{ range .DublinCore.Contributor }}
 	<dcterms:contributor>{{ . }}</dcterms:contributor>
 	{{ end }}
 	{{- end }}
 
-	{{- if .Description.Spatial }}
-	{{ range .Description.Spatial }}
+	{{- if .Spatial }}
+	{{ range .Spatial }}
 	<dcterms:spatial>{{ . }}</dcterms:spatial>
 	{{ end }}
 	{{- end }}
 
-	{{- if .Description.Temporal }}
-	{{ range .Description.Temporal }}
+	{{- if .Temporal }}
+	{{ range .Temporal }}
 	<dcterms:temporal>{{ . }}</dcterms:temporal>
 	{{ end }}
 	{{- end }}
 
-	{{- if .Description.Subject }}
-	{{ range .Description.Subject }}
-	<dcterms:subject xml:lang="{{ .Description.Subject.Lang }}">{{ .Description.Subject.Value }}</dcterms:subject>
+	{{- if .Subject }}
+	{{ range .Subject }}
+	<dcterms:subject xml:lang="{{ .Subject.Lang }}">{{ .Subject.Value }}</dcterms:subject>
 	{{ end }}
 	{{- end }}
 
-	{{- if .Description.Language }}
-	{{ range .Description.Language }}
+	{{- if .Language }}
+	{{ range .Language }}
 	<dcterms:language>{{ . }}</dcterms:language>
 	{{ end }}
 	{{- end }}
 
-	{{- if .Description.License }}
-	{{ range .Description.License }}
+	{{- if .License }}
+	{{ range .License }}
 	<dcterms:license>{{ . }}</dcterms:license>
 	{{ end }}
 	{{- end }}
 
-	{{- if .Description.RightsHolder }}
-	<dcterms:rightsHolder>{{ .Description.RightsHolder }}</dcterms:rightsHolder>
+	{{- if .RightsHolder }}
+	<dcterms:rightsHolder>{{ .RightsHolder }}</dcterms:rightsHolder>
 	{{- end }}
 
-	{{- if .Description.Rights }}
-	<dcterms:rights xml:lang="nl">{{ .Description.Rights }}</dcterms:rights>
+	{{- if .Rights }}
+	<dcterms:rights xml:lang="nl">{{ .Rights }}</dcterms:rights>
 	{{- end }}
 
-	{{- if .Description.Type }}
-	{{ range .Description.Type }}
+	{{- if .Type }}
+	{{ range .Type }}
 	<dcterms:type>{{ . }}</dcterms:type>
 	{{ end }}
 	{{- end }}
@@ -115,6 +119,6 @@ var md = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ end}}
 `))
 
-func EncodeMetadata(w io.Writer, e structure.Entity) error {
-	return md.ExecuteTemplate(w, "descriptive", e)
+func Encode(w io.Writer, d *Description) error {
+	return md.ExecuteTemplate(w, "descriptive", d)
 }

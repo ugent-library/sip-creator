@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -32,20 +33,34 @@ func New(src, dest string) *Profile {
 	}
 }
 
-func (p *Profile) createIntellectualEntity(src, label string) structure.Entity {
-	// Create a new intellectual entity
-	entity := structure.NewDublinCoreEntity(label)
+func (p *Profile) createIntellectualEntity(src string) *structure.Entity {
+	entity := structure.NewEntity()
 
-	// Parse metadata file
-	mf, err := os.Open(src)
+	f, err := os.Lstat(src)
 	if err != nil {
 		panic(err)
 	}
-	defer mf.Close()
 
-	// Add the dublin core description
-	bts, _ := io.ReadAll(mf)
-	entity.AddDescription(bts)
+	if f.IsDir() {
+		panic(fmt.Sprintf("%s is a directory, not a metadata file.", src))
+	}
+
+	base := path.Base(src)
+	ext := path.Ext(base)
+	name := base[0:len(base)-len(ext)] + ".xml"
+
+	dest := fmt.Sprintf("%s/metadata/descriptive/%s", p.BaseDir, name)
+
+	file := createMetadataFile(dest, func(w io.Writer) error {
+		// TODO Per the spec, we want to swap in the premis identifier for dcterms:identifier,
+		//   and swap out existing dcterms:identifier values from the source, keeping them with
+		//   the entity when we generate the premis file
+		description := metadata.Decode(src)
+		description.Identifier = entity.Identifier
+		return metadata.Encode(w, description)
+	})
+
+	entity.AddDescriptionFile(file)
 
 	return entity
 }
@@ -106,7 +121,7 @@ func (p *Profile) createRepresentation(src, label string) *structure.Representat
 	return representation
 }
 
-func (p *Profile) createPremisPackage(path string, pkg *structure.Package, root structure.Entity) {
+func (p *Profile) createPremisPackage(path string, pkg *structure.Package, root *structure.Entity) {
 	file := createMetadataFile(path, func(w io.Writer) error {
 		return premis.EncodeEntity(w, root)
 	})
@@ -136,16 +151,17 @@ func (p *Profile) createMetsRepresentation(path string, representation *structur
 	representation.AddMetsFile(file)
 }
 
-func (p *Profile) createDescriptionFile(path string, pkg *structure.Package, entity structure.Entity) {
-	file := createMetadataFile(path, func(w io.Writer) error {
-		return metadata.EncodeMetadata(w, entity)
-	})
-	pkg.AddDescriptiveFile(file)
-}
+// func (p *Profile) createDescriptionFile(path string, entity structure.Entity) {
+// 	file := createMetadataFile(path, func(w io.Writer) error {
+// 		return metadata.EncodeMetadata(w, entity)
+// 	})
+
+// 	entity.AddDescriptionFile(file)
+// }
 
 type encoder func(w io.Writer) error
 
-func createMetadataFile(path string, fn encoder) *structure.File {
+func createMetadataFile(dest string, fn encoder) *structure.File {
 	hash := md5.New()
 	var buf1, buf2 bytes.Buffer
 	w := io.MultiWriter(&buf1, &buf2)
@@ -158,7 +174,7 @@ func createMetadataFile(path string, fn encoder) *structure.File {
 		panic(err)
 	}
 
-	of, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	of, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		panic(err)
 	}
@@ -185,7 +201,7 @@ func createMetadataFile(path string, fn encoder) *structure.File {
 	}
 
 	file := structure.NewFile()
-	file.Name = path
+	file.Name = dest
 	file.Size = strconv.Itoa(int(info.Size()))
 	file.Checksum = hex.EncodeToString(hash.Sum(nil))
 	file.Created = info.ModTime().Format(time.RFC3339Nano)

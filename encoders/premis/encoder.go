@@ -149,7 +149,7 @@ var premis = template.Must(template.New("").Funcs(funcs).Parse(`
 {{- end }}
 `))
 
-func EncodeEntity(w io.Writer, e structure.Entity) error {
+func EncodeEntity(w io.Writer, e *structure.Entity) error {
 	return premis.ExecuteTemplate(w, "entity", e)
 }
 

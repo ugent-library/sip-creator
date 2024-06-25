@@ -1,13 +1,13 @@
 package structure
 
 type Package struct {
-	Root                    Entity
+	Root                    *Entity
 	PremisFile              *File
 	DescriptiveFiles        []*File
 	RepresentationMetsFiles []*File
 }
 
-func (p *Package) AddRootEntity(e Entity) {
+func (p *Package) AddRootEntity(e *Entity) {
 	p.Root = e
 }
 
