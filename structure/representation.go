@@ -7,12 +7,12 @@ import (
 )
 
 type Representation struct {
-	Identifier       string
-	Label            string
-	Files            []*File
-	DescriptiveFiles []*File
-	PremisFile       *File
-	MetsFile         *File
+	Entity     *Entity
+	Label      string
+	Identifier string
+	Files      []*File
+	PremisFile *File
+	MetsFile   *File
 }
 
 func (r *Representation) AddFile(f *File) {
@@ -27,9 +27,17 @@ func (r *Representation) AddMetsFile(f *File) {
 	r.MetsFile = f
 }
 
+func (r *Representation) SetEntity(e *Entity) {
+	r.Entity = e
+}
+
+func (r *Representation) GetEntity() *Entity {
+	return r.Entity
+}
+
 func NewRepresentation(label string) *Representation {
 	return &Representation{
-		Identifier: fmt.Sprintf("uuid-%s", uuid.New().String()),
 		Label:      label,
+		Identifier: fmt.Sprintf("uuid-%s", uuid.New().String()),
 	}
 }

@@ -4,20 +4,20 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"time"
 
-	"github.com/samber/lo"
 	"github.com/ugent-library/sip-creator/encoders/metadata"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/premis"
+	"github.com/ugent-library/sip-creator/siegfried"
 	"github.com/ugent-library/sip-creator/structure"
 )
 
@@ -45,6 +45,8 @@ func (p *Profile) createIntellectualEntity(src string) *structure.Entity {
 		panic(fmt.Sprintf("%s is a directory, not a metadata file.", src))
 	}
 
+	// TODO split this out as a helper function, representations can have
+	//   descriptive files as well (optional)
 	base := path.Base(src)
 	ext := path.Ext(base)
 	name := base[0:len(base)-len(ext)] + ".xml"
@@ -65,51 +67,25 @@ func (p *Profile) createIntellectualEntity(src string) *structure.Entity {
 	return entity
 }
 
-func (p *Profile) createRepresentation(src, label string) *structure.Representation {
-	representation := structure.NewRepresentation(label)
-
-	createDir(fmt.Sprintf("%s/representations/%s/data", p.BaseDir, label))
-	createDir(fmt.Sprintf("%s/representations/%s/metadata/preservation", p.BaseDir, label))
-
-	// TODO Look for description files, create corresponding entities, hook 'em to the representation
-
-	// Load Siegfried file
-	// TODO move file characterisation into an abstraction
-	sf, err := os.Open(fmt.Sprintf("%s/siegfried.json", p.InDir))
-	if err != nil {
-		panic(err)
-	}
-	defer sf.Close()
-
-	var siegfried structure.SiegfriedFile
-	bts, _ := io.ReadAll(sf)
-	json.Unmarshal(bts, &siegfried)
-
-	// // Copy essence files
-	err = filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
+func (p *Profile) eachDirectory(fn func(dir string, r *structure.Representation)) {
+	err := filepath.Walk(p.InDir, func(dir string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
 			return nil
 		}
 
-		if !lo.Contains([]string{"dc+schema.json", "dc.json", "mods.json"}, info.Name()) {
-			file := structure.NewFile()
-
-			// Fetch the PRONOM registry key & MD5 checksum from the siegfried output
-			sfile := siegfried.Find(fmt.Sprintf("%s/%s", label, info.Name()))
-			if sfile != nil {
-				file.Format = sfile.Matches[0].Format
-				file.Checksum = sfile.Checksum
-				file.Name = info.Name()
-				file.Size = strconv.Itoa(sfile.Filesize)
-				file.Created = sfile.Modified
-			}
-
-			// Copy essence
-			// TODO handling of paths
-			copy(fmt.Sprintf("%s/%s", src, file.Name), fmt.Sprintf("%s/representations/%s/data/%s", p.BaseDir, label, file.Name))
-
-			representation.AddFile(file)
+		// TODO fix case "representation_0"
+		label := path.Base(dir)
+		rx, _ := regexp.Compile("representation_([0-9]+)$")
+		if !rx.MatchString(label) {
+			return nil
 		}
+
+		createDir(fmt.Sprintf("%s/representations/%s/data", p.BaseDir, label))
+		createDir(fmt.Sprintf("%s/representations/%s/metadata/preservation", p.BaseDir, label))
+
+		r := structure.NewRepresentation(label)
+
+		fn(dir, r)
 
 		return nil
 	})
@@ -117,8 +93,31 @@ func (p *Profile) createRepresentation(src, label string) *structure.Representat
 	if err != nil {
 		panic(err)
 	}
+}
 
-	return representation
+func (p *Profile) eachFile(dir, label string, fn func(r *structure.File)) {
+	err := filepath.Walk(dir, func(src string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		// TODO ignore all descriptive files per the spec (dc, dc+schema, mods)
+
+		dest := fmt.Sprintf("%s/representations/%s/data/%s", p.BaseDir, label, path.Base(src))
+		copy(src, dest)
+
+		// TODO make this a registrable identificator, add support for Droid as well
+		formatter := siegfried.New("sf", []string{"-hash", "md5", "-json"})
+		f := formatter.Process(dest)
+
+		fn(f)
+
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (p *Profile) createPremisPackage(path string, pkg *structure.Package, root *structure.Entity) {

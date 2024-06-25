@@ -27,6 +27,15 @@ func (p *Profile) Basic() {
 	entity := p.createIntellectualEntity(fmt.Sprintf("%s/dc+schema.json", p.InDir))
 
 	// representation := p.createRepresentation(fmt.Sprintf("%s/representation_1", p.InDir), "representation_1")
+
+	p.eachDirectory(func(dir string, r *structure.Representation) {
+		p.eachFile(dir, r.Label, func(f *structure.File) {
+			r.AddFile(f)
+		})
+
+		entity.AddRepresentation(r)
+	})
+
 	// entity.AddRepresentation(representation)
 	pkg.AddRootEntity(entity)
 
