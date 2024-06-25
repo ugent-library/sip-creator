@@ -7,37 +7,31 @@ import (
 )
 
 func (p *Profile) Basic() {
-	// Create skeleton
-	packageDirs := []string{
-		fmt.Sprintf("%s/metadata/descriptive", p.BaseDir),
-		fmt.Sprintf("%s/metadata/preservation", p.BaseDir),
-		fmt.Sprintf("%s/representations", p.BaseDir),
-	}
-
-	for _, pd := range packageDirs {
-		createDir(pd)
-	}
-
 	// Step 1: Compose and parse input
 
-	// Create a new package
-	pkg := structure.NewPackage()
+	// Create skeleton
+	pkg := p.createPackage()
 
-	// Create an entity & a representation
-	entity := p.createIntellectualEntity(fmt.Sprintf("%s/dc+schema.json", p.InDir))
+	// Create an entity & associate with a description file
+	e := p.createIntellectualEntity(fmt.Sprintf("%s/dc+schema.json", p.InDir))
 
-	// representation := p.createRepresentation(fmt.Sprintf("%s/representation_1", p.InDir), "representation_1")
-
+	// Loop over all "representation_*" directories and parse them
+	//   in other profiles, we may require custom logic to hook a representation to a specific
+	//   sub-entity.
 	p.eachDirectory(func(dir string, r *structure.Representation) {
 		p.eachFile(dir, r.Label, func(f *structure.File) {
+			f.SetRepresentation(r)
 			r.AddFile(f)
 		})
 
-		entity.AddRepresentation(r)
+		// in other profiles, here we might create dedicated dc+schema, dc or mods
+		// files on a representation level, overriding the package level metadata (e.g. licenses)
+
+		r.SetEntity(e)
+		e.AddRepresentation(r)
 	})
 
-	// entity.AddRepresentation(representation)
-	pkg.AddRootEntity(entity)
+	pkg.AddRootEntity(e)
 
 	// Step 2: Generate metadata files
 

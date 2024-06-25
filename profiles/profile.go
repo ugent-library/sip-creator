@@ -120,6 +120,22 @@ func (p *Profile) eachFile(dir, label string, fn func(r *structure.File)) {
 	}
 }
 
+func (p *Profile) createPackage() *structure.Package {
+	// Create skeleton
+	packageDirs := []string{
+		fmt.Sprintf("%s/metadata/descriptive", p.BaseDir),
+		fmt.Sprintf("%s/metadata/preservation", p.BaseDir),
+		fmt.Sprintf("%s/representations", p.BaseDir),
+	}
+
+	for _, pd := range packageDirs {
+		createDir(pd)
+	}
+
+	// Create a new package
+	return structure.NewPackage()
+}
+
 func (p *Profile) createPremisPackage(path string, pkg *structure.Package, root *structure.Entity) {
 	file := createMetadataFile(path, func(w io.Writer) error {
 		return premis.EncodeEntity(w, root)

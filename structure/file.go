@@ -7,12 +7,21 @@ import (
 )
 
 type File struct {
-	Identifier string
-	Name       string
-	Checksum   string
-	Format     string
-	Size       string
-	Created    string
+	Identifier     string
+	Name           string
+	Checksum       string
+	Format         string
+	Size           string
+	Created        string
+	Representation *Representation
+}
+
+func (f *File) SetRepresentation(r *Representation) {
+	f.Representation = r
+}
+
+func (f *File) GetRepresentation() *Representation {
+	return f.Representation
 }
 
 func NewFile() *File {
