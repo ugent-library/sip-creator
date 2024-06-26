@@ -7,22 +7,7 @@ import (
 	"github.com/ugent-library/sip-creator/structure"
 )
 
-type representationWithEntity struct {
-	Representation *structure.Representation
-	Entity         structure.Entity
-}
-
-var funcs = template.FuncMap{
-	"fileWithRepresentation": func(f *structure.File, r *structure.Representation) any {
-		return struct {
-			File           *structure.File
-			Representation *structure.Representation
-		}{
-			File:           f,
-			Representation: r,
-		}
-	},
-}
+var funcs = template.FuncMap{}
 
 var premis = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ define "entity" -}}
@@ -50,11 +35,11 @@ var premis = template.Must(template.New("").Funcs(funcs).Parse(`
 
 		<premis:objectIdentifier>
 		<premis:objectIdentifierType>UUID</premis:objectIdentifierType>
-		<premis:objectIdentifierValue>{{ .Representation.Identifier }}</premis:objectIdentifierValue>
+		<premis:objectIdentifierValue>{{ .Identifier }}</premis:objectIdentifierValue>
 		</premis:objectIdentifier>
 
 		<!-- relationship between representation and its files -->
-		{{- range .Representation.Files }}
+		{{- range .Files }}
 			{{ template "includes" . }}
 		{{ end -}}
 
@@ -63,9 +48,8 @@ var premis = template.Must(template.New("").Funcs(funcs).Parse(`
 	</premis:object>
 
 	<!-- Files -->
-	{{- $representation := .Representation }}
-	{{- range .Representation.Files }}
-		{{ template "file" (fileWithRepresentation . $representation) }}
+	{{- range .Files }}
+		{{ template "file" . }}
 	{{- end }}
 </premis:premis>
 {{ end }}
@@ -75,7 +59,7 @@ var premis = template.Must(template.New("").Funcs(funcs).Parse(`
 
 		<premis:objectIdentifier>
 			<premis:objectIdentifierType>UUID</premis:objectIdentifierType>
-			<premis:objectIdentifierValue>{{ .File.Identifier }}</premis:objectIdentifierValue>
+			<premis:objectIdentifierValue>{{ .Identifier }}</premis:objectIdentifierValue>
 		</premis:objectIdentifier>
 
 		<premis:objectCharacteristics>
@@ -83,20 +67,20 @@ var premis = template.Must(template.New("").Funcs(funcs).Parse(`
 				<premis:messageDigestAlgorithm authority="cryptographicHashFunctions" authorityURI="http://id.loc.gov/vocabulary/preservation/cryptographicHashFunctions" valueURI="http://id.loc.gov/vocabulary/preservation/cryptographicHashFunctions/md5">
 						MD5
 				</premis:messageDigestAlgorithm>
-				<premis:messageDigest>{{ .File.Checksum }}</premis:messageDigest>
+				<premis:messageDigest>{{ .Checksum }}</premis:messageDigest>
 			</premis:fixity>
-			<premis:size>{{ .File.Size }}</premis:size>
+			<premis:size>{{ .Size }}</premis:size>
 			<premis:format>
 				<premis:formatRegistry>
 				<premis:formatRegistryName>PRONOM</premis:formatRegistryName>
-				<premis:formatRegistryKey>{{ .File.Format }}</premis:formatRegistryKey>
+				<premis:formatRegistryKey>{{ .Format }}</premis:formatRegistryKey>
 				<premis:formatRegistryRole authority="formatRegistryRole" authorityURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole" valueURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole/spe">specification</premis:formatRegistryRole>
 				</premis:formatRegistry>
 				<premis:formatNote></premis:formatNote>
 			</premis:format>
 		</premis:objectCharacteristics>
 
-		<premis:originalName>{{ .File.Name }}</premis:originalName>
+		<premis:originalName>{{ .Name }}</premis:originalName>
 
 		<!-- relationship between file and its representation -->
 		{{ template "isIncludedIn" .Representation }}
@@ -153,9 +137,6 @@ func EncodeEntity(w io.Writer, e *structure.Entity) error {
 	return premis.ExecuteTemplate(w, "entity", e)
 }
 
-func EncodeRepresentation(w io.Writer, e structure.Entity, r *structure.Representation) error {
-	return premis.ExecuteTemplate(w, "representation", &representationWithEntity{
-		Entity:         e,
-		Representation: r,
-	})
+func EncodeRepresentation(w io.Writer, r *structure.Representation) error {
+	return premis.ExecuteTemplate(w, "representation", r)
 }

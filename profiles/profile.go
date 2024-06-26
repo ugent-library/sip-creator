@@ -33,6 +33,22 @@ func New(src, dest string) *Profile {
 	}
 }
 
+func (p *Profile) createPackage() *structure.Package {
+	// Create skeleton
+	packageDirs := []string{
+		fmt.Sprintf("%s/metadata/descriptive", p.BaseDir),
+		fmt.Sprintf("%s/metadata/preservation", p.BaseDir),
+		fmt.Sprintf("%s/representations", p.BaseDir),
+	}
+
+	for _, pd := range packageDirs {
+		createDir(pd)
+	}
+
+	// Create a new package
+	return structure.NewPackage()
+}
+
 func (p *Profile) createIntellectualEntity(src string) *structure.Entity {
 	entity := structure.NewEntity()
 
@@ -45,8 +61,9 @@ func (p *Profile) createIntellectualEntity(src string) *structure.Entity {
 		panic(fmt.Sprintf("%s is a directory, not a metadata file.", src))
 	}
 
-	// TODO split this out as a helper function, representations can have
-	//   descriptive files as well (optional)
+	// TODO split this out as a helper function
+	//   * A single entity can have multiple descriptive files (mods, dc+schema)
+	//   * Representations can override descriptive files on package level.
 	base := path.Base(src)
 	ext := path.Ext(base)
 	name := base[0:len(base)-len(ext)] + ".xml"
@@ -67,6 +84,18 @@ func (p *Profile) createIntellectualEntity(src string) *structure.Entity {
 	return entity
 }
 
+func (p *Profile) createRepresentation(label string) *structure.Representation {
+	createDir(fmt.Sprintf("%s/representations/%s/data", p.BaseDir, label))
+	createDir(fmt.Sprintf("%s/representations/%s/metadata/preservation", p.BaseDir, label))
+
+	r := structure.NewRepresentation(label)
+
+	// TODO generate an optional description file (dc+schema, dc, mods) for representations
+	//   e.g. when licensing overrides the licensing of the associated entity
+
+	return r
+}
+
 func (p *Profile) eachDirectory(fn func(dir string, r *structure.Representation)) {
 	err := filepath.Walk(p.InDir, func(dir string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
@@ -80,10 +109,7 @@ func (p *Profile) eachDirectory(fn func(dir string, r *structure.Representation)
 			return nil
 		}
 
-		createDir(fmt.Sprintf("%s/representations/%s/data", p.BaseDir, label))
-		createDir(fmt.Sprintf("%s/representations/%s/metadata/preservation", p.BaseDir, label))
-
-		r := structure.NewRepresentation(label)
+		r := p.createRepresentation(label)
 
 		fn(dir, r)
 
@@ -120,59 +146,41 @@ func (p *Profile) eachFile(dir, label string, fn func(r *structure.File)) {
 	}
 }
 
-func (p *Profile) createPackage() *structure.Package {
-	// Create skeleton
-	packageDirs := []string{
-		fmt.Sprintf("%s/metadata/descriptive", p.BaseDir),
-		fmt.Sprintf("%s/metadata/preservation", p.BaseDir),
-		fmt.Sprintf("%s/representations", p.BaseDir),
-	}
-
-	for _, pd := range packageDirs {
-		createDir(pd)
-	}
-
-	// Create a new package
-	return structure.NewPackage()
-}
-
-func (p *Profile) createPremisPackage(path string, pkg *structure.Package, root *structure.Entity) {
-	file := createMetadataFile(path, func(w io.Writer) error {
-		return premis.EncodeEntity(w, root)
+func (p *Profile) generatePackagePremis(e *structure.Entity) *structure.File {
+	// TODO also account for sub-iE(s) tied to the root entity
+	path := fmt.Sprintf("%s/metadata/preservation/premis.xml", p.BaseDir)
+	f := createMetadataFile(path, func(w io.Writer) error {
+		return premis.EncodeEntity(w, e)
 	})
 
-	pkg.AddPremisFile(file)
+	return f
 }
 
-func (p *Profile) createPremisRepresentation(path string, representation *structure.Representation, entity structure.Entity) {
-	file := createMetadataFile(path, func(w io.Writer) error {
-		return premis.EncodeRepresentation(w, entity, representation)
+func (p *Profile) generateRepresentationPremis(r *structure.Representation) *structure.File {
+	path := fmt.Sprintf("%s/representations/%s/metadata/preservation/premis.xml", p.BaseDir, r.Label)
+	f := createMetadataFile(path, func(w io.Writer) error {
+		return premis.EncodeRepresentation(w, r)
 	})
 
-	representation.AddPremisFile(file)
+	return f
 }
 
-func (p *Profile) createMetsPackage(path string, pkg *structure.Package) {
-	createMetadataFile(path, func(w io.Writer) error {
+func (p *Profile) generatePackageMets(pkg *structure.Package) *structure.File {
+	path := fmt.Sprintf("%s/mets.xml", p.BaseDir)
+	f := createMetadataFile(path, func(w io.Writer) error {
 		return mets.EncodePackage(w, pkg)
 	})
+
+	return f
 }
 
-func (p *Profile) createMetsRepresentation(path string, representation *structure.Representation) {
-	file := createMetadataFile(path, func(w io.Writer) error {
-		return mets.EncodeRepresentation(w, representation)
+func (p *Profile) generateRepresentationMets(r *structure.Representation) *structure.File {
+	path := fmt.Sprintf("%s/representations/%s/mets.xml", p.BaseDir, r.Label)
+	f := createMetadataFile(path, func(w io.Writer) error {
+		return mets.EncodeRepresentation(w, r)
 	})
-
-	representation.AddMetsFile(file)
+	return f
 }
-
-// func (p *Profile) createDescriptionFile(path string, entity structure.Entity) {
-// 	file := createMetadataFile(path, func(w io.Writer) error {
-// 		return metadata.EncodeMetadata(w, entity)
-// 	})
-
-// 	entity.AddDescriptionFile(file)
-// }
 
 type encoder func(w io.Writer) error
 

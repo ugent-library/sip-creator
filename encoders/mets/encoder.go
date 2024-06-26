@@ -8,13 +8,25 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/samber/lo"
 	"github.com/ugent-library/sip-creator/structure"
 )
 
+var idStore []string
+
+// Make sure METS identifiers are only minted once across SIP
+func identifier() string {
+	id := fmt.Sprintf("uuid-%s", uuid.New().String())
+
+	if lo.Contains(idStore, id) {
+		return identifier()
+	}
+
+	return id
+}
+
 var funcs = template.FuncMap{
-	"identifier": func() string {
-		return fmt.Sprintf("uuid-%s", uuid.New().String())
-	},
+	"identifier": identifier,
 	"now": func() string {
 		return time.Now().Format(time.RFC3339Nano)
 	},
@@ -54,7 +66,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 
 	{{ $fileGrpID := identifier -}}
     <fileSec ID="{{ identifier}}">
-        <fileGrp USE="Representations/representation_1" ID="{{ $fileGrpID }}">
+        <fileGrp USE="data" ID="{{ $fileGrpID }}">
 		{{ range .Files -}}
             <file ID="{{ identifier }}" MIMETYPE="text/xml" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
                 <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .Name }}"/>
@@ -63,8 +75,8 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
         </fileGrp>
     </fileSec>
 
-    <structMap ID="uuid-f81f8688-b278-4397-b59c-82593b11a2b9" TYPE="PHYSICAL" LABEL="CSIP">
-        <div ID="{{ identifier }}" LABEL="Representation_1">
+    <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
+        <div ID="{{ identifier }}" LABEL="{{ .Label }}">
             <div ID="{{ identifier }}" LABEL="Metadata" 
                 ADMID="{{ $provMDID }}" />
             <div ID="{{ identifier }}" LABEL="Representations">
@@ -117,7 +129,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 
     <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
         <div ID="{{ identifier }}" LABEL="basic-package">
-            <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ joinIdentifiers .DescriptiveFiles }}" ADMID="{{ .PremisFile.Identifier }}"/>
+            <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ .Root.DescriptionFile}}" ADMID="{{ .PremisFile.Identifier }}"/>
             <div ID="uuid-47ea3b5a-cc10-491c-94fc-46189fb266ae" LABEL="Representations/representation_1">
                 <mptr xlink:type="simple" xlink:href="./representations/representation_1/mets.xml" LOCTYPE="URL" xlink:title="uuid-6ec1cf49-0d4a-413d-9170-4dcb4bd09473"/>
             </div>

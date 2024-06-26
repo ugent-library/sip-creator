@@ -35,20 +35,19 @@ func (p *Profile) Basic() {
 
 	// Step 2: Generate metadata files
 
-	// Generate package description file
-	// p.createDescriptionFile(fmt.Sprintf("%s/metadata/descriptive/dc+schema.xml", p.BaseDir), entity)
+	pkg.Root.EachRepresentation(func(r *structure.Representation) error {
+		pr := p.generateRepresentationPremis(r)
+		r.AddPremisFile(pr)
 
-	// Generate package premis file
-	// p.createPremisPackage(fmt.Sprintf("%s/metadata/preservation/premis.xml", p.BaseDir), pkg, entity)
+		mts := p.generateRepresentationMets(r)
+		r.AddMetsFile(mts)
 
-	// Iterate over representations
-	// entity.EachRepresentation(func(r *structure.Representation) error {
-	// 	p.createPremisRepresentation(fmt.Sprintf("%s/representations/%s/metadata/preservation/premis.xml", p.BaseDir, r.Label), r, entity)
+		return nil
+	})
 
-	// 	p.createMetsRepresentation(fmt.Sprintf("%s/representations/%s/mets.xml", p.BaseDir, r.Label), r)
-	// 	return nil
-	// })
+	pr := p.generatePackagePremis(pkg.Root)
+	pkg.AddPremisFile(pr)
 
-	// // Generate package mets file
-	// p.createMetsPackage(fmt.Sprintf("%s/mets.xml", p.BaseDir), pkg)
+	mts := p.generatePackageMets(pkg)
+	pkg.AddMetsFile(mts)
 }
