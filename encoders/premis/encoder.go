@@ -79,9 +79,9 @@ var premis = template.Must(template.New("").Funcs(funcs).Parse(`
 			<premis:size>{{ .Size }}</premis:size>
 			<premis:format>
 				<premis:formatRegistry>
-				<premis:formatRegistryName>PRONOM</premis:formatRegistryName>
-				<premis:formatRegistryKey>{{ .Format }}</premis:formatRegistryKey>
-				<premis:formatRegistryRole authority="formatRegistryRole" authorityURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole" valueURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole/spe">specification</premis:formatRegistryRole>
+				<premis:formatRegistryName>{{ .Format.FormatRegistry.Name }}</premis:formatRegistryName>
+				<premis:formatRegistryKey>{{ .Format.FormatRegistry.Key }}</premis:formatRegistryKey>
+				<premis:formatRegistryRole authority="formatRegistryRole" authorityURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole" valueURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole/spe">{{ .Format.FormatRegistry.Role }}</premis:formatRegistryRole>
 				</premis:formatRegistry>
 				<premis:formatNote></premis:formatNote>
 			</premis:format>

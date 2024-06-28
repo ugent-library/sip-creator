@@ -82,7 +82,13 @@ func (s *siegfried) Process(f string) *structure.File {
 
 	if sfile := out.FirstFile(); sfile != nil {
 		if match := sfile.FirstMatch(); match != nil {
-			file.Format = match.Format
+			fr := structure.NewFormatRegistry()
+			fr.Key = match.ID
+			fr.Name = match.NS
+
+			file.Format = &structure.Format{
+				FormatRegistry: fr,
+			}
 			file.Checksum = sfile.Checksum
 			file.Size = strconv.Itoa(sfile.Filesize)
 			file.Created = sfile.Modified
