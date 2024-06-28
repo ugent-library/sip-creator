@@ -7,10 +7,15 @@ import (
 )
 
 type Entity struct {
-	Identifier      string
-	Representations []*Representation
-	Entities        []*Entity
-	DescriptionFile *File
+	Identifier            string
+	AdditionalIdentifiers map[string]string
+	Representations       []*Representation
+	Entities              []*Entity
+	DescriptionFile       *File
+}
+
+func (e *Entity) AddAdditionalIdentifier(idType, id string) {
+	e.AdditionalIdentifiers[idType] = id
 }
 
 func (e *Entity) AddDescriptionFile(f *File) {
@@ -38,6 +43,7 @@ func (e *Entity) EachRepresentation(fn func(r *Representation) error) error {
 
 func NewEntity() *Entity {
 	return &Entity{
-		Identifier: fmt.Sprintf("uuid-%s", uuid.New().String()),
+		Identifier:            fmt.Sprintf("uuid-%s", uuid.New().String()),
+		AdditionalIdentifiers: make(map[string]string),
 	}
 }

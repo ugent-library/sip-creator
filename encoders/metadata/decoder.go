@@ -3,7 +3,6 @@ package metadata
 import (
 	"encoding/json"
 	"io"
-	"os"
 )
 
 type Description struct {
@@ -12,10 +11,23 @@ type Description struct {
 	Schema
 }
 
+func (d *Description) GetLocalIdentifier(scheme string) string {
+	switch scheme {
+	case "dcterms":
+		return d.DublinCore.Identifier
+	}
+
+	return ""
+}
+
+func (d *Description) SetObjectIdentifier(id string) {
+	d.Identifier = id
+}
+
 type DublinCore struct {
 	Title        Text     `json:"dcterms:title"`
 	Alternative  []string `json:"dcterms:alternative"`
-	Identifier   string
+	Identifier   string   `json:"dcterms:identifier"`
 	Extent       string   `json:"dcterms:extent"`
 	Available    string   `json:"dcterms:available"`
 	Description  Text     `json:"dcterms:description"`
@@ -72,22 +84,15 @@ type CreativeWork struct {
 	HasPart  []CreativeWork `json:"schema:hasPart"`
 }
 
-func Decode(src string) *Description {
-	mf, err := os.Open(src)
-	if err != nil {
-		panic(err)
-	}
-	defer mf.Close()
-
-	bts, _ := io.ReadAll(mf)
-
-	var description *Description
+func Decode(r io.Reader) *Description {
+	bts, _ := io.ReadAll(r)
 
 	// TODO create a set of mutators that gets iterated over.
 	//   mutators are passed as a configuration to the decoder.
 	//   a mutator can make specific changes to the description
 	//   e.g. setting Text/@language to "nl" on an item in an array
 	//   per the Meemoo spec.
+	var description *Description
 
 	if err := json.Unmarshal(bts, &description); err != nil {
 		panic(err)

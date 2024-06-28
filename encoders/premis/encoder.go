@@ -20,6 +20,13 @@ var premis = template.Must(template.New("").Funcs(funcs).Parse(`
 			<premis:objectIdentifierValue>{{ .Identifier }}</premis:objectIdentifierValue>
 		</premis:objectIdentifier>
 
+		{{ range $k, $v := .AdditionalIdentifiers -}}
+		<premis:objectIdentifier>
+			<premis:objectIdentifierType>{{ $k }}</premis:objectIdentifierType>
+			<premis:objectIdentifierValue>{{ $v }}</premis:objectIdentifierValue>
+		</premis:objectIdentifier>
+		{{- end}}
+
 		{{- range .Representations }}
 			{{ template "isRepresentedBy" . -}}
 		{{- end }}

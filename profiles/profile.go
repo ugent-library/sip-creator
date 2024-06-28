@@ -49,39 +49,49 @@ func (p *Profile) createPackage() *structure.Package {
 	return structure.NewPackage()
 }
 
-func (p *Profile) createIntellectualEntity(src string) *structure.Entity {
-	entity := structure.NewEntity()
+func (p *Profile) createIntellectualEntity() *structure.Entity {
+	return structure.NewEntity()
+}
 
-	f, err := os.Lstat(src)
+type Description interface {
+	GetLocalIdentifier(scheme string) string
+	SetObjectIdentifier(id string)
+}
+
+func (p *Profile) createDescriptiveFile(src, dir string, fn func(d Description)) *structure.File {
+	fi, err := os.Lstat(src)
 	if err != nil {
 		panic(err)
 	}
 
-	if f.IsDir() {
+	if fi.IsDir() {
 		panic(fmt.Sprintf("%s is a directory, not a metadata file.", src))
 	}
 
-	// TODO split this out as a helper function
-	//   * A single entity can have multiple descriptive files (mods, dc+schema)
-	//   * Representations can override descriptive files on package level.
 	base := path.Base(src)
 	ext := path.Ext(base)
 	name := base[0:len(base)-len(ext)] + ".xml"
 
-	dest := fmt.Sprintf("%s/metadata/descriptive/%s", p.BaseDir, name)
+	dest := fmt.Sprintf("%s/%s", dir, name)
+
+	f, err := os.Open(src)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	d := metadata.Decode(f)
+
+	// TODO Per the spec, we want to swap in the premis identifier for dcterms:identifier,
+	//   and swap out existing dcterms:identifier values from the source, keeping them with
+	//   the entity when we generate the premis file
+	fn(d)
 
 	file := createMetadataFile(dest, func(w io.Writer) error {
-		// TODO Per the spec, we want to swap in the premis identifier for dcterms:identifier,
-		//   and swap out existing dcterms:identifier values from the source, keeping them with
-		//   the entity when we generate the premis file
-		description := metadata.Decode(src)
-		description.Identifier = entity.Identifier
-		return metadata.Encode(w, description)
+		return metadata.Encode(w, d)
 	})
 
-	entity.AddDescriptionFile(file)
-
-	return entity
+	return file
 }
 
 func (p *Profile) createRepresentation(label string) *structure.Representation {

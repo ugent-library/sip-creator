@@ -13,7 +13,19 @@ func (p *Profile) Basic() {
 	pkg := p.createPackage()
 
 	// Create an entity & associate with a description file
-	e := p.createIntellectualEntity(fmt.Sprintf("%s/dc+schema.json", p.InDir))
+	e := p.createIntellectualEntity()
+
+	src := fmt.Sprintf("%s/dc+schema.json", p.InDir)
+	dest := fmt.Sprintf("%s/metadata/descriptive", p.BaseDir)
+	file := p.createDescriptiveFile(src, dest, func(d Description) {
+		d.SetObjectIdentifier(e.Identifier)
+		// TODO This could be auto-detected based off the salience of the source metadata
+		//   e.g. metadata properties which describe a group of additional identifiers.
+		localId := d.GetLocalIdentifier("dcterms")
+		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", localId)
+	})
+
+	e.AddDescriptionFile(file)
 
 	// Loop over all "representation_*" directories and parse them
 	//   in other profiles, we may require custom logic to hook a representation to a specific
@@ -26,6 +38,7 @@ func (p *Profile) Basic() {
 
 		// in other profiles, here we might create dedicated dc+schema, dc or mods
 		// files on a representation level, overriding the package level metadata (e.g. licenses)
+		// Use p.createDescriptiveFile to create those rep level descriptive files
 
 		r.SetEntity(e)
 		e.AddRepresentation(r)
