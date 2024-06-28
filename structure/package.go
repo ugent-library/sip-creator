@@ -1,6 +1,13 @@
 package structure
 
+import (
+	"fmt"
+
+	"github.com/google/uuid"
+)
+
 type Package struct {
+	Identifier              string
 	Root                    *Entity
 	PremisFile              *File
 	MetsFile                *File
@@ -20,10 +27,25 @@ func (p *Package) AddMetsFile(f *File) {
 	p.MetsFile = f
 }
 
-func (p *Package) AddDescriptiveFile(f *File) {
-	p.DescriptiveFiles = append(p.DescriptiveFiles, f)
+func (p *Package) GetDescriptiveFiles() []*File {
+	var tmp []*File
+	var fn func(e *Entity)
+
+	fn = func(e *Entity) {
+		for _, v := range e.Entities {
+			fn(v)
+		}
+
+		tmp = append(tmp, e.DescriptionFile)
+	}
+
+	fn(p.Root)
+
+	return tmp
 }
 
 func NewPackage() *Package {
-	return &Package{}
+	return &Package{
+		Identifier: fmt.Sprintf("uuid-%s", uuid.New().String()),
+	}
 }

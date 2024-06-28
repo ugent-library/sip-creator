@@ -93,7 +93,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	xmlns:sip="https://DILCIS.eu/XML/METS/SIPExtensionMETS" 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	xmlns:xlink="http://www.w3.org/1999/xlink" 
-	OBJID="{{ identifier }}"
+	OBJID="{{ .Identifier }}"
 	TYPE="Photographs - Digital"
 	PROFILE="https://earksip.dilcis.eu/profile/E-ARK-SIP.xml"
 	csip:CONTENTINFORMATIONTYPE="OTHER"
@@ -103,11 +103,11 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	<metsHdr CREATEDATE="{{ now }}" />
 
 	<!-- ref to descriptive metadata about IE -->
-	{{ range .DescriptiveFiles -}}
+	{{ range .GetDescriptiveFiles -}}
     <dmdSec ID="{{ .Identifier }}">
         <mdRef LOCTYPE="URL" MDTYPE="DC" xlink:type="simple" xlink:href="{{ .Name }}" MIMETYPE="text/xml" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
     </dmdSec>
-	{{ end -}}
+	{{- end }}
 
 	<!-- ref to the PREMIS metadata about IE/subIE(s)/package -->
     <amdSec>
@@ -120,7 +120,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
     <fileSec ID="{{ identifier }}">
 		{{ range .Root.Representations -}}
         <fileGrp USE="Representations/{{ .Label }}" ID="{{ .Identifier }}">
-            <file ID="uuid-ba89c101-109a-4fe3-a4ed-0c276b20e14c" MIMETYPE="text/xml" SIZE="{{ .MetsFile.Size }}" CREATED="{{ .MetsFile.Created }}" CHECKSUM="{{ .MetsFile.Checksum }}" CHECKSUMTYPE="MD5">
+            <file ID="{{ .MetsFile.Identifier }}" MIMETYPE="text/xml" SIZE="{{ .MetsFile.Size }}" CREATED="{{ .MetsFile.Created }}" CHECKSUM="{{ .MetsFile.Checksum }}" CHECKSUMTYPE="MD5">
                 <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .MetsFile.Name }}"/>
             </file>
         </fileGrp>
@@ -129,10 +129,12 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 
     <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
         <div ID="{{ identifier }}" LABEL="basic-package">
-            <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ .Root.DescriptionFile}}" ADMID="{{ .PremisFile.Identifier }}"/>
-            <div ID="uuid-47ea3b5a-cc10-491c-94fc-46189fb266ae" LABEL="Representations/representation_1">
-                <mptr xlink:type="simple" xlink:href="./representations/representation_1/mets.xml" LOCTYPE="URL" xlink:title="uuid-6ec1cf49-0d4a-413d-9170-4dcb4bd09473"/>
-            </div>
+            <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ .Root.DescriptionFile.Identifier }}" ADMID="{{ .PremisFile.Identifier }}"/>
+			{{ range .Root.Representations -}}
+			<div ID="{{ identifier }}" LABEL="Representations/{{ .Label }}">
+				<mptr xlink:type="simple" xlink:href="{{ .MetsFile.Name }}" LOCTYPE="URL" xlink:title="{{ .Identifier }}" />
+			</div>
+			{{ end }}
         </div>
     </structMap>
 </mets>
