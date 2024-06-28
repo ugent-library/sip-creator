@@ -60,7 +60,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	{{ $provMDID := identifier -}}
     <amdSec>
         <digiprovMD ID="{{ $provMDID }}">
-            <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .PremisFile.Name }}" MIMETYPE="text/xml" SIZE="{{ .PremisFile.Size }}" CREATED="{{ .PremisFile.Created }}" CHECKSUM="{{ .PremisFile.Checksum }}" CHECKSUMTYPE="MD5" />
+            <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .PremisFile.Path }}" MIMETYPE="text/xml" SIZE="{{ .PremisFile.Size }}" CREATED="{{ .PremisFile.Created }}" CHECKSUM="{{ .PremisFile.Checksum }}" CHECKSUMTYPE="MD5" />
         </digiprovMD>
     </amdSec>
 
@@ -69,7 +69,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
         <fileGrp USE="data" ID="{{ $fileGrpID }}">
 		{{ range .Files -}}
             <file ID="{{ identifier }}" MIMETYPE="text/xml" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
-                <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .Name }}"/>
+                <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .Path }}"/>
             </file>
 		{{ end -}}
         </fileGrp>
@@ -105,14 +105,14 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	<!-- ref to descriptive metadata about IE -->
 	{{ range .GetDescriptiveFiles -}}
     <dmdSec ID="{{ .Identifier }}">
-        <mdRef LOCTYPE="URL" MDTYPE="DC" xlink:type="simple" xlink:href="{{ .Name }}" MIMETYPE="text/xml" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
+        <mdRef LOCTYPE="URL" MDTYPE="DC" xlink:type="simple" xlink:href="{{ .Path }}" MIMETYPE="text/xml" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
     </dmdSec>
 	{{- end }}
 
 	<!-- ref to the PREMIS metadata about IE/subIE(s)/package -->
     <amdSec>
         <digiprovMD ID="{{ .PremisFile.Identifier }}">
-            <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .PremisFile.Name }}" MIMETYPE="text/xml" SIZE="{{ .PremisFile.Size }}" CREATED="{{ .PremisFile.Created }}" CHECKSUM="{{ .PremisFile.Checksum }}" CHECKSUMTYPE="MD5" />
+            <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .PremisFile.Path }}" MIMETYPE="text/xml" SIZE="{{ .PremisFile.Size }}" CREATED="{{ .PremisFile.Created }}" CHECKSUM="{{ .PremisFile.Checksum }}" CHECKSUMTYPE="MD5" />
         </digiprovMD>
     </amdSec>
 
@@ -121,7 +121,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 		{{ range .Root.Representations -}}
         <fileGrp USE="Representations/{{ .Label }}" ID="{{ .Identifier }}">
             <file ID="{{ .MetsFile.Identifier }}" MIMETYPE="text/xml" SIZE="{{ .MetsFile.Size }}" CREATED="{{ .MetsFile.Created }}" CHECKSUM="{{ .MetsFile.Checksum }}" CHECKSUMTYPE="MD5">
-                <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .MetsFile.Name }}"/>
+                <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .MetsFile.Path }}"/>
             </file>
         </fileGrp>
 		{{ end }}
@@ -132,7 +132,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
             <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ .Root.DescriptionFile.Identifier }}" ADMID="{{ .PremisFile.Identifier }}"/>
 			{{ range .Root.Representations -}}
 			<div ID="{{ identifier }}" LABEL="Representations/{{ .Label }}">
-				<mptr xlink:type="simple" xlink:href="{{ .MetsFile.Name }}" LOCTYPE="URL" xlink:title="{{ .Identifier }}" />
+				<mptr xlink:type="simple" xlink:href="{{ .MetsFile.Path }}" LOCTYPE="URL" xlink:title="{{ .Identifier }}" />
 			</div>
 			{{ end }}
         </div>

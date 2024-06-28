@@ -82,14 +82,16 @@ func (p *Profile) createDescriptiveFile(src, dir string, fn func(d Description))
 
 	d := metadata.Decode(f)
 
-	// TODO Per the spec, we want to swap in the premis identifier for dcterms:identifier,
+	// Per the spec, we want to swap in the premis identifier for dcterms:identifier,
 	//   and swap out existing dcterms:identifier values from the source, keeping them with
-	//   the entity when we generate the premis file
+	//   the entity when we generate the premis file. Do this in a callback.
 	fn(d)
 
 	file := createMetadataFile(dest, func(w io.Writer) error {
 		return metadata.Encode(w, d)
 	})
+
+	file.Path = fmt.Sprintf(".%s", dest[len(p.BaseDir):])
 
 	return file
 }
@@ -139,12 +141,15 @@ func (p *Profile) eachFile(dir, label string, fn func(r *structure.File)) {
 
 		// TODO ignore all descriptive files per the spec (dc, dc+schema, mods)
 
-		dest := fmt.Sprintf("%s/representations/%s/data/%s", p.BaseDir, label, path.Base(src))
+		base := fmt.Sprintf("%s/representations/%s", p.BaseDir, label)
+		dest := fmt.Sprintf("%s/data/%s", base, path.Base(src))
 		copy(src, dest)
 
 		// TODO make this a registrable identificator, add support for Droid as well
 		formatter := siegfried.New("sf", []string{"-hash", "md5", "-json"})
 		f := formatter.Process(dest)
+
+		f.Path = fmt.Sprintf(".%s", dest[len(base):])
 
 		fn(f)
 
@@ -163,14 +168,23 @@ func (p *Profile) generatePackagePremis(e *structure.Entity) *structure.File {
 		return premis.EncodeEntity(w, e)
 	})
 
+	// Set the relative path within the package for METS
+	f.Path = fmt.Sprintf(".%s", path[len(p.BaseDir):])
+
 	return f
 }
 
 func (p *Profile) generateRepresentationPremis(r *structure.Representation) *structure.File {
-	path := fmt.Sprintf("%s/representations/%s/metadata/preservation/premis.xml", p.BaseDir, r.Label)
+	// path := fmt.Sprintf("%s/representations/%s/metadata/preservation/premis.xml", p.BaseDir, r.Label)
+
+	base := fmt.Sprintf("%s/representations/%s", p.BaseDir, r.Label)
+	path := fmt.Sprintf("%s/metadata/preservation/premis.xml", base)
+
 	f := createMetadataFile(path, func(w io.Writer) error {
 		return premis.EncodeRepresentation(w, r)
 	})
+
+	f.Path = fmt.Sprintf(".%s", path[len(base):])
 
 	return f
 }
@@ -181,6 +195,8 @@ func (p *Profile) generatePackageMets(pkg *structure.Package) *structure.File {
 		return mets.EncodePackage(w, pkg)
 	})
 
+	f.Path = fmt.Sprintf(".%s", path[len(p.BaseDir):])
+
 	return f
 }
 
@@ -189,12 +205,13 @@ func (p *Profile) generateRepresentationMets(r *structure.Representation) *struc
 	f := createMetadataFile(path, func(w io.Writer) error {
 		return mets.EncodeRepresentation(w, r)
 	})
+
+	f.Path = fmt.Sprintf(".%s", path[len(p.BaseDir):])
+
 	return f
 }
 
-type encoder func(w io.Writer) error
-
-func createMetadataFile(dest string, fn encoder) *structure.File {
+func createMetadataFile(dest string, fn func(w io.Writer) error) *structure.File {
 	hash := md5.New()
 	var buf1, buf2 bytes.Buffer
 	w := io.MultiWriter(&buf1, &buf2)
@@ -234,7 +251,7 @@ func createMetadataFile(dest string, fn encoder) *structure.File {
 	}
 
 	file := structure.NewFile()
-	file.Name = dest
+	file.Name = path.Base(dest)
 	file.Size = strconv.Itoa(int(info.Size()))
 	file.Checksum = hex.EncodeToString(hash.Sum(nil))
 	file.Created = info.ModTime().Format(time.RFC3339Nano)

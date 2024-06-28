@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os/exec"
+	"path"
 	"strconv"
 
 	"github.com/ugent-library/sip-creator/structure"
@@ -77,7 +78,7 @@ func (s *siegfried) Process(f string) *structure.File {
 	}
 
 	file := structure.NewFile()
-	file.Name = f
+	file.Name = path.Base(f)
 
 	if sfile := out.FirstFile(); sfile != nil {
 		if match := sfile.FirstMatch(); match != nil {
