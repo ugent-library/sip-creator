@@ -7,11 +7,23 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/ugent-library/sip-creator/formats"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
+func init() {
+	formats.Register("siegfried", New)
+}
+
+func New(bin string, args []string) (formats.Identificator, error) {
+	return &siegfried{
+		bin:  bin,
+		args: args,
+	}, nil
+}
+
 type siegfried struct {
-	cmd  string
+	bin  string
 	args []string
 }
 
@@ -55,21 +67,15 @@ type Match struct {
 	Warning string `json:"warning"`
 }
 
-func New(cmd string, args []string) *siegfried {
-	return &siegfried{
-		cmd:  cmd,
-		args: args,
-	}
-}
-
 func (s *siegfried) Process(f string) *sip.File {
 	var b bytes.Buffer
 
 	s.args = append(s.args, f)
 
-	cmd := exec.Command(s.cmd, s.args...)
-	cmd.Stdout = &b
-	_ = cmd.Run()
+	// TODO handle errors if the command fails (e.g. not installed)
+	bin := exec.Command(s.bin, s.args...)
+	bin.Stdout = &b
+	_ = bin.Run()
 
 	var out *Output
 

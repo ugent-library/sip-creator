@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/spf13/cobra"
+	"github.com/ugent-library/sip-creator/formats"
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
@@ -19,10 +20,16 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flagProfile, _ := cmd.Flags().GetString("profile")
 
+		ffid, err := formats.New(config.Formats.Name, config.Formats.Command, config.Formats.Args)
+		if err != nil {
+			return err
+		}
+
 		profile := profiles.New(&profiles.Config{
 			Source:      args[0],
 			Destination: args[1],
 			Logger:      logger,
+			Formats:     ffid,
 		})
 
 		switch flagProfile {

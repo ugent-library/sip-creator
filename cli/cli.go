@@ -6,6 +6,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/spf13/cobra"
+	_ "github.com/ugent-library/sip-creator/formats/siegfried"
 	"github.com/ugent-library/sip-creator/services"
 )
 

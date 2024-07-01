@@ -17,7 +17,7 @@ import (
 	"github.com/ugent-library/sip-creator/encoders/metadata"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/premis"
-	"github.com/ugent-library/sip-creator/siegfried"
+	"github.com/ugent-library/sip-creator/formats"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -25,12 +25,14 @@ type Config struct {
 	Source      string
 	Destination string
 	Logger      *slog.Logger
+	Formats     formats.Identificator
 }
 
 type Profile struct {
 	BaseDir string
 	InDir   string
 	Logger  *slog.Logger
+	Formats formats.Identificator
 }
 
 func New(config *Config) *Profile {
@@ -38,6 +40,7 @@ func New(config *Config) *Profile {
 		BaseDir: config.Destination,
 		InDir:   config.Source,
 		Logger:  config.Logger,
+		Formats: config.Formats,
 	}
 }
 
@@ -154,8 +157,9 @@ func (p *Profile) eachFile(dir, label string, fn func(r *sip.File)) {
 		copy(src, dest)
 
 		// TODO make this a registrable identificator, add support for Droid as well
-		formatter := siegfried.New("sf", []string{"-hash", "md5", "-json"})
-		f := formatter.Process(dest)
+		// formatter := siegfried.New("sf", []string{"-hash", "md5", "-json"})
+		// f := p.FileForm.Process(dest)
+		f := p.Formats.Process(dest)
 
 		f.Path = fmt.Sprintf(".%s", dest[len(base):])
 
