@@ -20,11 +20,9 @@ Create Submission Information Packages (SIP) based on [Meemoo's SIP Specificatio
 
 Create a `.env` file with these variables:
 
-```
 - `SIP_FILE_FORMAT_NAME` (**required**, non-empty) - The name of the format identification tool (Valid values: `siegfried`)
 - `SIP_FILE_FORMAT_COMMAND` (**required**, non-empty) - The location of the binary of of the format identification tool on your system.
 - `SIP_FILE_FORMAT_ARGS` (**required**, non-empty) -  Extra arguments passed to the format identification tool.
-```
 
 **Siegfried**
 
@@ -34,6 +32,7 @@ Configure Siegfried like this:
 SIP_FILE_FORMAT_NAME="siegfried"
 SIP_FILE_FORMAT_COMMAND="/location-of-sf-binary"
 SIP_FILE_FORMAT_ARGS="-hash md5 -json"
+```
 
 ## How to use
 
