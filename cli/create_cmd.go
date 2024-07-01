@@ -19,10 +19,11 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flagProfile, _ := cmd.Flags().GetString("profile")
 
-		src := args[0]
-		dest := args[1]
-
-		profile := profiles.New(src, dest)
+		profile := profiles.New(&profiles.Config{
+			Source:      args[0],
+			Destination: args[1],
+			Logger:      logger,
+		})
 
 		switch flagProfile {
 		case "basic":

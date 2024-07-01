@@ -1,14 +1,17 @@
 package cli
 
 import (
-	"github.com/caarlos0/env/v10"
+	"log/slog"
+
+	"github.com/joho/godotenv"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/spf13/cobra"
+	"github.com/ugent-library/sip-creator/services"
 )
 
 var (
-	version Version
-	config  Config
+	config *services.Config
+	logger *slog.Logger
 
 	rootCmd = &cobra.Command{
 		Use:   "sip-creator",
@@ -16,20 +19,11 @@ var (
 	}
 )
 
-func init() {
-	cobra.OnInitialize(initVersion, initConfig)
-}
-
-func initVersion() {
-	cobra.CheckErr(env.Parse(&version))
-}
-
-func initConfig() {
-	cobra.CheckErr(env.ParseWithOptions(&config, env.Options{
-		Prefix: "SIP_CREATOR_",
-	}))
-}
-
 func Run() {
+	cobra.CheckErr(godotenv.Load())
+
+	config = services.ConfigFromEnv()
+	logger = services.NewLogger(config)
+
 	cobra.CheckErr(rootCmd.Execute())
 }

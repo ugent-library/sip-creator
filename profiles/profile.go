@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -21,15 +21,23 @@ import (
 	"github.com/ugent-library/sip-creator/structure"
 )
 
+type Config struct {
+	Source      string
+	Destination string
+	Logger      *slog.Logger
+}
+
 type Profile struct {
 	BaseDir string
 	InDir   string
+	Logger  *slog.Logger
 }
 
-func New(src, dest string) *Profile {
+func New(config *Config) *Profile {
 	return &Profile{
-		BaseDir: dest,
-		InDir:   src,
+		BaseDir: config.Destination,
+		InDir:   config.Source,
+		Logger:  config.Logger,
 	}
 }
 
@@ -288,7 +296,6 @@ func copy(src, dest string) {
 }
 
 func createDir(path string) {
-	log.Println(path)
 	err := os.MkdirAll(path, 0775)
 	if err != nil {
 		panic(err)
