@@ -18,7 +18,7 @@ import (
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/premis"
 	"github.com/ugent-library/sip-creator/siegfried"
-	"github.com/ugent-library/sip-creator/structure"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 type Config struct {
@@ -41,7 +41,7 @@ func New(config *Config) *Profile {
 	}
 }
 
-func (p *Profile) createPackage() *structure.Package {
+func (p *Profile) createPackage() *sip.Package {
 	// Create skeleton
 	packageDirs := []string{
 		fmt.Sprintf("%s/metadata/descriptive", p.BaseDir),
@@ -54,11 +54,11 @@ func (p *Profile) createPackage() *structure.Package {
 	}
 
 	// Create a new package
-	return structure.NewPackage()
+	return sip.NewPackage()
 }
 
-func (p *Profile) createIntellectualEntity() *structure.Entity {
-	return structure.NewEntity()
+func (p *Profile) createIntellectualEntity() *sip.Entity {
+	return sip.NewEntity()
 }
 
 type Description interface {
@@ -66,7 +66,7 @@ type Description interface {
 	SetObjectIdentifier(id string)
 }
 
-func (p *Profile) createDescriptiveFile(src, dir string, fn func(d Description)) *structure.File {
+func (p *Profile) createDescriptiveFile(src, dir string, fn func(d Description)) *sip.File {
 	fi, err := os.Lstat(src)
 	if err != nil {
 		panic(err)
@@ -104,11 +104,11 @@ func (p *Profile) createDescriptiveFile(src, dir string, fn func(d Description))
 	return file
 }
 
-func (p *Profile) createRepresentation(label string) *structure.Representation {
+func (p *Profile) createRepresentation(label string) *sip.Representation {
 	createDir(fmt.Sprintf("%s/representations/%s/data", p.BaseDir, label))
 	createDir(fmt.Sprintf("%s/representations/%s/metadata/preservation", p.BaseDir, label))
 
-	r := structure.NewRepresentation(label)
+	r := sip.NewRepresentation(label)
 
 	// TODO generate an optional description file (dc+schema, dc, mods) for representations
 	//   e.g. when licensing overrides the licensing of the associated entity
@@ -116,7 +116,7 @@ func (p *Profile) createRepresentation(label string) *structure.Representation {
 	return r
 }
 
-func (p *Profile) eachDirectory(fn func(dir string, r *structure.Representation)) {
+func (p *Profile) eachDirectory(fn func(dir string, r *sip.Representation)) {
 	err := filepath.Walk(p.InDir, func(dir string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			return nil
@@ -141,7 +141,7 @@ func (p *Profile) eachDirectory(fn func(dir string, r *structure.Representation)
 	}
 }
 
-func (p *Profile) eachFile(dir, label string, fn func(r *structure.File)) {
+func (p *Profile) eachFile(dir, label string, fn func(r *sip.File)) {
 	err := filepath.Walk(dir, func(src string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -169,7 +169,7 @@ func (p *Profile) eachFile(dir, label string, fn func(r *structure.File)) {
 	}
 }
 
-func (p *Profile) generatePackagePremis(e *structure.Entity) *structure.File {
+func (p *Profile) generatePackagePremis(e *sip.Entity) *sip.File {
 	// TODO also account for sub-iE(s) tied to the root entity
 	path := fmt.Sprintf("%s/metadata/preservation/premis.xml", p.BaseDir)
 	f := createMetadataFile(path, func(w io.Writer) error {
@@ -182,7 +182,7 @@ func (p *Profile) generatePackagePremis(e *structure.Entity) *structure.File {
 	return f
 }
 
-func (p *Profile) generateRepresentationPremis(r *structure.Representation) *structure.File {
+func (p *Profile) generateRepresentationPremis(r *sip.Representation) *sip.File {
 	// path := fmt.Sprintf("%s/representations/%s/metadata/preservation/premis.xml", p.BaseDir, r.Label)
 
 	base := fmt.Sprintf("%s/representations/%s", p.BaseDir, r.Label)
@@ -197,7 +197,7 @@ func (p *Profile) generateRepresentationPremis(r *structure.Representation) *str
 	return f
 }
 
-func (p *Profile) generatePackageMets(pkg *structure.Package) *structure.File {
+func (p *Profile) generatePackageMets(pkg *sip.Package) *sip.File {
 	path := fmt.Sprintf("%s/mets.xml", p.BaseDir)
 	f := createMetadataFile(path, func(w io.Writer) error {
 		return mets.EncodePackage(w, pkg)
@@ -208,7 +208,7 @@ func (p *Profile) generatePackageMets(pkg *structure.Package) *structure.File {
 	return f
 }
 
-func (p *Profile) generateRepresentationMets(r *structure.Representation) *structure.File {
+func (p *Profile) generateRepresentationMets(r *sip.Representation) *sip.File {
 	path := fmt.Sprintf("%s/representations/%s/mets.xml", p.BaseDir, r.Label)
 	f := createMetadataFile(path, func(w io.Writer) error {
 		return mets.EncodeRepresentation(w, r)
@@ -219,7 +219,7 @@ func (p *Profile) generateRepresentationMets(r *structure.Representation) *struc
 	return f
 }
 
-func createMetadataFile(dest string, fn func(w io.Writer) error) *structure.File {
+func createMetadataFile(dest string, fn func(w io.Writer) error) *sip.File {
 	hash := md5.New()
 	var buf1, buf2 bytes.Buffer
 	w := io.MultiWriter(&buf1, &buf2)
@@ -258,7 +258,7 @@ func createMetadataFile(dest string, fn func(w io.Writer) error) *structure.File
 		panic(err)
 	}
 
-	file := structure.NewFile()
+	file := sip.NewFile()
 	file.Name = path.Base(dest)
 	file.Size = strconv.Itoa(int(info.Size()))
 	file.Checksum = hex.EncodeToString(hash.Sum(nil))

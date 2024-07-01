@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/samber/lo"
-	"github.com/ugent-library/sip-creator/structure"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 var idStore []string
@@ -30,7 +30,7 @@ var funcs = template.FuncMap{
 	"now": func() string {
 		return time.Now().Format(time.RFC3339Nano)
 	},
-	"joinIdentifiers": func(files []*structure.File) string {
+	"joinIdentifiers": func(files []*sip.File) string {
 		var tmp []string
 		for _, f := range files {
 			tmp = append(tmp, f.Identifier)
@@ -141,10 +141,10 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ end }}
 `))
 
-func EncodeRepresentation(w io.Writer, r *structure.Representation) error {
+func EncodeRepresentation(w io.Writer, r *sip.Representation) error {
 	return dc.ExecuteTemplate(w, "representation", r)
 }
 
-func EncodePackage(w io.Writer, p *structure.Package) error {
+func EncodePackage(w io.Writer, p *sip.Package) error {
 	return dc.ExecuteTemplate(w, "package", p)
 }

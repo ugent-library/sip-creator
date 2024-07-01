@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/ugent-library/sip-creator/structure"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 func (p *Profile) Basic() {
@@ -36,9 +36,9 @@ func (p *Profile) Basic() {
 	// Loop over all "representation_*" directories and parse them
 	//   in other profiles, we may require custom logic to hook a representation to a specific
 	//   sub-entity.
-	p.eachDirectory(func(dir string, r *structure.Representation) {
+	p.eachDirectory(func(dir string, r *sip.Representation) {
 		p.Logger.Info("created a representation", slog.Any("id", r.Identifier))
-		p.eachFile(dir, r.Label, func(f *structure.File) {
+		p.eachFile(dir, r.Label, func(f *sip.File) {
 			p.Logger.Info("placed an essence file", slog.Any("id", f.Identifier))
 			f.SetRepresentation(r)
 			r.AddFile(f)
@@ -56,7 +56,7 @@ func (p *Profile) Basic() {
 
 	// Step 2: Generate metadata files
 
-	pkg.Root.EachRepresentation(func(r *structure.Representation) error {
+	pkg.Root.EachRepresentation(func(r *sip.Representation) error {
 		pr := p.generateRepresentationPremis(r)
 		r.AddPremisFile(pr)
 		p.Logger.Info("created a representation PREMIS file", slog.Any("id", pr.Identifier))

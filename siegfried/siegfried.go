@@ -7,7 +7,7 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/ugent-library/sip-creator/structure"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 type siegfried struct {
@@ -62,7 +62,7 @@ func New(cmd string, args []string) *siegfried {
 	}
 }
 
-func (s *siegfried) Process(f string) *structure.File {
+func (s *siegfried) Process(f string) *sip.File {
 	var b bytes.Buffer
 
 	s.args = append(s.args, f)
@@ -77,16 +77,16 @@ func (s *siegfried) Process(f string) *structure.File {
 		panic(err)
 	}
 
-	file := structure.NewFile()
+	file := sip.NewFile()
 	file.Name = path.Base(f)
 
 	if sfile := out.FirstFile(); sfile != nil {
 		if match := sfile.FirstMatch(); match != nil {
-			fr := structure.NewFormatRegistry()
+			fr := sip.NewFormatRegistry()
 			fr.Key = match.ID
 			fr.Name = match.NS
 
-			file.Format = &structure.Format{
+			file.Format = &sip.Format{
 				FormatRegistry: fr,
 			}
 			file.Checksum = sfile.Checksum

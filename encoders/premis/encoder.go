@@ -4,7 +4,7 @@ import (
 	"io"
 	"text/template"
 
-	"github.com/ugent-library/sip-creator/structure"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 var funcs = template.FuncMap{}
@@ -139,10 +139,10 @@ var premis = template.Must(template.New("").Funcs(funcs).Parse(`
 {{- end }}
 `))
 
-func EncodeEntity(w io.Writer, e *structure.Entity) error {
+func EncodeEntity(w io.Writer, e *sip.Entity) error {
 	return premis.ExecuteTemplate(w, "entity", e)
 }
 
-func EncodeRepresentation(w io.Writer, r *structure.Representation) error {
+func EncodeRepresentation(w io.Writer, r *sip.Representation) error {
 	return premis.ExecuteTemplate(w, "representation", r)
 }
