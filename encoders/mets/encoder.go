@@ -55,7 +55,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	csip:OTHERCONTENTINFORMATIONTYPE="https://data.hetarchief.be/id/sip/1.0/basic"
 	xsi:schemaLocation="https://www.w3.org./1999/xlink http://www.loc.gov/standards/xlink/xlink.xsd http://www.loc.gov/METS/ https://www.loc.gov/standards/mets/mets.xsd https://DILCIS.eu/XML/METS/CSIPExtensionMETS https://earkcsip.dilcis.eu/schema/DILCISExtensionMETS.xsd https://DILCIS.eu/XML/METS/SIPExtensionMETS https://earksip.dilcis.eu/schema/DILCISExtensionSIPMETS.xsd">
 
-	<metsHdr CREATEDATE="{{ now }}" />
+	<metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP" />
 
 	{{ $provMDID := identifier -}}
     <amdSec>
@@ -100,7 +100,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	csip:OTHERCONTENTINFORMATIONTYPE="https://data.hetarchief.be/id/sip/1.0/basic"
 	xsi:schemaLocation="https://www.w3.org./1999/xlink http://www.loc.gov/standards/xlink/xlink.xsd http://www.loc.gov/METS/ https://www.loc.gov/standards/mets/mets.xsd https://DILCIS.eu/XML/METS/CSIPExtensionMETS https://earkcsip.dilcis.eu/schema/DILCISExtensionMETS.xsd https://DILCIS.eu/XML/METS/SIPExtensionMETS https://earksip.dilcis.eu/schema/DILCISExtensionSIPMETS.xsd">
 
-	<metsHdr CREATEDATE="{{ now }}" />
+	<metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP" />
 
 	<!-- ref to descriptive metadata about IE -->
 	{{ range .GetDescriptiveFiles -}}

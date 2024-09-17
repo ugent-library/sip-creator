@@ -202,7 +202,7 @@ func (p *Profile) generateRepresentationPremis(r *sip.Representation) *sip.File 
 }
 
 func (p *Profile) generatePackageMets(pkg *sip.Package) *sip.File {
-	path := fmt.Sprintf("%s/mets.xml", p.BaseDir)
+	path := fmt.Sprintf("%s/METS.xml", p.BaseDir)
 	f := createMetadataFile(path, func(w io.Writer) error {
 		return mets.EncodePackage(w, pkg)
 	})
@@ -213,7 +213,7 @@ func (p *Profile) generatePackageMets(pkg *sip.Package) *sip.File {
 }
 
 func (p *Profile) generateRepresentationMets(r *sip.Representation) *sip.File {
-	path := fmt.Sprintf("%s/representations/%s/mets.xml", p.BaseDir, r.Label)
+	path := fmt.Sprintf("%s/representations/%s/METS.xml", p.BaseDir, r.Label)
 	f := createMetadataFile(path, func(w io.Writer) error {
 		return mets.EncodeRepresentation(w, r)
 	})
