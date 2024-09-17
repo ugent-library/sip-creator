@@ -46,6 +46,12 @@ func New(config *Config) *Profile {
 
 func (p *Profile) createPackage() *sip.Package {
 	// Create skeleton
+	pkg := sip.NewPackage()
+
+	// @TODO replace BaseDir with a an aggregrate property which
+	//  concatenates BaseDir and package identifier
+	p.BaseDir = fmt.Sprintf("%s/%s", p.BaseDir, pkg.Identifier)
+
 	packageDirs := []string{
 		fmt.Sprintf("%s/metadata/descriptive", p.BaseDir),
 		fmt.Sprintf("%s/metadata/preservation", p.BaseDir),
@@ -57,7 +63,7 @@ func (p *Profile) createPackage() *sip.Package {
 	}
 
 	// Create a new package
-	return sip.NewPackage()
+	return pkg
 }
 
 func (p *Profile) createIntellectualEntity() *sip.Entity {
