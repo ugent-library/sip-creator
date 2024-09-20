@@ -108,7 +108,7 @@ func (p *Profile) createDescriptiveFile(src, dir string, fn func(d Description))
 		return metadata.Encode(w, d)
 	})
 
-	file.Path = fmt.Sprintf(".%s", dest[len(p.BaseDir):])
+	file.Path = fmt.Sprintf("%s", dest[len(p.BaseDir)+1:])
 
 	return file
 }
@@ -167,7 +167,7 @@ func (p *Profile) eachFile(dir, label string, fn func(r *sip.File)) {
 		// f := p.FileForm.Process(dest)
 		f := p.Formats.Process(dest)
 
-		f.Path = fmt.Sprintf(".%s", dest[len(base):])
+		f.Path = fmt.Sprintf("%s", dest[len(base)+1:])
 
 		fn(f)
 
@@ -187,7 +187,7 @@ func (p *Profile) generatePackagePremis(e *sip.Entity) *sip.File {
 	})
 
 	// Set the relative path within the package for METS
-	f.Path = fmt.Sprintf(".%s", path[len(p.BaseDir):])
+	f.Path = fmt.Sprintf("%s", path[len(p.BaseDir)+1:])
 
 	return f
 }
@@ -202,7 +202,7 @@ func (p *Profile) generateRepresentationPremis(r *sip.Representation) *sip.File 
 		return premis.EncodeRepresentation(w, r)
 	})
 
-	f.Path = fmt.Sprintf(".%s", path[len(base):])
+	f.Path = fmt.Sprintf("%s", path[len(base)+1:])
 
 	return f
 }
@@ -213,7 +213,7 @@ func (p *Profile) generatePackageMets(pkg *sip.Package) *sip.File {
 		return mets.EncodePackage(w, pkg)
 	})
 
-	f.Path = fmt.Sprintf(".%s", path[len(p.BaseDir):])
+	f.Path = fmt.Sprintf("%s", path[len(p.BaseDir)+1:])
 
 	return f
 }
@@ -224,7 +224,7 @@ func (p *Profile) generateRepresentationMets(r *sip.Representation) *sip.File {
 		return mets.EncodeRepresentation(w, r)
 	})
 
-	f.Path = fmt.Sprintf(".%s", path[len(p.BaseDir):])
+	f.Path = fmt.Sprintf("%s", path[len(p.BaseDir)+1:])
 
 	return f
 }
