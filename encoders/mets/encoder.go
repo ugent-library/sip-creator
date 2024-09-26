@@ -54,6 +54,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	xmlns:xlink="http://www.w3.org/1999/xlink" 
 	OBJID="{{ .Label }}"
 	TYPE="Photographs – Digital"
+	LABEL=""
 	PROFILE="https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml"
 	csip:CONTENTINFORMATIONTYPE="OTHER"
 	csip:OTHERCONTENTINFORMATIONTYPE="https://data.hetarchief.be/id/sip/2.0/basic"
@@ -63,7 +64,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 
 	{{ $provMDID := identifier -}}
     <amdSec>
-        <digiprovMD ID="{{ $provMDID }}">
+        <digiprovMD ID="{{ $provMDID }}" STATUS="CURRENT">
             <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .PremisFile.Path }}" MIMETYPE="text/xml" SIZE="{{ .PremisFile.Size }}" CREATED="{{ .PremisFile.Created }}" CHECKSUM="{{ .PremisFile.Checksum }}" CHECKSUMTYPE="MD5" />
         </digiprovMD>
     </amdSec>
@@ -83,7 +84,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
         <div ID="{{ identifier }}" LABEL="{{ .Label }}">
             <div ID="{{ identifier }}" LABEL="Metadata" 
                 ADMID="{{ $provMDID }}" />
-            <div ID="{{ identifier }}" LABEL="Representations">
+            <div ID="{{ identifier }}" LABEL="Data">
                 <fptr FILEID="{{ $fileGrpID }}" />
             </div>
         </div>
@@ -100,6 +101,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	xmlns:xlink="http://www.w3.org/1999/xlink" 
 	OBJID="{{ $OBJID }}"
+	LABEL=""
 	TYPE="Photographs – Digital"
 	PROFILE="https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml"
 	csip:CONTENTINFORMATIONTYPE="OTHER"
@@ -118,14 +120,14 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 
 	<!-- ref to descriptive metadata about IE -->
 	{{ range .GetDescriptiveFiles -}}
-    <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}">
+    <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
         <mdRef LOCTYPE="URL" MDTYPE="DC" xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="text/xml" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
     </dmdSec>
 	{{- end }}
 
 	<!-- ref to the PREMIS metadata about IE/subIE(s)/package -->
     <amdSec>
-        <digiprovMD ID="{{ .PremisFile.Identifier }}" STATUS="new">
+        <digiprovMD ID="{{ .PremisFile.Identifier }}" STATUS="CURRENT">
             <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .PremisFile.Path }}" MIMETYPE="text/xml" SIZE="{{ .PremisFile.Size }}" CREATED="{{ .PremisFile.Created }}" CHECKSUM="{{ .PremisFile.Checksum }}" CHECKSUMTYPE="MD5" />
         </digiprovMD>
     </amdSec>
