@@ -4,8 +4,10 @@ import (
 	"errors"
 
 	"github.com/spf13/cobra"
+	"github.com/ugent-library/sip-creator/archive"
 	"github.com/ugent-library/sip-creator/formats"
 	"github.com/ugent-library/sip-creator/profiles"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 func init() {
@@ -32,11 +34,22 @@ var createCmd = &cobra.Command{
 			Formats:     ffid,
 		})
 
+		archive := archive.New(&archive.Config{
+			Destination: args[1],
+			Logger:      logger,
+		})
+
+		var pkg *sip.Package
+
 		switch flagProfile {
 		case "basic":
-			profile.Basic()
+			pkg = profile.Basic()
 		default:
 			return errors.New("no sip profile was set")
+		}
+
+		if pkg != nil {
+			archive.Zip(pkg)
 		}
 
 		return nil

@@ -47,17 +47,16 @@ func New(config *Config) *Profile {
 
 func (p *Profile) createPackage() *sip.Package {
 	// Create skeleton
-	pkg := sip.NewPackage()
+	pkg := sip.NewPackage(p.BaseDir)
 
-	// @TODO replace BaseDir with a an aggregrate property which
-	//  concatenates BaseDir and package identifier
+	// @TODO Better path handling
 	p.BaseDir = fmt.Sprintf("%s/%s", p.BaseDir, pkg.Identifier)
 
 	packageDirs := []string{
-		fmt.Sprintf("%s/metadata/descriptive", p.BaseDir),
-		fmt.Sprintf("%s/metadata/preservation", p.BaseDir),
-		fmt.Sprintf("%s/representations", p.BaseDir),
-		fmt.Sprintf("%s/schemas", p.BaseDir),
+		fmt.Sprintf("%s/metadata/descriptive", pkg.Location),
+		fmt.Sprintf("%s/metadata/preservation", pkg.Location),
+		fmt.Sprintf("%s/representations", pkg.Location),
+		fmt.Sprintf("%s/schemas", pkg.Location),
 	}
 
 	for _, pd := range packageDirs {
@@ -65,7 +64,7 @@ func (p *Profile) createPackage() *sip.Package {
 	}
 
 	// Create schema files
-	files := p.createSchemaFiles(fmt.Sprintf("%s/schemas", p.BaseDir))
+	files := p.createSchemaFiles(fmt.Sprintf("%s/schemas", pkg.Location))
 	pkg.AddSchemaFiles(files)
 
 	// Create a new package

@@ -7,12 +7,14 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-func (p *Profile) Basic() {
+func (p *Profile) Basic() *sip.Package {
 	p.Logger.Info("starting...")
 	// Step 1: Compose and parse input
 
 	// Create skeleton
 	pkg := p.createPackage()
+
+	p.Logger.Info("created a new package", slog.Any("id", pkg.Identifier))
 
 	// Create an entity & associate with a description file
 	e := p.createIntellectualEntity()
@@ -77,4 +79,6 @@ func (p *Profile) Basic() {
 	p.Logger.Info("created a package METS file", slog.Any("id", mts.Identifier))
 
 	p.Logger.Info("finished.")
+
+	return pkg
 }

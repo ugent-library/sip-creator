@@ -7,6 +7,7 @@ import (
 )
 
 type Package struct {
+	Location                string
 	Identifier              string
 	Root                    *Entity
 	PremisFile              *File
@@ -49,8 +50,10 @@ func (p *Package) GetDescriptiveFiles() []*File {
 	return tmp
 }
 
-func NewPackage() *Package {
+func NewPackage(baseDir string) *Package {
+	identifier := fmt.Sprintf("uuid-%s", uuid.New().String())
 	return &Package{
-		Identifier: fmt.Sprintf("uuid-%s", uuid.New().String()),
+		Identifier: identifier,
+		Location:   fmt.Sprintf("%s/%s", baseDir, identifier),
 	}
 }
