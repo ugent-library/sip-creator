@@ -38,7 +38,7 @@ func (p *Profile) Basic() {
 	//   sub-entity.
 	p.eachDirectory(func(dir string, r *sip.Representation) {
 		p.Logger.Info("created a representation", slog.Any("id", r.Identifier))
-		p.eachFile(dir, r.Label, func(f *sip.File) {
+		p.eachEssenceFile(dir, r.Label, func(f *sip.File) {
 			p.Logger.Info("placed an essence file", slog.Any("id", f.Identifier))
 			f.SetRepresentation(r)
 			r.AddFile(f)

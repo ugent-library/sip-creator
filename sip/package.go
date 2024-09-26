@@ -13,6 +13,7 @@ type Package struct {
 	MetsFile                *File
 	DescriptiveFiles        []*File
 	RepresentationMetsFiles []*File
+	SchemaFiles             []*File
 }
 
 func (p *Package) AddRootEntity(e *Entity) {
@@ -25,6 +26,10 @@ func (p *Package) AddPremisFile(f *File) {
 
 func (p *Package) AddMetsFile(f *File) {
 	p.MetsFile = f
+}
+
+func (p *Package) AddSchemaFiles(files []*File) {
+	p.SchemaFiles = files
 }
 
 func (p *Package) GetDescriptiveFiles() []*File {

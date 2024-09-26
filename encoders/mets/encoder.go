@@ -56,8 +56,8 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	TYPE="Photographs – Digital"
 	PROFILE="https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml"
 	csip:CONTENTINFORMATIONTYPE="OTHER"
-	csip:OTHERCONTENTINFORMATIONTYPE="https://data.hetarchief.be/id/sip/1.0/basic"
-	xsi:schemaLocation="https://www.w3.org./1999/xlink http://www.loc.gov/standards/xlink/xlink.xsd http://www.loc.gov/METS/ https://www.loc.gov/standards/mets/mets.xsd https://DILCIS.eu/XML/METS/CSIPExtensionMETS https://earkcsip.dilcis.eu/schema/DILCISExtensionMETS.xsd https://DILCIS.eu/XML/METS/SIPExtensionMETS https://earksip.dilcis.eu/schema/DILCISExtensionSIPMETS.xsd">
+	csip:OTHERCONTENTINFORMATIONTYPE="https://data.hetarchief.be/id/sip/2.0/basic"
+	xsi:schemaLocation="http://www.loc.gov/METS/ ../../schemas/mets1_12.xsd http://www.w3.org/1999/xlink ../../schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS ../../schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS ../../schemas/DILCISExtensionSIPMETS.xsd">
 
 	<metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP" />
 
@@ -92,6 +92,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ end}}
 {{ define "package" -}}
 {{ $OBJID := .Identifier -}}
+{{ $SCHEMAID := identifier -}}
 <?xml version='1.0' encoding='UTF-8'?>
 <mets xmlns="http://www.loc.gov/METS/" 
 	xmlns:csip="https://DILCIS.eu/XML/METS/CSIPExtensionMETS" 
@@ -102,8 +103,8 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	TYPE="Photographs – Digital"
 	PROFILE="https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml"
 	csip:CONTENTINFORMATIONTYPE="OTHER"
-	csip:OTHERCONTENTINFORMATIONTYPE="https://data.hetarchief.be/id/sip/1.0/basic"
-	xsi:schemaLocation="https://www.w3.org./1999/xlink http://www.loc.gov/standards/xlink/xlink.xsd http://www.loc.gov/METS/ https://www.loc.gov/standards/mets/mets.xsd https://DILCIS.eu/XML/METS/CSIPExtensionMETS https://earkcsip.dilcis.eu/schema/DILCISExtensionMETS.xsd https://DILCIS.eu/XML/METS/SIPExtensionMETS https://earksip.dilcis.eu/schema/DILCISExtensionSIPMETS.xsd">
+	csip:OTHERCONTENTINFORMATIONTYPE="https://data.hetarchief.be/id/sip/2.0/basic"
+ 	xsi:schemaLocation="http://www.loc.gov/METS/ schemas/mets1_12.xsd http://www.w3.org/1999/xlink schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS schemas/DILCISExtensionSIPMETS.xsd">
 
 	<metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP">
 		<agent ROLE="CREATOR" TYPE="OTHER" OTHERTYPE="SOFTWARE">
@@ -131,8 +132,15 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 
     <!-- file section -->
     <fileSec ID="{{ identifier }}">
+		<fileGrp ID="{{ $SCHEMAID }}" USE="Schemas">
+			{{ range .SchemaFiles -}}
+			<file ID="{{ .Identifier }}" MIMETYPE="application/octet-stream" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
+				<FLocat xlink:type="simple" xlink:href="{{ .Path }}" LOCTYPE="URL"/>
+			</file>
+			{{ end}}
+		</fileGrp>
 		{{ range .Root.Representations -}}
-        <fileGrp USE="Representations/{{ .Label }}" ID="{{ .Identifier }}">
+        <fileGrp ID="{{ .Identifier }}" USE="Representations/{{ .Label }}">
             <file ID="{{ .MetsFile.Identifier }}" MIMETYPE="text/xml" SIZE="{{ .MetsFile.Size }}" CREATED="{{ .MetsFile.Created }}" CHECKSUM="{{ .MetsFile.Checksum }}" CHECKSUMTYPE="MD5">
                 <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .MetsFile.Path }}"/>
             </file>
@@ -143,6 +151,9 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
     <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
         <div ID="{{ identifier }}" LABEL="{{ $OBJID }}">
             <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ .Root.DescriptionFile.Identifier }}" ADMID="{{ .PremisFile.Identifier }}"/>
+            <div ID="{{ identifier }}" LABEL="Schemas">
+                <fptr FILEID="{{ $SCHEMAID }}"/>
+            </div>
 			{{ range .Root.Representations -}}
 			<div ID="{{ identifier }}" LABEL="Representations/{{ .Label }}">
 				<mptr xlink:type="simple" xlink:href="{{ .MetsFile.Path }}" LOCTYPE="URL" xlink:title="{{ .Identifier }}" />

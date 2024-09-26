@@ -10,12 +10,13 @@ var funcs = template.FuncMap{}
 var md = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ define "descriptive" -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<metadata xmlns="https://data.hetarchief.be/id/sip/1.0/basic" 
+<metadata xmlns="https://data.hetarchief.be/id/sip/2.0/basic" 
 	xmlns:dcterms="http://purl.org/dc/terms/" 
 	xmlns:xs="http://www.w3.org/2001/XMLSchema/" 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	xmlns:edtf="http://id.loc.gov/datatypes/edtf/"
-	xmlns:schema="https://schema.org/">
+	xmlns:schema="https://schema.org/"
+	xsi:schemaLocation="https://data.hetarchief.be/id/sip/2.0/basic ../../schemas/descriptive_basic.xsd">
 
 	<!-- linking id between dc and premis -->
 	<dcterms:identifier>{{ .Identifier }}</dcterms:identifier>
