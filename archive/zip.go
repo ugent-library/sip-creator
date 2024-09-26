@@ -55,7 +55,12 @@ func (a *Archive) Zip(pkg *sip.Package) {
 		}
 		defer file.Close()
 
-		f, err := w.Create(path[len(a.BaseDir)+1:])
+		// Don't use any compression by setting Method to zip.Store
+		f, err := w.CreateHeader(&zip.FileHeader{
+			Name:   path[len(a.BaseDir)+1:],
+			Method: zip.Store,
+		})
+
 		if err != nil {
 			return err
 		}
