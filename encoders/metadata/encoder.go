@@ -8,7 +8,7 @@ import (
 var funcs = template.FuncMap{}
 
 var md = template.Must(template.New("").Funcs(funcs).Parse(`
-{{ define "descriptive" -}}
+{{ define "dc+schema" -}}
 <?xml version='1.0' encoding='UTF-8'?>
 <metadata xmlns="https://data.hetarchief.be/id/sip/2.0/basic" 
 	xmlns:dcterms="http://purl.org/dc/terms/" 
@@ -18,7 +18,6 @@ var md = template.Must(template.New("").Funcs(funcs).Parse(`
 	xmlns:schema="https://schema.org/"
 	xsi:schemaLocation="https://data.hetarchief.be/id/sip/2.0/basic ../../schemas/descriptive_basic.xsd">
 
-	<!-- linking id between dc and premis -->
 	<dcterms:identifier>{{ .Identifier }}</dcterms:identifier>
 	
 	{{- if .Title }}
@@ -55,20 +54,20 @@ var md = template.Must(template.New("").Funcs(funcs).Parse(`
 	<dcterms:issued xsi:type="edtf:EDTF-level1">{{ .Issued }}</dcterms:issued>
 	{{- end }}
 
-	{{- if .DublinCore.Creator }}
-	{{ range .DublinCore.Creator }}
+	{{- if .DublinCoreTerms.Creator }}
+	{{ range .DublinCoreTerms.Creator }}
 	<dcterms:creator>{{ . }}</dcterms:creator>
 	{{ end }}
 	{{- end}}	
 
-	{{- if .DublinCore.Publisher }}
-	{{ range .DublinCore.Publisher }}
+	{{- if .DublinCoreTerms.Publisher }}
+	{{ range .DublinCoreTerms.Publisher }}
 	<dcterms:publisher>{{ . }}</dcterms:publisher>
 	{{ end }}
 	{{- end}}
 
-	{{- if .DublinCore.Contributor }}
-	{{ range .DublinCore.Contributor }}
+	{{- if .DublinCoreTerms.Contributor }}
+	{{ range .DublinCoreTerms.Contributor }}
 	<dcterms:contributor>{{ . }}</dcterms:contributor>
 	{{ end }}
 	{{- end }}
@@ -118,8 +117,86 @@ var md = template.Must(template.New("").Funcs(funcs).Parse(`
 	{{- end }}
 </metadata>
 {{ end}}
+{{ define "dc" -}}
+<?xml version='1.0' encoding='UTF-8'?>
+<simpledc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="../../schemas/dc.xsd">
+
+	<identifier>{{ .Identifier }}</identifier>
+	
+	{{- if .Title }}
+	<title>{{ .Title.Value }}</title>
+	{{- end }}
+
+	{{- if .DublinCore.Creator }}
+	{{ range .DublinCore.Creator }}
+	<creator>{{ . }}</creator>
+	{{ end }}
+	{{- end}}
+
+	{{- if .Subject }}
+	{{ range .Subject }}
+	<subject>{{ .Subject.Value }}</subject>
+	{{ end }}
+	{{- end }}
+	
+	{{- if .Description }}
+	<description>{{ .Description.Value }}</description>
+	{{- end }}
+
+	{{- if .DublinCore.Publisher }}
+	{{ range .DublinCore.Publisher }}
+	<publisher>{{ . }}</publisher>
+	{{ end }}
+	{{- end}}
+	
+	{{- if .DublinCore.Contributor }}
+	{{ range .DublinCore.Contributor }}
+	<contributor>{{ . }}</contributor>
+	{{ end }}
+	{{- end }}
+
+	{{- if .Date }}
+	<dated>{{ .Date }}</dated>
+	{{- end }}
+
+	{{- if .Type }}
+	{{ range .Type }}
+	<type>{{ . }}</type>
+	{{ end }}
+	{{- end }}
+
+	{{- if .Format }}
+	<format>{{ . }}</format>
+	{{- end }}
+
+	{{- if .Source }}
+	<source>{{ . }}</source>
+	{{- end }}
+
+	{{- if .Language }}
+	{{ range .Language }}
+	<language>{{ . }}</language>
+	{{ end }}
+	{{- end }}
+
+	{{- if .Relation }}
+	{{ range .Relation }}
+	<relation>{{ . }}</relation>
+	{{ end }}
+	{{- end }}
+
+	{{- if .Coverage }}
+	<coverage>{{ . }}</coverage>
+	{{- end }}
+
+	{{- if .Rights }}
+	<rights>{{ .Rights }}</rights>
+	{{- end }}
+</simpledc>
+{{ end}}
 `))
 
 func Encode(w io.Writer, d *Description) error {
-	return md.ExecuteTemplate(w, "descriptive", d)
+	return md.ExecuteTemplate(w, "dc+schema", d)
 }

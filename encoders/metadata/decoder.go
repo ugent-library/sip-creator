@@ -7,14 +7,15 @@ import (
 
 type Description struct {
 	Identifier string
-	DublinCore
+	// DublinCore
+	DublinCoreTerms
 	Schema
 }
 
 func (d *Description) GetLocalIdentifier(scheme string) string {
 	switch scheme {
 	case "dcterms":
-		return d.DublinCore.Identifier
+		return d.DublinCoreTerms.Identifier
 	}
 
 	return ""
@@ -24,7 +25,25 @@ func (d *Description) SetObjectIdentifier(id string) {
 	d.Identifier = id
 }
 
-type DublinCore struct {
+// type DublinCore struct {
+// 	Title       Text     `json:"title"`
+// 	Creator     []string `json:"creator"`
+// 	Subject     []Text   `json:"subject"`
+// 	Description Text     `json:"description"`
+// 	Publisher   []string `json:"publisher"`
+// 	Contributor []string `json:"contributor"`
+// 	Date        string   `json:"date"`
+// 	Type        []string `json:"type"`
+// 	Format      string   `json:"format"`
+// 	Identifier  string   `json:"identifier"`
+// 	Source      string   `json:"source"`
+// 	Language    Text     `json:"language"`
+// 	Relation    []string `json:"relation"`
+// 	Coverage    string   `json:"coverage"`
+// 	Rights      string   `json:"rights"`
+// }
+
+type DublinCoreTerms struct {
 	Title        Text     `json:"dcterms:title"`
 	Alternative  []string `json:"dcterms:alternative"`
 	Identifier   string   `json:"dcterms:identifier"`
