@@ -220,11 +220,14 @@ function verdictBadge(result) {
   return `<span class="badge ${cls}"><span class="dot">${dot}</span>${esc(result)}</span>`;
 }
 
+// commons-ip counts a MUST-level failure as an error (package INVALID) and a
+// SHOULD-level failure as a warning; the badge says which, matching the tiles.
 function outcomeBadge(check) {
   const { outcome } = check.testing;
   if (outcome === "FAILED") {
-    const cls = check.level === "MUST" ? "failed" : "failed-should";
-    return `<span class="badge ${cls}"><span class="dot">✕</span>FAILED</span>`;
+    return check.level === "MUST"
+      ? '<span class="badge failed"><span class="dot">✕</span>FAILED</span>'
+      : '<span class="badge failed-should"><span class="dot">!</span>WARNING</span>';
   }
   if (outcome === "SKIPPED") {
     return '<span class="badge skipped"><span class="dot">–</span>SKIPPED</span>';
@@ -241,8 +244,8 @@ function specUrl(id) {
 
 const FILTERS = {
   all: { label: "All", match: () => true },
-  failed: { label: "Failed", match: (c) => c.testing.outcome === "FAILED" },
-  must: { label: "MUST only", match: (c) => c.level === "MUST" },
+  errors: { label: "Errors", match: (c) => c.testing.outcome === "FAILED" && c.level === "MUST" },
+  warnings: { label: "Warnings", match: (c) => c.testing.outcome === "FAILED" && c.level !== "MUST" },
   skipped: { label: "Skipped", match: (c) => c.testing.outcome === "SKIPPED" },
 };
 
@@ -313,8 +316,9 @@ function renderPackage(container, pkg, report) {
 
   const tbody = section.querySelector("tbody");
   const filtersEl = section.querySelector(".filters");
-  const anyFailed = report.validation.some((c) => c.testing.outcome === "FAILED");
-  let active = anyFailed ? "failed" : "all";
+  let active = "all";
+  if (report.validation.some(FILTERS.errors.match)) active = "errors";
+  else if (report.validation.some(FILTERS.warnings.match)) active = "warnings";
 
   function draw() {
     filtersEl.innerHTML = Object.entries(FILTERS)
