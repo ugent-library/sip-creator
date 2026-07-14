@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIP Creator — CSIP validation reports</title>
+<style>
+  :root {
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --hairline: #e1e0d9;
+    --border: rgba(11, 11, 11, 0.10);
+    --good: #006300;
+    --good-badge: #0ca30c;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --hairline: #2c2c2a;
+      --border: rgba(255, 255, 255, 0.10);
+      --good: #0ca30c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    padding: 20px 28px 12px;
+  }
+  header h1 { margin: 0; font-size: 20px; font-weight: 600; }
+  header p { margin: 4px 0 0; color: var(--ink-2); font-size: 13px; }
+  .layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 8px 28px 40px;
+    flex-wrap: wrap;
+  }
+  nav.runs { flex: 0 0 300px; max-width: 100%; }
+  main { flex: 1 1 480px; min-width: 0; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  nav.runs .card { padding: 6px; }
+  nav.runs h2 {
+    margin: 0;
+    padding: 8px 10px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .run-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+  .run-item:hover { background: var(--hairline); }
+  .run-item.selected { background: var(--hairline); }
+  .run-item .when { font-weight: 600; font-size: 14px; }
+  .run-item .meta { color: var(--ink-2); font-size: 12.5px; margin-top: 1px; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 1px 9px 1px 7px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .badge .dot { font-size: 12px; line-height: 1; }
+  .badge.valid .dot { color: var(--good-badge); }
+  .badge.invalid .dot, .badge.error .dot { color: var(--critical); }
+  .badge.failed .dot { color: var(--critical); }
+  .badge.failed-should .dot { color: var(--serious); }
+  .badge.passed .dot { color: var(--good-badge); }
+  .badge.skipped .dot { color: var(--muted); }
+  section.package { padding: 18px 20px 8px; margin-bottom: 20px; }
+  section.package > h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    word-break: break-all;
+  }
+  .provenance { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; }
+  .tiles {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .tile {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    min-width: 92px;
+  }
+  .tile .label { font-size: 12px; color: var(--ink-2); }
+  .tile .value { font-size: 24px; font-weight: 600; }
+  .tile.errors .value { color: var(--critical); }
+  .tile.errors.zero .value { color: var(--good); }
+  .filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 0 0 10px;
+  }
+  .filters button {
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink-2);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 12px;
+    cursor: pointer;
+  }
+  .filters button:hover { background: var(--hairline); }
+  .filters button.active {
+    color: var(--ink);
+    font-weight: 600;
+    background: var(--hairline);
+  }
+  .table-wrap { overflow-x: auto; margin: 0 -20px; padding: 0 20px 14px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--hairline);
+    white-space: nowrap;
+  }
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--hairline);
+    vertical-align: top;
+  }
+  tr.check { cursor: pointer; }
+  tr.check:hover td { background: var(--hairline); }
+  td.id { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.id a { color: inherit; text-decoration: underline; text-decoration-color: var(--muted); }
+  td.level { color: var(--ink-2); white-space: nowrap; }
+  tr.detail td {
+    background: var(--page);
+    color: var(--ink-2);
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+  tr.detail .description { margin: 0 0 6px; max-width: 72ch; }
+  tr.detail ul { margin: 0; padding-left: 18px; }
+  tr.detail li { margin: 2px 0; word-break: break-word; }
+  .empty { color: var(--muted); padding: 20px; }
+  footer { padding: 0 28px 28px; color: var(--muted); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>SIP Creator — CSIP validation reports</h1>
+  <p>commons-ip conformance checks per generated package; newest run first.</p>
+</header>
+<div class="layout">
+  <nav class="runs"><div class="card" id="run-list"><h2>Runs</h2></div></nav>
+  <main id="main"><div class="card empty">Loading…</div></main>
+</div>
+<footer>Report data from <code>commons-ip</code> (<code>validate</code>); check ids link to the E-ARK specifications.</footer>
+<script>
+"use strict";
+
+const runListEl = document.getElementById("run-list");
+const mainEl = document.getElementById("main");
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+}[c]));
+
+// Run ids are UTC timestamps like 20260714T101500Z.
+function formatRunId(id) {
+  const m = id.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+  if (!m) return id;
+  return `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6]} UTC`;
+}
+
+function verdictBadge(result) {
+  const cls = { VALID: "valid", INVALID: "invalid" }[result] || "error";
+  const dot = result === "VALID" ? "✓" : "✕";
+  return `<span class="badge ${cls}"><span class="dot">${dot}</span>${esc(result)}</span>`;
+}
+
+function outcomeBadge(check) {
+  const { outcome } = check.testing;
+  if (outcome === "FAILED") {
+    const cls = check.level === "MUST" ? "failed" : "failed-should";
+    return `<span class="badge ${cls}"><span class="dot">✕</span>FAILED</span>`;
+  }
+  if (outcome === "SKIPPED") {
+    return '<span class="badge skipped"><span class="dot">–</span>SKIPPED</span>';
+  }
+  return '<span class="badge passed"><span class="dot">✓</span>PASSED</span>';
+}
+
+function specUrl(id) {
+  if (id.startsWith("CSIP")) return `https://earkcsip.dilcis.eu/#${id}`;
+  if (id.startsWith("SIP")) return `https://earksip.dilcis.eu/#${id}`;
+  if (id.startsWith("AIP")) return `https://earkaip.dilcis.eu/#${id}`;
+  return null;
+}
+
+const FILTERS = {
+  all: { label: "All", match: () => true },
+  failed: { label: "Failed", match: (c) => c.testing.outcome === "FAILED" },
+  must: { label: "MUST only", match: (c) => c.level === "MUST" },
+  skipped: { label: "Skipped", match: (c) => c.testing.outcome === "SKIPPED" },
+};
+
+function tile(label, value, extraClass = "") {
+  return `<div class="tile ${extraClass}">
+    <div class="label">${esc(label)}</div>
+    <div class="value">${esc(value)}</div>
+  </div>`;
+}
+
+function checkRows(checks, filterKey, idPrefix) {
+  const shown = checks.filter(FILTERS[filterKey].match);
+  if (!shown.length) return `<tr><td colspan="4" class="empty">No checks match this filter.</td></tr>`;
+  // FAILED rows first so the reason a package is INVALID is never below the fold.
+  const rank = (c) => (c.testing.outcome === "FAILED" ? (c.level === "MUST" ? 0 : 1) : 2);
+  return shown
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i)
+    .map(({ c, i }) => {
+      const url = specUrl(c.id);
+      const idCell = url
+        ? `<a href="${url}" target="_blank" rel="noopener">${esc(c.id)}</a>`
+        : esc(c.id);
+      const messages = [...c.testing.issues, ...c.testing.warnings, ...c.testing.notes];
+      const detail = `
+        <p class="description">${esc(c.description)}</p>
+        ${messages.length ? `<ul>${messages.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>` : ""}`;
+      return `
+        <tr class="check" data-detail="${idPrefix}-${i}">
+          <td>${outcomeBadge(c)}</td>
+          <td class="level">${esc(c.level)}</td>
+          <td class="id">${idCell}</td>
+          <td>${esc(c.name)}</td>
+        </tr>
+        <tr class="detail" id="${idPrefix}-${i}" hidden><td colspan="4">${detail}</td></tr>`;
+    })
+    .join("");
+}
+
+let packageSeq = 0;
+
+function renderPackage(container, pkg, report) {
+  const s = report.summary;
+  const idPrefix = `pkg${packageSeq++}`;
+  const section = document.createElement("section");
+  section.className = "package card";
+  section.innerHTML = `
+    <h2>${esc(pkg.package)} ${verdictBadge(s.result)}</h2>
+    <p class="provenance">
+      commons-ip ${esc(report.header.version_commons_ip)}
+      · ${report.header.specifications.map((x) => esc(x.id)).join(", ")}
+      · ${esc(report.header.date)}
+    </p>
+    <div class="tiles">
+      ${tile("Errors (MUST failed)", s.errors, s.errors > 0 ? "errors" : "errors zero")}
+      ${tile("Warnings", s.warnings)}
+      ${tile("Passed", s.success)}
+      ${tile("Skipped", s.skipped)}
+      ${tile("Notes", s.notes)}
+    </div>
+    <div class="filters"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Outcome</th><th>Level</th><th>Check</th><th>Name</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>`;
+
+  const tbody = section.querySelector("tbody");
+  const filtersEl = section.querySelector(".filters");
+  const anyFailed = report.validation.some((c) => c.testing.outcome === "FAILED");
+  let active = anyFailed ? "failed" : "all";
+
+  function draw() {
+    filtersEl.innerHTML = Object.entries(FILTERS)
+      .map(([key, f]) =>
+        `<button class="${key === active ? "active" : ""}" data-filter="${key}">${f.label}</button>`)
+      .join("");
+    tbody.innerHTML = checkRows(report.validation, active, idPrefix);
+  }
+  filtersEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-filter]");
+    if (!btn) return;
+    active = btn.dataset.filter;
+    draw();
+  });
+  tbody.addEventListener("click", (e) => {
+    if (e.target.closest("a")) return;
+    const row = e.target.closest("tr.check");
+    if (!row) return;
+    const detail = section.querySelector(`#${row.dataset.detail}`);
+    detail.hidden = !detail.hidden;
+  });
+  draw();
+  container.appendChild(section);
+}
+
+async function showRun(run) {
+  document.querySelectorAll(".run-item").forEach((el) =>
+    el.classList.toggle("selected", el.dataset.run === run.run));
+  mainEl.innerHTML = "";
+  for (const pkg of run.packages) {
+    try {
+      const res = await fetch(`runs/${run.run}/${pkg.report_file}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      renderPackage(mainEl, pkg, await res.json());
+    } catch (err) {
+      const div = document.createElement("div");
+      div.className = "card empty";
+      div.textContent = `Could not load ${pkg.report_file}: ${err.message}`;
+      mainEl.appendChild(div);
+    }
+  }
+}
+
+function runVerdict(run) {
+  const results = run.packages.map((p) => p.result);
+  if (results.every((r) => r === "VALID")) return "VALID";
+  return results.includes("INVALID") ? "INVALID" : "ERROR";
+}
+
+async function init() {
+  let runs;
+  try {
+    const res = await fetch("runs.json");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    runs = await res.json();
+  } catch (err) {
+    mainEl.innerHTML = `<div class="card empty">Could not load runs.json (${esc(err.message)}). Run ./build.sh to publish a first report.</div>`;
+    return;
+  }
+  if (!runs.length) {
+    mainEl.innerHTML = '<div class="card empty">No validation runs published yet. Run ./build.sh.</div>';
+    return;
+  }
+  for (const run of runs) {
+    const errors = run.packages.reduce((n, p) => n + p.errors, 0);
+    const warnings = run.packages.reduce((n, p) => n + p.warnings, 0);
+    const btn = document.createElement("button");
+    btn.className = "run-item";
+    btn.dataset.run = run.run;
+    btn.innerHTML = `
+      <div class="when">${esc(formatRunId(run.run))}</div>
+      <div class="meta">${verdictBadge(runVerdict(run))}
+        ${run.packages.length} package(s) · ${errors} error(s) · ${warnings} warning(s)</div>`;
+    btn.addEventListener("click", () => showRun(run));
+    runListEl.appendChild(btn);
+  }
+  showRun(runs[0]);
+}
+
+init();
+</script>
+</body>
+</html>
