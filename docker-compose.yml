@@ -1,0 +1,17 @@
+# Local CI services (see docs/decisions/0005-dockerized-validation-and-html-reporting.md).
+#
+#   validator — commons-ip CLI; not a long-running service. scripts/validate.sh
+#               invokes it with `docker compose run --rm` and per-run volume mounts.
+#   reports   — nginx serving the generated validation reports.
+#               Start once with `docker compose up -d reports`, browse http://localhost:8080.
+services:
+  validator:
+    build: docker/validator
+    profiles: [tools]
+
+  reports:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./reports:/usr/share/nginx/html:ro
