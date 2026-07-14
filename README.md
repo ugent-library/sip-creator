@@ -18,11 +18,8 @@ Create Submission Information Packages (SIP) based on [Meemoo's SIP Specificatio
 
 ## Configuration
 
-Create a `.env` file with these variables:
-
-- `SIP_FILE_FORMAT_NAME` (**required**, non-empty) - The name of the format identification tool (Valid values: `siegfried`)
-- `SIP_FILE_FORMAT_COMMAND` (**required**, non-empty) - The location of the binary of of the format identification tool on your system.
-- `SIP_FILE_FORMAT_ARGS` (**required**, non-empty) -  Extra arguments passed to the format identification tool.
+Create a `.env` file (start from `.env.example`) if non exists. All environment variables are documented in [CONFIG.md](CONFIG.md), which is generated from the config struct — regenerate it with
+`go generate ./services` rather than editing it by hand.
 
 **Siegfried**
 
@@ -44,6 +41,12 @@ go build
 ./sip-creator create --profile basic ./tmp/basic basic-uuid
 ```
 
+This writes the package directory `basic-uuid/uuid-<uuid>/` and zips it (uncompressed) to
+`basic-uuid/uuid-<uuid>.zip` — the zip is the deliverable meemoo ingests.
+
+For the full development loop (regenerate the sample SIP and validate it with
+commons-ip), run `./build.sh`. It requires `csip`, `jq`, and `catmandu` on the PATH.
+
 ## Input
 
 The input needs to adhere to these requirements:
@@ -55,5 +58,13 @@ The input needs to adhere to these requirements:
   * The `@context` property refers to these two ontologies:
     * `dcterms`: `http://purl.org/dc/terms/`
     * `schema`: `http://schema.org/`
-* There must be exactly one directory called `representation_1`. 
-  * There must be at least one file in the `representation_1 ` directory.
+* There must be one or more representation directories named `representation_N`
+  (`representation_1`, `representation_2`, …), each holding at least one essence file.
+  Directories not matching that name pattern are currently skipped silently.
+
+## Documentation
+
+[docs/](docs/) holds the project documentation: [docs/sip-creator-design.md](docs/sip-creator-design.md)
+describes the system as it is today, [docs/decisions/](docs/decisions/) records why key
+choices were made, and [docs/TODO.md](docs/TODO.md) is the live backlog. Start with
+[docs/README.md](docs/README.md) for how it all fits together.

@@ -8,15 +8,23 @@ import (
 
 // Application config
 type Config struct {
+	// Format identification tool (see formats/).
 	Formats struct {
-		Name    string `env:"NAME,notEmpty"`
+		// Name of the format identification tool. Valid values: siegfried.
+		Name string `env:"NAME,notEmpty"`
+		// Path to the tool's binary on this system.
 		Command string `env:"COMMAND,notEmpty"`
-		Args    string `env:"ARGS,notEmpty"`
+		// Extra arguments passed to the tool (e.g. "-hash md5 -json" for siegfried).
+		Args string `env:"ARGS,notEmpty"`
 	} `envPrefix:"SIP_FILE_FORMAT_"`
+	// Build provenance, stamped by the deployment environment. Unused by the CLI itself.
 	Version struct {
+		// Git branch this build was made from.
 		Branch string `env:"SOURCE_BRANCH"`
+		// Git commit this build was made from.
 		Commit string `env:"SOURCE_COMMIT"`
-		Image  string `env:"IMAGE_NAME"`
+		// Name of the container image carrying this build.
+		Image string `env:"IMAGE_NAME"`
 	}
 }
 

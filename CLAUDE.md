@@ -1,10 +1,14 @@
 # SIP Creator agent orientation
 
-SIP Creator is a Go CLI that builds Submission Information Packages (SIPs) conforming to [meemoo's SIP Specification v2.0](https://developer.meemoo.be/docs/diginstroom/sip/2.0/) for ingest into the Flemish heritage archive (hetarchief.be). It takes a source directory of essence files plus JSON-LD descriptive metadata and produces a standards-compliant package: METS 1.12 structure following the E-ARK CSIP profile (DILCIS `csip:`/`sip:` extensions), PREMIS v3 preservation metadata, Dublin Core/DCTERMS + schema.org descriptive metadata (JSON-LD in, XML out), EDTF dates, embedded XSD schemas, all zipped uncompressed. Packaging is METS/CSIP-based; bagit is not used.
+SIP Creator is both a Go library and a CLI that builds Submission Information Packages (SIPs). It takes a producer's essence files plus descriptive metadata and assembles them into a standards-conformant package. Its primary target is a valid [E-ARK CSIP](https://earkcsip.dilcis.eu/) package — ingestible by RODA and other CSIP-conformant systems — with [meemoo's SIP Specification v2.0](https://developer.meemoo.be/docs/diginstroom/sip/2.0/) layered on top as an additional specialization for ingest into the Flemish heritage archive (hetarchief.be).
 
-This is digital-preservation software. Spec compliance and valid, correct XML matter more than features or clever code. When in doubt, the meemoo SIP spec and the CSIP profile win over convenience.
+## Scope
 
-The project is **experimental and work in progress**. `TODO.txt` is the live design record: it lists open design questions and known defects. Read it before "fixing" something — it may be a known, deliberate, or already-diagnosed issue.
+This is digital-preservation software at the front of the chain. In [OAIS](https://www.iso.org/standard/57284.html) terms (ISO 14721) a SIP is what a *Producer* hands to an archive's *Ingest* entity; SIP Creator is the tool that builds it. It is a **package builder, not an archive** — no permanent identifiers of its own authority, no store, no preservation guarantees: it produces one well-formed SIP and stops. Everything after ingest (AIP, storage, DIP dissemination) lives downstream in RODA and meemoo's pipeline.
+
+A SIP bundles the *essence* (the content files) with the metadata to understand and trust it: **descriptive** (Dublin Core / MODS), **preservation** ([PREMIS](https://www.loc.gov/standards/premis/): provenance, fixity, events, agents), and **structural** ([METS](https://www.loc.gov/standards/mets/): the manifest tying files, checksums, and metadata together). Generating that XML correctly — valid references, accurate fixity, right profile declarations — is the whole job, so spec compliance and valid XML matter more than features or clever code. The E-ARK CSIP profile is the base contract every package must satisfy; meemoo SIP v2.0 specializes on top of it. When in doubt, CSIP validity wins over convenience, and the meemoo spec wins over convenience within the meemoo layer.
+
+The project is **experimental and work in progress**. `docs/README.md` is the map of the documentation: `docs/sip-creator-design.md` describes *what the system is* (schema, domain model, lifecycle); `docs/decisions/` holds the ADRs recording *why* choices were made; coding and naming conventions live in this file. Keep `docs/` current: when a refactor changes the system, update `sip-creator-design.md` in the same change, and when it enacts a decision worth remembering, add or update an ADR. A doc that drifts from the code misleads the future reader, including future-you.
 
 Keep the dependency footprint small and boring. All XML is generated with Go `text/template` templates, not an XML library — keep it that way unless there is a strong, discussed reason to change. Adding a new external dependency is a serious choice, not a convenience.
 
@@ -21,8 +25,8 @@ Single-binary cobra CLI. Entry point is `main.go` → `cli/cli.go` → `cli/crea
 Data flow for `create [src] [dest] --profile basic`:
 
 1. **Input**: a source dir (e.g. `./tmp/basic`) with exactly one `dc+schema.json` (JSON-LD descriptive metadata) and one or more `representation_N/` directories holding essence files.
-2. **Profile** (`profiles/profile.go`, `profiles/basic.go`): creates a `uuid-<uuid>` package dir under `dest`, builds the skeleton (`metadata/descriptive`, `metadata/preservation`, `representations`, `schemas`), copies essence files, runs format identification per file, generates PREMIS and METS XML at representation and package level. `profiles/roda.go` is a second, WIP profile not yet wired into the `create_cmd.go` switch.
-3. **Encoders** (`encoders/metadata`, `encoders/mets`, `encoders/premis`): thin `Encode*(io.Writer, ...)` APIs backed by `text/template`. UUID minting for METS IDs lives in the mets `idStore`.
+2. **Profile** (`profiles/profile.go`, `profiles/basic.go`): creates a `uuid-<uuid>` package dir under `dest`, builds the skeleton (`metadata/descriptive`, `metadata/preservation`, `representations`, `schemas`), copies essence files, runs format identification per file, generates PREMIS and METS XML at representation and package level. `profiles/roda.go` is dead code — unreachable from the CLI and slated for deletion, not completion (see [ADR-0004](docs/decisions/0004-eark-base-meemoo-specialization.md)).
+3. **Encoders** (`encoders/metadata`, `encoders/mets`, `encoders/premis`): thin `Encode*(io.Writer, ...)` APIs backed by `text/template`, one package per metadata standard from Scope — `metadata` emits the descriptive XML (Dublin Core), `premis` the preservation XML, `mets` the structural manifest. UUID minting for METS IDs lives in the mets `idStore`.
 4. **Schemas** (`schemas/schemas.go`): all XSDs are bundled via `//go:embed` and copied into each SIP's `schemas/` dir.
 5. **Archive** (`archive/zip.go`): zips the package dir into `dest/uuid-<uuid>.zip`, stored uncompressed (`zip.Store`).
 
@@ -34,8 +38,10 @@ Supporting pieces:
 
 ## Read the right docs
 
+- [docs/README.md](docs/README.md) — the map of the documentation: which genre (design / decision / plan) answers which kind of question, and the lifecycle rules for each.
+- [docs/sip-creator-design.md](docs/sip-creator-design.md) — the system as it is today: domain model, package layout, build lifecycle, known gaps. The entry point for understanding the code.
 - [README.md](README.md) — usage, configuration, input requirements, experimental-status warning.
-- [TODO.txt](TODO.txt) — open design questions and known defects. Check here first when investigating a bug.
+- [docs/TODO.md](docs/TODO.md) — open design questions and known defects. Check here first when investigating a bug.
 - [CONFIG.md](CONFIG.md) — environment variables. This file is **generated** by envdoc; regenerate with `go generate ./services`, never hand-edit.
 - External specs: [meemoo SIP spec 2.0](https://developer.meemoo.be/docs/diginstroom/sip/2.0/), [E-ARK CSIP profile](https://earkcsip.dilcis.eu/), [METS](https://www.loc.gov/standards/mets/) and [PREMIS](https://www.loc.gov/standards/premis/) at loc.gov.
 - Concrete examples: `tmp/basic/` is a sample input tree; `basic-uuid/` is sample generated output. Both are local fixtures, not tracked in git.
@@ -44,8 +50,7 @@ Supporting pieces:
 
 ### Documentation
 
-- `AGENTS.md` and `CLAUDE.md` must always be identical. A change made to either file must be reflected in both.
-- Keep docs current in the same change as code: new or changed env vars require `go generate ./services` to regenerate `CONFIG.md`; changed usage or input requirements go in `README.md`; resolved items get removed from `TODO.txt`.
+- Keep docs current in the same change as code: new or changed env vars require `go generate ./services` to regenerate `CONFIG.md`; changed usage or input requirements go in `README.md`; resolved items get removed from `docs/TODO.md`.
 
 ### Git
 
@@ -56,13 +61,24 @@ Supporting pieces:
 
 ### Code
 
-- Generated XML must validate against the embedded XSDs and pass commons-ip CSIP validation. Validation output from `build.sh` is the acceptance check.
-- Keep XML generation in `text/template` templates inside `encoders/*`. Do not introduce `encoding/xml` or an XML library for output without discussion.
-- All identifiers are `uuid-<uuid>`; METS ID minting stays in the mets `idStore`.
-- New format identification tools register via the `formats` registry pattern, following `formats/siegfried`.
-- New SIP profiles are methods on `Profile` in `profiles/` and must be wired into the `create_cmd.go` profile switch.
-- Existing profile/IO code uses `panic(err)` — acknowledged debt. New code should return errors; do not add new panics.
-- Keep the exported API surface small. Every exported symbol is a long-term commitment.
+Write idiomatic Go (Effective Go, Go Code Review Comments, Google's Go Style Guide) — clarity over cleverness, happy path left-aligned, early returns, useful zero values, exported symbols documented. The project-specific rules below take precedence where they overlap.
+
+- **Order code so readers don't jump around.** Top-to-bottom reading should be enough; if a reader has to scroll backwards or sideways to understand the next line, restructure.
+- **One concern per function.** If a function does two things, split it.
+- **Name things by what they are, not how they're implemented.**
+- **New helpers live next to their callers** until used from at least two places. No `helpers.go`, no anticipatory toolbox functions.
+- **Name validation primitives by what they return.** `Is…`/`IsValid…` are pure `bool` predicates (e.g. a future `IsValidIdentifier`); `Validate…` returns an explanatory `error` naming the rule that failed; `Parse…` parses a string form and validates it in one step, returning the parsed values plus an error; `Resolve…` maps a value to the domain record(s) it belongs to. Choose by what the caller needs — a branch wants a predicate, a rejection path wants the error — and follow this split when adding a new primitive.
+- **When a domain file grows past ~250 lines, split by concept.** E.g. rather than letting one file in `sip/` carry the package, the identifier scheme, and the file/fixity types all at once, lift each concept into its own file.
+
+A clever-but-dense diff gets rejected; a verbose-but-obvious one is accepted. Write it the way a colleague reading it for the first time would understand fastest.
+
+Keep the API surface small. Default to unexported — every exported symbol is a commitment in a long-lived codebase. Don't export a function or type unless it has a cross-package caller.
+
+Keep operational failures (I/O, config) as `error`/`fmt.Errorf`. Domain validation belongs on the `sip/` domain types as `Validate` methods (none exist yet; that is where they go when they arrive). Wrap with `%w` and unwrap with `errors.Is`/`errors.As` where a caller needs to branch on the cause; don't both log and return an error — pick one.
+
+**Streaming I/O.** An `io.Reader` is consume-once — reading advances it. Essence files can be large: prefer streaming (`io.Copy` reader-to-writer) over buffering whole files in memory.
+
+Comment the why, not the what. Don't restate what the code or a function signature already says; explain why something exists or why it's done the unobvious way. Keep that explanation as short as it can be — usually a sentence — but a longer comment is right when it carries a domain rule or justifies a non-obvious workaround. Delete commented-out code rather than leaving it.
 
 ## Development commands
 
