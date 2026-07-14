@@ -16,7 +16,6 @@ These are decided and sequenced; remove each line when the work lands.
 - **Pass additional metadata (agents, etc.) into the METS files** → covered by the declarative profile spec ([refactoring plan](plans/refactoring-plan.md), Step 7–8): agents and profile literals become data.
 - **RODA: representation PREMIS reported missing / mislocated** → the dead `Roda()` omits rep PREMIS; direction is a genuine E-ARK writer, not that copy → [ADR-0004](decisions/0004-eark-base-meemoo-specialization.md) + [refactoring plan](plans/refactoring-plan.md).
 - **Go tests for our own logic** → the internal/external split is set: Go tests cover our assembly logic, commons-ip covers CSIP validity → [ADR-0003](decisions/0003-validation-stays-external.md). First concrete tests arrive with the [refactoring plan](plans/refactoring-plan.md) (store + assembler).
-- **Validation workflow** (is the package valid? how do I validate?) → [validation-workflow plan](plans/validation-workflow-plan.md).
 
 ## Open design questions (not yet owned)
 

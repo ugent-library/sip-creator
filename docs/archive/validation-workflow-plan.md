@@ -1,6 +1,6 @@
 # Plan: streamline the validation workflow (build.sh)
 
-*Status: draft, 2026-07-02. Companion to [refactoring-plan.md](refactoring-plan.md) — the workflow this plan produces is the acceptance gate that plan relies on.*
+*Status: shipped 2026-07-14 (as implemented and extended by [local-ci-pipeline-plan.md](local-ci-pipeline-plan.md)), retired to archive. The durable design lives in [sip-creator-design.md](../sip-creator-design.md) § Validation; the decisions in [ADR-0003](../decisions/0003-validation-stays-external.md) and [ADR-0005](../decisions/0005-dockerized-validation-and-html-reporting.md).*
 
 ## Context — why this change
 

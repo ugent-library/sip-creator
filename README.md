@@ -15,6 +15,7 @@ Create Submission Information Packages (SIP) based on [Meemoo's SIP Specificatio
 ## Requisites
 
 * [Siegfried](https://github.com/richardlehane/siegfried) is installed and working on your system.
+* For the validation loop: [Docker](https://www.docker.com/) (runs the commons-ip validator and the report server) and `jq`.
 
 ## Configuration
 
@@ -37,15 +38,31 @@ Assuming you have data in a `./tmp/basic` directory which you want to convert in
 stored in a `basic-uuid` directory:
 
 ```
-go build
-./sip-creator create --profile basic ./tmp/basic basic-uuid
+go build -o bin/sip-creator .
+./bin/sip-creator create --profile basic ./tmp/basic basic-uuid
 ```
 
 This writes the package directory `basic-uuid/uuid-<uuid>/` and zips it (uncompressed) to
 `basic-uuid/uuid-<uuid>.zip` — the zip is the deliverable meemoo ingests.
 
-For the full development loop (regenerate the sample SIP and validate it with
-commons-ip), run `./build.sh`. It requires `csip`, `jq`, and `catmandu` on the PATH.
+## Validation
+
+`./build.sh` is the local CI loop: it rebuilds, regenerates the sample SIP, validates the
+zip against E-ARK CSIP with [commons-ip](https://github.com/keeps/commons-ip) (dockerized,
+release jar pinned), prints every FAILED check with its messages, and exits non-zero if
+the package is not `VALID`.
+
+Each run's validation reports are published to `reports/runs/<timestamp>/`. To browse them
+as HTML (run history, per-check detail, links into the E-ARK specs):
+
+```
+docker compose up -d reports
+open http://localhost:8080
+```
+
+`./scripts/validate.sh <sip.zip|sip-dir>...` validates any package standalone — including
+an unzipped package directory when debugging structure. See
+[ADR-0005](docs/decisions/0005-dockerized-validation-and-html-reporting.md) for the design.
 
 ## Input
 

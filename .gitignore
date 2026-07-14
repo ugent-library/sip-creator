@@ -52,3 +52,6 @@ $RECYCLE.BIN/
 # Local fixtures and generated output
 tmp/
 basic-uuid/
+bin/
+reports/
+/sip-creator

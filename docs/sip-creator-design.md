@@ -115,7 +115,9 @@ The `basic` profile expects a source directory containing:
 
 ## Validation
 
-The acceptance check is **external**: generated packages are validated with commons-ip (`csip validate`), the E-ARK CSIP reference validator, driven by `build.sh`. The CSIP rules are *not* reimplemented as Go tests — commons-ip is the reference (see [ADR-0003](decisions/0003-validation-stays-external.md), and the [validation-workflow plan](plans/validation-workflow-plan.md) for the workflow around the tool). There are currently no `*_test.go` files.
+The acceptance check is **external**: generated packages are validated with commons-ip, the E-ARK CSIP reference validator. The CSIP rules are *not* reimplemented as Go tests — commons-ip is the reference (see [ADR-0003](decisions/0003-validation-stays-external.md)). There are currently no `*_test.go` files.
+
+The workflow around the tool ([ADR-0005](decisions/0005-dockerized-validation-and-html-reporting.md)): `./build.sh` is the local CI loop — build, regenerate the sample SIP, validate the zip with a dockerized commons-ip (release jar pinned by version + sha256, spec version pinned to 2.2.0), and exit non-zero iff the package is not `VALID` (the commons-ip CLI itself always exits 0; the verdict is read from its JSON report). Each run's reports are published to `reports/runs/<timestamp>/`; `docker compose up -d reports` serves a static HTML view of all runs at http://localhost:8080. `scripts/validate.sh` is usable standalone against any package zip or directory.
 
 ## Known gaps
 

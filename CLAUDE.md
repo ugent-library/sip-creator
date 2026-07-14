@@ -82,9 +82,11 @@ Comment the why, not the what. Don't restate what the code or a function signatu
 
 ## Development commands
 
-- `go build` — produces the `./sip-creator` binary.
-- `./sip-creator create --profile basic ./tmp/basic basic-uuid` — generate a sample SIP from the local fixture.
-- `./build.sh` — the full dev loop: wipes `basic-uuid/`, regenerates via `go run`, validates every produced package with commons-ip (`csip validate`), and surfaces `FAILED` checks. Requires `csip`, `jq`, and `catmandu` on the PATH, plus a configured `.env` pointing at a working Siegfried (`sf`) install.
+- `go build -o bin/sip-creator .` — produces the binary in the gitignored `bin/`.
+- `./bin/sip-creator create --profile basic ./tmp/basic basic-uuid` — generate a sample SIP from the local fixture.
+- `./build.sh` — the local CI loop: rebuilds, wipes and regenerates `basic-uuid/`, validates the zip with dockerized commons-ip, publishes the JSON reports to `reports/runs/<timestamp>/`, and exits non-zero iff the package is not `VALID`. Requires `docker` and `jq`, plus a configured `.env` pointing at a working Siegfried (`sf`) install. The gate is currently red — the sample package is known-INVALID ([docs/TODO.md](docs/TODO.md)); that exit code is a real signal, not a broken script.
+- `./scripts/validate.sh [-o report-dir] <sip.zip|sip-dir>...` — validate any package standalone (also unzipped package dirs, for structure debugging).
+- `docker compose up -d reports` — serve the HTML validation reports at http://localhost:8080 (see [ADR-0005](docs/decisions/0005-dockerized-validation-and-html-reporting.md)).
 - `go generate ./services` — regenerate `CONFIG.md` from the config struct.
 
 There are no `*_test.go` files yet; external CSIP validation via `build.sh` is the current acceptance check. Add Go tests for new logic where practical.

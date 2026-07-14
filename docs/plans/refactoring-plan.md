@@ -365,7 +365,7 @@ Two operator-experience changes are agreed in principle but deliberately **exclu
 ## Verification
 
 1. **Phase 0 baseline diff** after Phase 1 and again after Phase 2: normalized XML trees structurally identical, same file inventory.
-2. `./build.sh` green (requires `csip`, `jq`, `catmandu`, working `sf` per `.env`): commons-ip validation reports no new FAILED checks — this is the project's acceptance check.
+2. `./build.sh` green (requires `docker`, `jq`, working `sf` per `.env` — see [ADR-0005](../decisions/0005-dockerized-validation-and-html-reporting.md)): commons-ip validation reports no new FAILED checks — this is the project's acceptance check.
 3. `go test ./...`: new `store` and `profiles` (assembler) tests pass; `go vet ./...` clean.
 4. Negative paths by hand: missing `dc+schema.json` → clean error, not a panic, and **no partial package dir left in dest** (assembly fails before any write — this is the fail-fast payoff, worth demonstrating).
 5. `./sip-creator create --profile nope ./tmp/basic basic-uuid` → lists available profiles.
