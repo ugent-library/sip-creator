@@ -40,13 +40,15 @@ These need a decision before they become plan work.
   - Is the intended shape to walk an LD graph and populate the package from it (cf. [sipin-mh-sip-creator](https://github.com/viaacode/sipin-mh-sip-creator/tree/main/tests/resources))? Implications: identifiers would be minted by external services; there is no strong Go triplestore library, so this likely needs a supporting query API or a tech change. (Format characterisation is meanwhile decided: it stays available at build time but is optional — [ADR-0006](decisions/0006-format-identification-optional.md); fixity stays native and in-process.)
   - For a bibliographic profile: source for mapping to MODS — BIBFRAME or otherwise? (Ref: [MODS–BIBFRAME mapping](https://www.loc.gov/standards/mods/modsrdf/mods-bibframe-mapping.html).)
 
-- **CSV descriptive-metadata input** alongside JSON-LD (a decoder registry keyed on file extension). Deferred input-side change; seam described in the [refactoring plan](plans/refactoring-plan.md) tail. Open point: CSV convention for multi-valued fields.
+- **New input contract (convention-based folders + key–value `metadata.csv`)** → drafted in [input-spec.md](input-spec.md); supersedes the earlier loose "CSV descriptive-metadata input" idea (multi-valued fields are solved there by repeated keys). Needs an implementation plan; that plan should be accompanied by an ADR recording the config-over-self-describing-input trade-off (organization details come from configuration, so an input folder alone does not fully determine the package). Features the spec explicitly defers (chosen against for v1, not forgotten): an explicit per-file manifest, operator-supplied descriptive XML, multiple intellectual entities per package, BagIt input, per-package overrides of configured values.
+
+- **Library builder API — embeddability requirements.** So larger ingest-automation systems can drive the library without touching the CLI's input convention, the builder API must: accept essence as streams (`io.Reader`/`fs.FS` + logical path), not only filesystem paths; accept pre-computed fixity and only compute checksums when none are supplied; take descriptive metadata as data (structs), not files to parse; take administrative metadata (agents, submission agreement, record status, content category) as data — the planned `sip.Spec`/`sip.Agent` ([refactoring plan](plans/refactoring-plan.md), Steps 7–8) is the vehicle; accept a caller-supplied package identifier (updates reuse the original `mets/@OBJID`) and mint a UUID only when none is given; keep representation labels free-form in the model (the profile decides SIP-side directory naming); build to a destination the caller controls. See the [CLI/library boundary](sip-creator-design.md#clilibrary-boundary) in the design doc.
 
 - **File copy performance.** Is there a better / more performant way to copy essence assets than the current 2 KB-buffer loop?
 
-## Known-INVALID: concrete validator evidence
-
 - **METS `@MIMETYPE` for essence files is a hardcoded lie.** Representation METS stamps every essence file `MIMETYPE="text/xml"` (`encoders/mets/encoder.go:75-78`), and CSIP makes `@MIMETYPE` a MUST. The identificator's mime output (parsed and currently discarded) is a candidate source when identification runs; an extension-based fallback is needed when it doesn't. Decide the source of truth, then fix.
+
+## Known-INVALID: concrete validator evidence
 
 The sample package does not yet validate. Keep these until fixed (they are the
 gate that must go green before blocking automation — [ADR-0003](decisions/0003-validation-stays-external.md)).
