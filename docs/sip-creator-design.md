@@ -104,6 +104,18 @@ Layered by responsibility. The `sip/` graph is the shared domain; everything els
 
 Dependencies are kept small and boring: cobra (CLI), google/uuid, godotenv + caarlos0/env (config), samber/lo (used only by the mets encoder). Format identification depends on an **external `sf` binary**, not a Go library.
 
+## CLI/library boundary
+
+SIP Creator is a library with a CLI frontend, and the boundary between the two is a design principle the system is converging on. The library is designed to be embeddable in larger systems that automate ingest workflows — systems that hold content as streams (e.g. in object storage) and metadata as structured data, not as operator-prepared directories. The library API is therefore the contract; input formats are frontends that map onto it (the same layering commons-ip uses: a programmatic builder at the core, tools on top).
+
+- **The library owns the domain, not the input.** Its API is the domain model (`sip/`) plus primitives to assemble and emit a package. It never sees a CSV and never assumes a source directory layout.
+- **The CLI owns the operator contract.** It reads the input convention (see [input-spec.md](input-spec.md), draft), merges configuration (agents, profile), enforces the input rules, and translates everything into library API calls. All operator-facing error reporting lives here, in plain language.
+- **Validation splits in two.** Input-contract errors (bad CSV key, misplaced file, missing folder) are CLI concerns. Domain invariants (at least one representation; a replacement needs the original package identifier; an entity needs a local identifier) are `Validate` methods on the `sip/` domain types — any embedding system must hit the same guardrails without going through the input convention.
+- **The library is stream-first.** The file-adding primitive takes an `io.Reader` plus a logical path and optional pre-computed fixity, not a source directory. The CLI feeds it opened disk files; an embedding system feeds it streams from wherever it stores content.
+- **Format identification is pluggable and optional** ([ADR-0006](decisions/0006-format-identification-optional.md)): Siegfried wants a real file path, so it cannot be assumed in a stream-first API. Callers may supply format information as data, the same pattern as fixity.
+
+**Known gap:** the current code blurs this line — `profiles/` both discovers input *and* generates output, and administrative metadata (agents, profile literals) is hardcoded in templates rather than passed as data. The future implementation work pulls these apart along exactly this boundary; see the [refactoring plan](plans/refactoring-plan.md) (assemble/emit split, `sip.Spec`/`sip.Agent`) and the embeddability requirements in [TODO.md](TODO.md).
+
 ## Input contract
 
 The `basic` profile expects a source directory containing:
@@ -112,6 +124,8 @@ The `basic` profile expects a source directory containing:
 - One or more **`representation_N/`** directories, each holding at least one essence file. The directory name must match `representation_([0-9]+)$`.
 
 `tmp/basic/` is the sample input; `basic-uuid/` is sample generated output. Both are local fixtures, not tracked in git.
+
+A convention-based replacement for this contract — folders as the UI, one key–value `metadata.csv`, administrative data from configuration — is drafted in [input-spec.md](input-spec.md). It is not implemented; the contract above is what the code enforces today.
 
 ## Validation
 
