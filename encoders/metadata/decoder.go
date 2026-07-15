@@ -103,6 +103,10 @@ type CreativeWork struct {
 	HasPart  []CreativeWork `json:"schema:hasPart"`
 }
 
+func (d *Description) Encode(w io.Writer) error {
+	return Encode(w, d)
+}
+
 func Decode(r io.Reader) *Description {
 	bts, _ := io.ReadAll(r)
 

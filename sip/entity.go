@@ -2,15 +2,21 @@ package sip
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/google/uuid"
 )
+
+type Descriptive interface {
+	Encode(w io.Writer) error
+}
 
 type Entity struct {
 	Identifier            string
 	AdditionalIdentifiers map[string]string
 	Representations       []*Representation
 	Entities              []*Entity
+	Description           Descriptive
 	DescriptionFile       *File
 }
 

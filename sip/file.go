@@ -13,6 +13,7 @@ type File struct {
 	Format         *Format
 	Size           string
 	Created        string
+	Source         string
 	Path           string
 	Representation *Representation
 }
