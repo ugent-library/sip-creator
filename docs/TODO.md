@@ -16,6 +16,12 @@ These are decided and sequenced; remove each line when the work lands.
 - **Pass additional metadata (agents, etc.) into the METS files** → covered by the declarative profile spec ([refactoring plan](plans/refactoring-plan.md), Step 7–8): agents and profile literals become data.
 - **RODA: representation PREMIS reported missing / mislocated** → the dead `Roda()` omits rep PREMIS; direction is a genuine E-ARK writer, not that copy → [ADR-0004](decisions/0004-eark-base-meemoo-specialization.md) + [refactoring plan](plans/refactoring-plan.md).
 - **Go tests for our own logic** → the internal/external split is set: Go tests cover our assembly logic, commons-ip covers CSIP validity → [ADR-0003](decisions/0003-validation-stays-external.md). First concrete tests arrive with the [refactoring plan](plans/refactoring-plan.md) (store + assembler).
+- **Siegfried is a hard dependency it shouldn't be** → format identification becomes an optional enricher; essence fixity/size (the spec MUSTs) move to native streamed computation in the store → [format-identification-optional plan](plans/format-identification-optional.md) + [ADR-0006](decisions/0006-format-identification-optional.md).
+- **Siegfried/config defects** (fixed by that same plan; recorded here so they aren't lost if it stalls):
+  - `siegfried.Process` mutates its args slice — every essence file after the first gets the *first* file's checksum/size/format (`formats/siegfried/siegfried.go:73`).
+  - Exec errors are swallowed (`_ = bin.Run()`), so a missing `sf` panics on empty output instead of erroring (`siegfried.go:75-84`).
+  - `env.Parse`'s error is discarded in `services.ConfigFromEnv`, making the `notEmpty` config validation inert (`services/config.go:33`).
+  - The PREMIS `premis:format` block dereferences `.Format` unguarded — a no-match file breaks rendering (`encoders/premis/encoder.go:80-86`).
 
 ## Open design questions (not yet owned)
 
@@ -31,7 +37,7 @@ These need a decision before they become plan work.
   - Is a UUID meaningful only within the SIP acceptable as the common key tying description / IE / representation / file together? Where would externally-minted IDs be recorded if not?
 
 - **Multiple descriptions / entities / formats.** How should the tool handle multiple descriptive records, sub-intellectual-entities, or multiple formats per representation? The model has the slots (`Entity.Entities`, per-file `Format`) but the `basic` profile builds only a single root entity.
-  - Is the intended shape to walk an LD graph and populate the package from it (cf. [sipin-mh-sip-creator](https://github.com/viaacode/sipin-mh-sip-creator/tree/main/tests/resources))? Implications: fixity & format characterisation would move outside SIP creation; identifiers would be minted by external services; there is no strong Go triplestore library, so this likely needs a supporting query API or a tech change.
+  - Is the intended shape to walk an LD graph and populate the package from it (cf. [sipin-mh-sip-creator](https://github.com/viaacode/sipin-mh-sip-creator/tree/main/tests/resources))? Implications: identifiers would be minted by external services; there is no strong Go triplestore library, so this likely needs a supporting query API or a tech change. (Format characterisation is meanwhile decided: it stays available at build time but is optional — [ADR-0006](decisions/0006-format-identification-optional.md); fixity stays native and in-process.)
   - For a bibliographic profile: source for mapping to MODS — BIBFRAME or otherwise? (Ref: [MODS–BIBFRAME mapping](https://www.loc.gov/standards/mods/modsrdf/mods-bibframe-mapping.html).)
 
 - **CSV descriptive-metadata input** alongside JSON-LD (a decoder registry keyed on file extension). Deferred input-side change; seam described in the [refactoring plan](plans/refactoring-plan.md) tail. Open point: CSV convention for multi-valued fields.
@@ -39,6 +45,8 @@ These need a decision before they become plan work.
 - **File copy performance.** Is there a better / more performant way to copy essence assets than the current 2 KB-buffer loop?
 
 ## Known-INVALID: concrete validator evidence
+
+- **METS `@MIMETYPE` for essence files is a hardcoded lie.** Representation METS stamps every essence file `MIMETYPE="text/xml"` (`encoders/mets/encoder.go:75-78`), and CSIP makes `@MIMETYPE` a MUST. The identificator's mime output (parsed and currently discarded) is a candidate source when identification runs; an extension-based fallback is needed when it doesn't. Decide the source of truth, then fix.
 
 The sample package does not yet validate. Keep these until fixed (they are the
 gate that must go green before blocking automation — [ADR-0003](decisions/0003-validation-stays-external.md)).
