@@ -15,8 +15,9 @@ Decisions already made:
 - Do the **two-phase split first** (assemble graph → writer emits in one canonical order), preserving current meemoo output, validated by `build.sh`.
 - Then **lift meemoo values into a declarative `ProfileSpec`** + registry (mirroring the existing `formats/` registry pattern).
 - The **E-ARK/RODA writer** is a follow-up phase: this plan creates the seam, not the full E-ARK implementation. Roda is intended to become a *true* E-ARK SIP, not a meemoo variant — so the current broken, CLI-unreachable `Roda()` gets deleted, not migrated.
+- **Format identification becomes an optional enricher and essence fixity moves to the store** — companion plan [format-identification-optional.md](format-identification-optional.md) ([ADR-0006](../decisions/0006-format-identification-optional.md)), executed with Phase 1. It amends this plan's details in two places: Step 1's `CopyFile` returns `(Info, error)` (fixity computed during the streamed copy), and Step 3's `p.Formats.Process(src)` becomes an optional `Identify(src)` enrichment of an assembler-built `sip.File`.
 
-Non-negotiables honored throughout: XML stays in `text/template`; new code returns errors (no new panics); METS ID minting stays in the mets encoder; exported surface kept small; `CLAUDE.md` kept current; `CONFIG.md` untouched (no env var changes).
+Non-negotiables honored throughout: XML stays in `text/template`; new code returns errors (no new panics); METS ID minting stays in the mets encoder; exported surface kept small; `CLAUDE.md` kept current. `CONFIG.md` is untouched by *this* plan's steps, but the companion [format-identification-optional plan](format-identification-optional.md) does relax the `SIP_FILE_FORMAT_*` vars to optional (with the required `go generate ./services` regeneration).
 
 ## Target architecture — what it looks like after
 
