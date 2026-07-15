@@ -48,17 +48,15 @@ Key invariant that makes this honest: package METS references the checksum/size 
 
 ## Phase 0 — capture a baseline (no code changes)
 
-Run `./build.sh` and keep one generated package as a reference tree. After each phase, regenerate and diff against it with UUIDs/timestamps normalized:
+*Status: **done** (2026-07-15). The baseline lives in `tmp/baseline/` (gitignored): `pkg/` is the reference tree, `failed-checks.txt` the commons-ip FAILED checks at baseline, `README.md` the environment notes. The normalize-and-diff is `scripts/baseline-diff.sh <ref-pkg-dir> <new-pkg-dir>` — after each phase, run it against `tmp/baseline/pkg` plus the failed-checks comparison.*
 
-```sh
-# normalize both trees, then diff
-find <pkg> -name '*.xml' -exec sed -E -i '' \
-  -e 's/uuid-[0-9a-f-]{36}/uuid-X/g' \
-  -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[^"]*/TS/g' {} +
-diff -r ref-pkg new-pkg
-```
+The originally sketched inline sed one-liner was replaced by the script because implementation surfaced three defects in it: the timestamp regex ate element text through the closing tag (PREMIS timestamps aren't quote-delimited); it under-normalized (METS records the MD5/size of the *raw* generated XML, which contains UUIDs and timestamps, so those attributes churn on every run and the diff could never be clean); and mapping every UUID to one token would hide swapped or dangling cross-references. The script instead maps UUIDs to first-seen sequence numbers, normalizes ISO datetimes with a bounded regex, and blanks SIZE/CHECKSUM only on generated-XML entries (keyed on href — essence and schema fixity stay comparable; MIMETYPE is unusable as the discriminator because of the known METS MIMETYPE defect).
 
-Checksums of metadata files will legitimately change only if their normalized content changes — the diff should show **structurally identical XML**. `csip validate` in build.sh must report the same (or fewer) FAILED checks.
+The gate is verified in both directions: two independent `build.sh` runs diff clean against the baseline, and three planted regressions (corrupted essence checksum, swapped structMap cross-reference, deleted file) are each caught.
+
+**Finding for Phase 1:** current output is nondeterministic — schema `<file>` entries in package METS come out in random order per run (`for name := range schemas.Get()` iterates a Go map). The script sorts `<file>` siblings by href to compensate; the canonical emitter (`write.go`) should sort schema names at the source, making that normalization inert.
+
+Acceptance per phase: `baseline-diff.sh` reports structurally identical trees, and `csip validate` in build.sh reports the same (or fewer) FAILED checks than `tmp/baseline/failed-checks.txt` (currently: SIP2 [MUST], CSIPSTR16 [SHOULD]).
 
 ## Phase 1 — split assembly from emission
 
