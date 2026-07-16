@@ -9,21 +9,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/samber/lo"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-var idStore []string
-
-// Make sure METS identifiers are only minted once across SIP
 func identifier() string {
-	id := fmt.Sprintf("uuid-%s", uuid.New().String())
-
-	if lo.Contains(idStore, id) {
-		return identifier()
-	}
-
-	return id
+	return fmt.Sprintf("uuid-%s", uuid.New().String())
 }
 
 var funcs = template.FuncMap{
