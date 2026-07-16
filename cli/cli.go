@@ -1,10 +1,11 @@
 package cli
 
 import (
+	"errors"
 	"log/slog"
+	"os"
 
 	"github.com/joho/godotenv"
-	_ "github.com/joho/godotenv/autoload"
 	"github.com/spf13/cobra"
 	_ "github.com/ugent-library/sip-creator/formats/siegfried"
 	"github.com/ugent-library/sip-creator/services"
@@ -21,9 +22,16 @@ var (
 )
 
 func Run() {
-	cobra.CheckErr(godotenv.Load())
+	// .env is optional configuration: a missing file is fine (all vars are
+	// optional), a malformed one is an error.
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		cobra.CheckErr(err)
+	}
 
-	config = services.ConfigFromEnv()
+	var err error
+	config, err = services.ConfigFromEnv()
+	cobra.CheckErr(err)
+
 	logger = services.NewLogger(config)
 
 	cobra.CheckErr(rootCmd.Execute())

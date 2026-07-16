@@ -11,27 +11,35 @@ Create Submission Information Packages (SIP) based on [Meemoo's SIP Specificatio
 * Implements [Meemoo SIP Specification v2.0](https://developer.meemoo.be/docs/diginstroom/sip/2.0/).
 * Profiles are registry entries selected with `--profile`; currently `basic`. An unknown
   (or omitted) `--profile` fails with the list of available profiles.
-* Supports file format characterization via [Siegfried](https://github.com/richardlehane/siegfried).
+* Optional file format characterization via [Siegfried](https://github.com/richardlehane/siegfried):
+  when configured it enriches the PREMIS metadata with PRONOM format info (a SHOULD in the
+  meemoo spec); without it the build still succeeds — fixity is computed natively.
 
 ## Requisites
 
-* [Siegfried](https://github.com/richardlehane/siegfried) is installed and working on your system.
 * For the validation loop: [Docker](https://www.docker.com/) (runs the commons-ip validator and the report server) and `jq`.
+* Recommended: [Siegfried](https://github.com/richardlehane/siegfried) for format characterization (optional, see Configuration).
 
 ## Configuration
 
-Create a `.env` file (start from `.env.example`) if non exists. All environment variables are documented in [CONFIG.md](CONFIG.md), which is generated from the config struct — regenerate it with
+All configuration is optional and read from the environment (a `.env` file is loaded when
+present — start from `.env.example`). All environment variables are documented in
+[CONFIG.md](CONFIG.md), which is generated from the config struct — regenerate it with
 `go generate ./services` rather than editing it by hand.
 
 **Siegfried**
 
-Configure Siegfried like this:
+To enable format characterization, configure Siegfried like this:
 
 ```
 SIP_FILE_FORMAT_NAME="siegfried"
 SIP_FILE_FORMAT_COMMAND="/location-of-sf-binary"
-SIP_FILE_FORMAT_ARGS="-hash md5 -json"
+SIP_FILE_FORMAT_ARGS="-json"
 ```
+
+Leave `SIP_FILE_FORMAT_NAME` unset to build without format identification. If it is set,
+the configured tool must work — a broken or missing binary aborts the build rather than
+silently degrading the package.
 
 ## How to use
 

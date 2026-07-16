@@ -1,6 +1,8 @@
 package services
 
 import (
+	"fmt"
+
 	"github.com/caarlos0/env/v11"
 )
 
@@ -8,14 +10,17 @@ import (
 
 // Application config
 type Config struct {
-	// Format identification tool (see formats/).
+	// Format identification tool (see formats/). Optional: leaving NAME
+	// empty disables format identification — premis:format is a SHOULD,
+	// and essence fixity is computed natively during the copy.
 	Formats struct {
-		// Name of the format identification tool. Valid values: siegfried.
-		Name string `env:"NAME,notEmpty"`
-		// Path to the tool's binary on this system.
-		Command string `env:"COMMAND,notEmpty"`
-		// Extra arguments passed to the tool (e.g. "-hash md5 -json" for siegfried).
-		Args string `env:"ARGS,notEmpty"`
+		// Name of the format identification tool; empty disables format
+		// identification. Valid values: siegfried.
+		Name string `env:"NAME"`
+		// Path to the tool's binary on this system. Required when NAME is set.
+		Command string `env:"COMMAND"`
+		// Extra arguments passed to the tool (e.g. "-json" for siegfried).
+		Args string `env:"ARGS"`
 	} `envPrefix:"SIP_FILE_FORMAT_"`
 	// Build provenance, stamped by the deployment environment. Unused by the CLI itself.
 	Version struct {
@@ -28,8 +33,13 @@ type Config struct {
 	}
 }
 
-func ConfigFromEnv() *Config {
+func ConfigFromEnv() (*Config, error) {
 	config := &Config{}
-	env.Parse(config)
-	return config
+	if err := env.Parse(config); err != nil {
+		return nil, fmt.Errorf("parse environment config: %w", err)
+	}
+	if config.Formats.Name != "" && config.Formats.Command == "" {
+		return nil, fmt.Errorf("SIP_FILE_FORMAT_NAME is set (%q) but SIP_FILE_FORMAT_COMMAND is empty", config.Formats.Name)
+	}
+	return config, nil
 }

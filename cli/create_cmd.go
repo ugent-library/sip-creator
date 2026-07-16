@@ -28,9 +28,15 @@ var createCmd = &cobra.Command{
 				flagProfile, strings.Join(profiles.Names(), ", "))
 		}
 
-		ffid, err := formats.New(config.Formats.Name, config.Formats.Command, config.Formats.Args)
-		if err != nil {
-			return err
+		// No configured tool means format identification is skipped: the
+		// builder treats a nil identificator as "don't enrich".
+		var ffid formats.Identificator
+		if config.Formats.Name != "" {
+			var err error
+			ffid, err = formats.New(config.Formats.Name, config.Formats.Command, config.Formats.Args)
+			if err != nil {
+				return err
+			}
 		}
 
 		builder := profiles.New(&profiles.Config{
