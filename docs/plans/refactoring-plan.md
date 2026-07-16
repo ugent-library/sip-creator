@@ -60,6 +60,15 @@ Acceptance per phase: `baseline-diff.sh` reports structurally identical trees, a
 
 ## Phase 1 — split assembly from emission
 
+*Status: **done** (2026-07-16). All six steps landed; the gate passed: `baseline-diff.sh` reports the trees structurally identical, `build.sh` reports the same two FAILED checks as baseline (SIP2, CSIPSTR16), and the fail-fast property is demonstrated (bad input → clean error, no partial package dir). Deviations from the letter of this plan, all discussed:*
+
+- *Step 1 adopted the companion plan's `CopyFile (Info, error)` signature up front; the writer back-fills essence fixity from it (same checksum/size as siegfried's, `Created` = copy mtime, matching prior behavior). The **rest** of the [format-identification plan](format-identification-optional.md) was deliberately sequenced **after** this phase rather than with it — one variable at a time through the equivalence gate.*
+- *The `Description` interface was deleted, not retained: after `createDescriptiveFile` died it had zero uses (the assembler works with the concrete `*metadata.Description`).*
+- *`Profile.BaseDir` was renamed `OutDir` — with the in-place mutation gone it is only ever the operator's destination dir.*
+- *`metadata.Decode` now returns an error (the "touch only if trivial while nearby" case).*
+- *Schema `File` nodes are assembled in sorted order, fixing the Phase-0 nondeterminism finding at the source; PREMIS/METS nodes are born in the writer (their existence is what Phase 2's `Emit*Premis` flags toggle).*
+- *Step 6 grew walk-edge tests beyond the listed assertions: lexical discovery order, non-matching dirs skipped, nested files flattening into `data/`.*
+
 ### Step 1: create the `store` package (filesystem primitives, error returns)
 
 New `store/store.go`. This absorbs `createDir`, `copy`, and `createMetadataFile` from profiles/profile.go:255-336, converted from `panic` to returned errors, rooted at the package dir so callers deal only in relative paths (kills the `BaseDir` string-slicing):

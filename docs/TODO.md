@@ -9,13 +9,9 @@ its rough edges are collected under [Known gaps](sip-creator-design.md#known-gap
 
 These are decided and sequenced; remove each line when the work lands.
 
-- **Split filesystem handling into a `store` package** → [refactoring plan](plans/refactoring-plan.md), Step 1.
-- **Path & base-path handling** (the mutated `BaseDir`, string-sliced `File.Path`) → [refactoring plan](plans/refactoring-plan.md) (`File.Path` semantics; the `store` package roots callers in relative paths).
 - **Fix identifiers in the METS file** (the inert `idStore`/`lo.Contains` check) → [refactoring plan](plans/refactoring-plan.md), Step 7.
 - **`mets/@TYPE` should draw from a vocabulary, not a hardcoded literal** → becomes a one-line registry fix once profile values are data ([refactoring plan](plans/refactoring-plan.md), Step 8). Ref: [CSIP2](https://earkcsip.dilcis.eu/#CSIP2).
 - **Pass additional metadata (agents, etc.) into the METS files** → covered by the declarative profile spec ([refactoring plan](plans/refactoring-plan.md), Step 7–8): agents and profile literals become data.
-- **RODA: representation PREMIS reported missing / mislocated** → the dead `Roda()` omits rep PREMIS; direction is a genuine E-ARK writer, not that copy → [ADR-0004](decisions/0004-eark-base-meemoo-specialization.md) + [refactoring plan](plans/refactoring-plan.md).
-- **Go tests for our own logic** → the internal/external split is set: Go tests cover our assembly logic, commons-ip covers CSIP validity → [ADR-0003](decisions/0003-validation-stays-external.md). First concrete tests arrive with the [refactoring plan](plans/refactoring-plan.md) (store + assembler).
 - **Siegfried is a hard dependency it shouldn't be** → format identification becomes an optional enricher; essence fixity/size (the spec MUSTs) move to native streamed computation in the store → [format-identification-optional plan](plans/format-identification-optional.md) + [ADR-0006](decisions/0006-format-identification-optional.md).
 - **Siegfried/config defects** (fixed by that same plan; recorded here so they aren't lost if it stalls):
   - `siegfried.Process` mutates its args slice — every essence file after the first gets the *first* file's checksum/size/format (`formats/siegfried/siegfried.go:73`).
@@ -44,8 +40,6 @@ These need a decision before they become plan work.
 
 - **Library builder API — embeddability requirements.** So larger ingest-automation systems can drive the library without touching the CLI's input convention, the builder API must: accept essence as streams (`io.Reader`/`fs.FS` + logical path), not only filesystem paths; accept pre-computed fixity and only compute checksums when none are supplied; take descriptive metadata as data (structs), not files to parse; take administrative metadata (agents, submission agreement, record status, content category) as data — the planned `sip.Spec`/`sip.Agent` ([refactoring plan](plans/refactoring-plan.md), Steps 7–8) is the vehicle; accept a caller-supplied package identifier (updates reuse the original `mets/@OBJID`) and mint a UUID only when none is given; keep representation labels free-form in the model (the profile decides SIP-side directory naming); build to a destination the caller controls. See the [CLI/library boundary](sip-creator-design.md#clilibrary-boundary) in the design doc.
 
-- **File copy performance.** Is there a better / more performant way to copy essence assets than the current 2 KB-buffer loop?
-
 - **METS `@MIMETYPE` for essence files is a hardcoded lie.** Representation METS stamps every essence file `MIMETYPE="text/xml"` (`encoders/mets/encoder.go:75-78`), and CSIP makes `@MIMETYPE` a MUST. The identificator's mime output (parsed and currently discarded) is a candidate source when identification runs; an extension-based fallback is needed when it doesn't. Decide the source of truth, then fix.
 
 ## Known-INVALID: concrete validator evidence
@@ -61,13 +55,3 @@ Descriptive metadata (`dc+schema.xml`) fails XSD validation:
 ```
 
 → the `<metadata>` element has no resolvable schema declaration, and the EDTF type for `dcterms:created` does not resolve. Likely a missing/mislinked XSD for the `metadata` element and the `edtf` namespace.
-
-In RODA:
-
-```
-ERROR
-representations/representation_1/representations/representation_1/metadata/preservation/premis.xml
-Preservation metadata file not found.
-```
-
-→ doubled `representations/representation_1/...` path — a path-construction bug in the representation PREMIS href (related to the path-handling item above).

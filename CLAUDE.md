@@ -25,14 +25,15 @@ Single-binary cobra CLI. Entry point is `main.go` → `cli/cli.go` → `cli/crea
 Data flow for `create [src] [dest] --profile basic`:
 
 1. **Input**: a source dir (e.g. `./tmp/basic`) with exactly one `dc+schema.json` (JSON-LD descriptive metadata) and one or more `representation_N/` directories holding essence files.
-2. **Profile** (`profiles/profile.go`, `profiles/basic.go`): creates a `uuid-<uuid>` package dir under `dest`, builds the skeleton (`metadata/descriptive`, `metadata/preservation`, `representations`, `schemas`), copies essence files, runs format identification per file, generates PREMIS and METS XML at representation and package level. `profiles/roda.go` is dead code — unreachable from the CLI and slated for deletion, not completion (see [ADR-0004](docs/decisions/0004-eark-base-meemoo-specialization.md)).
-3. **Encoders** (`encoders/metadata`, `encoders/mets`, `encoders/premis`): thin `Encode*(io.Writer, ...)` APIs backed by `text/template`, one package per metadata standard from Scope — `metadata` emits the descriptive XML (Dublin Core), `premis` the preservation XML, `mets` the structural manifest. UUID minting for METS IDs lives in the mets `idStore`.
-4. **Schemas** (`schemas/schemas.go`): all XSDs are bundled via `//go:embed` and copied into each SIP's `schemas/` dir.
-5. **Archive** (`archive/zip.go`): zips the package dir into `dest/uuid-<uuid>.zip`, stored uncompressed (`zip.Store`).
+2. **Profile** (`profiles/`): builds the package in two phases with a hard seam. `assemble.go` is pure — it walks the input, runs format identification on the *source* files, and builds the complete `sip.Package` graph with zero disk writes; `write.go` emits the graph in the one canonical dependency order (skeleton → schemas → essence copies → descriptive → per-rep PREMIS then METS → package PREMIS → package METS strictly last), back-filling fixity onto graph nodes as each file lands. `basic.go` orchestrates the two; `profile.go` holds the `Profile` type. Errors return (no panics on the build path); a failed assembly leaves nothing on disk.
+3. **Store** (`store/store.go`): dumb filesystem primitives rooted at the `uuid-<uuid>` package dir under `dest` — callers speak package-relative paths. `CopyFile` computes MD5/size during the streamed copy; `WriteMetadata` renders to memory before writing (a failed template leaves no partial file); all writes truncate.
+4. **Encoders** (`encoders/metadata`, `encoders/mets`, `encoders/premis`): thin `Encode*(io.Writer, ...)` APIs backed by `text/template`, one package per metadata standard from Scope — `metadata` emits the descriptive XML (Dublin Core), `premis` the preservation XML, `mets` the structural manifest. UUID minting for METS IDs lives in the mets `idStore`.
+5. **Schemas** (`schemas/schemas.go`): all XSDs are bundled via `//go:embed` and copied into each SIP's `schemas/` dir.
+6. **Archive** (`archive/zip.go`): zips the package dir into `dest/uuid-<uuid>.zip`, stored uncompressed (`zip.Store`).
 
 Supporting pieces:
 
-- **Domain model** (`sip/`): `Package`, `Entity`, `Representation`, `File`, `Identifier`. All identifiers take the form `uuid-<uuid>`. `sip.Event` is an empty stub.
+- **Domain model** (`sip/`): `Package`, `Entity`, `Representation`, `File`, `Identifier`. All identifiers take the form `uuid-<uuid>`. `File.Path` is the href relative to the METS document that references the file (documented on the field — subtle and load-bearing); `File.Source` records where essence comes from; `Entity.Description` carries the decoded descriptive metadata (`sip.Descriptive`) until the writer serializes it. `sip.Event` is an empty stub.
 - **Format identification** (`formats/`): pluggable registry (`Identificator` interface, `Register`/`New` factory). `formats/siegfried` self-registers and shells out to the external `sf` binary, which must be installed on the system.
 - **Config** (`services/config.go`): `.env` loaded via godotenv, parsed with caarlos0/env. Required vars: `SIP_FILE_FORMAT_NAME`, `SIP_FILE_FORMAT_COMMAND`, `SIP_FILE_FORMAT_ARGS`.
 
@@ -89,4 +90,5 @@ Comment the why, not the what. Don't restate what the code or a function signatu
 - `docker compose up -d reports` — serve the HTML validation reports at http://localhost:8080 (see [ADR-0005](docs/decisions/0005-dockerized-validation-and-html-reporting.md)).
 - `go generate ./services` — regenerate `CONFIG.md` from the config struct.
 
-There are no `*_test.go` files yet; external CSIP validation via `build.sh` is the current acceptance check. Add Go tests for new logic where practical.
+- `go test ./...` — Go tests cover the `store/` primitives and the assembler (`profiles/assemble_test.go`); they run with no external dependencies (no `sf`, no docker, no `.env`). External CSIP validation via `build.sh` remains the acceptance check — Go tests pin internal contracts and failure paths, the validator pins spec conformance. Add Go tests for new logic where practical.
+- `./scripts/baseline-diff.sh tmp/baseline/pkg <pkg-dir>` — structural-equivalence gate for the in-flight [refactoring plan](docs/plans/refactoring-plan.md): diffs a generated package against the Phase-0 reference with run-varying values normalized.

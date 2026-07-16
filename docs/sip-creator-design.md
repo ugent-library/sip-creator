@@ -8,12 +8,12 @@ This document describes **what the system is today** — the domain model, the p
 
 ## Domain model
 
-The domain lives in the `sip/` package as a graph of plain structs, built entirely in memory before (and during) writing to disk. It mirrors the OAIS/METS vocabulary: an intellectual entity, its representations, and the files within them.
+The domain lives in the `sip/` package as a graph of plain structs, built entirely in memory before anything is written to disk. It mirrors the OAIS/METS vocabulary: an intellectual entity, its representations, and the files within them.
 
 - **Package** (`sip.Package`) — the unit of work: one SIP. Carries its `Identifier` and `Location` (the on-disk package directory), a single root `Entity`, and the generated top-level files (package `MetsFile`, package `PremisFile`, `SchemaFiles`). Created by `NewPackage(baseDir)`, which mints the identifier and sets `Location = baseDir/uuid-<uuid>`.
-- **Entity** (`sip.Entity`) — the intellectual entity being preserved (the "what this is"). Holds its `Identifier`, a map of `AdditionalIdentifiers` (e.g. `MEEMOO-LOCAL-ID`), its `Representations`, its `DescriptionFile` (the descriptive-metadata file), and a slice of sub-`Entities`. The sub-entity slice exists in the model but the `basic` profile only ever builds a single root entity with no children.
+- **Entity** (`sip.Entity`) — the intellectual entity being preserved (the "what this is"). Holds its `Identifier`, a map of `AdditionalIdentifiers` (e.g. `MEEMOO-LOCAL-ID`), its `Representations`, its `Description` (the decoded descriptive metadata, a `sip.Descriptive`, awaiting serialization by the writer), its `DescriptionFile` (the descriptive-metadata file node), and a slice of sub-`Entities`. The sub-entity slice exists in the model but the `basic` profile only ever builds a single root entity with no children.
 - **Representation** (`sip.Representation`) — a typed grouping of the essence (e.g. a master vs. a derivative). Holds its `Label` (the source directory name, e.g. `representation_1`), `Identifier`, its `Files`, its own representation-level `MetsFile` and `PremisFile`, and a back-reference to its `Entity`.
-- **File** (`sip.File`) — one file in the package, whether essence or generated metadata. Records `Identifier`, `Name`, `Checksum` (MD5), `Size`, `Created` (RFC3339Nano), `Path`, and — for essence — a `Format`. `Path` is the href **relative to the METS document that references the file**, which is why it is computed differently for essence (representation-relative) than for package-level metadata (package-relative).
+- **File** (`sip.File`) — one file in the package, whether essence or generated metadata. Records `Identifier`, `Name`, `Checksum` (MD5), `Size`, `Created` (RFC3339Nano), `Path`, `Source` (the absolute input path an essence file is copied from; empty for generated metadata), and — for essence — a `Format`. `Path` is the href **relative to the METS document that references the file**: essence and representation PREMIS are representation-relative, schema/descriptive files and representation METS entries are package-relative. The assembler declares `Path` up front; the writer back-fills `Checksum`/`Size`/`Created` as each file lands on disk.
 - **Format** / **FormatRegistry** (`sip.Format`, `sip.FormatRegistry`) — the format-identification result attached to an essence file: the PRONOM registry key and name from Siegfried, plus a `Role` of `specification`.
 - **Identifier** (`sip.Identifier`, `sip.UUID`) — an interface + a UUID implementation. **Note:** this type is defined but effectively unused; every struct above carries its identifier as a bare `string` minted inline as `uuid-<uuid>`, not via this interface.
 - **Event** (`sip.Event`) — an empty stub. PREMIS events are not modeled yet.
@@ -64,38 +64,42 @@ sip-creator create [src] [dest] --profile basic
 
 `create_cmd.go` builds a format identificator from config (`formats.New`), constructs a `profiles.Profile`, and switches on `--profile`. Only `"basic"` is handled; any other value (including empty) returns an error. On success it hands the assembled `*sip.Package` to `archive.Zip`.
 
-`Profile.Basic()` (`profiles/basic.go`) runs the build in two conceptual steps. **Model-building and disk IO are interleaved** — a metadata `File` node is only born after its bytes have been written and stat-ed, because the METS manifest needs each file's real checksum and size:
+`Profile.Basic()` (`profiles/basic.go`) runs the build in **two phases with a hard seam between them**: assemble the complete package graph in memory, then emit it to disk. Errors are returned, not panicked, and assembly failures happen before anything exists on disk — a bad input leaves no partial package directory behind.
 
-**Step 1 — assemble the package and copy input:**
+**Phase 1 — assemble** (`profiles/assemble.go`, zero writes):
 
-1. `createPackage()` — mint the package, create the skeleton directories, and write the `schemas/` XSDs (each schema copy produces a `File` node with its checksum/size).
-2. Create the root `Entity`.
-3. `createDescriptiveFile()` — decode `src/dc+schema.json`, swap the entity's UUID in as `dcterms:identifier`, lift the source `dcterms:identifier` out to the entity as `MEEMOO-LOCAL-ID`, then encode `dc+schema.xml`.
-4. `eachDirectory()` — walk `src` for directories matching `representation_([0-9]+)$`; for each, `eachEssenceFile()` copies every file into `representations/<label>/data/` and runs format identification on the copy.
+1. Mint the package (`sip.NewPackage`) and the root `Entity`.
+2. Decode `src/dc+schema.json`, swap the entity's UUID in as `dcterms:identifier`, lift the source `dcterms:identifier` out to the entity as `MEEMOO-LOCAL-ID`, and park the decoded description on the entity (`Entity.Description`) for the writer to serialize. The descriptive `File` node is declared with its path; decoding stays behind a single call (`decodeDescriptive`) so future input formats plug in there.
+3. Declare one schema `File` node per bundled XSD, in sorted order (deterministic METS emission).
+4. Walk `src` for directories matching `representation_([0-9]+)$`; for each essence file, run format identification **on the source file** and record `File.Source` plus the representation-relative `Path`.
 
-**Step 2 — generate the derived metadata**, in a dependency order that is load-bearing (each METS references the checksum/size of files written before it):
+**Phase 2 — write** (`profiles/write.go`, backed by the `store/` package), in a dependency order that is load-bearing and encoded exactly once, top to bottom in `write()`:
 
-5. Per representation: representation `premis.xml`, then representation `METS.xml`.
-6. Package `premis.xml` (the intellectual entity).
-7. Package `METS.xml` — **strictly last**, because it references every representation METS, the package PREMIS, and every schema file by checksum.
+5. Skeleton directories.
+6. Schema files (package METS references their fixity).
+7. Per representation: directories, then essence copies — fixity is computed during the streamed copy and back-filled onto the graph nodes, so it describes the bytes actually in the package.
+8. Descriptive XML (serialized from `Entity.Description`).
+9. Per representation: `premis.xml`, then `METS.xml` (the representation METS embeds its PREMIS file's fixity). These `File` nodes are born in the writer, not the assembler — their existence is a profile decision the writer owns.
+10. Package `premis.xml` (the intellectual entity).
+11. Package `METS.xml` — **strictly last**, because it references every representation METS, the package PREMIS, the descriptive file, and every schema file by checksum.
 
 The assembled package is returned to the CLI, which zips it.
 
 ### Ordering dependencies
 
-These are implicit in the call order of `Basic()` and are not enforced by types — reordering silently produces broken references:
+The dependency order is still not enforced by types, but it now lives in exactly one place — the numbered steps of `write()` — instead of being re-hand-sequenced per profile:
 
-- Format identification must run **before** any PREMIS (PREMIS records the format registry).
-- Representation PREMIS + METS must be written **before** the package METS (it references their fixity).
-- Package PREMIS must be written **before** the package METS.
-- The package METS is always **last**.
+- Format identification runs at assembly, **before** any PREMIS is rendered (PREMIS records the format registry).
+- Representation PREMIS is written **before** its representation METS (which embeds its fixity).
+- Everything is written **before** the package METS; it is always **last**.
 
 ## Code organization
 
 Layered by responsibility. The `sip/` graph is the shared domain; everything else reads or writes it.
 
 - **`sip/`** — the domain model (above). Plain structs and constructors, no IO.
-- **`profiles/`** — the build engine. `profile.go` holds the `Profile` type and every filesystem/assembly helper (`createPackage`, `createDescriptiveFile`, `eachDirectory`, `eachEssenceFile`, `generate*`, plus the low-level `createMetadataFile`/`copy`/`createDir`). `basic.go` is the one wired profile: it orchestrates the helpers into the lifecycle above. `roda.go` holds a second, **unreachable** profile (see [Known gaps](#known-gaps)).
+- **`profiles/`** — the build engine, split along the assemble/emit seam. `profile.go` holds the `Profile` type and config; `assemble.go` is the pure input-to-graph phase; `write.go` is the canonical emission order; `basic.go` orchestrates the two phases. Assembler behavior is covered by `assemble_test.go` (graph shape, walk edge cases, the zero-writes guarantee).
+- **`store/`** — dumb filesystem primitives rooted at the package directory (`MkdirAll`, `CopyFile`, `WriteMetadata`). Callers deal only in package-relative paths; writes truncate (safe re-runs); `CopyFile` computes MD5/size in the same streamed pass as the copy; `WriteMetadata` renders to memory first, so a failed template leaves no partial file.
 - **`encoders/`** — one package per metadata standard (`metadata`, `mets`, `premis`), each a thin `Encode*(io.Writer, …)` API backed by a `text/template`. **No XML library** — all XML is generated from templates (see [ADR-0002](decisions/0002-xml-via-text-template.md)). METS ID minting lives in the mets encoder's `identifier()`/`idStore`.
 - **`formats/`** — pluggable format identification. `Identificator` is the interface (`Process(path) *sip.File`); `Register`/`New` is a self-registration registry keyed by name. `formats/siegfried` self-registers on import and shells out to the external `sf` binary.
 - **`schemas/`** — all XSDs bundled via `//go:embed`; `Get()` returns them as `map[name][]byte` for copying into each SIP.
@@ -114,7 +118,7 @@ SIP Creator is a library with a CLI frontend, and the boundary between the two i
 - **The library is stream-first.** The file-adding primitive takes an `io.Reader` plus a logical path and optional pre-computed fixity, not a source directory. The CLI feeds it opened disk files; an embedding system feeds it streams from wherever it stores content.
 - **Format identification is pluggable and optional** ([ADR-0006](decisions/0006-format-identification-optional.md)): Siegfried wants a real file path, so it cannot be assumed in a stream-first API. Callers may supply format information as data, the same pattern as fixity.
 
-**Known gap:** the current code blurs this line — `profiles/` both discovers input *and* generates output, and administrative metadata (agents, profile literals) is hardcoded in templates rather than passed as data. The future implementation work pulls these apart along exactly this boundary; see the [refactoring plan](plans/refactoring-plan.md) (assemble/emit split, `sip.Spec`/`sip.Agent`) and the embeddability requirements in [TODO.md](TODO.md).
+**Known gap:** the assemble/emit split now separates input discovery (`assemble.go`) from output generation (`write.go`), but both still live in `profiles/` behind the CLI's input convention, and administrative metadata (agents, profile literals) is still hardcoded in templates rather than passed as data. The remaining work is the declarative `sip.Spec`/`sip.Agent` ([refactoring plan](plans/refactoring-plan.md), Phase 2) and the embeddability requirements in [TODO.md](TODO.md).
 
 ## Input contract
 
@@ -129,7 +133,7 @@ A convention-based replacement for this contract — folders as the UI, one key�
 
 ## Validation
 
-The acceptance check is **external**: generated packages are validated with commons-ip, the E-ARK CSIP reference validator. The CSIP rules are *not* reimplemented as Go tests — commons-ip is the reference (see [ADR-0003](decisions/0003-validation-stays-external.md)). There are currently no `*_test.go` files.
+The acceptance check is **external**: generated packages are validated with commons-ip, the E-ARK CSIP reference validator. The CSIP rules are *not* reimplemented as Go tests — commons-ip is the reference (see [ADR-0003](decisions/0003-validation-stays-external.md)). Go tests cover what the validator can't see: the `store/` primitives (fixity, truncate-on-rewrite, fail-fast) and the assembler (graph shape, meemoo-layer semantics like `MEEMOO-LOCAL-ID`, the zero-writes guarantee).
 
 The workflow around the tool ([ADR-0005](decisions/0005-dockerized-validation-and-html-reporting.md)): `./build.sh` is the local CI loop — build, regenerate the sample SIP, validate the zip with a dockerized commons-ip (release jar pinned by version + sha256, spec version pinned to 2.2.0), and exit non-zero iff the package is not `VALID` (the commons-ip CLI itself always exits 0; the verdict is read from its JSON report). Each run's reports are published to `reports/runs/<timestamp>/`; `docker compose up -d reports` serves a static HTML view of all runs at http://localhost:8080. `scripts/validate.sh` is usable standalone against any package zip or directory.
 
@@ -137,12 +141,10 @@ The workflow around the tool ([ADR-0005](decisions/0005-dockerized-validation-an
 
 These are true of the code today and tracked in [TODO.md](TODO.md):
 
-- **The sample package is INVALID against commons-ip.** Two known failures: the descriptive `<metadata>` element has no resolvable schema declaration, and `dcterms:created`'s `edtf:EDTF-level1` type does not resolve. RODA additionally reports a mislocated representation PREMIS path.
-- **Errors are panics.** The profile helpers, the metadata decoder, and `archive.Zip` `panic` on IO/parse failure rather than returning errors. A partial package directory can be left behind on failure.
-- **`createMetadataFile` and `copy` open files with `O_APPEND`**, so re-running into an existing package directory *concatenates* onto existing files rather than truncating.
-- **`roda.go` is dead code.** It is ~90% identical to `Basic()`, is not reachable from the CLI switch, and omits representation PREMIS (the source of the RODA "Preservation metadata file not found" error). The agreed direction is a genuine E-ARK writer, not this copy — see [ADR-0004](decisions/0004-eark-base-meemoo-specialization.md) and the [refactoring plan](plans/refactoring-plan.md).
+- **The sample package is INVALID against commons-ip.** Two known failures: the descriptive `<metadata>` element has no resolvable schema declaration, and `dcterms:created`'s `edtf:EDTF-level1` type does not resolve.
+- **Some errors are still panics.** The build path (`profiles/`, `store/`, the metadata decoder) returns errors, but `archive.Zip` and the siegfried integration still `panic` on failure (the latter is owned by the [format-identification plan](plans/format-identification-optional.md)).
 - **Meemoo literals are baked into shared templates** (`TYPE="Photographs – Digital"`, the `2.0/basic` profile URL, the UGent agent block), which blocks a clean CSIP-base / meemoo-specialization split.
 - **The `sip.Identifier` interface and `sip.Event` stub are unused.** Identifiers are bare strings; PREMIS events are not modeled.
 - **The `representation_([0-9]+)$` regex is stricter than either spec requires** and silently skips non-matching directories — a representation named `master` is dropped with no error.
 
-The [refactoring plan](plans/refactoring-plan.md) addresses the assemble/emit split, the declarative profile registry, the panic-to-error conversion, and the `O_APPEND` and `roda.go` issues; it is accepted but not yet started.
+The [refactoring plan](plans/refactoring-plan.md) is mid-flight: Phases 0–1 (baseline gate; assemble/emit split, `store/` package, panic-to-error conversion, `O_APPEND` fix, `roda.go` removal) are done and verified output-equivalent. Phase 2 (the declarative profile spec + registry) is next; Phase 3 (a true E-ARK writer) follows.
