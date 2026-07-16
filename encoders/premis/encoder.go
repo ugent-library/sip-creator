@@ -77,13 +77,15 @@ var premis = template.Must(template.New("").Funcs(funcs).Parse(`
 				<premis:messageDigest>{{ .Checksum }}</premis:messageDigest>
 			</premis:fixity>
 			<premis:size>{{ .Size }}</premis:size>
+			{{ with .Format -}}
 			<premis:format>
 				<premis:formatRegistry>
-					<premis:formatRegistryName>{{ .Format.FormatRegistry.Name }}</premis:formatRegistryName>
-					<premis:formatRegistryKey>{{ .Format.FormatRegistry.Key }}</premis:formatRegistryKey>
-					<premis:formatRegistryRole authority="formatRegistryRole" authorityURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole" valueURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole/spe">{{ .Format.FormatRegistry.Role }}</premis:formatRegistryRole>
+					<premis:formatRegistryName>{{ .FormatRegistry.Name }}</premis:formatRegistryName>
+					<premis:formatRegistryKey>{{ .FormatRegistry.Key }}</premis:formatRegistryKey>
+					<premis:formatRegistryRole authority="formatRegistryRole" authorityURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole" valueURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole/spe">{{ .FormatRegistry.Role }}</premis:formatRegistryRole>
 				</premis:formatRegistry>
 			</premis:format>
+			{{- end }}
 		</premis:objectCharacteristics>
 
 		<premis:originalName>{{ .Name }}</premis:originalName>
