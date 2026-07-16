@@ -1,13 +1,13 @@
 package cli
 
 import (
-	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/ugent-library/sip-creator/archive"
 	"github.com/ugent-library/sip-creator/formats"
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/sip"
 )
 
 func init() {
@@ -21,6 +21,12 @@ var createCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flagProfile, _ := cmd.Flags().GetString("profile")
+
+		def, ok := profiles.Get(flagProfile)
+		if !ok {
+			return fmt.Errorf("unknown profile %q (available: %s)",
+				flagProfile, strings.Join(profiles.Names(), ", "))
+		}
 
 		ffid, err := formats.New(config.Formats.Name, config.Formats.Command, config.Formats.Args)
 		if err != nil {
@@ -39,16 +45,9 @@ var createCmd = &cobra.Command{
 			Logger:      logger,
 		})
 
-		var pkg *sip.Package
-
-		switch flagProfile {
-		case "basic":
-			pkg, err = builder.Basic()
-			if err != nil {
-				return err
-			}
-		default:
-			return errors.New("no sip profile was set")
+		pkg, err := builder.Build(def)
+		if err != nil {
+			return err
 		}
 
 		archive.Zip(pkg)
