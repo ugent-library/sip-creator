@@ -64,6 +64,12 @@ normalize() {
             ($flocat =~ /xlink:href="([^"]*)"/ && is_generated($1) ? blank($tag) : $tag) . $flocat;
         }ge;
 
+        # XML indentation and blank lines are not structural. (Added at
+        # plan Step 7: templated metsHdr agents indent uniformly where the
+        # old hardcoded block mixed tabs and spaces.)
+        s/^[ \t]+//mg;
+        s/^[ \t]*\n//mg;
+
         # ISO datetimes, attribute or element text. Requires the T-time part,
         # so descriptive dates like <dcterms:created>2022-01-01 survive.
         s/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+(Z|[+-][0-9]{2}:[0-9]{2})?/TS/g;
