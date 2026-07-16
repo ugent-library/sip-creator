@@ -267,6 +267,14 @@ Commits (small, prefixed): `Added: store package…`, `Changed: split profile in
 
 ## Phase 2 — declarative ProfileSpec + registry
 
+*Status: **done** (2026-07-16). Steps 7–9 landed; the gate passed after each step (structurally identical trees, same two FAILED checks). Deviations from the letter of this plan, all discussed:*
+
+- *Naming: the profile-as-data type is `profiles.Definition`, not `Spec`/`ProfileSpec` — it would have collided with `sip.Spec` one import away, and `ProfileSpec`/`profiles.Profile` stutter. The engine type was renamed `Profile` → `Builder` in the same move (it never was a profile), with files `builder.go` and `definition.go` named accordingly. A profiles-vs-builder package split was considered and rejected: no consumer wants one without the other, and Phase 3's writer-selector field would create an import cycle across that boundary.*
+- *The registry is a plain in-package map — no `Register`/mutex; the formats/ registry needs self-registration from sub-packages, definitions don't.*
+- *Step 7's agent range emits uniform indentation where the old hardcoded block mixed tabs and spaces; `baseline-diff.sh` now normalizes leading whitespace and blank lines (verified still to catch planted regressions).*
+- *Both METS templates got the premis-less guards (amdSec + conditional structMap ADMID), not just the package template — unexercisable while `basic` emits all PREMIS; they exist for future definitions.*
+- *Removing the inert `idStore` spawned a decision recorded in [TODO.md](../TODO.md): duplicate-identifier protection becomes a future `sip.Package.Validate()` set-check on the assembled graph (catches systematic duplication, not just the ~10⁻²⁵ UUIDv4 collision), rather than any minting-time machinery.*
+
 ### Step 7: `sip.Spec` on the package; templates read data instead of literals
 
 ```go

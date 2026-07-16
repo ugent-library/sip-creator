@@ -9,7 +9,8 @@ Create Submission Information Packages (SIP) based on [Meemoo's SIP Specificatio
 ## Features
 
 * Implements [Meemoo SIP Specification v2.0](https://developer.meemoo.be/docs/diginstroom/sip/2.0/).
-* Supports the `basic` profile.
+* Profiles are registry entries selected with `--profile`; currently `basic`. An unknown
+  (or omitted) `--profile` fails with the list of available profiles.
 * Supports file format characterization via [Siegfried](https://github.com/richardlehane/siegfried).
 
 ## Requisites
