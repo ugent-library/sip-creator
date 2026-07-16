@@ -19,9 +19,11 @@ type Config struct {
 // Builder builds SIP packages from an input tree, driven by a profile
 // Definition.
 type Builder struct {
-	OutDir  string
-	InDir   string
-	Logger  *slog.Logger
+	OutDir string
+	InDir  string
+	Logger *slog.Logger
+	// Formats optionally enriches essence files with format information;
+	// nil skips identification (ADR-0006).
 	Formats formats.Identificator
 }
 

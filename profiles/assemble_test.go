@@ -1,6 +1,7 @@
 package profiles
 
 import (
+	"errors"
 	"io"
 	"log/slog"
 	"os"
@@ -13,15 +14,15 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// fakeIdentificator stands in for siegfried: it mints a File node the way
-// formats.Identificator implementations do, without shelling out.
+// fakeIdentificator stands in for siegfried: it returns a canned format
+// the way formats.Identificator implementations do, without shelling out.
 type fakeIdentificator struct{}
 
-func (fakeIdentificator) Process(src string) *sip.File {
-	f := sip.NewFile()
-	f.Name = filepath.Base(src)
-	f.Checksum = "cafebabe00000000000000000000cafe"
-	return f
+func (fakeIdentificator) Identify(src string) (*sip.Format, error) {
+	fr := sip.NewFormatRegistry()
+	fr.Name = "pronom"
+	fr.Key = "fmt/999"
+	return &sip.Format{FormatRegistry: fr}, nil
 }
 
 const testDescriptive = `{
@@ -150,6 +151,11 @@ func TestAssemble(t *testing.T) {
 		t.Error("essence file not wired back to the representation")
 	}
 
+	// The essence node is enriched with the identificator's format.
+	if f.Format == nil || f.Format.FormatRegistry.Key != "fmt/999" {
+		t.Errorf("essence Format = %+v, want fmt/999 from the identificator", f.Format)
+	}
+
 	// PREMIS and METS nodes are the writer's to create, not the assembler's.
 	if pkg.PremisFile != nil || pkg.MetsFile != nil || r.PremisFile != nil || r.MetsFile != nil {
 		t.Error("assemble created premis/mets nodes; those belong to write")
@@ -235,6 +241,64 @@ func TestAssembleRepresentations(t *testing.T) {
 
 	if rep10 := files("representation_10"); len(rep10) != 1 {
 		t.Errorf("representation_10 files = %d, want 1", len(rep10))
+	}
+}
+
+// Format identification is optional: a nil identificator skips enrichment
+// and the build still assembles (ADR-0006).
+func TestAssembleWithoutIdentificator(t *testing.T) {
+	b, _, _ := newTestBuilder(t)
+	b.Formats = nil
+
+	pkg, err := b.assemble(basicDef(t))
+	if err != nil {
+		t.Fatalf("assemble without identificator: %v", err)
+	}
+	if f := pkg.Root.Representations[0].Files[0]; f.Format != nil {
+		t.Errorf("essence Format = %+v, want nil without an identificator", f.Format)
+	}
+}
+
+type noMatchIdentificator struct{}
+
+func (noMatchIdentificator) Identify(string) (*sip.Format, error) { return nil, nil }
+
+// A tool that runs but finds no match leaves Format nil for that file only.
+func TestAssembleIdentificatorNoMatch(t *testing.T) {
+	b, _, _ := newTestBuilder(t)
+	b.Formats = noMatchIdentificator{}
+
+	pkg, err := b.assemble(basicDef(t))
+	if err != nil {
+		t.Fatalf("assemble with no-match identificator: %v", err)
+	}
+	if f := pkg.Root.Representations[0].Files[0]; f.Format != nil {
+		t.Errorf("essence Format = %+v, want nil on no match", f.Format)
+	}
+}
+
+type failingIdentificator struct{}
+
+func (failingIdentificator) Identify(string) (*sip.Format, error) {
+	return nil, errors.New("sf exploded")
+}
+
+// A configured-but-broken tool aborts assembly: misconfiguration must be
+// loud, and it fails before anything is written.
+func TestAssembleIdentificatorError(t *testing.T) {
+	b, _, outDir := newTestBuilder(t)
+	b.Formats = failingIdentificator{}
+
+	if _, err := b.assemble(basicDef(t)); err == nil {
+		t.Fatal("assemble succeeded despite a failing identificator")
+	}
+
+	entries, err := os.ReadDir(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("failed assemble wrote to the destination: %v", entries)
 	}
 }
 

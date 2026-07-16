@@ -8,8 +8,14 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
+// Identificator characterises files with an external format-identification
+// tool. It is an optional enricher: fixity is computed natively by the
+// store, so a build without an identificator is spec-valid (premis:format
+// is a SHOULD).
 type Identificator interface {
-	Process(string) *sip.File
+	// Identify characterises the file at path; (nil, nil) means the tool
+	// ran but found no match.
+	Identify(path string) (*sip.Format, error)
 }
 
 type Factory func(string, []string) (Identificator, error)
@@ -28,8 +34,14 @@ func New(name, bin, args string) (Identificator, error) {
 	factory, ok := factories[name]
 	mu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("uknown format identificator '%s'", name)
+		return nil, fmt.Errorf("unknown format identificator '%s'", name)
 	}
 
-	return factory(bin, strings.Split(args, " "))
+	// An empty args string means no arguments, not one empty argument.
+	var argv []string
+	if args != "" {
+		argv = strings.Split(args, " ")
+	}
+
+	return factory(bin, argv)
 }

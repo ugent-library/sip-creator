@@ -1,0 +1,23 @@
+{
+  "siegfried": "1.11.0",
+  "files": [
+    {
+      "filename": "cat.jpg",
+      "filesize": 8822403,
+      "modified": "2026-07-16T10:00:00+02:00",
+      "errors": "",
+      "matches": [
+        {
+          "ns": "pronom",
+          "id": "fmt/44",
+          "format": "JPEG File Interchange Format",
+          "version": "1.02",
+          "mime": "image/jpeg",
+          "class": "Image (Raster)",
+          "basis": "extension match jpg; byte match at [[0 3]]",
+          "warning": ""
+        }
+      ]
+    }
+  ]
+}

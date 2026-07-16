@@ -3,9 +3,9 @@ package siegfried
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os/exec"
-	"path"
-	"strconv"
+	"slices"
 
 	"github.com/ugent-library/sip-creator/formats"
 	"github.com/ugent-library/sip-creator/sip"
@@ -41,11 +41,8 @@ func (o *Output) FirstFile() *File {
 
 type File struct {
 	Filename string   `json:"filename"`
-	Filesize int      `json:"filesize"`
-	Modified string   `json:"modified"`
 	Errors   string   `json:"errors"`
 	Matches  []*Match `json:"matches"`
-	Checksum string   `json:"md5"`
 }
 
 func (f *File) FirstMatch() *Match {
@@ -67,39 +64,39 @@ type Match struct {
 	Warning string `json:"warning"`
 }
 
-func (s *siegfried) Process(f string) *sip.File {
-	var b bytes.Buffer
+func (s *siegfried) Identify(path string) (*sip.Format, error) {
+	// A fresh slice per call: appending to s.args would accumulate paths
+	// across calls, running sf against every file seen so far.
+	args := append(slices.Clone(s.args), path)
 
-	s.args = append(s.args, f)
-
-	// TODO handle errors if the command fails (e.g. not installed)
-	bin := exec.Command(s.bin, s.args...)
-	bin.Stdout = &b
-	_ = bin.Run()
-
-	var out *Output
-
-	if err := json.Unmarshal(b.Bytes(), &out); err != nil {
-		panic(err)
+	var out bytes.Buffer
+	cmd := exec.Command(s.bin, args...)
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("format identification (%s): %w", s.bin, err)
 	}
 
-	file := sip.NewFile()
-	file.Name = path.Base(f)
-
-	if sfile := out.FirstFile(); sfile != nil {
-		if match := sfile.FirstMatch(); match != nil {
-			fr := sip.NewFormatRegistry()
-			fr.Key = match.ID
-			fr.Name = match.NS
-
-			file.Format = &sip.Format{
-				FormatRegistry: fr,
-			}
-			file.Checksum = sfile.Checksum
-			file.Size = strconv.Itoa(sfile.Filesize)
-			file.Created = sfile.Modified
-		}
+	var result *Output
+	if err := json.Unmarshal(out.Bytes(), &result); err != nil {
+		return nil, fmt.Errorf("format identification: parse %s output: %w", s.bin, err)
 	}
 
-	return file
+	sfile := result.FirstFile()
+	if sfile == nil {
+		return nil, nil
+	}
+	if sfile.Errors != "" {
+		return nil, fmt.Errorf("format identification (%s): %s", s.bin, sfile.Errors)
+	}
+
+	match := sfile.FirstMatch()
+	if match == nil {
+		return nil, nil
+	}
+
+	fr := sip.NewFormatRegistry()
+	fr.Name = match.NS
+	fr.Key = match.ID
+
+	return &sip.Format{FormatRegistry: fr}, nil
 }

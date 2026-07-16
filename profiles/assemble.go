@@ -137,9 +137,20 @@ func (b *Builder) assembleEssenceFiles(dir string, r *sip.Representation) error 
 		}
 		// TODO ignore all descriptive files per the spec (dc, dc+schema, mods)
 
-		f := b.Formats.Process(src) // identify the SOURCE, before anything is on disk
+		f := sip.NewFile()
+		f.Name = filepath.Base(src)
 		f.Source = src
-		f.Path = "data/" + filepath.Base(src) // rep-relative, per File.Path semantics
+		f.Path = "data/" + f.Name // rep-relative, per File.Path semantics
+		// Format identification is an optional enricher (ADR-0006): it runs
+		// against the SOURCE file, before anything is on disk. Fixity is not
+		// its job — the writer computes that during the streamed copy.
+		if b.Formats != nil {
+			format, err := b.Formats.Identify(src)
+			if err != nil {
+				return err
+			}
+			f.Format = format
+		}
 		f.SetRepresentation(r)
 		r.AddFile(f)
 		b.Logger.Info("placed an essence file", slog.Any("id", f.Identifier))
