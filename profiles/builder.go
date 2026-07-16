@@ -1,0 +1,55 @@
+package profiles
+
+import (
+	"log/slog"
+
+	"github.com/ugent-library/sip-creator/formats"
+	"github.com/ugent-library/sip-creator/sip"
+	"github.com/ugent-library/sip-creator/store"
+)
+
+// Config carries the operator's inputs for building one package.
+type Config struct {
+	Source      string
+	Destination string
+	Logger      *slog.Logger
+	Formats     formats.Identificator
+}
+
+// Builder builds SIP packages from an input tree, driven by a profile
+// Definition.
+type Builder struct {
+	OutDir  string
+	InDir   string
+	Logger  *slog.Logger
+	Formats formats.Identificator
+}
+
+func New(config *Config) *Builder {
+	return &Builder{
+		OutDir:  config.Destination,
+		InDir:   config.Source,
+		Logger:  config.Logger,
+		Formats: config.Formats,
+	}
+}
+
+// Build assembles the complete package graph per def (no disk writes),
+// then emits it in the canonical order. Assembly failures happen before
+// the store exists, so a bad input leaves no partial package dir behind.
+func (b *Builder) Build(def Definition) (*sip.Package, error) {
+	b.Logger.Info("starting...")
+
+	pkg, err := b.assemble(def)
+	if err != nil {
+		return nil, err
+	}
+
+	st := store.New(pkg.Location)
+	if err := b.write(st, pkg, def); err != nil {
+		return nil, err
+	}
+
+	b.Logger.Info("finished.")
+	return pkg, nil
+}

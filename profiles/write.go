@@ -15,29 +15,31 @@ import (
 // nodes as each file lands. The ordering is load-bearing and encoded only
 // here: representation METS embeds the fixity of its PREMIS file, and
 // package METS embeds the fixity of everything before it — strictly last.
-func (p *Profile) write(st *store.Store, pkg *sip.Package) error {
-	if err := p.writeSkeleton(st); err != nil {
+func (b *Builder) write(st *store.Store, pkg *sip.Package, def Definition) error {
+	if err := b.writeSkeleton(st); err != nil {
 		return err
 	}
-	if err := p.writeSchemas(st, pkg); err != nil {
+	if err := b.writeSchemas(st, pkg); err != nil {
 		return err
 	}
-	if err := p.writeEssence(st, pkg); err != nil {
+	if err := b.writeEssence(st, pkg); err != nil {
 		return err
 	}
-	if err := p.writeDescriptive(st, pkg); err != nil {
+	if err := b.writeDescriptive(st, pkg); err != nil {
 		return err
 	}
-	if err := p.writeRepresentationMetadata(st, pkg); err != nil {
+	if err := b.writeRepresentationMetadata(st, pkg, def); err != nil {
 		return err
 	}
-	if err := p.writePackagePremis(st, pkg); err != nil {
-		return err
+	if def.EmitPackagePremis {
+		if err := b.writePackagePremis(st, pkg); err != nil {
+			return err
+		}
 	}
-	return p.writePackageMets(st, pkg)
+	return b.writePackageMets(st, pkg)
 }
 
-func (p *Profile) writeSkeleton(st *store.Store) error {
+func (b *Builder) writeSkeleton(st *store.Store) error {
 	for _, dir := range []string{
 		"metadata/descriptive",
 		"metadata/preservation",
@@ -51,7 +53,7 @@ func (p *Profile) writeSkeleton(st *store.Store) error {
 	return nil
 }
 
-func (p *Profile) writeSchemas(st *store.Store, pkg *sip.Package) error {
+func (b *Builder) writeSchemas(st *store.Store, pkg *sip.Package) error {
 	xsds := schemas.Get()
 	for _, sf := range pkg.SchemaFiles {
 		info, err := st.WriteMetadata(sf.Path, func(w io.Writer) error {
@@ -66,7 +68,7 @@ func (p *Profile) writeSchemas(st *store.Store, pkg *sip.Package) error {
 	return nil
 }
 
-func (p *Profile) writeEssence(st *store.Store, pkg *sip.Package) error {
+func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 	return pkg.Root.EachRepresentation(func(r *sip.Representation) error {
 		base := "representations/" + r.Label
 		if err := st.MkdirAll(base + "/data"); err != nil {
@@ -89,7 +91,7 @@ func (p *Profile) writeEssence(st *store.Store, pkg *sip.Package) error {
 	})
 }
 
-func (p *Profile) writeDescriptive(st *store.Store, pkg *sip.Package) error {
+func (b *Builder) writeDescriptive(st *store.Store, pkg *sip.Package) error {
 	df := pkg.Root.DescriptionFile
 	info, err := st.WriteMetadata(df.Path, pkg.Root.Description.Encode)
 	if err != nil {
@@ -99,26 +101,28 @@ func (p *Profile) writeDescriptive(st *store.Store, pkg *sip.Package) error {
 	return nil
 }
 
-func (p *Profile) writeRepresentationMetadata(st *store.Store, pkg *sip.Package) error {
+func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package, def Definition) error {
 	return pkg.Root.EachRepresentation(func(r *sip.Representation) error {
-		// PREMIS first: the representation METS embeds its fixity.
-		pf := sip.NewFile()
-		pf.Name = "premis.xml"
-		pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
-		info, err := st.WriteMetadata("representations/"+r.Label+"/"+pf.Path, func(w io.Writer) error {
-			return premis.EncodeRepresentation(w, r)
-		})
-		if err != nil {
-			return err
+		if def.EmitRepresentationPremis {
+			// PREMIS first: the representation METS embeds its fixity.
+			pf := sip.NewFile()
+			pf.Name = "premis.xml"
+			pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
+			info, err := st.WriteMetadata("representations/"+r.Label+"/"+pf.Path, func(w io.Writer) error {
+				return premis.EncodeRepresentation(w, r)
+			})
+			if err != nil {
+				return err
+			}
+			backfill(pf, info)
+			r.AddPremisFile(pf)
+			b.Logger.Info("created a representation PREMIS file", slog.Any("id", pf.Identifier))
 		}
-		backfill(pf, info)
-		r.AddPremisFile(pf)
-		p.Logger.Info("created a representation PREMIS file", slog.Any("id", pf.Identifier))
 
 		mf := sip.NewFile()
 		mf.Name = "METS.xml"
 		mf.Path = "representations/" + r.Label + "/METS.xml" // package-relative: referenced from package METS
-		info, err = st.WriteMetadata(mf.Path, func(w io.Writer) error {
+		info, err := st.WriteMetadata(mf.Path, func(w io.Writer) error {
 			return mets.EncodeRepresentation(w, r, pkg.Spec)
 		})
 		if err != nil {
@@ -126,12 +130,12 @@ func (p *Profile) writeRepresentationMetadata(st *store.Store, pkg *sip.Package)
 		}
 		backfill(mf, info)
 		r.AddMetsFile(mf)
-		p.Logger.Info("created a representation METS file", slog.Any("id", mf.Identifier))
+		b.Logger.Info("created a representation METS file", slog.Any("id", mf.Identifier))
 		return nil
 	})
 }
 
-func (p *Profile) writePackagePremis(st *store.Store, pkg *sip.Package) error {
+func (b *Builder) writePackagePremis(st *store.Store, pkg *sip.Package) error {
 	// TODO also account for sub-IE(s) tied to the root entity
 	pf := sip.NewFile()
 	pf.Name = "premis.xml"
@@ -144,11 +148,11 @@ func (p *Profile) writePackagePremis(st *store.Store, pkg *sip.Package) error {
 	}
 	backfill(pf, info)
 	pkg.AddPremisFile(pf)
-	p.Logger.Info("created a package PREMIS file", slog.Any("id", pf.Identifier))
+	b.Logger.Info("created a package PREMIS file", slog.Any("id", pf.Identifier))
 	return nil
 }
 
-func (p *Profile) writePackageMets(st *store.Store, pkg *sip.Package) error {
+func (b *Builder) writePackageMets(st *store.Store, pkg *sip.Package) error {
 	mf := sip.NewFile()
 	mf.Name = "METS.xml"
 	mf.Path = "METS.xml"
@@ -160,7 +164,7 @@ func (p *Profile) writePackageMets(st *store.Store, pkg *sip.Package) error {
 	}
 	backfill(mf, info)
 	pkg.AddMetsFile(mf)
-	p.Logger.Info("created a package METS file", slog.Any("id", mf.Identifier))
+	b.Logger.Info("created a package METS file", slog.Any("id", mf.Identifier))
 	return nil
 }
 

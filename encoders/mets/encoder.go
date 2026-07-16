@@ -53,11 +53,13 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	<metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP" />
 
 	{{ $provMDID := identifier -}}
+	{{ with .PremisFile -}}
     <amdSec>
         <digiprovMD ID="{{ $provMDID }}" STATUS="CURRENT">
-            <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .PremisFile.Path }}" MIMETYPE="text/xml" SIZE="{{ .PremisFile.Size }}" CREATED="{{ .PremisFile.Created }}" CHECKSUM="{{ .PremisFile.Checksum }}" CHECKSUMTYPE="MD5" />
+            <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .Path }}" MIMETYPE="text/xml" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
         </digiprovMD>
     </amdSec>
+	{{- end }}
 
 	{{ $fileGrpID := identifier -}}
     <fileSec ID="{{ identifier}}">
@@ -72,8 +74,8 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 
     <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
         <div ID="{{ identifier }}" LABEL="{{ .Label }}">
-            <div ID="{{ identifier }}" LABEL="Metadata" 
-                ADMID="{{ $provMDID }}" />
+            <div ID="{{ identifier }}" LABEL="Metadata" {{ if .PremisFile }}
+                ADMID="{{ $provMDID }}" {{ end }}/>
             <div ID="{{ identifier }}" LABEL="Data">
                 <fptr FILEID="{{ $fileGrpID }}" />
             </div>
@@ -117,11 +119,13 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	{{- end }}
 
 	<!-- ref to the PREMIS metadata about IE/subIE(s)/package -->
+    {{ with .PremisFile -}}
     <amdSec>
-        <digiprovMD ID="{{ .PremisFile.Identifier }}" STATUS="CURRENT">
-            <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .PremisFile.Path }}" MIMETYPE="text/xml" SIZE="{{ .PremisFile.Size }}" CREATED="{{ .PremisFile.Created }}" CHECKSUM="{{ .PremisFile.Checksum }}" CHECKSUMTYPE="MD5" />
+        <digiprovMD ID="{{ .Identifier }}" STATUS="CURRENT">
+            <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .Path }}" MIMETYPE="text/xml" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
         </digiprovMD>
     </amdSec>
+    {{- end }}
 
     <!-- file section -->
     <fileSec ID="{{ identifier }}">
@@ -143,7 +147,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 
     <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
         <div ID="{{ identifier }}" LABEL="{{ $OBJID }}">
-            <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ .Root.DescriptionFile.Identifier }}" ADMID="{{ .PremisFile.Identifier }}"/>
+            <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ .Root.DescriptionFile.Identifier }}"{{ with .PremisFile }} ADMID="{{ .Identifier }}"{{ end }}/>
             <div ID="{{ identifier }}" LABEL="Schemas">
                 <fptr FILEID="{{ $SCHEMAID }}"/>
             </div>

@@ -29,10 +29,20 @@ const testDescriptive = `{
 	"dcterms:title": {"@value": "Catus Testus", "@language": "nl"}
 }`
 
-// newTestProfile lays out a minimal input tree (one descriptive file, one
-// representation with one essence file) and returns a profile plus its
+// basicDef returns the registered "basic" definition the tests build with.
+func basicDef(t *testing.T) Definition {
+	t.Helper()
+	def, ok := Get("basic")
+	if !ok {
+		t.Fatal(`no "basic" definition registered`)
+	}
+	return def
+}
+
+// newTestBuilder lays out a minimal input tree (one descriptive file, one
+// representation with one essence file) and returns a builder plus its
 // in/out dirs.
-func newTestProfile(t *testing.T) (p *Profile, inDir, outDir string) {
+func newTestBuilder(t *testing.T) (b *Builder, inDir, outDir string) {
 	t.Helper()
 	inDir, outDir = t.TempDir(), t.TempDir()
 
@@ -47,19 +57,19 @@ func newTestProfile(t *testing.T) (p *Profile, inDir, outDir string) {
 		t.Fatal(err)
 	}
 
-	p = New(&Config{
+	b = New(&Config{
 		Source:      inDir,
 		Destination: outDir,
 		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Formats:     fakeIdentificator{},
 	})
-	return p, inDir, outDir
+	return b, inDir, outDir
 }
 
 func TestAssemble(t *testing.T) {
-	p, inDir, outDir := newTestProfile(t)
+	b, inDir, outDir := newTestBuilder(t)
 
-	pkg, err := p.assemble()
+	pkg, err := b.assemble(basicDef(t))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -156,7 +166,7 @@ func TestAssemble(t *testing.T) {
 }
 
 func TestAssembleRepresentations(t *testing.T) {
-	p, inDir, _ := newTestProfile(t) // already has representation_1/cat.jpg
+	b, inDir, _ := newTestBuilder(t) // already has representation_1/cat.jpg
 
 	// More representations: multi-file, double-digit, and one with a nested
 	// subdirectory; plus a non-matching directory that must be skipped.
@@ -175,7 +185,7 @@ func TestAssembleRepresentations(t *testing.T) {
 	write("representation_10/b.jpg")
 	write("documentation/readme.txt")
 
-	pkg, err := p.assemble()
+	pkg, err := b.assemble(basicDef(t))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -229,12 +239,12 @@ func TestAssembleRepresentations(t *testing.T) {
 }
 
 func TestAssembleMissingDescriptive(t *testing.T) {
-	p, inDir, outDir := newTestProfile(t)
+	b, inDir, outDir := newTestBuilder(t)
 	if err := os.Remove(filepath.Join(inDir, "dc+schema.json")); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := p.assemble(); err == nil {
+	if _, err := b.assemble(basicDef(t)); err == nil {
 		t.Fatal("assemble succeeded without a descriptive source")
 	}
 
@@ -249,7 +259,7 @@ func TestAssembleMissingDescriptive(t *testing.T) {
 }
 
 func TestAssembleDescriptiveIsDirectory(t *testing.T) {
-	p, inDir, _ := newTestProfile(t)
+	b, inDir, _ := newTestBuilder(t)
 	if err := os.Remove(filepath.Join(inDir, "dc+schema.json")); err != nil {
 		t.Fatal(err)
 	}
@@ -257,7 +267,7 @@ func TestAssembleDescriptiveIsDirectory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := p.assemble(); err == nil {
+	if _, err := b.assemble(basicDef(t)); err == nil {
 		t.Fatal("assemble succeeded with a directory as descriptive source")
 	}
 }

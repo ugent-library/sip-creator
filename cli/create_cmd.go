@@ -27,7 +27,7 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		profile := profiles.New(&profiles.Config{
+		builder := profiles.New(&profiles.Config{
 			Source:      args[0],
 			Destination: args[1],
 			Logger:      logger,
@@ -43,7 +43,7 @@ var createCmd = &cobra.Command{
 
 		switch flagProfile {
 		case "basic":
-			pkg, err = profile.Basic()
+			pkg, err = builder.Basic()
 			if err != nil {
 				return err
 			}

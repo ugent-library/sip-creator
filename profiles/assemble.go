@@ -18,33 +18,22 @@ import (
 // assemble builds the complete package graph from the input tree without
 // writing anything to disk: every File node is born here with its Path
 // declared, and the writer later back-fills fixity as it emits.
-func (p *Profile) assemble() (*sip.Package, error) {
-	pkg := sip.NewPackage(p.OutDir)
-	p.Logger.Info("created a new package", slog.Any("id", pkg.Identifier))
+func (b *Builder) assemble(def Definition) (*sip.Package, error) {
+	pkg := sip.NewPackage(b.OutDir)
+	b.Logger.Info("created a new package", slog.Any("id", pkg.Identifier))
 
-	// Profile-level METS values, verbatim from the old templates.
-	// Hardcoded here only until Step 8 lifts them into the spec registry.
-	pkg.Spec = &sip.Spec{
-		ProfileURL:                  "https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml",
-		Type:                        "Photographs – Digital", // known-wrong value, preserved; now fixable as data
-		ContentInformationType:      "OTHER",
-		OtherContentInformationType: "https://data.hetarchief.be/id/sip/2.0/basic",
-		Agents: []sip.Agent{
-			{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1."},
-			{Role: "CREATOR", OtherRole: "OTHERROLE", Type: "ORGANIZATION", Name: "Universiteitsbibliotheek Gent"},
-		},
-	}
+	pkg.Spec = &def.Mets
 
 	e := sip.NewEntity()
-	p.Logger.Info("created an intellectual entity", slog.Any("id", e.Identifier))
+	b.Logger.Info("created an intellectual entity", slog.Any("id", e.Identifier))
 
-	if err := p.assembleDescriptive(e); err != nil {
+	if err := b.assembleDescriptive(e, def); err != nil {
 		return nil, err
 	}
 
 	pkg.AddSchemaFiles(schemaFileNodes())
 
-	if err := p.assembleRepresentations(e); err != nil {
+	if err := b.assembleRepresentations(e); err != nil {
 		return nil, err
 	}
 
@@ -52,8 +41,8 @@ func (p *Profile) assemble() (*sip.Package, error) {
 	return pkg, nil
 }
 
-func (p *Profile) assembleDescriptive(e *sip.Entity) error {
-	src := filepath.Join(p.InDir, "dc+schema.json")
+func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition) error {
+	src := filepath.Join(b.InDir, def.DescriptiveSource)
 	d, err := decodeDescriptive(src)
 	if err != nil {
 		return err
@@ -65,14 +54,16 @@ func (p *Profile) assembleDescriptive(e *sip.Entity) error {
 	d.SetObjectIdentifier(e.Identifier)
 	// TODO This could be auto-detected based off the salience of the source metadata
 	//   e.g. metadata properties which describe a group of additional identifiers.
-	e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", d.GetLocalIdentifier("dcterms"))
+	if def.LocalIdentifierScheme != "" {
+		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", d.GetLocalIdentifier(def.LocalIdentifierScheme))
+	}
 	e.Description = d
 
 	df := sip.NewFile()
 	df.Name = strings.TrimSuffix(filepath.Base(src), filepath.Ext(src)) + ".xml"
 	df.Path = "metadata/descriptive/" + df.Name // declared, not derived from disk
 	e.AddDescriptionFile(df)
-	p.Logger.Info("created a descriptive file", slog.Any("id", df.Identifier))
+	b.Logger.Info("created a descriptive file", slog.Any("id", df.Identifier))
 	return nil
 }
 
@@ -114,8 +105,8 @@ func schemaFileNodes() []*sip.File {
 // TODO fix case "representation_0"
 var repDirRx = regexp.MustCompile("representation_([0-9]+)$")
 
-func (p *Profile) assembleRepresentations(e *sip.Entity) error {
-	return filepath.Walk(p.InDir, func(dir string, info os.FileInfo, err error) error {
+func (b *Builder) assembleRepresentations(e *sip.Entity) error {
+	return filepath.Walk(b.InDir, func(dir string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -124,9 +115,9 @@ func (p *Profile) assembleRepresentations(e *sip.Entity) error {
 		}
 
 		r := sip.NewRepresentation(filepath.Base(dir))
-		p.Logger.Info("created a representation", slog.Any("id", r.Identifier))
+		b.Logger.Info("created a representation", slog.Any("id", r.Identifier))
 
-		if err := p.assembleEssenceFiles(dir, r); err != nil {
+		if err := b.assembleEssenceFiles(dir, r); err != nil {
 			return err
 		}
 
@@ -136,7 +127,7 @@ func (p *Profile) assembleRepresentations(e *sip.Entity) error {
 	})
 }
 
-func (p *Profile) assembleEssenceFiles(dir string, r *sip.Representation) error {
+func (b *Builder) assembleEssenceFiles(dir string, r *sip.Representation) error {
 	return filepath.Walk(dir, func(src string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -146,12 +137,12 @@ func (p *Profile) assembleEssenceFiles(dir string, r *sip.Representation) error 
 		}
 		// TODO ignore all descriptive files per the spec (dc, dc+schema, mods)
 
-		f := p.Formats.Process(src) // identify the SOURCE, before anything is on disk
+		f := b.Formats.Process(src) // identify the SOURCE, before anything is on disk
 		f.Source = src
 		f.Path = "data/" + filepath.Base(src) // rep-relative, per File.Path semantics
 		f.SetRepresentation(r)
 		r.AddFile(f)
-		p.Logger.Info("placed an essence file", slog.Any("id", f.Identifier))
+		b.Logger.Info("placed an essence file", slog.Any("id", f.Identifier))
 		return nil
 	})
 }
