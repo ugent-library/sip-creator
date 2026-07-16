@@ -7,8 +7,10 @@ import (
 )
 
 type Package struct {
-	Location                string
-	Identifier              string
+	Location   string
+	Identifier string
+	// Spec carries the profile-level METS values; set by the assembler.
+	Spec                    *Spec
 	Root                    *Entity
 	PremisFile              *File
 	MetsFile                *File

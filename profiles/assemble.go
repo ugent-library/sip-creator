@@ -22,6 +22,19 @@ func (p *Profile) assemble() (*sip.Package, error) {
 	pkg := sip.NewPackage(p.OutDir)
 	p.Logger.Info("created a new package", slog.Any("id", pkg.Identifier))
 
+	// Profile-level METS values, verbatim from the old templates.
+	// Hardcoded here only until Step 8 lifts them into the spec registry.
+	pkg.Spec = &sip.Spec{
+		ProfileURL:                  "https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml",
+		Type:                        "Photographs – Digital", // known-wrong value, preserved; now fixable as data
+		ContentInformationType:      "OTHER",
+		OtherContentInformationType: "https://data.hetarchief.be/id/sip/2.0/basic",
+		Agents: []sip.Agent{
+			{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1."},
+			{Role: "CREATOR", OtherRole: "OTHERROLE", Type: "ORGANIZATION", Name: "Universiteitsbibliotheek Gent"},
+		},
+	}
+
 	e := sip.NewEntity()
 	p.Logger.Info("created an intellectual entity", slog.Any("id", e.Identifier))
 

@@ -53,11 +53,11 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	xmlns:xlink="http://www.w3.org/1999/xlink" 
 	OBJID="{{ .Label }}"
-	TYPE="Photographs – Digital"
+	TYPE="{{ .Spec.Type }}"
 	LABEL=""
-	PROFILE="https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml"
-	csip:CONTENTINFORMATIONTYPE="OTHER"
-	csip:OTHERCONTENTINFORMATIONTYPE="https://data.hetarchief.be/id/sip/2.0/basic"
+	PROFILE="{{ .Spec.ProfileURL }}"
+	csip:CONTENTINFORMATIONTYPE="{{ .Spec.ContentInformationType }}"
+	csip:OTHERCONTENTINFORMATIONTYPE="{{ .Spec.OtherContentInformationType }}"
 	xsi:schemaLocation="http://www.loc.gov/METS/ ../../schemas/mets1_12.xsd http://www.w3.org/1999/xlink ../../schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS ../../schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS ../../schemas/DILCISExtensionSIPMETS.xsd">
 
 	<metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP" />
@@ -102,20 +102,21 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	xmlns:xlink="http://www.w3.org/1999/xlink" 
 	OBJID="{{ $OBJID }}"
 	LABEL=""
-	TYPE="Photographs – Digital"
-	PROFILE="https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml"
-	csip:CONTENTINFORMATIONTYPE="OTHER"
-	csip:OTHERCONTENTINFORMATIONTYPE="https://data.hetarchief.be/id/sip/2.0/basic"
+	TYPE="{{ .Spec.Type }}"
+	PROFILE="{{ .Spec.ProfileURL }}"
+	csip:CONTENTINFORMATIONTYPE="{{ .Spec.ContentInformationType }}"
+	csip:OTHERCONTENTINFORMATIONTYPE="{{ .Spec.OtherContentInformationType }}"
  	xsi:schemaLocation="http://www.loc.gov/METS/ schemas/mets1_12.xsd http://www.w3.org/1999/xlink schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS schemas/DILCISExtensionSIPMETS.xsd">
 
 	<metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP">
-		<agent ROLE="CREATOR" TYPE="OTHER" OTHERTYPE="SOFTWARE">
-			<name>SIP creator</name>
-			<note csip:NOTETYPE="SOFTWARE VERSION">0.1.</note>
-	  	</agent>
-	  	<agent ROLE="CREATOR" OTHERROLE="OTHERROLE" TYPE="ORGANIZATION">
-			<name>Universiteitsbibliotheek Gent</name>
-	  	</agent>
+	{{- range .Spec.Agents }}
+		<agent ROLE="{{ .Role }}"{{ if .OtherRole }} OTHERROLE="{{ .OtherRole }}"{{ end }} TYPE="{{ .Type }}"{{ if .OtherType }} OTHERTYPE="{{ .OtherType }}"{{ end }}>
+			<name>{{ .Name }}</name>
+			{{- if .Note }}
+			<note csip:NOTETYPE="SOFTWARE VERSION">{{ .Note }}</note>
+			{{- end }}
+		</agent>
+	{{- end }}
 	</metsHdr>
 
 	<!-- ref to descriptive metadata about IE -->
@@ -167,8 +168,16 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ end }}
 `))
 
-func EncodeRepresentation(w io.Writer, r *sip.Representation) error {
-	return dc.ExecuteTemplate(w, "representation", r)
+// repView pairs a representation with the package-level spec its METS
+// template needs; the embedded Representation keeps .Label/.Files/etc.
+// resolving unchanged.
+type repView struct {
+	*sip.Representation
+	Spec *sip.Spec
+}
+
+func EncodeRepresentation(w io.Writer, r *sip.Representation, spec *sip.Spec) error {
+	return dc.ExecuteTemplate(w, "representation", repView{r, spec})
 }
 
 func EncodePackage(w io.Writer, p *sip.Package) error {
