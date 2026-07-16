@@ -1,6 +1,6 @@
 # SIP Creator — design
 
-SIP Creator is a Go library and CLI that assembles a producer's essence files and descriptive metadata into a standards-conformant Submission Information Package (SIP). It walks an input directory, copies the essence into the package layout, runs format identification over each file, and generates the descriptive, preservation, and structural XML that describe and bind the whole. The current output target is a [meemoo SIP v2.0](https://developer.meemoo.be/docs/diginstroom/sip/2.0/) `basic` package layered on the [E-ARK CSIP](https://earkcsip.dilcis.eu/) profile.
+SIP Creator is a Go library and CLI that assembles a producer's essence files and descriptive metadata into a standards-conformant Submission Information Package (SIP). It walks an input directory, copies the essence into the package layout (computing fixity natively during the copy), optionally runs format identification over each file, and generates the descriptive, preservation, and structural XML that describe and bind the whole. The current output target is a [meemoo SIP v2.0](https://developer.meemoo.be/docs/diginstroom/sip/2.0/) `basic` package layered on the [E-ARK CSIP](https://earkcsip.dilcis.eu/) profile.
 
 This document describes **what the system is today** — the domain model, the package layout it produces, and the build lifecycle. It reflects the code as it stands, including its known gaps and rough edges; where the code is mid-evolution, that is called out rather than smoothed over. The *why* behind key choices lives in the [decision records](decisions/); planned changes live in [plans/](plans/); the backlog lives in [TODO.md](TODO.md). See [README.md](README.md) for how the docs are organized, and the repo-root `CLAUDE.md` for coding conventions.
 
@@ -14,7 +14,7 @@ The domain lives in the `sip/` package as a graph of plain structs, built entire
 - **Entity** (`sip.Entity`) — the intellectual entity being preserved (the "what this is"). Holds its `Identifier`, a map of `AdditionalIdentifiers` (e.g. `MEEMOO-LOCAL-ID`), its `Representations`, its `Description` (the decoded descriptive metadata, a `sip.Descriptive`, awaiting serialization by the writer), its `DescriptionFile` (the descriptive-metadata file node), and a slice of sub-`Entities`. The sub-entity slice exists in the model but the `basic` profile only ever builds a single root entity with no children.
 - **Representation** (`sip.Representation`) — a typed grouping of the essence (e.g. a master vs. a derivative). Holds its `Label` (the source directory name, e.g. `representation_1`), `Identifier`, its `Files`, its own representation-level `MetsFile` and `PremisFile`, and a back-reference to its `Entity`.
 - **File** (`sip.File`) — one file in the package, whether essence or generated metadata. Records `Identifier`, `Name`, `Checksum` (MD5), `Size`, `Created` (RFC3339Nano), `Path`, `Source` (the absolute input path an essence file is copied from; empty for generated metadata), and — for essence — a `Format`. `Path` is the href **relative to the METS document that references the file**: essence and representation PREMIS are representation-relative, schema/descriptive files and representation METS entries are package-relative. The assembler declares `Path` up front; the writer back-fills `Checksum`/`Size`/`Created` as each file lands on disk.
-- **Format** / **FormatRegistry** (`sip.Format`, `sip.FormatRegistry`) — the format-identification result attached to an essence file: the PRONOM registry key and name from Siegfried, plus a `Role` of `specification`.
+- **Format** / **FormatRegistry** (`sip.Format`, `sip.FormatRegistry`) — the format-identification result attached to an essence file: the PRONOM registry key and name from Siegfried, plus a `Role` of `specification`. Nil when no identificator is configured or the tool found no match ([ADR-0006](decisions/0006-format-identification-optional.md)); the PREMIS template omits `premis:format` accordingly.
 - **Identifier** (`sip.Identifier`, `sip.UUID`) — an interface + a UUID implementation. **Note:** this type is defined but effectively unused; every struct above carries its identifier as a bare `string` minted inline as `uuid-<uuid>`, not via this interface.
 - **Event** (`sip.Event`) — an empty stub. PREMIS events are not modeled yet.
 
@@ -71,7 +71,7 @@ A profile is **data, not code**: a `profiles.Definition` (descriptive source fil
 1. Mint the package (`sip.NewPackage`) and the root `Entity`.
 2. Decode `src/dc+schema.json`, swap the entity's UUID in as `dcterms:identifier`, lift the source `dcterms:identifier` out to the entity as `MEEMOO-LOCAL-ID`, and park the decoded description on the entity (`Entity.Description`) for the writer to serialize. The descriptive `File` node is declared with its path; decoding stays behind a single call (`decodeDescriptive`) so future input formats plug in there.
 3. Declare one schema `File` node per bundled XSD, in sorted order (deterministic METS emission).
-4. Walk `src` for directories matching `representation_([0-9]+)$`; for each essence file, run format identification **on the source file** and record `File.Source` plus the representation-relative `Path`.
+4. Walk `src` for directories matching `representation_([0-9]+)$`; for each essence file, record `File.Source` plus the representation-relative `Path`, and — when an identificator is configured — run format identification **on the source file** ([ADR-0006](decisions/0006-format-identification-optional.md)): unconfigured is skipped, a broken tool aborts assembly, a no-match leaves that file's `Format` nil.
 
 **Phase 2 — write** (`profiles/write.go`, backed by the `store/` package), in a dependency order that is load-bearing and encoded exactly once, top to bottom in `write()`:
 
@@ -89,7 +89,7 @@ The assembled package is returned to the CLI, which zips it.
 
 The dependency order is still not enforced by types, but it now lives in exactly one place — the numbered steps of `write()` — instead of being re-hand-sequenced per profile:
 
-- Format identification runs at assembly, **before** any PREMIS is rendered (PREMIS records the format registry).
+- Format identification (when configured) runs at assembly, **before** any PREMIS is rendered (PREMIS records the format registry).
 - Representation PREMIS is written **before** its representation METS (which embeds its fixity).
 - Everything is written **before** the package METS; it is always **last**.
 
@@ -101,7 +101,7 @@ Layered by responsibility. The `sip/` graph is the shared domain; everything els
 - **`profiles/`** — profile-driven package building, split along the assemble/emit seam. `definition.go` holds `Definition` (a profile as data) and the registry (`Get`/`Names`); `builder.go` holds the `Builder` engine and `Build(def)`; `assemble.go` is the pure input-to-graph phase; `write.go` is the canonical emission order. Covered by `assemble_test.go` (graph shape, walk edge cases, the zero-writes guarantee) and `definition_test.go` (registry, definition-driven behavior).
 - **`store/`** — dumb filesystem primitives rooted at the package directory (`MkdirAll`, `CopyFile`, `WriteMetadata`). Callers deal only in package-relative paths; writes truncate (safe re-runs); `CopyFile` computes MD5/size in the same streamed pass as the copy; `WriteMetadata` renders to memory first, so a failed template leaves no partial file.
 - **`encoders/`** — one package per metadata standard (`metadata`, `mets`, `premis`), each a thin `Encode*(io.Writer, …)` API backed by a `text/template`. **No XML library** — all XML is generated from templates (see [ADR-0002](decisions/0002-xml-via-text-template.md)). METS ID minting lives in the mets encoder's `identifier()`/`idStore`.
-- **`formats/`** — pluggable format identification. `Identificator` is the interface (`Process(path) *sip.File`); `Register`/`New` is a self-registration registry keyed by name. `formats/siegfried` self-registers on import and shells out to the external `sf` binary.
+- **`formats/`** — pluggable, optional format identification. `Identificator` is the interface (`Identify(path) (*sip.Format, error)`; nil identificator means skip); `Register`/`New` is a self-registration registry keyed by name. `formats/siegfried` self-registers on import and shells out to the external `sf` binary, returning errors (not panics) on exec or parse failure.
 - **`schemas/`** — all XSDs bundled via `//go:embed`; `Get()` returns them as `map[name][]byte` for copying into each SIP.
 - **`archive/`** — `Zip` walks the package directory and writes an uncompressed zip.
 - **`services/`** — config: `.env` via godotenv, parsed with caarlos0/env. `CONFIG.md` is generated from the config struct (`go generate ./services`).
@@ -142,7 +142,7 @@ The workflow around the tool ([ADR-0005](decisions/0005-dockerized-validation-an
 These are true of the code today and tracked in [TODO.md](TODO.md):
 
 - **The sample package is INVALID against commons-ip.** Two known failures: the descriptive `<metadata>` element has no resolvable schema declaration, and `dcterms:created`'s `edtf:EDTF-level1` type does not resolve.
-- **Some errors are still panics.** The build path (`profiles/`, `store/`, the metadata decoder) returns errors, but `archive.Zip` and the siegfried integration still `panic` on failure (the latter is owned by the [format-identification plan](plans/format-identification-optional.md)).
+- **One error path is still a panic.** The build path (`profiles/`, `store/`, `formats/`, the metadata decoder) returns errors, but `archive.Zip` still `panic`s on failure.
 - **`mets/@TYPE` carries a known-wrong value** (`Photographs – Digital`) — now data in the `basic` registry entry (`profiles/definition.go`), so fixing it per the CSIP content-category vocabulary is a one-line change awaiting the right value.
 - **The `sip.Identifier` interface and `sip.Event` stub are unused.** Identifiers are bare strings; PREMIS events are not modeled.
 - **The `representation_([0-9]+)$` regex is stricter than either spec requires** and silently skips non-matching directories — a representation named `master` is dropped with no error.

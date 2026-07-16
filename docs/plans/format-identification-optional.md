@@ -1,6 +1,14 @@
 # Plan: format identification becomes an optional enricher
 
-*Status: accepted, not yet started. Drafted 2026-07-14. Companion to the [refactoring plan](refactoring-plan.md) — depends on its Phase 1 (`store` package, assemble/write split) and executes with it. The decision it enacts is [ADR-0006](../decisions/0006-format-identification-optional.md).*
+*Status: **done** (2026-07-16). Drafted 2026-07-14. Companion to the [refactoring plan](refactoring-plan.md) — depends on its Phase 1 (`store` package, assemble/write split). The decision it enacts is [ADR-0006](../decisions/0006-format-identification-optional.md).*
+
+*Execution notes, deviations discussed:*
+
+- *Sequenced **after** the refactoring plan's Phases 1–2 rather than "with Phase 1" — one variable at a time through the equivalence gate. The `CopyFile (Info, error)` amendment was banked in Phase 1's Step 1; the rest landed here.*
+- *`Identify` also fails on siegfried's own per-file error channel (`files[].errors`), not just exec/parse failures — same misconfiguration-must-be-loud principle.*
+- *A defect this plan missed: `cli.Run` made a missing `.env` fatal (`cobra.CheckErr(godotenv.Load())`), defeating "unconfigured means skip" — fixed (missing file tolerated, malformed file errors), and the redundant `godotenv/autoload` import (double-loading `.env`) removed.*
+- *`formats.New` fixes while nearby: empty `ARGS` now means no arguments (was one empty-string argument), and the "uknown" typo.*
+- *Verified per the list below: gate green with siegfried (identical trees, same PRONOM values); without config the build succeeds, `premis:format` is absent, and commons-ip reports the same two FAILED checks (no new ones); missing binary and NAME-without-COMMAND both fail cleanly before any writes.*
 
 ## Context — why this change
 

@@ -1,6 +1,6 @@
 # 0006 — Format identification is an optional enricher, not a build prerequisite
 
-Status: **Accepted** (2026-07-14)
+Status: **Accepted** (2026-07-14), **implemented** (2026-07-16, [format-identification plan](../plans/format-identification-optional.md))
 
 ## Context
 
