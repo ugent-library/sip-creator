@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 )
 
@@ -107,8 +108,11 @@ func (d *Description) Encode(w io.Writer) error {
 	return Encode(w, d)
 }
 
-func Decode(r io.Reader) *Description {
-	bts, _ := io.ReadAll(r)
+func Decode(r io.Reader) (*Description, error) {
+	bts, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("read descriptive metadata: %w", err)
+	}
 
 	// TODO create a set of mutators that gets iterated over.
 	//   mutators are passed as a configuration to the decoder.
@@ -118,8 +122,8 @@ func Decode(r io.Reader) *Description {
 	var description *Description
 
 	if err := json.Unmarshal(bts, &description); err != nil {
-		panic(err)
+		return nil, fmt.Errorf("decode descriptive metadata: %w", err)
 	}
 
-	return description
+	return description, nil
 }

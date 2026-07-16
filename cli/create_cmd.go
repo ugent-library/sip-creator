@@ -43,14 +43,15 @@ var createCmd = &cobra.Command{
 
 		switch flagProfile {
 		case "basic":
-			pkg = profile.Basic()
+			pkg, err = profile.Basic()
+			if err != nil {
+				return err
+			}
 		default:
 			return errors.New("no sip profile was set")
 		}
 
-		if pkg != nil {
-			archive.Zip(pkg)
-		}
+		archive.Zip(pkg)
 
 		return nil
 	},
