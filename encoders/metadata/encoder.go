@@ -119,79 +119,54 @@ var md = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ end}}
 {{ define "dc" -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<simpledc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:noNamespaceSchemaLocation="../../schemas/dc.xsd">
+<simpledc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../schemas/dc.xsd">
 
 	<identifier>{{ .Identifier }}</identifier>
-	
-	{{- if .Title }}
+	{{- with .DublinCoreTerms.Identifier }}
+	<identifier>{{ . }}</identifier>
+	{{- end }}
+
+	{{- if .Title.Value }}
 	<title>{{ .Title.Value }}</title>
 	{{- end }}
 
-	{{- if .DublinCore.Creator }}
-	{{ range .DublinCore.Creator }}
+	{{- range .DublinCoreTerms.Creator }}
 	<creator>{{ . }}</creator>
-	{{ end }}
-	{{- end}}
-
-	{{- if .Subject }}
-	{{ range .Subject }}
-	<subject>{{ .Subject.Value }}</subject>
-	{{ end }}
 	{{- end }}
-	
-	{{- if .Description }}
+
+	{{- range .Subject }}
+	<subject>{{ .Value }}</subject>
+	{{- end }}
+
+	{{- if .Description.Value }}
 	<description>{{ .Description.Value }}</description>
 	{{- end }}
+	{{- if .Abstract.Value }}
+	<description>{{ .Abstract.Value }}</description>
+	{{- end }}
 
-	{{- if .DublinCore.Publisher }}
-	{{ range .DublinCore.Publisher }}
+	{{- range .DublinCoreTerms.Publisher }}
 	<publisher>{{ . }}</publisher>
-	{{ end }}
-	{{- end}}
-	
-	{{- if .DublinCore.Contributor }}
-	{{ range .DublinCore.Contributor }}
+	{{- end }}
+
+	{{- range .DublinCoreTerms.Contributor }}
 	<contributor>{{ . }}</contributor>
-	{{ end }}
 	{{- end }}
 
-	{{- if .Date }}
-	<dated>{{ .Date }}</dated>
+	{{- with .Created }}
+	<date>{{ . }}</date>
 	{{- end }}
 
-	{{- if .Type }}
-	{{ range .Type }}
+	{{- range .Type }}
 	<type>{{ . }}</type>
-	{{ end }}
 	{{- end }}
 
-	{{- if .Format }}
-	<format>{{ . }}</format>
-	{{- end }}
-
-	{{- if .Source }}
-	<source>{{ . }}</source>
-	{{- end }}
-
-	{{- if .Language }}
-	{{ range .Language }}
+	{{- range .Language }}
 	<language>{{ . }}</language>
-	{{ end }}
 	{{- end }}
 
-	{{- if .Relation }}
-	{{ range .Relation }}
-	<relation>{{ . }}</relation>
-	{{ end }}
-	{{- end }}
-
-	{{- if .Coverage }}
-	<coverage>{{ . }}</coverage>
-	{{- end }}
-
-	{{- if .Rights }}
-	<rights>{{ .Rights }}</rights>
+	{{- with .Rights }}
+	<rights>{{ . }}</rights>
 	{{- end }}
 </simpledc>
 {{ end}}
@@ -199,4 +174,10 @@ var md = template.Must(template.New("").Funcs(funcs).Parse(`
 
 func Encode(w io.Writer, d *Description) error {
 	return md.ExecuteTemplate(w, "dc+schema", d)
+}
+
+// EncodeDC writes d as a simple Dublin Core document (the
+// dc_SimpleDC20021212 shape RODA renders and indexes natively).
+func EncodeDC(w io.Writer, d *Description) error {
+	return md.ExecuteTemplate(w, "dc", d)
 }
