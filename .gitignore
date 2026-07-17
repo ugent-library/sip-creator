@@ -52,6 +52,7 @@ $RECYCLE.BIN/
 # Local fixtures and generated output
 tmp/
 basic-uuid/
+eark-uuid/
 bin/
 reports/
 /sip-creator
