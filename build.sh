@@ -4,9 +4,10 @@
 #
 # usage: build.sh [profile]    (default: basic)
 #
-# Exits non-zero iff the generated package is not VALID. The basic sample is
-# known-INVALID (docs/TODO.md) — that exit code is a real signal, not a broken
-# script. The eark sample is expected VALID.
+# Exits non-zero iff the generated package is not VALID. Both gates are
+# expected green. Each profile validates against the E-ARK spec version of
+# its era: basic (meemoo 1.2) against 2.0.4, eark against 2.2.0
+# (docs/plans/meemoo-12.md).
 #
 # Input fixture: ./tmp/<profile> (untracked). The eark fixture is the basic
 # one plus an optional documentation/ directory (recommended: CSIPSTR16 is a
@@ -18,6 +19,11 @@ cd "$(dirname "$0")"
 PROFILE="${1:-basic}"
 SRC="tmp/$PROFILE"
 OUT="$PROFILE-uuid"
+
+case "$PROFILE" in
+    basic) SPEC_VERSION=2.0.4 ;;
+    *)     SPEC_VERSION=2.2.0 ;;
+esac
 
 if [ ! -d "$SRC" ]; then
     echo "missing input fixture $SRC — create it, e.g.:" >&2
@@ -36,7 +42,7 @@ mkdir -p "$run_dir"
 
 # The gate: validate the zip only — the zip is the deliverable that gets ingested.
 status=0
-./scripts/validate.sh -o "$run_dir" "$OUT"/uuid-*.zip || status=$?
+./scripts/validate.sh -o "$run_dir" -s "$SPEC_VERSION" "$OUT"/uuid-*.zip || status=$?
 
 ./scripts/publish-report.sh "$run_dir"
 echo "report: http://localhost:8080/"

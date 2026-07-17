@@ -2,7 +2,7 @@
 # Validate SIP packages (zip or directory) against E-ARK CSIP with commons-ip.
 # Prints FAILED checks with their messages; exits non-zero if any package is INVALID.
 #
-# usage: validate.sh [-o report-dir] <sip.zip|sip-dir>...
+# usage: validate.sh [-o report-dir] [-s spec-version] <sip.zip|sip-dir>...
 #
 # Reports land in -o (kept, for the HTML publisher) or a temp dir (cleaned up).
 # Validation runs in the dockerized validator by default; set CSIP_CMD to a host
@@ -14,12 +14,16 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # The spec version is pinned so a commons-ip upgrade changing its default
 # can't silently move the goalposts (docs/decisions/0003-validation-stays-external.md).
+# -s overrides it per package family: meemoo 1.2 builds on the E-ARK 2.0.4
+# era (its mandated PROFILE URL is the one 2.0.4 checks for), the eark
+# profile targets 2.2.0 (docs/plans/meemoo-12.md).
 SPEC_VERSION=2.2.0
 
 report_dir=""
-while getopts "o:" opt; do
+while getopts "o:s:" opt; do
     case $opt in
         o) report_dir="$OPTARG" ;;
+        s) SPEC_VERSION="$OPTARG" ;;
         *) exit 2 ;;
     esac
 done
