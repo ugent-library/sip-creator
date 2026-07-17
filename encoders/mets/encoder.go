@@ -106,7 +106,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 		<agent ROLE="{{ .Role }}"{{ if .OtherRole }} OTHERROLE="{{ .OtherRole }}"{{ end }} TYPE="{{ .Type }}"{{ if .OtherType }} OTHERTYPE="{{ .OtherType }}"{{ end }}>
 			<name>{{ .Name }}</name>
 			{{- if .Note }}
-			<note csip:NOTETYPE="SOFTWARE VERSION">{{ .Note }}</note>
+			<note csip:NOTETYPE="{{ .NoteType }}">{{ .Note }}</note>
 			{{- end }}
 		</agent>
 	{{- end }}

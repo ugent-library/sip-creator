@@ -56,6 +56,45 @@ func TestNames(t *testing.T) {
 	}
 }
 
+// TestBuildBasic drives the basic profile end to end and pins its meemoo
+// SIP 1.2 face: profile URLs, the 1.2 descriptive namespace, and the two
+// required agent notes (docs/plans/meemoo-12.md).
+func TestBuildBasic(t *testing.T) {
+	b, _, outDir := newTestBuilder(t)
+
+	pkg, err := b.Build(basicDef(t))
+	if err != nil {
+		t.Fatalf("Build(basic): %v", err)
+	}
+	root := filepath.Join(outDir, pkg.Identifier)
+
+	mets, err := os.ReadFile(filepath.Join(root, "METS.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`PROFILE="https://earksip.dilcis.eu/profile/E-ARK-SIP.xml"`,
+		`csip:OTHERCONTENTINFORMATIONTYPE="https://data.hetarchief.be/id/sip/1.2/basic"`,
+		`csip:NOTETYPE="SOFTWARE VERSION"`,
+		`csip:NOTETYPE="IDENTIFICATIONCODE"`,
+	} {
+		if !strings.Contains(string(mets), want) {
+			t.Errorf("package METS missing %s", want)
+		}
+	}
+	if strings.Contains(string(mets), "OTHERROLE") {
+		t.Error("package METS still carries the stray OTHERROLE")
+	}
+
+	desc, err := os.ReadFile(filepath.Join(root, "metadata", "descriptive", "dc+schema.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(desc), `xmlns="https://data.hetarchief.be/id/sip/1.2/basic"`) {
+		t.Errorf("descriptive metadata is not in the 1.2 namespace:\n%s", desc)
+	}
+}
+
 func earkDef(t *testing.T) Definition {
 	t.Helper()
 	def, ok := Get("eark")

@@ -4,8 +4,8 @@
   xmlns:dc="http://purl.org/dc/elements/1.1/"
   xmlns:edtf="http://id.loc.gov/datatypes/edtf/"
   xmlns:schema="https://schema.org/"
-  targetNamespace="https://data.hetarchief.be/id/sip/2.0/basic"
-  xmlns="https://data.hetarchief.be/id/sip/2.0/basic"
+  targetNamespace="https://data.hetarchief.be/id/sip/1.2/basic"
+  xmlns="https://data.hetarchief.be/id/sip/1.2/basic"
   elementFormDefault="qualified" attributeFormDefault="unqualified">
 
   <xs:annotation>

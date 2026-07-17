@@ -21,5 +21,6 @@ type Agent struct {
 	Type      string // agent/@TYPE
 	OtherType string // agent/@OTHERTYPE
 	Name      string
-	Note      string // optional; rendered with csip:NOTETYPE="SOFTWARE VERSION"
+	Note      string // optional
+	NoteType  string // note/@csip:NOTETYPE; required when Note is set
 }

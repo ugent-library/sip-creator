@@ -65,14 +65,20 @@ var registry = map[string]Definition{
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
 		Mets: sip.Spec{
-			ProfileURL:                  "https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml",
-			Type:                        "Photographs – Digital", // known-wrong value, preserved; a one-line fix per the CSIP vocabulary
+			// meemoo SIP 1.2, the stable spec (docs/plans/meemoo-12.md):
+			// 1.2 mandates the unversioned E-ARK SIP profile URL and the
+			// 1.2 profile URI as OTHERCONTENTINFORMATIONTYPE.
+			ProfileURL:                  "https://earksip.dilcis.eu/profile/E-ARK-SIP.xml",
+			Type:                        "Photographs – Digital", // legal 1.2 content-category vocabulary; operator-selectable someday (TODO)
 			ContentInformationType:      "OTHER",
-			OtherContentInformationType: "https://data.hetarchief.be/id/sip/2.0/basic",
+			OtherContentInformationType: "https://data.hetarchief.be/id/sip/1.2/basic",
 			DescriptiveMDType:           "DC",
 			Agents: []sip.Agent{
-				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1."},
-				{Role: "CREATOR", OtherRole: "OTHERROLE", Type: "ORGANIZATION", Name: "Universiteitsbibliotheek Gent"},
+				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1.", NoteType: "SOFTWARE VERSION"},
+				// 1.2 requires the submitting organization's meemoo OR-id as
+				// an IDENTIFICATIONCODE note. Replace the placeholder with
+				// UGent's real OR-id before real submissions.
+				{Role: "CREATOR", Type: "ORGANIZATION", Name: "Universiteitsbibliotheek Gent", Note: "OR-PLACEHOLDER-REPLACE-WITH-UGENT-OR-ID", NoteType: "IDENTIFICATIONCODE"},
 			},
 		},
 	},
@@ -93,7 +99,7 @@ var registry = map[string]Definition{
 			DescriptiveMDType:        "DC",
 			DescriptiveMDTypeVersion: "SimpleDC20021212", // the shape RODA renders natively
 			Agents: []sip.Agent{
-				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1."},
+				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1.", NoteType: "SOFTWARE VERSION"},
 				{Role: "CREATOR", Type: "ORGANIZATION", Name: "Universiteitsbibliotheek Gent"},
 			},
 		},
