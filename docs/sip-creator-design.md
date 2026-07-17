@@ -42,6 +42,8 @@ uuid-<uuid>/
           premis.xml                    representation-level PREMIS (representation + its files)
   schemas/
     *.xsd                               all bundled XSDs, copied verbatim
+  documentation/
+    ...                                 optional: copied from the input's documentation/ dir
 ```
 
 The whole tree is then zipped **uncompressed** (`zip.Store`) to `dest/uuid-<uuid>.zip` — the deliverable meemoo ingests.
@@ -64,7 +66,7 @@ sip-creator create [src] [dest] --profile basic
 
 `create_cmd.go` resolves `--profile` against the profile registry (`profiles.Get`); an unknown or empty value returns an error listing the available profiles (`profiles.Names`). It then builds a format identificator from config (`formats.New`), constructs a `profiles.Builder`, and calls `Build(def)`. On success it hands the assembled `*sip.Package` to `archive.Zip`.
 
-A profile is **data, not code**: a `profiles.Definition` (descriptive source filename, local-identifier scheme, PREMIS emission flags, and the `sip.Spec` METS values — profile URL, content typing, agents) resolved from the in-package registry. One engine reads it: `Builder.Build(def)` runs the build in **two phases with a hard seam between them** — assemble the complete package graph in memory, then emit it to disk. Errors are returned, not panicked, and assembly failures happen before anything exists on disk — a bad input leaves no partial package directory behind. Adding a meemoo content profile (material-artwork, newspaper, …) is one registry entry, not a new build path.
+A profile is **data, not code**: a `profiles.Definition` (descriptive source filename, local-identifier scheme, PREMIS emission flags, and the `sip.Spec` METS values — profile URL, content typing, descriptive typing, agents) resolved from the in-package registry. Each definition declares its **output family** (`FamilyMeemoo`, `FamilyEARK`) — families share the one canonical writer and select *encodings*, today exactly one: the descriptive encoder (dc+schema vs simple DC). See [ADR-0007](decisions/0007-profile-families-share-one-writer.md), including the recorded fork triggers. One engine reads it: `Builder.Build(def)` runs the build in **two phases with a hard seam between them** — assemble the complete package graph in memory, then emit it to disk. Errors are returned, not panicked, and assembly failures happen before anything exists on disk — a bad input leaves no partial package directory behind. Adding a meemoo content profile (material-artwork, newspaper, …) is one registry entry, not a new build path.
 
 **Phase 1 — assemble** (`profiles/assemble.go`, zero writes):
 

@@ -1,6 +1,18 @@
 # Plan: the eark profile — a plain E-ARK SIP
 
-*Status: accepted (2026-07-17), not yet started. Drafted 2026-07-16, reworked 2026-07-17 after design review (see "Duplication lessons"). Expands the [refactoring plan](refactoring-plan.md)'s Phase 3 outline; enacts the direction of [ADR-0004](../decisions/0004-eark-base-meemoo-specialization.md). The family mechanism is [ADR-0007](../decisions/0007-profile-families-share-one-writer.md).*
+*Status: **implemented through E5** (2026-07-17) — awaiting field acceptance: the first real ingest into UGent's RODA instance, per the [RODA ingest runbook](../development-roda-ingest.md). Drafted 2026-07-16, reworked 2026-07-17 after design review (see "Duplication lessons").
+
+## Execution record (2026-07-17)
+
+E2–E4 landed in one day; E5's desk-check became the [runbook](../development-roda-ingest.md). Findings and deviations:
+
+- **The eark package validates `VALID (errors=0 warnings=0)`** — this project's first green verdict — and the E4 loop converged in a single iteration after two findings:
+  - **commons-ip's SIP2 quirk**: the 2.2.0 validator compares `mets/@PROFILE` against the *version-pinned* `…/E-ARK-SIP-v2-2-0.xml` while its error message prints the unversioned URL. The registry carries the pinned URL with a comment.
+  - **A real zip bug flushed out**: `archive.Zip` wrote no directory entries, so *empty* directories vanished from zips — invisible for basic (all dirs non-empty), fatal for the premis-less eark package (its rep `metadata/` evaporated, failing CSIPSTR13/CSIP107). Fixed with proper trailing-slash entries.
+- **Package-level documentation satisfies CSIPSTR16** — the E1 open question about per-representation documentation folders resolved empirically: not needed.
+- **`build-eark.sh` never shipped**: review folded it into a parameterized `./build.sh [profile]` (same three-variable difference, same duplication instinct as the writers). Each profile validates against its era's spec version.
+- **Phase 2's premis-less template guards were exercised for real** for the first time, as predicted.
+- E6's docs landed incrementally with adjacent passes (README, design doc, CLAUDE.md all describe the eark profile, families, and green gates).* Expands the [refactoring plan](refactoring-plan.md)'s Phase 3 outline; enacts the direction of [ADR-0004](../decisions/0004-eark-base-meemoo-specialization.md). The family mechanism is [ADR-0007](../decisions/0007-profile-families-share-one-writer.md).*
 
 ## Context — what an "eark" profile is
 
