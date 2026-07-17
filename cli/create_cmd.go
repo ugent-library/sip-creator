@@ -12,6 +12,7 @@ import (
 
 func init() {
 	createCmd.Flags().String("profile", "", "Set the profile of the SIP")
+	createCmd.Flags().Bool("no-zip", false, "Skip zipping; the package directory is the deliverable (e.g. for external bagging, see ADR-0008)")
 	rootCmd.AddCommand(createCmd)
 }
 
@@ -56,7 +57,9 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		archive.Zip(pkg)
+		if noZip, _ := cmd.Flags().GetBool("no-zip"); !noZip {
+			archive.Zip(pkg)
+		}
 
 		return nil
 	},
