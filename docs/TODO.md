@@ -10,7 +10,7 @@ its rough edges are collected under [Known gaps](sip-creator-design.md#known-gap
 These are decided and sequenced; remove each line when the work lands.
 
 - **Identifier uniqueness across the package graph** → an invariant for the future `sip.Package.Validate()` (domain validation lives on the `sip/` types per `CLAUDE.md`; post-Phase-2, once the graph API settles). Decided when Step 7 removed the inert METS `idStore` (it never recorded a minted ID, so it guaranteed nothing): keep minting UUIDv4 with no minting-time machinery, and make emitting a duplicate impossible instead — `Validate`, called between assemble and write, collects every identifier in the graph into a set and fails the build on a duplicate. The real target is *systematic* duplication (a node wired into the graph twice, a copied identifier), which no random-collision defence catches; the ~10⁻²⁵ UUIDv4 collision comes along for free, and commons-ip's XSD check on `xs:ID` remains the document-level net.
-- **`mets/@TYPE` should draw from a vocabulary, not a hardcoded literal** → the value is now data in the `basic` registry entry (`profiles/definition.go`), so this is a one-line fix once the right CSIP content-category value is chosen. Ref: [CSIP2](https://earkcsip.dilcis.eu/#CSIP2).
+- **`mets/@TYPE` should be operator- or content-selectable per package** → the registry value (`Photographs – Digital`) is *legal* meemoo-1.2 vocabulary and apt for the sample fixture, but a real archive packages more than photographs; the remaining work is input/config plumbing for the content category, not a vocabulary fix. Ref: [CSIP2](https://earkcsip.dilcis.eu/#CSIP2), meemoo 1.2 §package METS.
 ## Open design questions (not yet owned)
 
 These need a decision before they become plan work.
@@ -19,7 +19,7 @@ These need a decision before they become plan work.
 
 - **Format-identification provenance as a PREMIS event.** We record *what* was identified but not *who/when/how*. Proper preservation practice is a PREMIS event ("format identification", agent: siegfried + version, signature file + date) — what a future archivist actually needs to trust the format claim. Blocked on `sip.Event` (an empty stub) growing up; when events are modeled, this should be the first one emitted. Raises the feature from "enriches a SHOULD field" to production-grade provenance. No event design exists yet anywhere — picking this up needs an ADR covering the event shape (LoC eventType vocabulary, dateTime, detail, linking identifiers), where events attach on the graph (per-file vs. package-level), PREMIS agents vs. the METS-specific `sip.Agent`, and pass-through of *received* vendor events ([input-spec.md](input-spec.md)) alongside self-generated ones.
 
-- **meemoo SIP 2.1 migration.** The repo targets 2.0 throughout; UGent will eventually move to [2.1](https://developer.meemoo.be/docs/diginstroom/sip/2.1/). Conceptually a *family-level* change (vocabularies, encodings, values) — likely a versioned meemoo family alongside 2.0 rather than in-place edits, and the designated promotion trigger for the `Family` constant growing into an internal struct ([ADR-0007](decisions/0007-profile-families-share-one-writer.md)). Needs its own spec-delta plan; deliberately parked (2026-07-16) until the [eark profile](plans/eark-writer.md) lands.
+- **meemoo SIP 2.x migration, when it stabilizes.** The basic profile targets [1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/), the stable spec ([meemoo-12 plan](plans/meemoo-12.md)); 2.0/2.1 are release candidates meemoo's production ingest does not accept. The former 2.0 target's values live in git history (pre-2026-07-17 `profiles/definition.go`). When 2.x goes stable: a *family-level* change (vocabularies, encodings, values, and the 2.x removal of the bag layer) — likely a versioned meemoo family alongside 1.2, and the designated promotion trigger for the `Family` constant growing into an internal struct ([ADR-0007](decisions/0007-profile-families-share-one-writer.md)). Watch for meemoo publishing 2.x validation assets at the same moment (the parked meemoo-validation-harness idea). Needs its own spec-delta plan.
 
 - **Representation directory naming.** The `representation_([0-9]+)$` regex is stricter than either spec, and a non-matching dir (e.g. `master`) is silently skipped rather than erroring.
   - CSIP: representation folder names are free-form; only requirement is uniqueness within the package.
@@ -40,14 +40,15 @@ These need a decision before they become plan work.
 
 - **METS `@MIMETYPE` for essence files is a hardcoded lie.** Representation METS stamps every essence file `MIMETYPE="text/xml"` (`encoders/mets/encoder.go:75-78`), and CSIP makes `@MIMETYPE` a MUST. The identificator's mime output (parsed and currently discarded) is a candidate source when identification runs; an extension-based fallback is needed when it doesn't. Decide the source of truth, then fix.
 
-## Known-INVALID: concrete validator evidence
+## Validator status
 
-The sample package does not yet validate. Keep these until fixed (they are the
-gate that must go green before blocking automation — [ADR-0003](decisions/0003-validation-stays-external.md)).
+**Resolved 2026-07-17** ([meemoo-12 plan](plans/meemoo-12.md)): both sample
+packages report **VALID** — `basic` against E-ARK 2.0.4 (the era meemoo 1.2
+builds on; its SIP2 check expects exactly the unversioned profile URL meemoo
+mandates), `eark` against 2.2.0. The old SIP2 failure was a spec-version
+mismatch, not a package defect; the old XSD-failure evidence stopped
+reproducing under commons-ip 2.11.2.
 
-Current failures (commons-ip 2.11.2, spec 2.2.0; re-measured 2026-07-16):
-
-- **SIP2 [MUST]** — `mets/@PROFILE` declares the CSIP profile URL; the validator requires `https://earksip.dilcis.eu/profile/E-ARK-SIP.xml`. Open check: whether meemoo 2.x itself mandates the E-ARK SIP URL — if yes this is a one-line registry fix for `basic` (surfaced by the [eark-writer plan](plans/eark-writer.md) research).
-- **CSIPSTR16 [SHOULD]** — no `documentation` folder. The [eark-writer plan](plans/eark-writer.md) adds documentation support for the eark profile; whether `basic` should emit it too is open.
-
-(Older evidence here — `dc+schema.xml` failing XSD validation with `cvc-elt.1`/EDTF errors — no longer reproduces under commons-ip 2.11.2 and was removed 2026-07-16.)
+One SHOULD-level warning remains for `basic`: **CSIPSTR16** (no `documentation`
+folder). The code supports documentation for every profile — the warning is
+fixture-level; add a `documentation/` dir to `tmp/basic` to clear it.

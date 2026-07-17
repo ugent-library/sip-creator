@@ -1,6 +1,6 @@
 # SIP Creator agent orientation
 
-SIP Creator is both a Go library and a CLI that builds Submission Information Packages (SIPs). It takes a producer's essence files plus descriptive metadata and assembles them into a standards-conformant package. Its primary target is a valid [E-ARK CSIP](https://earkcsip.dilcis.eu/) package — ingestible by RODA and other CSIP-conformant systems — with [meemoo's SIP Specification v2.0](https://developer.meemoo.be/docs/diginstroom/sip/2.0/) layered on top as an additional specialization for ingest into the Flemish heritage archive (hetarchief.be).
+SIP Creator is both a Go library and a CLI that builds Submission Information Packages (SIPs). It takes a producer's essence files plus descriptive metadata and assembles them into a standards-conformant package. Its primary target is a valid [E-ARK CSIP](https://earkcsip.dilcis.eu/) package — ingestible by RODA and other CSIP-conformant systems — with [meemoo's SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) (the **stable** version; 2.0/2.1 are release candidates) layered on top as an additional specialization for ingest into the Flemish heritage archive (hetarchief.be). The BagIt envelope meemoo's transfer requires is out of scope: bag the package directory with a reference BagIt implementation ([ADR-0008](docs/decisions/0008-bag-layer-out-of-scope.md)).
 
 ## Scope
 
@@ -44,7 +44,7 @@ Supporting pieces:
 - [README.md](README.md) — usage, configuration, input requirements, experimental-status warning.
 - [docs/TODO.md](docs/TODO.md) — open design questions and known defects. Check here first when investigating a bug.
 - [CONFIG.md](CONFIG.md) — environment variables. This file is **generated** by envdoc; regenerate with `go generate ./services`, never hand-edit.
-- External specs: [meemoo SIP spec 2.0](https://developer.meemoo.be/docs/diginstroom/sip/2.0/), [E-ARK CSIP profile](https://earkcsip.dilcis.eu/), [METS](https://www.loc.gov/standards/mets/) and [PREMIS](https://www.loc.gov/standards/premis/) at loc.gov.
+- External specs: [meemoo SIP spec 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) (stable; 2.x are release candidates), [E-ARK CSIP profile](https://earkcsip.dilcis.eu/), [METS](https://www.loc.gov/standards/mets/) and [PREMIS](https://www.loc.gov/standards/premis/) at loc.gov.
 - Concrete examples: `tmp/basic/` is a sample input tree; `basic-uuid/` is sample generated output. Both are local fixtures, not tracked in git.
 
 ## Non-negotiables
@@ -85,7 +85,7 @@ Comment the why, not the what. Don't restate what the code or a function signatu
 
 - `go build -o bin/sip-creator .` — produces the binary in the gitignored `bin/`.
 - `./bin/sip-creator create --profile basic ./tmp/basic basic-uuid` — generate a sample SIP from the local fixture.
-- `./build.sh` — the local CI loop: rebuilds, wipes and regenerates `basic-uuid/`, validates the zip with dockerized commons-ip, publishes the JSON reports to `reports/runs/<timestamp>/`, and exits non-zero iff the package is not `VALID`. Requires `docker` and `jq`, plus a configured `.env` pointing at a working Siegfried (`sf`) install — siegfried is optional for the tool itself, but the baseline reference tree contains format info, so the equivalence gate expects it. The gate is currently red — the sample package is known-INVALID ([docs/TODO.md](docs/TODO.md)); that exit code is a real signal, not a broken script.
+- `./build.sh [profile]` — the local CI loop (default `basic`): rebuilds, wipes and regenerates `<profile>-uuid/` from `tmp/<profile>`, validates the zip with dockerized commons-ip, publishes the JSON reports to `reports/runs/<timestamp>-<profile>/`, and exits non-zero iff the package is not `VALID`. **Both gates are green** — each profile validates against the E-ARK spec version of its era (`basic`/meemoo-1.2 → 2.0.4, `eark` → 2.2.0; see [meemoo-12 plan](docs/plans/meemoo-12.md)). Requires `docker` and `jq`, plus a configured `.env` pointing at a working Siegfried (`sf`) install — siegfried is optional for the tool itself, but the baseline reference tree contains format info, so the equivalence gate expects it.
 - `./scripts/validate.sh [-o report-dir] <sip.zip|sip-dir>...` — validate any package standalone (also unzipped package dirs, for structure debugging).
 - `docker compose up -d reports` — serve the HTML validation reports at http://localhost:8080 (see [ADR-0005](docs/decisions/0005-dockerized-validation-and-html-reporting.md)).
 - `go generate ./services` — regenerate `CONFIG.md` from the config struct.
