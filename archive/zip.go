@@ -47,7 +47,14 @@ func (a *Archive) Zip(pkg *sip.Package) {
 			return err
 		}
 		if info.IsDir() {
-			return nil
+			// Directories need explicit entries (name ending in "/"):
+			// readers otherwise infer them from file paths, and empty
+			// directories vanish from the zip entirely.
+			_, err := w.CreateHeader(&zip.FileHeader{
+				Name:   path[len(a.BaseDir)+1:] + "/",
+				Method: zip.Store,
+			})
+			return err
 		}
 		file, err := os.Open(path)
 		if err != nil {
