@@ -8,7 +8,9 @@ type Spec struct {
 	ProfileURL                  string // mets/@PROFILE
 	Type                        string // mets/@TYPE (TODO: draw from the CSIP content-category vocabulary)
 	ContentInformationType      string // mets/@csip:CONTENTINFORMATIONTYPE
-	OtherContentInformationType string // mets/@csip:OTHERCONTENTINFORMATIONTYPE
+	OtherContentInformationType string // mets/@csip:OTHERCONTENTINFORMATIONTYPE; rendered only when set
+	DescriptiveMDType           string // dmdSec mdRef @MDTYPE
+	DescriptiveMDTypeVersion    string // dmdSec mdRef @MDTYPEVERSION; rendered only when set
 	Agents                      []Agent
 }
 

@@ -3,6 +3,7 @@ package profiles
 import (
 	"io"
 	"log/slog"
+	"path"
 
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/premis"
@@ -15,17 +16,20 @@ import (
 // nodes as each file lands. The ordering is load-bearing and encoded only
 // here: representation METS embeds the fixity of its PREMIS file, and
 // package METS embeds the fixity of everything before it — strictly last.
-func (b *Builder) write(st *store.Store, pkg *sip.Package, def Definition) error {
+func (b *Builder) write(st *store.Store, pkg *sip.Package, def Definition, encodeDescriptive descriptiveEncoder) error {
 	if err := b.writeSkeleton(st); err != nil {
 		return err
 	}
 	if err := b.writeSchemas(st, pkg); err != nil {
 		return err
 	}
+	if err := b.writeDocumentation(st, pkg); err != nil {
+		return err
+	}
 	if err := b.writeEssence(st, pkg); err != nil {
 		return err
 	}
-	if err := b.writeDescriptive(st, pkg); err != nil {
+	if err := b.writeDescriptive(st, pkg, encodeDescriptive); err != nil {
 		return err
 	}
 	if err := b.writeRepresentationMetadata(st, pkg, def); err != nil {
@@ -68,6 +72,23 @@ func (b *Builder) writeSchemas(st *store.Store, pkg *sip.Package) error {
 	return nil
 }
 
+// writeDocumentation copies the optional documentation files; directories
+// are created per file, so a package without documentation gains no empty
+// documentation/ dir.
+func (b *Builder) writeDocumentation(st *store.Store, pkg *sip.Package) error {
+	for _, f := range pkg.DocumentationFiles {
+		if err := st.MkdirAll(path.Dir(f.Path)); err != nil {
+			return err
+		}
+		info, err := st.CopyFile(f.Source, f.Path)
+		if err != nil {
+			return err
+		}
+		backfill(f, info)
+	}
+	return nil
+}
+
 func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 	return pkg.Root.EachRepresentation(func(r *sip.Representation) error {
 		base := "representations/" + r.Label
@@ -91,9 +112,11 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 	})
 }
 
-func (b *Builder) writeDescriptive(st *store.Store, pkg *sip.Package) error {
+func (b *Builder) writeDescriptive(st *store.Store, pkg *sip.Package, encode descriptiveEncoder) error {
 	df := pkg.Root.DescriptionFile
-	info, err := st.WriteMetadata(df.Path, pkg.Root.Description.Encode)
+	info, err := st.WriteMetadata(df.Path, func(w io.Writer) error {
+		return encode(w, pkg.Root.Description)
+	})
 	if err != nil {
 		return err
 	}

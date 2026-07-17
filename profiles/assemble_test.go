@@ -302,6 +302,55 @@ func TestAssembleIdentificatorError(t *testing.T) {
 	}
 }
 
+// Documentation is optional: absent means no nodes; present means nodes
+// with structure preserved in Path and — as ever — zero writes.
+func TestAssembleDocumentation(t *testing.T) {
+	b, inDir, outDir := newTestBuilder(t)
+
+	pkg, err := b.assemble(basicDef(t))
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	if len(pkg.DocumentationFiles) != 0 {
+		t.Errorf("documentation nodes = %d without a documentation dir, want 0", len(pkg.DocumentationFiles))
+	}
+
+	if err := os.MkdirAll(filepath.Join(inDir, "documentation", "sub"), 0775); err != nil {
+		t.Fatal(err)
+	}
+	for _, rel := range []string{"documentation/manual.txt", "documentation/sub/notes.txt"} {
+		if err := os.WriteFile(filepath.Join(inDir, filepath.FromSlash(rel)), []byte("doc"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	pkg, err = b.assemble(basicDef(t))
+	if err != nil {
+		t.Fatalf("assemble with documentation: %v", err)
+	}
+
+	paths := make([]string, 0, len(pkg.DocumentationFiles))
+	for _, f := range pkg.DocumentationFiles {
+		paths = append(paths, f.Path)
+		if f.Source == "" {
+			t.Errorf("documentation node %s has no Source", f.Path)
+		}
+	}
+	slices.Sort(paths)
+	want := []string{"documentation/manual.txt", "documentation/sub/notes.txt"}
+	if !slices.Equal(paths, want) {
+		t.Errorf("documentation paths = %v, want %v", paths, want)
+	}
+
+	entries, err := os.ReadDir(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("assemble wrote to the destination: %v", entries)
+	}
+}
+
 func TestAssembleMissingDescriptive(t *testing.T) {
 	b, inDir, outDir := newTestBuilder(t)
 	if err := os.Remove(filepath.Join(inDir, "dc+schema.json")); err != nil {

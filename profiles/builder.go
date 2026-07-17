@@ -1,6 +1,7 @@
 package profiles
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/ugent-library/sip-creator/formats"
@@ -40,6 +41,13 @@ func New(config *Config) *Builder {
 // then emits it in the canonical order. Assembly failures happen before
 // the store exists, so a bad input leaves no partial package dir behind.
 func (b *Builder) Build(def Definition) (*sip.Package, error) {
+	// Resolve the family's encodings before anything else: a bogus family
+	// is an input error and must fail before any side effect.
+	encodeDescriptive, err := def.Family.descriptiveEncoder()
+	if err != nil {
+		return nil, fmt.Errorf("profile %q: %w", def.Name, err)
+	}
+
 	b.Logger.Info("starting...")
 
 	pkg, err := b.assemble(def)
@@ -48,7 +56,7 @@ func (b *Builder) Build(def Definition) (*sip.Package, error) {
 	}
 
 	st := store.New(pkg.Location)
-	if err := b.write(st, pkg, def); err != nil {
+	if err := b.write(st, pkg, def, encodeDescriptive); err != nil {
 		return nil, err
 	}
 

@@ -1,6 +1,7 @@
 package profiles
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -32,6 +33,10 @@ func (b *Builder) assemble(def Definition) (*sip.Package, error) {
 	}
 
 	pkg.AddSchemaFiles(schemaFileNodes())
+
+	if err := b.assembleDocumentation(pkg); err != nil {
+		return nil, err
+	}
 
 	if err := b.assembleRepresentations(e); err != nil {
 		return nil, err
@@ -100,6 +105,46 @@ func schemaFileNodes() []*sip.File {
 		files = append(files, f)
 	}
 	return files
+}
+
+// assembleDocumentation declares graph nodes for the optional package-level
+// documentation/ input directory; an absent directory means none. Nested
+// structure is preserved in the package-relative Path.
+func (b *Builder) assembleDocumentation(pkg *sip.Package) error {
+	dir := filepath.Join(b.InDir, "documentation")
+	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("documentation source: %w", err)
+	}
+
+	var files []*sip.File
+	err := filepath.Walk(dir, func(src string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		rel, err := filepath.Rel(dir, src)
+		if err != nil {
+			return err
+		}
+
+		f := sip.NewFile()
+		f.Name = filepath.Base(src)
+		f.Source = src
+		f.Path = "documentation/" + filepath.ToSlash(rel)
+		files = append(files, f)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	pkg.AddDocumentationFiles(files)
+	return nil
 }
 
 // TODO fix case "representation_0"
