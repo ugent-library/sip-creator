@@ -28,7 +28,7 @@ Create Submission Information Packages (SIP) based on [Meemoo's SIP Specificatio
 All configuration is optional and read from the environment (a `.env` file is loaded when
 present — start from `.env.example`). All environment variables are documented in
 [CONFIG.md](CONFIG.md), which is generated from the config struct — regenerate it with
-`go generate ./services` rather than editing it by hand.
+`go generate ./cli` rather than editing it by hand.
 
 **Siegfried**
 

@@ -8,11 +8,10 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	_ "github.com/ugent-library/sip-creator/formats/siegfried"
-	"github.com/ugent-library/sip-creator/services"
 )
 
 var (
-	config *services.Config
+	cfg    *config
 	logger *slog.Logger
 
 	rootCmd = &cobra.Command{
@@ -20,6 +19,10 @@ var (
 		Short: "SIP Creator CLI",
 	}
 )
+
+func newLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(os.Stdout, nil))
+}
 
 func Run() {
 	// .env is optional configuration: a missing file is fine (all vars are
@@ -29,10 +32,10 @@ func Run() {
 	}
 
 	var err error
-	config, err = services.ConfigFromEnv()
+	cfg, err = configFromEnv()
 	cobra.CheckErr(err)
 
-	logger = services.NewLogger(config)
+	logger = newLogger()
 
 	cobra.CheckErr(rootCmd.Execute())
 }

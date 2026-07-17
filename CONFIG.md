@@ -1,8 +1,10 @@
 # Environment Variables
 
-## Config
+## config
 
-Application config
+Application config: the CLI's operator contract, read from the
+environment. The library never sees it — embedding systems supply their
+logger and identificator as data (profiles.Config), not via env vars.
 
  - Format identification tool (see formats/). Optional: leaving NAME
 empty disables format identification — premis:format is a SHOULD,

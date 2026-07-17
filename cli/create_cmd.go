@@ -32,9 +32,9 @@ var createCmd = &cobra.Command{
 		// No configured tool means format identification is skipped: the
 		// builder treats a nil identificator as "don't enrich".
 		var ffid formats.Identificator
-		if config.Formats.Name != "" {
+		if cfg.Formats.Name != "" {
 			var err error
-			ffid, err = formats.New(config.Formats.Name, config.Formats.Command, config.Formats.Args)
+			ffid, err = formats.New(cfg.Formats.Name, cfg.Formats.Command, cfg.Formats.Args)
 			if err != nil {
 				return err
 			}

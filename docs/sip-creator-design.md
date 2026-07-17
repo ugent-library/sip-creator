@@ -104,7 +104,7 @@ Layered by responsibility. The `sip/` graph is the shared domain; everything els
 - **`formats/`** — pluggable, optional format identification. `Identificator` is the interface (`Identify(path) (*sip.Format, error)`; nil identificator means skip); `Register`/`New` is a self-registration registry keyed by name. `formats/siegfried` self-registers on import and shells out to the external `sf` binary, returning errors (not panics) on exec or parse failure.
 - **`schemas/`** — all XSDs bundled via `//go:embed`; `Get()` returns them as `map[name][]byte` for copying into each SIP.
 - **`archive/`** — `Zip` walks the package directory and writes an uncompressed zip.
-- **`services/`** — config: `.env` via godotenv, parsed with caarlos0/env. `CONFIG.md` is generated from the config struct (`go generate ./services`).
+- **`cli/`** — the operator frontend: cobra commands, env config (`.env` via godotenv, parsed with caarlos0/env; `CONFIG.md` is generated from the config struct, `go generate ./cli`), and logger construction. All of it unexported: configuration is the CLI's operator contract, not library API.
 
 Dependencies are kept small and boring: cobra (CLI), google/uuid, godotenv + caarlos0/env (config), samber/lo (used only by the mets encoder). Format identification depends on an **external `sf` binary**, not a Go library.
 

@@ -1,4 +1,4 @@
-package services
+package cli
 
 import (
 	"fmt"
@@ -8,8 +8,10 @@ import (
 
 //go:generate go run github.com/g4s8/envdoc@v0.2.4 --output ../CONFIG.md --all
 
-// Application config
-type Config struct {
+// Application config: the CLI's operator contract, read from the
+// environment. The library never sees it — embedding systems supply their
+// logger and identificator as data (profiles.Config), not via env vars.
+type config struct {
 	// Format identification tool (see formats/). Optional: leaving NAME
 	// empty disables format identification — premis:format is a SHOULD,
 	// and essence fixity is computed natively during the copy.
@@ -33,13 +35,13 @@ type Config struct {
 	}
 }
 
-func ConfigFromEnv() (*Config, error) {
-	config := &Config{}
-	if err := env.Parse(config); err != nil {
+func configFromEnv() (*config, error) {
+	c := &config{}
+	if err := env.Parse(c); err != nil {
 		return nil, fmt.Errorf("parse environment config: %w", err)
 	}
-	if config.Formats.Name != "" && config.Formats.Command == "" {
-		return nil, fmt.Errorf("SIP_FILE_FORMAT_NAME is set (%q) but SIP_FILE_FORMAT_COMMAND is empty", config.Formats.Name)
+	if c.Formats.Name != "" && c.Formats.Command == "" {
+		return nil, fmt.Errorf("SIP_FILE_FORMAT_NAME is set (%q) but SIP_FILE_FORMAT_COMMAND is empty", c.Formats.Name)
 	}
-	return config, nil
+	return c, nil
 }

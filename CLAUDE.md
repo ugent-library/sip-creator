@@ -35,7 +35,7 @@ Supporting pieces:
 
 - **Domain model** (`sip/`): `Package`, `Entity`, `Representation`, `File`, `Identifier`. All identifiers take the form `uuid-<uuid>`. `File.Path` is the href relative to the METS document that references the file (documented on the field — subtle and load-bearing); `File.Source` records where essence comes from; `Entity.Description` carries the decoded descriptive metadata (`sip.Descriptive`) until the writer serializes it. `sip.Event` is an empty stub.
 - **Format identification** (`formats/`): an **optional enricher** ([ADR-0006](docs/decisions/0006-format-identification-optional.md)) behind a pluggable registry (`Identificator` interface — `Identify(path) (*sip.Format, error)` — with a `Register`/`New` factory). `formats/siegfried` self-registers and shells out to the external `sf` binary. Unconfigured → skipped (premis:format is a SHOULD; fixity is computed natively by the store); configured but broken → the build aborts loudly; no match → nil format for that file only.
-- **Config** (`services/config.go`): environment vars, with `.env` loaded when present (a missing file is fine — all vars are optional). `SIP_FILE_FORMAT_NAME` empty disables format identification; if set, `SIP_FILE_FORMAT_COMMAND` must be set too.
+- **Config** (`cli/config.go`): environment vars, with `.env` loaded when present (a missing file is fine — all vars are optional). `SIP_FILE_FORMAT_NAME` empty disables format identification; if set, `SIP_FILE_FORMAT_COMMAND` must be set too. Config is CLI wiring, unexported by design — embedding systems supply their logger and identificator as data (`profiles.Config`), never via env vars.
 
 ## Read the right docs
 
@@ -43,7 +43,7 @@ Supporting pieces:
 - [docs/sip-creator-design.md](docs/sip-creator-design.md) — the system as it is today: domain model, package layout, build lifecycle, known gaps. The entry point for understanding the code.
 - [README.md](README.md) — usage, configuration, input requirements, experimental-status warning.
 - [docs/TODO.md](docs/TODO.md) — open design questions and known defects. Check here first when investigating a bug.
-- [CONFIG.md](CONFIG.md) — environment variables. This file is **generated** by envdoc; regenerate with `go generate ./services`, never hand-edit.
+- [CONFIG.md](CONFIG.md) — environment variables. This file is **generated** by envdoc; regenerate with `go generate ./cli`, never hand-edit.
 - External specs: [meemoo SIP spec 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) (stable; 2.x are release candidates), [E-ARK CSIP profile](https://earkcsip.dilcis.eu/), [METS](https://www.loc.gov/standards/mets/) and [PREMIS](https://www.loc.gov/standards/premis/) at loc.gov.
 - Concrete examples: `tmp/basic/` is a sample input tree; `basic-uuid/` is sample generated output. Both are local fixtures, not tracked in git.
 
@@ -51,7 +51,7 @@ Supporting pieces:
 
 ### Documentation
 
-- Keep docs current in the same change as code: new or changed env vars require `go generate ./services` to regenerate `CONFIG.md`; changed usage or input requirements go in `README.md`; resolved items get removed from `docs/TODO.md`.
+- Keep docs current in the same change as code: new or changed env vars require `go generate ./cli` to regenerate `CONFIG.md`; changed usage or input requirements go in `README.md`; resolved items get removed from `docs/TODO.md`.
 
 ### Git
 
@@ -88,7 +88,7 @@ Comment the why, not the what. Don't restate what the code or a function signatu
 - `./build.sh [profile]` — the local CI loop (default `basic`): rebuilds, wipes and regenerates `<profile>-uuid/` from `tmp/<profile>`, validates the zip with dockerized commons-ip, publishes the JSON reports to `reports/runs/<timestamp>-<profile>/`, and exits non-zero iff the package is not `VALID`. **Both gates are green** — each profile validates against the E-ARK spec version of its era (`basic`/meemoo-1.2 → 2.0.4, `eark` → 2.2.0; see [meemoo-12 plan](docs/plans/meemoo-12.md)). Requires `docker` and `jq`, plus a configured `.env` pointing at a working Siegfried (`sf`) install — siegfried is optional for the tool itself, but the baseline reference tree contains format info, so the equivalence gate expects it.
 - `./scripts/validate.sh [-o report-dir] <sip.zip|sip-dir>...` — validate any package standalone (also unzipped package dirs, for structure debugging).
 - `docker compose up -d reports` — serve the HTML validation reports at http://localhost:8080 (see [ADR-0005](docs/decisions/0005-dockerized-validation-and-html-reporting.md)).
-- `go generate ./services` — regenerate `CONFIG.md` from the config struct.
+- `go generate ./cli` — regenerate `CONFIG.md` from the config struct.
 
 - `go test ./...` — Go tests cover the `store/` primitives and the assembler (`profiles/assemble_test.go`); they run with no external dependencies (no `sf`, no docker, no `.env`). External CSIP validation via `build.sh` remains the acceptance check — Go tests pin internal contracts and failure paths, the validator pins spec conformance. Add Go tests for new logic where practical.
 - `./scripts/baseline-diff.sh tmp/baseline/pkg <pkg-dir>` — structural-equivalence gate for the in-flight [refactoring plan](docs/plans/refactoring-plan.md): diffs a generated package against the Phase-0 reference with run-varying values normalized.
