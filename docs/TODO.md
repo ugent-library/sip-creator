@@ -19,6 +19,8 @@ These need a decision before they become plan work.
 
 - **Format-identification provenance as a PREMIS event.** We record *what* was identified but not *who/when/how*. Proper preservation practice is a PREMIS event ("format identification", agent: siegfried + version, signature file + date) — what a future archivist actually needs to trust the format claim. Blocked on `sip.Event` (an empty stub) growing up; when events are modeled, this should be the first one emitted. Raises the feature from "enriches a SHOULD field" to production-grade provenance. No event design exists yet anywhere — picking this up needs an ADR covering the event shape (LoC eventType vocabulary, dateTime, detail, linking identifiers), where events attach on the graph (per-file vs. package-level), PREMIS agents vs. the METS-specific `sip.Agent`, and pass-through of *received* vendor events ([input-spec.md](input-spec.md)) alongside self-generated ones.
 
+- **meemoo SIP 2.1 migration.** The repo targets 2.0 throughout; UGent will eventually move to [2.1](https://developer.meemoo.be/docs/diginstroom/sip/2.1/). Conceptually a *family-level* change (vocabularies, encodings, values) — likely a versioned meemoo family alongside 2.0 rather than in-place edits, and the designated promotion trigger for the `Family` constant growing into an internal struct ([ADR-0007](decisions/0007-profile-families-share-one-writer.md)). Needs its own spec-delta plan; deliberately parked (2026-07-16) until the [eark profile](plans/eark-writer.md) lands.
+
 - **Representation directory naming.** The `representation_([0-9]+)$` regex is stricter than either spec, and a non-matching dir (e.g. `master`) is silently skipped rather than erroring.
   - CSIP: representation folder names are free-form; only requirement is uniqueness within the package.
   - meemoo 2.0: the dir name is not fixed to `representation_1`, but MUST equal the representation METS's `mets/@OBJID`; `representation_1` is only the illustrative example.
@@ -43,11 +45,9 @@ These need a decision before they become plan work.
 The sample package does not yet validate. Keep these until fixed (they are the
 gate that must go green before blocking automation — [ADR-0003](decisions/0003-validation-stays-external.md)).
 
-Descriptive metadata (`dc+schema.xml`) fails XSD validation:
+Current failures (commons-ip 2.11.2, spec 2.2.0; re-measured 2026-07-16):
 
-```
-6:  54  cvc-elt.1:   Cannot find the declaration of element 'metadata'.
-16: 48  cvc-elt.4.2: Cannot resolve 'edtf:EDTF-level1' to a type definition for element 'dcterms:created'.
-```
+- **SIP2 [MUST]** — `mets/@PROFILE` declares the CSIP profile URL; the validator requires `https://earksip.dilcis.eu/profile/E-ARK-SIP.xml`. Open check: whether meemoo 2.x itself mandates the E-ARK SIP URL — if yes this is a one-line registry fix for `basic` (surfaced by the [eark-writer plan](plans/eark-writer.md) research).
+- **CSIPSTR16 [SHOULD]** — no `documentation` folder. The [eark-writer plan](plans/eark-writer.md) adds documentation support for the eark profile; whether `basic` should emit it too is open.
 
-→ the `<metadata>` element has no resolvable schema declaration, and the EDTF type for `dcterms:created` does not resolve. Likely a missing/mislinked XSD for the `metadata` element and the `edtf` namespace.
+(Older evidence here — `dc+schema.xml` failing XSD validation with `cvc-elt.1`/EDTF errors — no longer reproduces under commons-ip 2.11.2 and was removed 2026-07-16.)

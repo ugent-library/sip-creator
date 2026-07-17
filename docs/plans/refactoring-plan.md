@@ -354,6 +354,8 @@ pkg, err := profile.Build(spec)
 
 ## Phase 3 — E-ARK/RODA writer seam (scoped outline, follow-up work)
 
+*Status: expanded into the [eark-writer plan](eark-writer.md) (2026-07-16, reworked 2026-07-17), which supersedes this outline — including a correction: there is no second writer and no eark template family. Design review showed the family-varying surface is data plus one encoding choice, so profile families share the one canonical writer and select encodings per [ADR-0007](../decisions/0007-profile-families-share-one-writer.md); sibling writers would have reintroduced the `Basic()`/`Roda()` duplication at writer level.*
+
 Goal: `--profile eark` producing a plain, valid E-ARK SIP that RODA ingests. Not implemented in this plan; phases 1–2 create the seam it needs:
 
 - The `sip/` graph is spec-neutral and shared. Variation *within* the meemoo family is registry data (Phase 2). Variation *across* families (meemoo vs E-ARK) is a **writer + template set**: an `encoders/mets` E-ARK template family (`define "eark-package"` etc., or a sibling encoder package) with `PROFILE="https://earkcsip.dilcis.eu/profile/E-ARK-SIP.xml"`, a vocabulary `CONTENTINFORMATIONTYPE` (no meemoo URL), E-ARK directory conventions, and plain-DC descriptive output (the unused `"dc"` template in encoders/metadata/encoder.go:120 finally gets a caller).
