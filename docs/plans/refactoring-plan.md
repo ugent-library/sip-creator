@@ -2,6 +2,8 @@
 
 *Status: accepted, not yet started. Drafted 2026-07-02 from an architectural assessment comparing SIP Creator against commons-ip, RODA-in, bagit-create, Archivematica, and meemoo's own sipin tooling.*
 
+*Editorial note (2026-08-18): this plan is an execution record; the `formats/` registry pattern referenced throughout was later removed by [ADR-0009](../decisions/0009-characterization-as-sidecar-input.md) (characterization became pre-computed sidecar input). The historical mentions below are left as written.*
+
 ## Context — why this change
 
 The assessment found that SIP Creator's model (`sip/`), serializers (`encoders/`), and format-ID registry (`formats/`) all match how the field structures this problem. The outlier is the profile layer:

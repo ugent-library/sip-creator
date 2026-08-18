@@ -10,20 +10,10 @@ import (
 
 // Application config: the CLI's operator contract, read from the
 // environment. The library never sees it — embedding systems supply their
-// logger and identificator as data (profiles.Config), not via env vars.
+// logger and characterization report as data (profiles.Config), not via
+// env vars. Format info comes from the siegfried.json sidecar in the input
+// tree (ADR-0009), not from configuration.
 type config struct {
-	// Format identification tool (see formats/). Optional: leaving NAME
-	// empty disables format identification — premis:format is a SHOULD,
-	// and essence fixity is computed natively during the copy.
-	Formats struct {
-		// Name of the format identification tool; empty disables format
-		// identification. Valid values: siegfried.
-		Name string `env:"NAME"`
-		// Path to the tool's binary on this system. Required when NAME is set.
-		Command string `env:"COMMAND"`
-		// Extra arguments passed to the tool (e.g. "-json" for siegfried).
-		Args string `env:"ARGS"`
-	} `envPrefix:"SIP_FILE_FORMAT_"`
 	// The submitting organization, stamped into every package's METS as a
 	// CREATOR agent. `create` requires NAME for every profile and OR_ID for
 	// meemoo profiles; how required each is depends on the profile, so the
@@ -51,9 +41,6 @@ func configFromEnv() (*config, error) {
 	c := &config{}
 	if err := env.Parse(c); err != nil {
 		return nil, fmt.Errorf("parse environment config: %w", err)
-	}
-	if c.Formats.Name != "" && c.Formats.Command == "" {
-		return nil, fmt.Errorf("SIP_FILE_FORMAT_NAME is set (%q) but SIP_FILE_FORMAT_COMMAND is empty", c.Formats.Name)
 	}
 	return c, nil
 }

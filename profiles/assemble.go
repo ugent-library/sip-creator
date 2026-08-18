@@ -1,16 +1,21 @@
 package profiles
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"maps"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 
+	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/metadata"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
@@ -25,6 +30,11 @@ func (b *Builder) assemble(def Definition) (*sip.Package, error) {
 
 	pkg.Spec = &def.Mets
 
+	chars, err := b.assembleCharacterization(def)
+	if err != nil {
+		return nil, err
+	}
+
 	e := sip.NewEntity()
 	b.Logger.Info("created an intellectual entity", slog.Any("id", e.Identifier))
 
@@ -34,16 +44,47 @@ func (b *Builder) assemble(def Definition) (*sip.Package, error) {
 
 	pkg.AddSchemaFiles(schemaFileNodes())
 
-	if err := b.assembleDocumentation(pkg); err != nil {
+	if err := b.assembleDocumentation(pkg, chars); err != nil {
 		return nil, err
 	}
 
-	if err := b.assembleRepresentations(e); err != nil {
+	if err := b.assembleRepresentations(e, chars); err != nil {
 		return nil, err
 	}
 
 	pkg.AddRootEntity(e)
 	return pkg, nil
+}
+
+// assembleCharacterization resolves the build's characterization report: a
+// caller-supplied report wins; otherwise the profile's sidecar file is read
+// from the input root. No report at all is fine — the build proceeds
+// without format info — but a present one must decode (ADR-0009: optional
+// in contract, fully strict when present).
+func (b *Builder) assembleCharacterization(def Definition) (characterization.Report, error) {
+	if b.Characterization != nil {
+		return b.Characterization, nil
+	}
+	if def.CharacterizationSource == "" {
+		return nil, nil
+	}
+
+	src := filepath.Join(b.InDir, def.CharacterizationSource)
+	f, err := os.Open(src)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("characterization source: %w", err)
+	}
+	defer f.Close()
+
+	report, err := characterization.DecodeSiegfried(f)
+	if err != nil {
+		return nil, fmt.Errorf("characterization source %s: %w", src, err)
+	}
+	b.Logger.Info("decoded a characterization report", slog.Int("entries", len(report)))
+	return report, nil
 }
 
 func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition) error {
@@ -110,7 +151,7 @@ func schemaFileNodes() []*sip.File {
 // assembleDocumentation declares graph nodes for the optional package-level
 // documentation/ input directory; an absent directory means none. Nested
 // structure is preserved in the package-relative Path.
-func (b *Builder) assembleDocumentation(pkg *sip.Package) error {
+func (b *Builder) assembleDocumentation(pkg *sip.Package, chars characterization.Report) error {
 	dir := filepath.Join(b.InDir, "documentation")
 	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -132,6 +173,22 @@ func (b *Builder) assembleDocumentation(pkg *sip.Package) error {
 			return err
 		}
 
+		// Documentation is lenient where essence is strict (ADR-0009):
+		// these files carry no premis:format and may postdate the report,
+		// so no entry is required — but a present entry must still be
+		// checksum-true, because a mismatch proves the report stale.
+		if chars != nil {
+			key, err := reportKey(b.InDir, src)
+			if err != nil {
+				return err
+			}
+			if rec, ok := chars[key]; ok && rec.MD5 != "" {
+				if err := verifyReportMD5(src, rec); err != nil {
+					return err
+				}
+			}
+		}
+
 		f := sip.NewFile()
 		f.Name = filepath.Base(src)
 		f.Source = src
@@ -150,7 +207,7 @@ func (b *Builder) assembleDocumentation(pkg *sip.Package) error {
 // TODO fix case "representation_0"
 var repDirRx = regexp.MustCompile("representation_([0-9]+)$")
 
-func (b *Builder) assembleRepresentations(e *sip.Entity) error {
+func (b *Builder) assembleRepresentations(e *sip.Entity, chars characterization.Report) error {
 	return filepath.Walk(b.InDir, func(dir string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -162,7 +219,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity) error {
 		r := sip.NewRepresentation(filepath.Base(dir))
 		b.Logger.Info("created a representation", slog.Any("id", r.Identifier))
 
-		if err := b.assembleEssenceFiles(dir, r); err != nil {
+		if err := b.assembleEssenceFiles(dir, r, chars); err != nil {
 			return err
 		}
 
@@ -172,7 +229,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity) error {
 	})
 }
 
-func (b *Builder) assembleEssenceFiles(dir string, r *sip.Representation) error {
+func (b *Builder) assembleEssenceFiles(dir string, r *sip.Representation, chars characterization.Report) error {
 	return filepath.Walk(dir, func(src string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -186,19 +243,95 @@ func (b *Builder) assembleEssenceFiles(dir string, r *sip.Representation) error 
 		f.Name = filepath.Base(src)
 		f.Source = src
 		f.Path = "data/" + f.Name // rep-relative, per File.Path semantics
-		// Format identification is an optional enricher (ADR-0006): it runs
-		// against the SOURCE file, before anything is on disk. Fixity is not
-		// its job — the writer computes that during the streamed copy.
-		if b.Formats != nil {
-			format, err := b.Formats.Identify(src)
+		// Characterization is an optional enricher (ADR-0009): the report
+		// asserts formats for SOURCE files, and the MD5 binding proves each
+		// record still describes the bytes on disk. Fixity is not its job —
+		// the writer computes that during the streamed copy.
+		if chars != nil {
+			rec, err := b.essenceRecord(chars, src)
 			if err != nil {
 				return err
 			}
-			f.Format = format
+			f.Format = rec.Format
 		}
 		f.SetRepresentation(r)
 		r.AddFile(f)
 		b.Logger.Info("placed an essence file", slog.Any("id", f.Identifier))
 		return nil
 	})
+}
+
+// essenceRecord looks up src's record and enforces ADR-0009's strictness:
+// every essence file must be present in the report, error-free, and
+// checksum-bound to the bytes on disk — a stale format claim in
+// preservation metadata is worse than none.
+func (b *Builder) essenceRecord(chars characterization.Report, src string) (characterization.Record, error) {
+	key, err := reportKey(b.InDir, src)
+	if err != nil {
+		return characterization.Record{}, err
+	}
+	rec, ok := chars[key]
+	if !ok {
+		return characterization.Record{}, fmt.Errorf(
+			"characterization report has no entry for %q (report keys look like %s) — generate the report from the input root: cd %s && sf -hash md5 -json .",
+			key, sampleKey(chars), b.InDir)
+	}
+	if rec.Errors != "" {
+		return characterization.Record{}, fmt.Errorf("characterization report records an error for %q: %s", key, rec.Errors)
+	}
+	if rec.MD5 == "" {
+		return characterization.Record{}, fmt.Errorf("characterization report carries no checksum for %q — generate it with sf -hash md5 -json", key)
+	}
+	if err := verifyReportMD5(src, rec); err != nil {
+		return characterization.Record{}, err
+	}
+	return rec, nil
+}
+
+// reportKey is the input-relative slash path a report keys its records by —
+// the same normalization DecodeSiegfried applies to sf's filenames.
+func reportKey(inDir, src string) (string, error) {
+	rel, err := filepath.Rel(inDir, src)
+	if err != nil {
+		return "", err
+	}
+	return path.Clean(filepath.ToSlash(rel)), nil
+}
+
+// sampleKey picks a deterministic example key for error messages, so a
+// report generated from the wrong directory is self-explaining.
+func sampleKey(chars characterization.Report) string {
+	keys := slices.Sorted(maps.Keys(chars))
+	if len(keys) == 0 {
+		return "(the report is empty)"
+	}
+	return fmt.Sprintf("%q", keys[0])
+}
+
+// verifyReportMD5 checks the report's checksum binding for src: the MD5 is
+// what ties a record to the bytes it describes (the staleness defense).
+func verifyReportMD5(src string, rec characterization.Record) error {
+	sum, err := md5File(src)
+	if err != nil {
+		return err
+	}
+	if sum != rec.MD5 {
+		return fmt.Errorf("%s changed since the characterization report was generated (file md5 %s, report has %s) — regenerate the report", src, sum, rec.MD5)
+	}
+	return nil
+}
+
+// md5File streams the file's MD5; essence can be large.
+func md5File(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := md5.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }

@@ -44,12 +44,12 @@ func (f Family) descriptiveEncoder() (descriptiveEncoder, error) {
 // Definition declares a profile as data: what descriptive source it reads,
 // which metadata it emits, and the values its METS documents carry.
 // Profiles differ in these values, not in build logic — one engine
-// (Builder.Build) reads them. Mirrors the formats/ registry pattern: a
-// name looks up values.
+// (Builder.Build) reads them; a name looks up values in the registry.
 type Definition struct {
 	Name                     string
 	Family                   Family
 	DescriptiveSource        string // input filename of the descriptive metadata
+	CharacterizationSource   string // input filename of the sidecar characterization report; "" disables discovery (ADR-0009)
 	LocalIdentifierScheme    string // scheme for MEEMOO-LOCAL-ID extraction; "" disables
 	EmitPackagePremis        bool
 	EmitRepresentationPremis bool
@@ -86,6 +86,7 @@ var registry = map[string]Definition{
 		Name:                     "basic",
 		Family:                   FamilyMeemoo,
 		DescriptiveSource:        "dc+schema.json",
+		CharacterizationSource:   "siegfried.json",
 		LocalIdentifierScheme:    "dcterms",
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
@@ -109,6 +110,7 @@ var registry = map[string]Definition{
 		Name:                     "eark",
 		Family:                   FamilyEARK,
 		DescriptiveSource:        "dc+schema.json",
+		CharacterizationSource:   "siegfried.json",
 		LocalIdentifierScheme:    "", // MEEMOO-LOCAL-ID is a meemoo concept
 		EmitPackagePremis:        false,
 		EmitRepresentationPremis: false, // RODA drops non-agent/event package PREMIS; v1 is essence + descriptive

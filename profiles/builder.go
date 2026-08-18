@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/ugent-library/sip-creator/formats"
+	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/sip"
 	"github.com/ugent-library/sip-creator/store"
 )
@@ -14,7 +14,10 @@ type Config struct {
 	Source      string
 	Destination string
 	Logger      *slog.Logger
-	Formats     formats.Identificator
+	// Characterization optionally supplies a pre-decoded characterization
+	// report as data; nil means assemble discovers the profile's sidecar
+	// file in the input tree (ADR-0009). Strictness is the same either way.
+	Characterization characterization.Report
 }
 
 // Builder builds SIP packages from an input tree, driven by a profile
@@ -23,17 +26,18 @@ type Builder struct {
 	OutDir string
 	InDir  string
 	Logger *slog.Logger
-	// Formats optionally enriches essence files with format information;
-	// nil skips identification (ADR-0006).
-	Formats formats.Identificator
+	// Characterization optionally enriches essence files with format
+	// information; nil falls back to the profile's sidecar file, and the
+	// build proceeds without format info when neither exists (ADR-0009).
+	Characterization characterization.Report
 }
 
 func New(config *Config) *Builder {
 	return &Builder{
-		OutDir:  config.Destination,
-		InDir:   config.Source,
-		Logger:  config.Logger,
-		Formats: config.Formats,
+		OutDir:           config.Destination,
+		InDir:            config.Source,
+		Logger:           config.Logger,
+		Characterization: config.Characterization,
 	}
 }
 

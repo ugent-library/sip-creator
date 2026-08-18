@@ -4,15 +4,10 @@
 
 Application config: the CLI's operator contract, read from the
 environment. The library never sees it — embedding systems supply their
-logger and identificator as data (profiles.Config), not via env vars.
+logger and characterization report as data (profiles.Config), not via
+env vars. Format info comes from the siegfried.json sidecar in the input
+tree (ADR-0009), not from configuration.
 
- - Format identification tool (see formats/). Optional: leaving NAME
-empty disables format identification — premis:format is a SHOULD,
-and essence fixity is computed natively during the copy.
-   - `SIP_FILE_FORMAT_NAME` - Name of the format identification tool; empty disables format
-identification. Valid values: siegfried.
-   - `SIP_FILE_FORMAT_COMMAND` - Path to the tool's binary on this system. Required when NAME is set.
-   - `SIP_FILE_FORMAT_ARGS` - Extra arguments passed to the tool (e.g. "-json" for siegfried).
  - The submitting organization, stamped into every package's METS as a
 CREATOR agent. `create` requires NAME for every profile and OR_ID for
 meemoo profiles; how required each is depends on the profile, so the

@@ -1,7 +1,9 @@
 package profiles
 
 import (
-	"errors"
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"os"
@@ -9,20 +11,79 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/metadata"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// fakeIdentificator stands in for siegfried: it returns a canned format
-// the way formats.Identificator implementations do, without shelling out.
-type fakeIdentificator struct{}
+// cannedMatch is the sidecar match writeSidecar stamps on every file.
+var cannedMatch = []map[string]any{{
+	"ns":     "pronom",
+	"id":     "fmt/999",
+	"format": "Test Format",
+	"mime":   "image/test",
+}}
 
-func (fakeIdentificator) Identify(src string) (*sip.Format, error) {
-	fr := sip.NewFormatRegistry()
-	fr.Name = "pronom"
-	fr.Key = "fmt/999"
-	return &sip.Format{FormatRegistry: fr}, nil
+// writeSidecar generates inDir's siegfried.json the way `sf -hash md5 -json .`
+// run from the input root would: an entry per file on disk (real MD5s, the
+// canned match) plus the self-entry a real run records for the sidecar file
+// it is writing into — consumers must ignore entries they never look up.
+// Tests that add input files afterwards must call it again.
+func writeSidecar(t *testing.T, inDir string) {
+	t.Helper()
+	writeSidecarWith(t, inDir, cannedMatch)
+}
+
+func writeSidecarWith(t *testing.T, inDir string, matches []map[string]any) {
+	t.Helper()
+	var files []map[string]any
+	err := filepath.Walk(inDir, func(src string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() || filepath.Base(src) == "siegfried.json" {
+			return nil
+		}
+		rel, err := filepath.Rel(inDir, src)
+		if err != nil {
+			return err
+		}
+		files = append(files, map[string]any{
+			"filename": filepath.ToSlash(rel),
+			"filesize": info.Size(),
+			"errors":   "",
+			"md5":      fileMD5(t, src),
+			"matches":  matches,
+		})
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	files = append(files, map[string]any{
+		"filename": "siegfried.json", "filesize": 0,
+		"errors": "empty source", "md5": "d41d8cd98f00b204e9800998ecf8427e",
+		"matches": []map[string]any{},
+	})
+
+	doc, err := json.Marshal(map[string]any{"siegfried": "1.11.0-test", "files": files})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inDir, "siegfried.json"), doc, 0600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func fileMD5(t *testing.T, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(path) // test files are tiny
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := md5.Sum(data)
+	return hex.EncodeToString(sum[:])
 }
 
 const testDescriptive = `{
@@ -41,8 +102,8 @@ func basicDef(t *testing.T) Definition {
 }
 
 // newTestBuilder lays out a minimal input tree (one descriptive file, one
-// representation with one essence file) and returns a builder plus its
-// in/out dirs.
+// representation with one essence file, a matching sidecar) and returns a
+// builder plus its in/out dirs.
 func newTestBuilder(t *testing.T) (b *Builder, inDir, outDir string) {
 	t.Helper()
 	inDir, outDir = t.TempDir(), t.TempDir()
@@ -57,12 +118,12 @@ func newTestBuilder(t *testing.T) (b *Builder, inDir, outDir string) {
 	if err := os.WriteFile(filepath.Join(repDir, "cat.jpg"), []byte("not really a jpeg"), 0600); err != nil {
 		t.Fatal(err)
 	}
+	writeSidecar(t, inDir)
 
 	b = New(&Config{
 		Source:      inDir,
 		Destination: outDir,
 		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
-		Formats:     fakeIdentificator{},
 	})
 	return b, inDir, outDir
 }
@@ -151,9 +212,10 @@ func TestAssemble(t *testing.T) {
 		t.Error("essence file not wired back to the representation")
 	}
 
-	// The essence node is enriched with the identificator's format.
+	// The essence node is enriched with the sidecar's format; the report's
+	// extra entries (dc+schema.json, the sidecar itself) are ignored.
 	if f.Format == nil || f.Format.FormatRegistry.Key != "fmt/999" {
-		t.Errorf("essence Format = %+v, want fmt/999 from the identificator", f.Format)
+		t.Errorf("essence Format = %+v, want fmt/999 from the sidecar", f.Format)
 	}
 
 	// PREMIS and METS nodes are the writer's to create, not the assembler's.
@@ -190,6 +252,9 @@ func TestAssembleRepresentations(t *testing.T) {
 	write("representation_2/sub/deep.tif")
 	write("representation_10/b.jpg")
 	write("documentation/readme.txt")
+	// The sidecar must describe the files as they are now — essence added
+	// after the report was generated aborts the build by design.
+	writeSidecar(t, inDir)
 
 	pkg, err := b.assemble(basicDef(t))
 	if err != nil {
@@ -244,61 +309,150 @@ func TestAssembleRepresentations(t *testing.T) {
 	}
 }
 
-// Format identification is optional: a nil identificator skips enrichment
-// and the build still assembles (ADR-0006).
-func TestAssembleWithoutIdentificator(t *testing.T) {
-	b, _, _ := newTestBuilder(t)
-	b.Formats = nil
-
-	pkg, err := b.assemble(basicDef(t))
-	if err != nil {
-		t.Fatalf("assemble without identificator: %v", err)
-	}
-	if f := pkg.Root.Representations[0].Files[0]; f.Format != nil {
-		t.Errorf("essence Format = %+v, want nil without an identificator", f.Format)
-	}
-}
-
-type noMatchIdentificator struct{}
-
-func (noMatchIdentificator) Identify(string) (*sip.Format, error) { return nil, nil }
-
-// A tool that runs but finds no match leaves Format nil for that file only.
-func TestAssembleIdentificatorNoMatch(t *testing.T) {
-	b, _, _ := newTestBuilder(t)
-	b.Formats = noMatchIdentificator{}
-
-	pkg, err := b.assemble(basicDef(t))
-	if err != nil {
-		t.Fatalf("assemble with no-match identificator: %v", err)
-	}
-	if f := pkg.Root.Representations[0].Files[0]; f.Format != nil {
-		t.Errorf("essence Format = %+v, want nil on no match", f.Format)
-	}
-}
-
-type failingIdentificator struct{}
-
-func (failingIdentificator) Identify(string) (*sip.Format, error) {
-	return nil, errors.New("sf exploded")
-}
-
-// A configured-but-broken tool aborts assembly: misconfiguration must be
-// loud, and it fails before anything is written.
-func TestAssembleIdentificatorError(t *testing.T) {
-	b, _, outDir := newTestBuilder(t)
-	b.Formats = failingIdentificator{}
-
-	if _, err := b.assemble(basicDef(t)); err == nil {
-		t.Fatal("assemble succeeded despite a failing identificator")
-	}
-
+// requireEmpty asserts the fail-fast property: a failed assemble leaves
+// nothing in the destination.
+func requireEmpty(t *testing.T, outDir string) {
+	t.Helper()
 	entries, err := os.ReadDir(outDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(entries) != 0 {
 		t.Errorf("failed assemble wrote to the destination: %v", entries)
+	}
+}
+
+// Characterization is optional in contract (ADR-0009): no sidecar means the
+// build proceeds without format info.
+func TestAssembleWithoutSidecar(t *testing.T) {
+	b, inDir, _ := newTestBuilder(t)
+	if err := os.Remove(filepath.Join(inDir, "siegfried.json")); err != nil {
+		t.Fatal(err)
+	}
+
+	pkg, err := b.assemble(basicDef(t))
+	if err != nil {
+		t.Fatalf("assemble without sidecar: %v", err)
+	}
+	if f := pkg.Root.Representations[0].Files[0]; f.Format != nil {
+		t.Errorf("essence Format = %+v, want nil without a sidecar", f.Format)
+	}
+}
+
+// An entry with empty matches[] is an honest no-match: Format stays nil for
+// that file only, and assembly succeeds.
+func TestAssembleSidecarNoMatch(t *testing.T) {
+	b, inDir, _ := newTestBuilder(t)
+	writeSidecarWith(t, inDir, []map[string]any{})
+
+	pkg, err := b.assemble(basicDef(t))
+	if err != nil {
+		t.Fatalf("assemble with no-match sidecar: %v", err)
+	}
+	if f := pkg.Root.Representations[0].Files[0]; f.Format != nil {
+		t.Errorf("essence Format = %+v, want nil on no match", f.Format)
+	}
+}
+
+// A present-but-broken sidecar aborts assembly: misconfiguration must be
+// loud, and it fails before anything is written.
+func TestAssembleSidecarMalformed(t *testing.T) {
+	b, inDir, outDir := newTestBuilder(t)
+	if err := os.WriteFile(filepath.Join(inDir, "siegfried.json"), []byte("{ not json"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := b.assemble(basicDef(t)); err == nil {
+		t.Fatal("assemble succeeded despite a malformed sidecar")
+	}
+	requireEmpty(t, outDir)
+}
+
+// Essence the report doesn't know aborts: the file was added (or the report
+// generated from the wrong directory) after the sf run.
+func TestAssembleSidecarMissingEntry(t *testing.T) {
+	b, inDir, outDir := newTestBuilder(t)
+	// Added after writeSidecar — exactly the staleness the strictness catches.
+	if err := os.WriteFile(filepath.Join(inDir, "representation_1", "extra.jpg"), []byte("late arrival"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := b.assemble(basicDef(t)); err == nil {
+		t.Fatal("assemble succeeded despite essence missing from the sidecar")
+	}
+	requireEmpty(t, outDir)
+}
+
+// Changed bytes fail the MD5 binding: a stale report must never lend its
+// format claims to different content.
+func TestAssembleSidecarChecksumMismatch(t *testing.T) {
+	b, inDir, outDir := newTestBuilder(t)
+	if err := os.WriteFile(filepath.Join(inDir, "representation_1", "cat.jpg"), []byte("different bytes now"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := b.assemble(basicDef(t)); err == nil {
+		t.Fatal("assemble succeeded despite essence changed since the report")
+	}
+	requireEmpty(t, outDir)
+}
+
+// A report without checksums (sf run without -hash md5) can't bind records
+// to bytes, so it aborts rather than being trusted.
+func TestAssembleSidecarChecksumless(t *testing.T) {
+	b, inDir, outDir := newTestBuilder(t)
+	raw := `{"siegfried":"1.11.0","files":[{"filename":"representation_1/cat.jpg","filesize":17,"errors":"","matches":[]}]}`
+	if err := os.WriteFile(filepath.Join(inDir, "siegfried.json"), []byte(raw), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := b.assemble(basicDef(t)); err == nil {
+		t.Fatal("assemble succeeded despite a checksumless sidecar entry")
+	}
+	requireEmpty(t, outDir)
+}
+
+// A per-file error recorded by sf aborts: the tool is telling us it never
+// characterized these bytes.
+func TestAssembleSidecarEntryError(t *testing.T) {
+	b, inDir, outDir := newTestBuilder(t)
+	raw := `{"siegfried":"1.11.0","files":[{"filename":"representation_1/cat.jpg","filesize":17,"errors":"permission denied","md5":"ab","matches":[]}]}`
+	if err := os.WriteFile(filepath.Join(inDir, "siegfried.json"), []byte(raw), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := b.assemble(basicDef(t)); err == nil {
+		t.Fatal("assemble succeeded despite an sf-reported file error")
+	}
+	requireEmpty(t, outDir)
+}
+
+// A caller-supplied report is the library transport (ADR-0009): it wins over
+// file discovery — the sidecar on disk is never even read.
+func TestAssembleCallerReport(t *testing.T) {
+	b, inDir, _ := newTestBuilder(t)
+	// Poison the on-disk sidecar: reading it would abort the build.
+	if err := os.WriteFile(filepath.Join(inDir, "siegfried.json"), []byte("{ not json"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	fr := sip.NewFormatRegistry()
+	fr.Name = "pronom"
+	fr.Key = "fmt/999"
+	b.Characterization = characterization.Report{
+		"representation_1/cat.jpg": {
+			Format: &sip.Format{FormatRegistry: fr},
+			Mime:   "image/test",
+			MD5:    fileMD5(t, filepath.Join(inDir, "representation_1", "cat.jpg")),
+		},
+	}
+
+	pkg, err := b.assemble(basicDef(t))
+	if err != nil {
+		t.Fatalf("assemble with caller report: %v", err)
+	}
+	if f := pkg.Root.Representations[0].Files[0]; f.Format == nil || f.Format.FormatRegistry.Key != "fmt/999" {
+		t.Errorf("essence Format = %+v, want fmt/999 from the caller report", f.Format)
 	}
 }
 

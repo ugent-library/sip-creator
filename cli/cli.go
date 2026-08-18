@@ -7,7 +7,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
-	_ "github.com/ugent-library/sip-creator/formats/siegfried"
 )
 
 var (

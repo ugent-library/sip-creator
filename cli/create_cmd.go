@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/ugent-library/sip-creator/archive"
-	"github.com/ugent-library/sip-creator/formats"
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
@@ -36,21 +35,13 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("%w (set SIP_SUBMITTER_NAME and SIP_SUBMITTER_OR_ID)", err)
 		}
 
-		// No configured tool means format identification is skipped: the
-		// builder treats a nil identificator as "don't enrich".
-		var ffid formats.Identificator
-		if cfg.Formats.Name != "" {
-			ffid, err = formats.New(cfg.Formats.Name, cfg.Formats.Command, cfg.Formats.Args)
-			if err != nil {
-				return err
-			}
-		}
-
+		// Format info comes from the input tree's siegfried.json sidecar
+		// when present (ADR-0009); the CLI never runs a characterization
+		// tool, so there is nothing to construct or configure here.
 		builder := profiles.New(&profiles.Config{
 			Source:      args[0],
 			Destination: args[1],
 			Logger:      logger,
-			Formats:     ffid,
 		})
 
 		archive := archive.New(&archive.Config{

@@ -68,7 +68,7 @@ names. Check an item off when its commit lands (or its gate passes).
       Commit: `Added: characterization package …`
 - [x] **A2 — ADR-0009** written; ADR-0006 marked "superseded in part".
       Commit: `Added: ADR-0009 …`
-- [ ] **A3 — the swap**: `Config.Characterization` replaces `Config.Formats`;
+- [x] **A3 — the swap**: `Config.Characterization` replaces `Config.Formats`;
       `Definition.CharacterizationSource`; assemble threads `chars` (essence
       strict, documentation lenient-but-verified); `formats/` tree deleted;
       CLI/env unwired + `go generate ./cli`; assemble tests reworked

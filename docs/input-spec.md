@@ -38,7 +38,7 @@ Institution details (who submits, who archives, contact person, agreement number
 ## 1. General rules
 
 - One input folder MUST correspond to one package.
-- Four names at the top level are reserved: `metadata.csv` (required), `representations/`, `documentation/`, `premis/` (each optional). All other folder and file names are free, with any nesting.
+- Five names at the top level are reserved: `metadata.csv` (required), `representations/`, `documentation/`, `premis/`, and `siegfried.json` (each optional; `siegfried.json` is the pre-computed characterization report, see §2). All other folder and file names are free, with any nesting.
 - Operating-system artifacts (`.DS_Store`, `Thumbs.db`, `desktop.ini`, `._*`) MUST be ignored by the tool: never packaged, never warned about.
 - Symbolic links anywhere in the input MUST be an error.
 - The tool MUST compare paths after Unicode canonical normalization (NFC) — macOS file names and typed CSV values often differ only in normalization form.
@@ -54,7 +54,7 @@ A *representation* is one version of the content: the archival master scans are 
 - Representation folder names MUST match `A–Z a–z 0–9 . _ -`. They are labels: the tool decides the folder naming inside the final package (e.g. meemoo's `representation_1`) and keeps your label as the human-readable name.
 - Inside a representation folder, three names are reserved: `metadata.csv`, `documentation/` and `premis/` (all optional, see §3–5). Everything else is content, with free naming and nesting.
 - Files are ordered by natural sort of their paths — name scans `0001.tiff`, `0002.tiff`, … and the page order follows. There is no other ordering mechanism in this version.
-- The tool computes checksums, sizes, and file formats itself; you never supply those.
+- The tool computes checksums and sizes itself; you never supply those. File formats come from an optional pre-computed characterization report (`siegfried.json` at the top level, generated from the input root with `sf -hash md5 -json`) that the tool verifies against the files before trusting — you never hand-author format info ([ADR-0009](decisions/0009-characterization-as-sidecar-input.md)).
 
 ## 3. `metadata.csv` — describing the content
 
@@ -170,7 +170,7 @@ Deliberate trade-off: because organization details come from configuration, an i
 | `--status` | METS `metsHdr/@RECORDSTATUS` (SIP3 vocabulary: NEW, SUPPLEMENT, REPLACEMENT, TEST, VERSION, DELETE; default NEW) |
 | `--updates <id>` | package identifier `mets/@OBJID` reuses the original package's identifier — the E-ARK SIP spec defines no separate prior-AIP pointer |
 | `premis/` files | copied under `metadata/preservation/` (package or representation level), referenced from METS amdSec/digiprovMD |
-| computed checksums, sizes, formats | METS fileSec + generated PREMIS fixity |
+| computed checksums, sizes; formats from `siegfried.json` | METS fileSec + generated PREMIS fixity/format |
 
 ## 8. Deferred to a later version
 

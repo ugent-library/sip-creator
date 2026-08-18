@@ -14,14 +14,15 @@ Create Submission Information Packages (SIP) based on [Meemoo's SIP Specificatio
 * Profiles are registry entries selected with `--profile`: `basic` (meemoo SIP 1.2) and
   `eark` (plain E-ARK SIP for RODA-class repositories). An unknown (or omitted)
   `--profile` fails with the list of available profiles.
-* Optional file format characterization via [Siegfried](https://github.com/richardlehane/siegfried):
-  when configured it enriches the PREMIS metadata with PRONOM format info (a SHOULD in the
-  meemoo spec); without it the build still succeeds — fixity is computed natively.
+* Optional file format characterization via a pre-computed [Siegfried](https://github.com/richardlehane/siegfried)
+  report: a `siegfried.json` sidecar in the input folder enriches the PREMIS metadata with
+  PRONOM format info (a SHOULD in the meemoo spec); without it the build still succeeds —
+  fixity is computed natively. The tool never runs Siegfried itself (see Format characterization).
 
 ## Requisites
 
 * For the validation loop: [Docker](https://www.docker.com/) (runs the commons-ip validator and the report server) and `jq`.
-* Recommended: [Siegfried](https://github.com/richardlehane/siegfried) for format characterization (optional, see Configuration).
+* Recommended: [Siegfried](https://github.com/richardlehane/siegfried) to generate the characterization sidecar (optional, see Format characterization).
 
 ## Configuration
 
@@ -45,19 +46,26 @@ SIP_SUBMITTER_NAME="Universiteitsbibliotheek Gent"
 SIP_SUBMITTER_OR_ID="OR-a1b2c3d"
 ```
 
-**Siegfried** (optional)
+**Format characterization** (optional, input — not configuration)
 
-To enable format characterization, configure Siegfried like this:
+Format info comes from a pre-computed Siegfried report placed next to your input, not
+from an installed tool: generate it **from the input root** and the build picks it up
+by name:
 
+```sh
+cd ./your-input && sf -hash md5 -json . > siegfried.json
 ```
-SIP_FILE_FORMAT_NAME="siegfried"
-SIP_FILE_FORMAT_COMMAND="/location-of-sf-binary"
-SIP_FILE_FORMAT_ARGS="-json"
-```
 
-Leave `SIP_FILE_FORMAT_NAME` unset to build without format identification. If it is set,
-the configured tool must work — a broken or missing binary aborts the build rather than
-silently degrading the package.
+Without a `siegfried.json` the build succeeds with no format info (`premis:format` is a
+SHOULD; checksums and sizes are always computed natively). When the sidecar is present it
+is strictly verified: a malformed report, an essence file missing from it, a report made
+without `-hash md5`, or a file changed since the report was generated aborts the build —
+a stale format claim is worse than none. Regenerate the sidecar whenever the input
+changes.
+
+Migration note: the former `SIP_FILE_FORMAT_*` environment variables are gone and
+silently ignored if they linger in your `.env` — the tool no longer executes Siegfried
+(see [ADR-0009](docs/decisions/0009-characterization-as-sidecar-input.md)).
 
 ## How to use
 
