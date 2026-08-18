@@ -89,16 +89,20 @@ names. Check an item off when its commit lands (or its gate passes).
 
 ### Step B — mime fix (deliberate baseline re-bless)
 
-- [ ] **B — the fix**: `sip.File.Mime` + invariant doc; assemble stamps
+- [x] **B — the fix**: `sip.File.Mime` + invariant doc; assemble stamps
       essence/documentation (sidecar mime or octet-stream), schemas
       `application/xml`, descriptive `text/xml`; write stamps `text/xml` on
       metadata nodes; all seven METS template literals → `{{ .Mime }}`;
       tests; docs (TODO MIMETYPE item deleted, design doc, ADR note).
       Commit: `Fixed: METS MIMETYPE emitted from resolved per-file mime …`
-- [ ] **Gate B**: `go test ./...`; `./build.sh basic` → VALID, no new FAILED
+- [x] **Gate B**: `go test ./...`; `./build.sh basic` → VALID, no new FAILED
       checks; `baseline-diff` FAILs on MIMETYPE-only hunks (each reviewed);
       re-bless `tmp/baseline/` + README note → `baseline-diff` OK;
       `./build.sh eark` → VALID; re-bless recorded in the commit message.
+      *Passed 2026-08-18. Reviewed delta: essence `text/xml`→`image/jpeg`
+      (rep METS), schemas octet-stream→`application/xml` (package METS),
+      fixity untouched; eark's documentation file resolved `text/plain`
+      from the sidecar as predicted.*
 
 ## Step A — sidecar swap (gate stays green)
 

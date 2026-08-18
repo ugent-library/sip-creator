@@ -131,6 +131,7 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 			pf := sip.NewFile()
 			pf.Name = "premis.xml"
 			pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
+			pf.Mime = "text/xml"                         // generated XML by construction
 			info, err := st.WriteMetadata("representations/"+r.Label+"/"+pf.Path, func(w io.Writer) error {
 				return premis.EncodeRepresentation(w, r)
 			})
@@ -145,6 +146,7 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 		mf := sip.NewFile()
 		mf.Name = "METS.xml"
 		mf.Path = "representations/" + r.Label + "/METS.xml" // package-relative: referenced from package METS
+		mf.Mime = "text/xml"                                 // generated XML by construction
 		info, err := st.WriteMetadata(mf.Path, func(w io.Writer) error {
 			return mets.EncodeRepresentation(w, r, pkg.Spec)
 		})
@@ -163,6 +165,7 @@ func (b *Builder) writePackagePremis(st *store.Store, pkg *sip.Package) error {
 	pf := sip.NewFile()
 	pf.Name = "premis.xml"
 	pf.Path = "metadata/preservation/premis.xml"
+	pf.Mime = "text/xml" // generated XML by construction
 	info, err := st.WriteMetadata(pf.Path, func(w io.Writer) error {
 		return premis.EncodeEntity(w, pkg.Root)
 	})
@@ -179,6 +182,9 @@ func (b *Builder) writePackageMets(st *store.Store, pkg *sip.Package) error {
 	mf := sip.NewFile()
 	mf.Name = "METS.xml"
 	mf.Path = "METS.xml"
+	// Set for the no-empty-Mime invariant even though no template reads it:
+	// nothing references the package METS from inside the package.
+	mf.Mime = "text/xml"
 	info, err := st.WriteMetadata(mf.Path, func(w io.Writer) error {
 		return mets.EncodePackage(w, pkg)
 	})

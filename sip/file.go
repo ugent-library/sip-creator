@@ -7,14 +7,19 @@ import (
 )
 
 type File struct {
-	Identifier     string
-	Name           string
-	Checksum       string
-	Format         *Format
-	Size           string
-	Created        string
-	Source         string
-	Path           string
+	Identifier string
+	Name       string
+	Checksum   string
+	Format     *Format
+	Size       string
+	Created    string
+	Source     string
+	Path       string
+	// Mime is the IANA media type METS declares for this file (@MIMETYPE is
+	// a MUST: CSIP62/26/40). Never empty by write time, and never a guess —
+	// a characterizer's assertion, a type true by construction (generated
+	// XML), or application/octet-stream as the admitted unknown.
+	Mime           string
 	Representation *Representation
 }
 

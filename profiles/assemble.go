@@ -108,6 +108,7 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition) error {
 	df := sip.NewFile()
 	df.Name = strings.TrimSuffix(filepath.Base(src), filepath.Ext(src)) + ".xml"
 	df.Path = "metadata/descriptive/" + df.Name // declared, not derived from disk
+	df.Mime = "text/xml"                        // the writer renders it as XML by construction
 	e.AddDescriptionFile(df)
 	b.Logger.Info("created a descriptive file", slog.Any("id", df.Identifier))
 	return nil
@@ -143,6 +144,7 @@ func schemaFileNodes() []*sip.File {
 		f := sip.NewFile()
 		f.Name = name
 		f.Path = "schemas/" + name
+		f.Mime = "application/xml" // XSDs by construction
 		files = append(files, f)
 	}
 	return files
@@ -173,6 +175,12 @@ func (b *Builder) assembleDocumentation(pkg *sip.Package, chars characterization
 			return err
 		}
 
+		f := sip.NewFile()
+		f.Name = filepath.Base(src)
+		f.Source = src
+		f.Path = "documentation/" + filepath.ToSlash(rel)
+		f.Mime = "application/octet-stream" // the admitted unknown, never a guess
+
 		// Documentation is lenient where essence is strict (ADR-0009):
 		// these files carry no premis:format and may postdate the report,
 		// so no entry is required — but a present entry must still be
@@ -186,13 +194,12 @@ func (b *Builder) assembleDocumentation(pkg *sip.Package, chars characterization
 				if err := verifyReportMD5(src, rec); err != nil {
 					return err
 				}
+				if rec.Mime != "" {
+					f.Mime = rec.Mime
+				}
 			}
 		}
 
-		f := sip.NewFile()
-		f.Name = filepath.Base(src)
-		f.Source = src
-		f.Path = "documentation/" + filepath.ToSlash(rel)
 		files = append(files, f)
 		return nil
 	})
@@ -247,12 +254,16 @@ func (b *Builder) assembleEssenceFiles(dir string, r *sip.Representation, chars 
 		// asserts formats for SOURCE files, and the MD5 binding proves each
 		// record still describes the bytes on disk. Fixity is not its job —
 		// the writer computes that during the streamed copy.
+		f.Mime = "application/octet-stream" // the admitted unknown, never a guess
 		if chars != nil {
 			rec, err := b.essenceRecord(chars, src)
 			if err != nil {
 				return err
 			}
 			f.Format = rec.Format
+			if rec.Mime != "" {
+				f.Mime = rec.Mime
+			}
 		}
 		f.SetRepresentation(r)
 		r.AddFile(f)

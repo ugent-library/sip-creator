@@ -169,6 +169,9 @@ func TestAssemble(t *testing.T) {
 	if df.Path != "metadata/descriptive/dc+schema.xml" {
 		t.Errorf("description file Path = %q, want %q", df.Path, "metadata/descriptive/dc+schema.xml")
 	}
+	if df.Mime != "text/xml" {
+		t.Errorf("description file Mime = %q, want %q", df.Mime, "text/xml")
+	}
 
 	// One schema node per bundled XSD, in sorted (deterministic) order.
 	if len(pkg.SchemaFiles) != len(schemas.Get()) {
@@ -179,6 +182,9 @@ func TestAssemble(t *testing.T) {
 		names = append(names, sf.Name)
 		if sf.Path != "schemas/"+sf.Name {
 			t.Errorf("schema Path = %q, want %q", sf.Path, "schemas/"+sf.Name)
+		}
+		if sf.Mime != "application/xml" {
+			t.Errorf("schema Mime = %q, want %q", sf.Mime, "application/xml")
 		}
 	}
 	if !slices.IsSorted(names) {
@@ -212,10 +218,13 @@ func TestAssemble(t *testing.T) {
 		t.Error("essence file not wired back to the representation")
 	}
 
-	// The essence node is enriched with the sidecar's format; the report's
-	// extra entries (dc+schema.json, the sidecar itself) are ignored.
+	// The essence node is enriched with the sidecar's format and mime; the
+	// report's extra entries (dc+schema.json, the sidecar itself) are ignored.
 	if f.Format == nil || f.Format.FormatRegistry.Key != "fmt/999" {
 		t.Errorf("essence Format = %+v, want fmt/999 from the sidecar", f.Format)
+	}
+	if f.Mime != "image/test" {
+		t.Errorf("essence Mime = %q, want %q from the sidecar", f.Mime, "image/test")
 	}
 
 	// PREMIS and METS nodes are the writer's to create, not the assembler's.
@@ -334,8 +343,12 @@ func TestAssembleWithoutSidecar(t *testing.T) {
 	if err != nil {
 		t.Fatalf("assemble without sidecar: %v", err)
 	}
-	if f := pkg.Root.Representations[0].Files[0]; f.Format != nil {
+	f := pkg.Root.Representations[0].Files[0]
+	if f.Format != nil {
 		t.Errorf("essence Format = %+v, want nil without a sidecar", f.Format)
+	}
+	if f.Mime != "application/octet-stream" {
+		t.Errorf("essence Mime = %q, want octet-stream without a sidecar", f.Mime)
 	}
 }
 
@@ -349,8 +362,31 @@ func TestAssembleSidecarNoMatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("assemble with no-match sidecar: %v", err)
 	}
-	if f := pkg.Root.Representations[0].Files[0]; f.Format != nil {
+	f := pkg.Root.Representations[0].Files[0]
+	if f.Format != nil {
 		t.Errorf("essence Format = %+v, want nil on no match", f.Format)
+	}
+	if f.Mime != "application/octet-stream" {
+		t.Errorf("essence Mime = %q, want octet-stream on no match", f.Mime)
+	}
+}
+
+// A match that asserts no mime still yields the Format, and the mime falls
+// back to the admitted unknown — the two facts are independent.
+func TestAssembleSidecarMatchWithoutMime(t *testing.T) {
+	b, inDir, _ := newTestBuilder(t)
+	writeSidecarWith(t, inDir, []map[string]any{{"ns": "pronom", "id": "fmt/999"}})
+
+	pkg, err := b.assemble(basicDef(t))
+	if err != nil {
+		t.Fatalf("assemble with mimeless match: %v", err)
+	}
+	f := pkg.Root.Representations[0].Files[0]
+	if f.Format == nil || f.Format.FormatRegistry.Key != "fmt/999" {
+		t.Errorf("essence Format = %+v, want fmt/999", f.Format)
+	}
+	if f.Mime != "application/octet-stream" {
+		t.Errorf("essence Mime = %q, want octet-stream when the match asserts none", f.Mime)
 	}
 }
 
@@ -489,11 +525,29 @@ func TestAssembleDocumentation(t *testing.T) {
 		if f.Source == "" {
 			t.Errorf("documentation node %s has no Source", f.Path)
 		}
+		// The sidecar predates these files: no entry, so the mime is the
+		// admitted unknown (documentation is lenient, no abort).
+		if f.Mime != "application/octet-stream" {
+			t.Errorf("documentation Mime = %q, want octet-stream without an entry", f.Mime)
+		}
 	}
 	slices.Sort(paths)
 	want := []string{"documentation/manual.txt", "documentation/sub/notes.txt"}
 	if !slices.Equal(paths, want) {
 		t.Errorf("documentation paths = %v, want %v", paths, want)
+	}
+
+	// With a regenerated sidecar the documentation entries exist, and their
+	// mime is taken from the report.
+	writeSidecar(t, inDir)
+	pkg, err = b.assemble(basicDef(t))
+	if err != nil {
+		t.Fatalf("assemble with regenerated sidecar: %v", err)
+	}
+	for _, f := range pkg.DocumentationFiles {
+		if f.Mime != "image/test" {
+			t.Errorf("documentation Mime = %q, want %q from the sidecar", f.Mime, "image/test")
+		}
 	}
 
 	entries, err := os.ReadDir(outDir)
