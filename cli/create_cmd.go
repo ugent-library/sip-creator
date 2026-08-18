@@ -29,11 +29,17 @@ var createCmd = &cobra.Command{
 				flagProfile, strings.Join(profiles.Names(), ", "))
 		}
 
+		// The submitting organization is deployment config, not profile
+		// data: fill it into the definition before building.
+		def, err := def.WithSubmitter(cfg.Submitter.Name, cfg.Submitter.ORID)
+		if err != nil {
+			return fmt.Errorf("%w (set SIP_SUBMITTER_NAME and SIP_SUBMITTER_OR_ID)", err)
+		}
+
 		// No configured tool means format identification is skipped: the
 		// builder treats a nil identificator as "don't enrich".
 		var ffid formats.Identificator
 		if cfg.Formats.Name != "" {
-			var err error
 			ffid, err = formats.New(cfg.Formats.Name, cfg.Formats.Command, cfg.Formats.Args)
 			if err != nil {
 				return err

@@ -24,6 +24,18 @@ type config struct {
 		// Extra arguments passed to the tool (e.g. "-json" for siegfried).
 		Args string `env:"ARGS"`
 	} `envPrefix:"SIP_FILE_FORMAT_"`
+	// The submitting organization, stamped into every package's METS as a
+	// CREATOR agent. `create` requires NAME for every profile and OR_ID for
+	// meemoo profiles; how required each is depends on the profile, so the
+	// check lives at profile resolution, not here.
+	Submitter struct {
+		// Name of the submitting organization, e.g. "Universiteitsbibliotheek Gent".
+		Name string `env:"NAME"`
+		// The organization's meemoo OR-id (its identifier in meemoo's
+		// organization register), e.g. "OR-a1b2c3d". Required for meemoo
+		// profiles, where it becomes the agent's IDENTIFICATIONCODE note.
+		ORID string `env:"OR_ID"`
+	} `envPrefix:"SIP_SUBMITTER_"`
 	// Build provenance, stamped by the deployment environment. Unused by the CLI itself.
 	Version struct {
 		// Git branch this build was made from.

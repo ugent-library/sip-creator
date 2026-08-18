@@ -1,7 +1,10 @@
 # Plan: retarget the basic profile at meemoo SIP 1.2 (stable)
 
-*Status: **implemented** (2026-07-17) — pending one operator input: UGent's
-real OR-id (a loud placeholder is in the registry). Drafted 2026-07-17.
+*Status: **implemented** (2026-07-17). The one pending operator input — UGent's
+real OR-id — was resolved 2026-08-18: the placeholder is gone, and the submitter
+(name + OR-id) is deployment configuration (`SIP_SUBMITTER_*`,
+`Definition.WithSubmitter`); a meemoo build refuses to run without it.
+Drafted 2026-07-17.
 Companion decision: [ADR-0008](../decisions/0008-bag-layer-out-of-scope.md)
 (the bag layer is out of scope).*
 

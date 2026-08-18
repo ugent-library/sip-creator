@@ -25,12 +25,27 @@ Create Submission Information Packages (SIP) based on [Meemoo's SIP Specificatio
 
 ## Configuration
 
-All configuration is optional and read from the environment (a `.env` file is loaded when
-present — start from `.env.example`). All environment variables are documented in
+Configuration is read from the environment (a `.env` file is loaded when present — start
+from `.env.example`). All environment variables are documented in
 [CONFIG.md](CONFIG.md), which is generated from the config struct — regenerate it with
 `go generate ./cli` rather than editing it by hand.
 
-**Siegfried**
+**Submitting organization** (required for `create`)
+
+Every package's METS names the organization submitting it, so `SIP_SUBMITTER_NAME` is
+required for **every** profile — including `eark`, which builds with the name alone.
+meemoo profiles (`basic`) additionally require `SIP_SUBMITTER_OR_ID` — the organization's
+identifier in [meemoo's organization register](https://developer.meemoo.be/) — which is
+emitted as the agent's `IDENTIFICATIONCODE` note (meemoo SIP 1.2); other profiles ignore
+it. A build refuses to run when a value its profile requires is missing, rather than
+emitting a package that would be rejected at ingest:
+
+```
+SIP_SUBMITTER_NAME="Universiteitsbibliotheek Gent"
+SIP_SUBMITTER_OR_ID="OR-a1b2c3d"
+```
+
+**Siegfried** (optional)
 
 To enable format characterization, configure Siegfried like this:
 

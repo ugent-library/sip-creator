@@ -56,6 +56,31 @@ type Definition struct {
 	Mets                     sip.Spec
 }
 
+// WithSubmitter returns a copy of the definition whose METS agents include
+// the submitting organization. The submitter is operator identity, not
+// profile data, so the registry entries omit it and the caller supplies it
+// (the CLI from SIP_SUBMITTER_* config, an embedding system as arguments).
+// The family decides its shape: meemoo requires the organization's OR-id
+// as an IDENTIFICATIONCODE note (meemoo SIP 1.2, metsHdr); plain E-ARK
+// carries the name alone.
+func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
+	if name == "" {
+		return Definition{}, fmt.Errorf("profile %q requires the submitting organization's name", d.Name)
+	}
+	agent := sip.Agent{Role: "CREATOR", Type: "ORGANIZATION", Name: name}
+	if d.Family == FamilyMeemoo {
+		if orID == "" {
+			return Definition{}, fmt.Errorf("profile %q requires the submitting organization's meemoo OR-id", d.Name)
+		}
+		agent.Note = orID
+		agent.NoteType = "IDENTIFICATIONCODE"
+	}
+	// Clone before appending: d.Mets.Agents shares its backing array with
+	// the registry entry, and append must never write into it.
+	d.Mets.Agents = append(slices.Clone(d.Mets.Agents), agent)
+	return d, nil
+}
+
 var registry = map[string]Definition{
 	"basic": {
 		Name:                     "basic",
@@ -73,12 +98,10 @@ var registry = map[string]Definition{
 			ContentInformationType:      "OTHER",
 			OtherContentInformationType: "https://data.hetarchief.be/id/sip/1.2/basic",
 			DescriptiveMDType:           "DC",
+			// Only the software agent: the submitting ORGANIZATION agent is
+			// operator identity, not profile data — WithSubmitter appends it.
 			Agents: []sip.Agent{
 				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1.", NoteType: "SOFTWARE VERSION"},
-				// 1.2 requires the submitting organization's meemoo OR-id as
-				// an IDENTIFICATIONCODE note. Replace the placeholder with
-				// UGent's real OR-id before real submissions.
-				{Role: "CREATOR", Type: "ORGANIZATION", Name: "Universiteitsbibliotheek Gent", Note: "OR-PLACEHOLDER-REPLACE-WITH-UGENT-OR-ID", NoteType: "IDENTIFICATIONCODE"},
 			},
 		},
 	},
@@ -94,13 +117,14 @@ var registry = map[string]Definition{
 			// spec 2.2.0 compares against this exact value (its error
 			// message misleadingly prints the unversioned URL).
 			ProfileURL:               "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
-			Type:                     "Mixed",  // CSIP content-category vocabulary
-			ContentInformationType:   "MIXED",  // becomes the AIP type in RODA
+			Type:                     "Mixed", // CSIP content-category vocabulary
+			ContentInformationType:   "MIXED", // becomes the AIP type in RODA
 			DescriptiveMDType:        "DC",
 			DescriptiveMDTypeVersion: "SimpleDC20021212", // the shape RODA renders natively
+			// Only the software agent — see the basic entry: the submitting
+			// ORGANIZATION agent comes from WithSubmitter.
 			Agents: []sip.Agent{
 				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1.", NoteType: "SOFTWARE VERSION"},
-				{Role: "CREATOR", Type: "ORGANIZATION", Name: "Universiteitsbibliotheek Gent"},
 			},
 		},
 	},
