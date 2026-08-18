@@ -1,6 +1,7 @@
 # Plan: characterization as sidecar input; fix METS MIMETYPE
 
-*Status: **approved, not started**. Drafted 2026-08-18.
+*Status: **implemented** (2026-08-18) — both gates green; see the execution
+checklist below for per-step pass records. Drafted 2026-08-18.
 Companion decision: ADR-0009 (characterization via pre-computed sidecar,
 superseding [ADR-0006](../decisions/0006-format-identification-optional.md)
 in part) — written as Step A2 of this plan.*
