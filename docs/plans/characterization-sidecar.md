@@ -77,10 +77,15 @@ names. Check an item off when its commit lands (or its gate passes).
       note). Commit: `Changed: format enrichment consumes the siegfried.json sidecar …`
 - [x] **A4 — build.sh** regenerates the fixture sidecar (capture-then-write;
       warnings when `sf` is absent). Commit: `Changed: build.sh regenerates …`
-- [ ] **Gate A**: `go test ./...`; `./build.sh basic` and `eark` → VALID;
+- [x] **Gate A**: `go test ./...`; `./build.sh basic` and `eark` → VALID;
       `baseline-diff` → OK (premis:format still `pronom`/`fmt/44`); manual
       negatives — sidecar removed → builds without format info; sidecar
       corrupted → clean abort, nothing written.
+      *Passed 2026-08-18. One finding en route: the diff initially failed on
+      the submitter OR-id note — operator config since the submitter became
+      configurable, predating this plan — fixed by normalizing the submitter
+      agent's configured values in `baseline-diff.sh` (verified to still
+      catch planted checksum and agent-structure regressions).*
 
 ### Step B — mime fix (deliberate baseline re-bless)
 

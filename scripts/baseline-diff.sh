@@ -19,6 +19,9 @@
 #     fileSec order carries no meaning (structure lives in structMap); the
 #     refactor's canonical emitter should sort at the source, making this
 #     normalization inert.
+#   - the submitting organization's name and IDENTIFICATIONCODE note: these
+#     are operator config (SIP_SUBMITTER_* env vars), so their values vary
+#     per environment; the agent's structure still must match.
 # Deliberately NOT normalized (a diff here is a real regression):
 #   - essence and schema fixity (SIZE/CHECKSUM of data/* and schemas/*),
 #   - PREMIS messageDigest/size element text (essence fixity),
@@ -63,6 +66,16 @@ normalize() {
             my ($tag, $flocat) = ($1, $2);
             ($flocat =~ /xlink:href="([^"]*)"/ && is_generated($1) ? blank($tag) : $tag) . $flocat;
         }ge;
+
+        # The submitting organization is operator config (SIP_SUBMITTER_*),
+        # not code output: blank its name and OR-id note so the baseline
+        # never encodes one operator env. The agent structure still compares.
+        s{(<agent ROLE="CREATOR" TYPE="ORGANIZATION">)(.*?)(</agent>)}{
+            my ($open, $body, $close) = ($1, $2, $3);
+            $body =~ s{<name>[^<]*</name>}{<name>SUBMITTER</name>};
+            $body =~ s{(<note csip:NOTETYPE="IDENTIFICATIONCODE">)[^<]*(</note>)}{$1ORID$2};
+            $open . $body . $close;
+        }gse;
 
         # XML indentation and blank lines are not structural. (Added at
         # plan Step 7: templated metsHdr agents indent uniformly where the
