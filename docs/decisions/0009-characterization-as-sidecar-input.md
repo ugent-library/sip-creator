@@ -1,6 +1,6 @@
 # 0009 — Characterization is pre-computed sidecar input, not an in-process tool
 
-Status: **Accepted** (2026-08-18, with the [characterization-sidecar plan](../plans/characterization-sidecar.md)).
+Status: **Accepted** (2026-08-18, with the [characterization-sidecar plan](../archive/characterization-sidecar.md)).
 Supersedes [ADR-0006](0006-format-identification-optional.md) **in part**: the
 capability (format enrichment) and its optionality stand; the mechanism (exec
 behind an `Identificator` interface) is replaced.

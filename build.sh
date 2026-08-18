@@ -7,7 +7,7 @@
 # Exits non-zero iff the generated package is not VALID. Both gates are
 # expected green. Each profile validates against the E-ARK spec version of
 # its era: basic (meemoo 1.2) against 2.0.4, eark against 2.2.0
-# (docs/plans/meemoo-12.md).
+# (docs/archive/meemoo-12.md).
 #
 # Input fixture: ./tmp/<profile> (untracked). The eark fixture is the basic
 # one plus an optional documentation/ directory (recommended: CSIPSTR16 is a

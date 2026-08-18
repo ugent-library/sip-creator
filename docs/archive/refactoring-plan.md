@@ -356,7 +356,7 @@ pkg, err := profile.Build(spec)
 
 ## Phase 3 — E-ARK/RODA writer seam (scoped outline, follow-up work)
 
-*Status: expanded into the [eark-writer plan](eark-writer.md) (2026-07-16, reworked 2026-07-17), which supersedes this outline — including a correction: there is no second writer and no eark template family. Design review showed the family-varying surface is data plus one encoding choice, so profile families share the one canonical writer and select encodings per [ADR-0007](../decisions/0007-profile-families-share-one-writer.md); sibling writers would have reintroduced the `Basic()`/`Roda()` duplication at writer level.*
+*Status: expanded into the [eark-writer plan](../plans/eark-writer.md) (2026-07-16, reworked 2026-07-17), which supersedes this outline — including a correction: there is no second writer and no eark template family. Design review showed the family-varying surface is data plus one encoding choice, so profile families share the one canonical writer and select encodings per [ADR-0007](../decisions/0007-profile-families-share-one-writer.md); sibling writers would have reintroduced the `Basic()`/`Roda()` duplication at writer level.*
 
 Goal: `--profile eark` producing a plain, valid E-ARK SIP that RODA ingests. Not implemented in this plan; phases 1–2 create the seam it needs:
 

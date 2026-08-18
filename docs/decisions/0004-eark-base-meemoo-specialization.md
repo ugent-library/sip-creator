@@ -27,7 +27,7 @@ Architecturally this means:
 
 ## Consequences
 
-- **Meemoo literals must move out of shared templates** into profile-specific data so the CSIP base is genuinely reusable. This is factoring work, sequenced in the [refactoring plan](../plans/refactoring-plan.md) (declarative profile spec + registry), and gated on behavior preservation via external validation ([ADR-0003](0003-validation-stays-external.md)).
+- **Meemoo literals must move out of shared templates** into profile-specific data so the CSIP base is genuinely reusable. This is factoring work, sequenced in the [refactoring plan](../archive/refactoring-plan.md) (declarative profile spec + registry), and gated on behavior preservation via external validation ([ADR-0003](0003-validation-stays-external.md)).
 - A future E-ARK/RODA writer is a **new template family reading the existing graph**, added when that work starts — the refactor creates the seam, not the full E-ARK implementation.
 - Acceptance for the eventual E-ARK target is two-sided: commons-ip validation in E-ARK SIP mode **and** an actual ingest test against a RODA instance. Spec-on-paper and what-RODA-accepts must both hold.
 - Until that writer exists, only the meemoo `basic` profile is real; the design doc's [Known gaps](../sip-creator-design.md#known-gaps) list the baked-in literals and the dead `roda.go` as open items this decision governs.

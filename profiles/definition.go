@@ -91,7 +91,7 @@ var registry = map[string]Definition{
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
 		Mets: sip.Spec{
-			// meemoo SIP 1.2, the stable spec (docs/plans/meemoo-12.md):
+			// meemoo SIP 1.2, the stable spec (docs/archive/meemoo-12.md):
 			// 1.2 mandates the unversioned E-ARK SIP profile URL and the
 			// 1.2 profile URI as OTHERCONTENTINFORMATIONTYPE.
 			ProfileURL:                  "https://earksip.dilcis.eu/profile/E-ARK-SIP.xml",

@@ -1,6 +1,6 @@
 # 0008 — The bag layer is out of scope: BagIt is the transfer envelope
 
-Status: **Accepted** (2026-07-17, with the [meemoo-1.2 plan](../plans/meemoo-12.md))
+Status: **Accepted** (2026-07-17, with the [meemoo-1.2 plan](../archive/meemoo-12.md))
 
 ## Context
 

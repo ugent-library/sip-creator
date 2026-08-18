@@ -12,7 +12,7 @@ E2–E4 landed in one day; E5's desk-check became the [runbook](../development-r
 - **Package-level documentation satisfies CSIPSTR16** — the E1 open question about per-representation documentation folders resolved empirically: not needed.
 - **`build-eark.sh` never shipped**: review folded it into a parameterized `./build.sh [profile]` (same three-variable difference, same duplication instinct as the writers). Each profile validates against its era's spec version.
 - **Phase 2's premis-less template guards were exercised for real** for the first time, as predicted.
-- E6's docs landed incrementally with adjacent passes (README, design doc, CLAUDE.md all describe the eark profile, families, and green gates).* Expands the [refactoring plan](refactoring-plan.md)'s Phase 3 outline; enacts the direction of [ADR-0004](../decisions/0004-eark-base-meemoo-specialization.md). The family mechanism is [ADR-0007](../decisions/0007-profile-families-share-one-writer.md).*
+- E6's docs landed incrementally with adjacent passes (README, design doc, CLAUDE.md all describe the eark profile, families, and green gates).* Expands the [refactoring plan](../archive/refactoring-plan.md)'s Phase 3 outline; enacts the direction of [ADR-0004](../decisions/0004-eark-base-meemoo-specialization.md). The family mechanism is [ADR-0007](../decisions/0007-profile-families-share-one-writer.md).*
 
 ## Context — what an "eark" profile is
 

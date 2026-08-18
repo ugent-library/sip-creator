@@ -16,7 +16,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # can't silently move the goalposts (docs/decisions/0003-validation-stays-external.md).
 # -s overrides it per package family: meemoo 1.2 builds on the E-ARK 2.0.4
 # era (its mandated PROFILE URL is the one 2.0.4 checks for), the eark
-# profile targets 2.2.0 (docs/plans/meemoo-12.md).
+# profile targets 2.2.0 (docs/archive/meemoo-12.md).
 SPEC_VERSION=2.2.0
 
 report_dir=""
