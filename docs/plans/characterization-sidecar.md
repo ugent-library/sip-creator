@@ -75,7 +75,7 @@ names. Check an item off when its commit lands (or its gate passes).
       (`writeSidecar` helper, new negative cases); docs swept (CLAUDE.md,
       README, `.env.example`, design doc, TODO, input-spec, refactoring-plan
       note). Commit: `Changed: format enrichment consumes the siegfried.json sidecar …`
-- [ ] **A4 — build.sh** regenerates the fixture sidecar (capture-then-write;
+- [x] **A4 — build.sh** regenerates the fixture sidecar (capture-then-write;
       warnings when `sf` is absent). Commit: `Changed: build.sh regenerates …`
 - [ ] **Gate A**: `go test ./...`; `./build.sh basic` and `eark` → VALID;
       `baseline-diff` → OK (premis:format still `pronom`/`fmt/44`); manual

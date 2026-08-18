@@ -12,7 +12,9 @@
 # Input fixture: ./tmp/<profile> (untracked). The eark fixture is the basic
 # one plus an optional documentation/ directory (recommended: CSIPSTR16 is a
 # SHOULD, and package-level documentation satisfies it).
-# Requires: go, docker, jq. Siegfried is optional (.env).
+# Requires: go, docker, jq. Siegfried (sf) on PATH is recommended: the
+# fixture's siegfried.json sidecar is regenerated each run — its MD5 binding
+# makes a stale sidecar a hard build failure by design (ADR-0009).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -30,6 +32,17 @@ if [ ! -d "$SRC" ]; then
     echo "  cp -R tmp/basic $SRC" >&2
     echo "  mkdir $SRC/documentation && echo 'sample documentation' > $SRC/documentation/README.txt" >&2
     exit 2
+fi
+
+# Refresh the fixture's characterization sidecar (ADR-0009). Capture first,
+# write after: sf must never scan its own half-written output.
+if command -v sf >/dev/null; then
+    report="$(cd "$SRC" && sf -hash md5 -json .)"
+    printf '%s\n' "$report" > "$SRC/siegfried.json"
+elif [ -f "$SRC/siegfried.json" ]; then
+    echo "warning: sf not on PATH — $SRC/siegfried.json may be stale, and a stale sidecar aborts the build" >&2
+else
+    echo "warning: sf not on PATH and no $SRC/siegfried.json — building without format info" >&2
 fi
 
 go build -o bin/sip-creator .
