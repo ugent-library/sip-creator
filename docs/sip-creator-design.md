@@ -143,7 +143,6 @@ The workflow around the tool ([ADR-0005](decisions/0005-dockerized-validation-an
 
 These are true of the code today and tracked in [TODO.md](TODO.md):
 
-- **One error path is still a panic.** The build path (`profiles/`, `store/`, `formats/`, the metadata decoder) returns errors, but `archive.Zip` still `panic`s on failure.
 - **`mets/@TYPE` is a fixed registry value** (`Photographs – Digital` — legal meemoo-1.2 vocabulary, and apt for the sample fixture) where it should ultimately be operator- or content-selectable per package. Data in `profiles/definition.go`; the remaining work is input/config plumbing, not a fix.
 - **The `sip.Identifier` interface and `sip.Event` stub are unused.** Identifiers are bare strings; PREMIS events are not modeled.
 - **The `representation_([0-9]+)$` regex is stricter than either spec requires** and silently skips non-matching directories — a representation named `master` is dropped with no error.

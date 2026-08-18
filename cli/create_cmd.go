@@ -64,7 +64,7 @@ var createCmd = &cobra.Command{
 		}
 
 		if noZip, _ := cmd.Flags().GetBool("no-zip"); !noZip {
-			archive.Zip(pkg)
+			return archive.Zip(pkg)
 		}
 
 		return nil
