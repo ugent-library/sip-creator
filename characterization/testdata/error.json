@@ -1,0 +1,13 @@
+{
+  "siegfried": "1.11.0",
+  "files": [
+    {
+      "filename": "gone.jpg",
+      "filesize": 0,
+      "modified": "",
+      "errors": "failed to open gone.jpg: no such file",
+      "md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "matches": []
+    }
+  ]
+}
