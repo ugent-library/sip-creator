@@ -66,7 +66,7 @@ names. Check an item off when its commit lands (or its gate passes).
 - [x] **A1 — `characterization/` package**: `DecodeSiegfried` + `Report`/`Record`,
       shape guard, key normalization, migrated testdata, unit tests.
       Commit: `Added: characterization package …`
-- [ ] **A2 — ADR-0009** written; ADR-0006 marked "superseded in part".
+- [x] **A2 — ADR-0009** written; ADR-0006 marked "superseded in part".
       Commit: `Added: ADR-0009 …`
 - [ ] **A3 — the swap**: `Config.Characterization` replaces `Config.Formats`;
       `Definition.CharacterizationSource`; assemble threads `chars` (essence

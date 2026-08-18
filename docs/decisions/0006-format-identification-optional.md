@@ -1,6 +1,6 @@
 # 0006 — Format identification is an optional enricher, not a build prerequisite
 
-Status: **Accepted** (2026-07-14), **implemented** (2026-07-16, [format-identification plan](../plans/format-identification-optional.md))
+Status: **Accepted** (2026-07-14), **implemented** (2026-07-16, [format-identification plan](../plans/format-identification-optional.md)), **superseded in part by [ADR-0009](0009-characterization-as-sidecar-input.md)** (2026-08-18: the capability and its optionality stand; the exec-behind-an-interface mechanism is replaced by pre-computed sidecar input)
 
 ## Context
 
