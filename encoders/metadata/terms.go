@@ -104,6 +104,16 @@ func (t Terms) Validate() error {
 	return nil
 }
 
+// Has reports whether any term states the given element.
+func (t Terms) Has(element string) bool {
+	for _, term := range t {
+		if term.Element == element {
+			return true
+		}
+	}
+	return false
+}
+
 // GetLocalIdentifier returns the value of the dcterms:identifier term —
 // the producer's local catalog/inventory number ("" when absent or the
 // scheme is unknown). Mirrors Description.GetLocalIdentifier.

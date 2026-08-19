@@ -14,6 +14,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/profiles"
 )
 
 // File is one content, documentation, or received-PREMIS file found in the
@@ -50,6 +51,35 @@ type Package struct {
 	Premis           []File                  // received preservation XML, passed through unparsed
 	Characterization characterization.Report // nil when the folder has no siegfried.json
 	Warnings         []string                // SHOULD-level findings; the build proceeds
+}
+
+// BuilderInput maps the validated folder onto the library's build input —
+// the CLI-side half of "the folder is one transport": an embedding system
+// constructs the same profiles.Input from its own stores. Parts of the
+// model the builder cannot emit yet (received PREMIS, per-representation
+// descriptive and documentation) are deliberately not mapped — the create
+// command warns about them until their emission steps land.
+func (p *Package) BuilderInput() *profiles.Input {
+	in := &profiles.Input{
+		Descriptive:      p.Descriptive,
+		Characterization: p.Characterization,
+		Documentation:    sourceFiles(p.Documentation),
+	}
+	for _, rep := range p.Representations {
+		in.Representations = append(in.Representations, profiles.SourceRepresentation{
+			Label: rep.Label,
+			Files: sourceFiles(rep.Files),
+		})
+	}
+	return in
+}
+
+func sourceFiles(files []File) []profiles.SourceFile {
+	out := make([]profiles.SourceFile, len(files))
+	for i, f := range files {
+		out[i] = profiles.SourceFile{Source: f.Source, Key: f.Rel, Path: f.Path}
+	}
+	return out
 }
 
 // Read walks and validates the folder at root against the input

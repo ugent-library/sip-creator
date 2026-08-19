@@ -72,7 +72,7 @@ of walking and validating one folder:
 - documentation and received-premis file lists (package and rep level),
 - the decoded characterization report when the sidecar is present.
 
-The CLI hands this to the builder as data (extending `profiles.Config`).
+The CLI hands this to the builder as data (a per-build `profiles.Input`).
 `assemble.go` stops walking input directories entirely: it builds the graph
 from what it is given. Characterization strictness (ADR-0009 MD5 binding)
 stays in assemble — it guards the *graph*, not the folder, and applies
@@ -80,9 +80,15 @@ equally to library callers.
 
 ### The folder is one transport: every input class arrives as data
 
-The fields `profiles.Config` grows are typed **library-side** (`profiles/`,
-`sip/`, `encoders/metadata`), and `input/` maps the folder onto them — the
-import direction is `input → profiles`, never the reverse. This is the
+*(Naming revised in the 2026-08-19 review: the payload lives on
+`profiles.Input`, passed per build to `Build(def, in)` — `profiles.Config`
+stays what config means everywhere else in the repo, builder wiring
+(destination, logger). Settings configure the machine; Input is the
+material it works on — the same distinction ADR-0010 draws.)*
+
+The `profiles.Input` fields are typed **library-side** (`profiles/`,
+`sip/`, `encoders/metadata`), and `cli/input` maps the folder onto them —
+the import direction is `input → profiles`, never the reverse. This is the
 load-bearing choice of the whole arc: it makes the folder convention one
 producer of the builder's input among others. Systems that automate ingest
 workflows — where package building happens as one step in a pipeline, with
@@ -125,7 +131,7 @@ config-independent by construction (ADR-0010).
 and only one of them belongs to it. **Transport rules** are meaningless
 without a filesystem — reserved names, flat vs. `representations/`,
 symlinks, OS artifacts, CSV mechanics, sidecar file decoding — and stay
-CLI-side: an embedding caller constructing `profiles.Config` directly can
+CLI-side: an embedding caller constructing a `profiles.Input` directly can
 never violate them. **Graph rules** bind every producer: at least one
 representation, each with at least one file; descriptive present with
 identifier and title, exactly one local identifier; legal `Terms` elements
@@ -145,7 +151,7 @@ per the design doc's standing "validation splits in two" principle:
 This un-parks the *input-data* slice of the `sip.Package.Validate()` item
 in [TODO.md](../TODO.md): its deferral trigger ("the invariants become real
 input-error classes only when callers construct graphs") fires at the I3
-cut-over, which makes `profiles.Config` exactly that. The graph-level
+cut-over, which makes `profiles.Input` exactly that. The graph-level
 remainder (identifier uniqueness across the graph, the no-empty-`Mime`
 invariant) stays parked with the library-API arc.
 
@@ -262,37 +268,39 @@ validator can't see any of it, so the tests carry the step.
 The big one: after this step the old contract no longer exists and the
 builder is purely data-fed.
 
-- [ ] `profiles.Config` grows the library-side input fields (types in
+- [x] The library-side input fields land as `profiles.Input` (types in
       `profiles/`/`sip/`/`encoders/metadata`, per "The folder is one
-      transport").
-- [ ] `create` reads via `input.Read`, maps the result onto
-      `profiles.Config`, prints violations/warnings operator-style.
-- [ ] `assemble.go` drops all input reading: the `representation_N` regex,
+      transport"; `Config` reverted to wiring-only in the 2026-08-19
+      naming review).
+- [x] `create` reads via `input.Read`, maps the result onto
+      a `profiles.Input`, prints violations/warnings operator-style.
+- [x] `assemble.go` drops all input reading: the `representation_N` regex,
       `decodeDescriptive`, the documentation walk, the sidecar-file
       fallback.
-- [ ] `Definition.DescriptiveSource` and `Definition.CharacterizationSource`
+- [x] `Definition.DescriptiveSource` and `Definition.CharacterizationSource`
       removed from the `Definition`.
-- [ ] Old JSON-LD path removed (decoder + `dc+schema` define, if the eark
+- [x] Old JSON-LD path removed (decoder + `dc+schema` define, if the eark
       family confirms it doesn't share them).
-- [ ] `sip-creator check [src]` command: validate only, print findings,
+- [x] `sip-creator check [src]` command: validate only, print findings,
       exit non-zero on violations, build nothing, no config needed.
-- [ ] `tmp/basic` and the eark fixture rewritten in the new convention;
+- [x] `tmp/basic` and the eark fixture rewritten in the new convention;
       `build.sh` untouched or minimally adjusted (sidecar regeneration
       unchanged).
-- [ ] Builder validates its input data before assembling (fail-fast
+- [x] Builder validates its input data before assembling (fail-fast
       errors): ≥1 representation, each with ≥1 file; descriptive present
       with identifier and title, exactly one local identifier; terms valid;
       portable-charset labels; no duplicate logical paths — the
       embedding-caller guardrail (see "Validation splits in two").
-- [ ] Assemble test: hand-constructed `profiles.Config` (no `metadata.csv`
+- [x] Assemble test: hand-constructed `profiles.Input` (no `metadata.csv`
       / `siegfried.json` on disk) assembles the same graph as the folder
       path — the embedding-caller contract. Its negative twin: an invalid
       hand-constructed config (zero representations, bogus term element)
       is rejected with nothing written.
-- [ ] **Baseline re-bless**: descriptive XML may change shape, everything
-      else diffs identical; recorded in the commit message and
-      `tmp/baseline/README.md`.
-- [ ] Gate: `./build.sh basic` + `eark` **VALID** against the re-blessed
+- [x] **Baseline re-bless**: turned out NOT to be needed (2026-08-19) —
+      the fixture CSV states its terms in the old template's emission
+      order, so the cut-over output is structurally identical and the
+      baseline stands unchanged (noted in `tmp/baseline/README.md`).
+- [x] Gate: `./build.sh basic` + `eark` **VALID** against the unchanged
       baseline.
 
 ### I4 — status, updates, content category
@@ -360,7 +368,7 @@ builder is purely data-fed.
    collect-all (a folder with three violations reports all three), terms
    encoding shape, stable file ordering into the structMap.
 3. The data-not-files contract, pinned by a test: a build driven by a
-   hand-constructed `profiles.Config` — `Terms` and `Report` supplied as
+   hand-constructed `profiles.Input` — `Terms` and `Report` supplied as
    values, essence as plain source paths, no `metadata.csv` or
    `siegfried.json` anywhere on disk — assembles the same graph the folder
    path does. This is the embedding-caller flow and must not regress.

@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/ugent-library/sip-creator/archive"
+	"github.com/ugent-library/sip-creator/cli/input"
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
@@ -16,9 +17,10 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create [src] [dest]",
-	Short: "Create a new SIP package",
-	Args:  cobra.ExactArgs(2),
+	Use:          "create [src] [dest]",
+	Short:        "Create a new SIP package",
+	Args:         cobra.ExactArgs(2),
+	SilenceUsage: true, // a bad input folder is not a usage error
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flagProfile, _ := cmd.Flags().GetString("profile")
 
@@ -35,11 +37,13 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("%w (set SIP_SUBMITTER_NAME and SIP_SUBMITTER_OR_ID)", err)
 		}
 
-		// Format info comes from the input tree's siegfried.json sidecar
-		// when present (ADR-0009); the CLI never runs a characterization
-		// tool, so there is nothing to construct or configure here.
+		pkg, err := input.Read(args[0])
+		if err != nil {
+			return fmt.Errorf("input folder %s does not conform to the input specification:\n%w", args[0], err)
+		}
+		reportUnsupported(pkg)
+
 		builder := profiles.New(&profiles.Config{
-			Source:      args[0],
 			Destination: args[1],
 			Logger:      logger,
 		})
@@ -49,15 +53,35 @@ var createCmd = &cobra.Command{
 			Logger:      logger,
 		})
 
-		pkg, err := builder.Build(def)
+		built, err := builder.Build(def, pkg.BuilderInput())
 		if err != nil {
 			return err
 		}
 
 		if noZip, _ := cmd.Flags().GetBool("no-zip"); !noZip {
-			return archive.Zip(pkg)
+			return archive.Zip(built)
 		}
 
 		return nil
 	},
+}
+
+// reportUnsupported warns about legal input the tool cannot emit yet, so
+// nothing an operator prepared vanishes without a trace. Each warning
+// disappears when its emission step lands (input-convention plan I5/I6).
+func reportUnsupported(pkg *input.Package) {
+	if len(pkg.Premis) > 0 {
+		logger.Warn("premis/ found but received-PREMIS pass-through is not supported yet; the files are not packaged")
+	}
+	for _, r := range pkg.Representations {
+		if r.Descriptive != nil {
+			logger.Warn("representation metadata.csv is not supported yet; it is not packaged", "representation", r.Label)
+		}
+		if len(r.Documentation) > 0 {
+			logger.Warn("representation documentation/ is not supported yet; the files are not packaged", "representation", r.Label)
+		}
+		if len(r.Premis) > 0 {
+			logger.Warn("representation premis/ is not supported yet; the files are not packaged", "representation", r.Label)
+		}
+	}
 }

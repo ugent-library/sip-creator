@@ -100,9 +100,14 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 		}
 
 		for _, f := range r.Files {
+			// f.Path preserves the producer's nesting under data/; create
+			// the intermediate dirs the flat MkdirAll above doesn't cover.
+			if err := st.MkdirAll(base + "/" + path.Dir(f.Path)); err != nil {
+				return err
+			}
 			// Fixity comes from the streamed copy: it describes the bytes
 			// actually in the package, not the source they came from.
-			info, err := st.CopyFile(f.Source, base+"/data/"+f.Name)
+			info, err := st.CopyFile(f.Source, base+"/"+f.Path)
 			if err != nil {
 				return err
 			}

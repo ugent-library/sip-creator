@@ -30,17 +30,11 @@ func (f Family) descriptiveEncoder() (descriptiveEncoder, error) {
 		return func(w io.Writer, d sip.Descriptive) error { return d.Encode(w) }, nil
 	case FamilyEARK:
 		return func(w io.Writer, d sip.Descriptive) error {
-			// Two descriptive shapes exist during the input-convention
-			// migration: the JSON-LD Description (until the I3 cut-over)
-			// and the ordered Terms it is replaced by.
-			switch dd := d.(type) {
-			case *metadata.Description:
-				return metadata.EncodeDC(w, dd)
-			case metadata.Terms:
-				return metadata.EncodeDCTerms(w, dd)
-			default:
-				return fmt.Errorf("eark descriptive encoding needs *metadata.Description or metadata.Terms, got %T", d)
+			t, ok := d.(metadata.Terms)
+			if !ok {
+				return fmt.Errorf("eark descriptive encoding needs metadata.Terms, got %T", d)
 			}
+			return metadata.EncodeDCTerms(w, t)
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown output family %q", f)
@@ -54,8 +48,7 @@ func (f Family) descriptiveEncoder() (descriptiveEncoder, error) {
 type Definition struct {
 	Name                     string
 	Family                   Family
-	DescriptiveSource        string // input filename of the descriptive metadata
-	CharacterizationSource   string // input filename of the sidecar characterization report; "" disables discovery (ADR-0009)
+	DescriptiveName          string // emitted filename of the descriptive document under metadata/descriptive/
 	LocalIdentifierScheme    string // scheme for MEEMOO-LOCAL-ID extraction; "" disables
 	EmitPackagePremis        bool
 	EmitRepresentationPremis bool
@@ -89,10 +82,11 @@ func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 
 var registry = map[string]Definition{
 	"basic": {
-		Name:                     "basic",
-		Family:                   FamilyMeemoo,
-		DescriptiveSource:        "dc+schema.json",
-		CharacterizationSource:   "siegfried.json",
+		Name:   "basic",
+		Family: FamilyMeemoo,
+		// The filename meemoo's basic profile expects for the descriptive
+		// document; kept from the pre-terms era so packages stay identical.
+		DescriptiveName:          "dc+schema.xml",
 		LocalIdentifierScheme:    "dcterms",
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
@@ -113,10 +107,11 @@ var registry = map[string]Definition{
 		},
 	},
 	"eark": {
-		Name:                     "eark",
-		Family:                   FamilyEARK,
-		DescriptiveSource:        "dc+schema.json",
-		CharacterizationSource:   "siegfried.json",
+		Name:   "eark",
+		Family: FamilyEARK,
+		// Honest name for the simple-DC document RODA renders; no meemoo
+		// naming convention applies to the eark family.
+		DescriptiveName:          "dc.xml",
 		LocalIdentifierScheme:    "", // MEEMOO-LOCAL-ID is a meemoo concept
 		EmitPackagePremis:        false,
 		EmitRepresentationPremis: false, // RODA drops non-agent/event package PREMIS; v1 is essence + descriptive

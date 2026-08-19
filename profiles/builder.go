@@ -4,47 +4,37 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/sip"
 	"github.com/ugent-library/sip-creator/store"
 )
 
-// Config carries the operator's inputs for building one package.
+// Config is the builder's wiring: where packages land and how the build
+// narrates. The material for a package is not configuration — it arrives
+// per build as an Input.
 type Config struct {
-	Source      string
 	Destination string
 	Logger      *slog.Logger
-	// Characterization optionally supplies a pre-decoded characterization
-	// report as data; nil means assemble discovers the profile's sidecar
-	// file in the input tree (ADR-0009). Strictness is the same either way.
-	Characterization characterization.Report
 }
 
-// Builder builds SIP packages from an input tree, driven by a profile
-// Definition.
+// Builder builds SIP packages from caller-supplied Input, driven by a
+// profile Definition. It reads no input tree: the CLI's folder convention
+// and any embedding system deliver the same data.
 type Builder struct {
 	OutDir string
-	InDir  string
 	Logger *slog.Logger
-	// Characterization optionally enriches essence files with format
-	// information; nil falls back to the profile's sidecar file, and the
-	// build proceeds without format info when neither exists (ADR-0009).
-	Characterization characterization.Report
 }
 
 func New(config *Config) *Builder {
 	return &Builder{
-		OutDir:           config.Destination,
-		InDir:            config.Source,
-		Logger:           config.Logger,
-		Characterization: config.Characterization,
+		OutDir: config.Destination,
+		Logger: config.Logger,
 	}
 }
 
-// Build assembles the complete package graph per def (no disk writes),
-// then emits it in the canonical order. Assembly failures happen before
-// the store exists, so a bad input leaves no partial package dir behind.
-func (b *Builder) Build(def Definition) (*sip.Package, error) {
+// Build validates the input, assembles the complete package graph per def
+// (no disk writes), then emits it in the canonical order. Failures before
+// the write phase leave no partial package dir behind.
+func (b *Builder) Build(def Definition, in *Input) (*sip.Package, error) {
 	// Resolve the family's encodings before anything else: a bogus family
 	// is an input error and must fail before any side effect.
 	encodeDescriptive, err := def.Family.descriptiveEncoder()
@@ -52,9 +42,13 @@ func (b *Builder) Build(def Definition) (*sip.Package, error) {
 		return nil, fmt.Errorf("profile %q: %w", def.Name, err)
 	}
 
+	if err := in.Validate(); err != nil {
+		return nil, fmt.Errorf("input: %w", err)
+	}
+
 	b.Logger.Info("starting...")
 
-	pkg, err := b.assemble(def)
+	pkg, err := b.assemble(def, in)
 	if err != nil {
 		return nil, err
 	}

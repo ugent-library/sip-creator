@@ -63,9 +63,12 @@ func EncodeDCTerms(w io.Writer, t Terms) error {
 
 // simpleDC maps each Dublin Core term onto the Simple DC element it dumbs
 // down to: the fifteen elements onto themselves, refinements onto their
-// DCMI parent. Terms with no Simple DC home (rightsHolder, provenance,
-// audience refinements, all schema:*) are omitted — Simple DC cannot carry
-// them, and inventing a mapping would assert semantics DCMI doesn't.
+// DCMI parent. Source: the "Subproperty Of" relations in the DCMI Metadata
+// Terms spec (dublincore.org/specifications/dublin-core/dcmi-terms/),
+// applied per DCMI's dumb-down principle. Terms with no declared parent
+// among the fifteen (rightsHolder, provenance, audience refinements, all
+// schema:*) are omitted — inventing a mapping would assert semantics DCMI
+// doesn't.
 var simpleDC = map[string]string{
 	"title": "title", "creator": "creator", "subject": "subject",
 	"description": "description", "publisher": "publisher",

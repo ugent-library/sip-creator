@@ -5,14 +5,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
+	"github.com/ugent-library/sip-creator/profiles"
 	"golang.org/x/text/unicode/norm"
 )
-
-// repNameRx is the representation folder-name rule (input spec §2).
-var repNameRx = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 
 func (r *reader) readRepresentations(dir string) []Representation {
 	var reps []Representation
@@ -22,10 +19,12 @@ func (r *reader) readRepresentations(dir string) []Representation {
 			continue
 		}
 		label := e.Name()
-		if !repNameRx.MatchString(label) {
+		// The folder-name rule (spec §2) is the library's label rule —
+		// one source of truth for what a representation may be called.
+		if err := profiles.ValidateRepresentationLabel(label); err != nil {
 			// Still read the folder: the naming fix shouldn't hide any
 			// findings inside it (collect-all).
-			r.violate("representations/%s: a representation name may only contain letters, digits, and . _ -", e.Name())
+			r.violate("representations/%s: %v", e.Name(), err)
 		}
 		reps = append(reps, r.readRepresentation(filepath.Join(dir, e.Name()), label))
 	}
