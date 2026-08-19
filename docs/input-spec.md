@@ -53,7 +53,7 @@ A *representation* is one version of the content: the archival master scans are 
 - **Multiple versions:** if `representations/` exists, each folder directly inside it is one representation, named by its folder name. All content MUST then live inside `representations/` — content files elsewhere at the top level are an error (except inside `documentation/` and `premis/`).
 - Representation folder names MUST match `A–Z a–z 0–9 . _ -`. They are labels: the tool decides the folder naming inside the final package (e.g. meemoo's `representation_1`) and keeps your label as the human-readable name.
 - Inside a representation folder, three names are reserved: `metadata.csv`, `documentation/` and `premis/` (all optional, see §3–5). Everything else is content, with free naming and nesting.
-- Files are ordered by natural sort of their paths — name scans `0001.tiff`, `0002.tiff`, … and the page order follows. There is no other ordering mechanism in this version.
+- Files are packaged in a stable, tool-determined order (alphabetical by path). This order carries no meaning: neither E-ARK CSIP nor the meemoo specification assigns semantics to file order. If a human-readable sequence matters to you, zero-pad your numbering (`0001.tiff`, `0002.tiff`, …); explicit ordering is a deferred feature (see §8, the manifest).
 - The tool computes checksums and sizes itself; you never supply those. File formats come from an optional pre-computed characterization report (`siegfried.json` at the top level, generated from the input root with `sf -hash md5 -json`) that the tool verifies against the files before trusting — you never hand-author format info ([ADR-0009](decisions/0009-characterization-as-sidecar-input.md)).
 
 ## 3. `metadata.csv` — describing the content
@@ -159,7 +159,7 @@ Deliberate trade-off: because organization details come from configuration, an i
 | input | E-ARK SIP location |
 |---|---|
 | representation folders (or the flat single-representation case) | `representations/<name>/data/`, METS fileSec + structMap |
-| natural-sort file order | order within the representation structMap |
+| file order (stable, no semantics) | document order within the representation structMap — METS `ORDER` attributes are the real sequencing mechanism, deferred with the manifest (§8) |
 | `documentation/` (package and representation level) | `documentation/` folders, conformant per CSIPSTR16; METS fileSec `USE="DOCUMENTATION"` |
 | `metadata.csv` plain keys | `dcterms:*` elements (`identifier`→`dcterms:identifier`, `rightsholder`→`dcterms:rightsHolder`, `ispartof`→`dcterms:isPartOf`, the rest 1:1) in `metadata/descriptive/*.xml`, METS dmdSec |
 | `representations/<name>/metadata.csv` | `representations/<name>/metadata/descriptive/*.xml`, dmdSec of that representation's METS (CSIPSTR12/13) |

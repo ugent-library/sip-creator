@@ -30,11 +30,17 @@ func (f Family) descriptiveEncoder() (descriptiveEncoder, error) {
 		return func(w io.Writer, d sip.Descriptive) error { return d.Encode(w) }, nil
 	case FamilyEARK:
 		return func(w io.Writer, d sip.Descriptive) error {
-			dd, ok := d.(*metadata.Description)
-			if !ok {
-				return fmt.Errorf("eark descriptive encoding needs *metadata.Description, got %T", d)
+			// Two descriptive shapes exist during the input-convention
+			// migration: the JSON-LD Description (until the I3 cut-over)
+			// and the ordered Terms it is replaced by.
+			switch dd := d.(type) {
+			case *metadata.Description:
+				return metadata.EncodeDC(w, dd)
+			case metadata.Terms:
+				return metadata.EncodeDCTerms(w, dd)
+			default:
+				return fmt.Errorf("eark descriptive encoding needs *metadata.Description or metadata.Terms, got %T", d)
 			}
-			return metadata.EncodeDC(w, dd)
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown output family %q", f)

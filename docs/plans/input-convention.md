@@ -49,14 +49,16 @@ Two decisions were settled before drafting (2026-08-18):
 
 ## Design
 
-### Where the input convention lives: a new `input/` package
+### Where the input convention lives: a new `cli/input` package
 
 Per the [CLI/library boundary](../sip-creator-design.md#clilibrary-boundary),
 the library never sees a CSV or a source layout, and operator-facing error
-reporting is a CLI concern. But `cli/` is deliberately thin cobra wiring —
-the convention needs real logic with real tests. So: a top-level `input/`
-package, called only by the CLI, owning the walker, the CSV decoder, the rule
-table, and violation reporting. Exported because `cli/` is its cross-package
+reporting is a CLI concern. But `cli/` itself is deliberately thin cobra
+wiring — the convention needs real logic with real tests. So: a `cli/input`
+package owning the walker, the CSV decoder, the rule table, and violation
+reporting. Nested under `cli/` so the location itself states the ownership
+(moved from a top-level `input/` during review, 2026-08-19): it is CLI
+frontend, not API surface. Exported because `cli/` is its cross-package
 caller; the library (`profiles/`, `sip/`) never imports it.
 
 `input.Read(root)` returns an `input.Package` — the neutral in-memory result
@@ -117,6 +119,36 @@ The check-only mode is a new command, `sip-creator check [src]`: run
 build nothing. It needs no configuration — the input rules are
 config-independent by construction (ADR-0010).
 
+### Validation splits in two: transport rules and graph rules
+
+*(Added in the 2026-08-19 review.)* `cli/input` holds two kinds of rules,
+and only one of them belongs to it. **Transport rules** are meaningless
+without a filesystem — reserved names, flat vs. `representations/`,
+symlinks, OS artifacts, CSV mechanics, sidecar file decoding — and stay
+CLI-side: an embedding caller constructing `profiles.Config` directly can
+never violate them. **Graph rules** bind every producer: at least one
+representation, each with at least one file; descriptive present with
+identifier and title, exactly one local identifier; legal `Terms` elements
+(the DCMI vocabulary); portable-charset representation labels; no duplicate
+logical paths. Those move library-side, where every producer hits them —
+per the design doc's standing "validation splits in two" principle:
+
+- **I2**: `Terms` gains validation next to the type in `encoders/metadata`
+  (the DCMI vocabulary table and schema-shape rule move out of
+  `cli/input`); the CSV decoder calls it and wraps findings as operator
+  `Violations` with file/line context.
+- **I3**: the builder validates its input data before assembling —
+  fail-fast `error`s, not `Violations`; the library's audience is a
+  developer, and the CLI keeps its own overlapping checks where they buy
+  better messages. Duplication is deliberate: two audiences.
+
+This un-parks the *input-data* slice of the `sip.Package.Validate()` item
+in [TODO.md](../TODO.md): its deferral trigger ("the invariants become real
+input-error classes only when callers construct graphs") fires at the I3
+cut-over, which makes `profiles.Config` exactly that. The graph-level
+remainder (identifier uniqueness across the graph, the no-empty-`Mime`
+invariant) stays parked with the library-API arc.
+
 ### Descriptive metadata: an ordered-terms type, not the JSON-LD struct
 
 The CSV model (any key repeatable, `[lang]` on any value) does not fit
@@ -175,45 +207,55 @@ Every step ends with `./build.sh` green for both profiles and a clean (or
 consciously re-blessed) baseline diff — that gate is the last checkbox of
 each step. Check items off as they land; a step is done when every box is.
 
-### I1 — the `input/` package
+### I1 — the `cli/input` package
 
 Pure addition, nothing wired; this package is almost all contract and the
 validator can't see any of it, so the tests carry the step.
 
-- [ ] Package skeleton: `input.Read(root)` → `input.Package`, the neutral
+- [x] Package skeleton: `input.Read(root)` → `input.Package`, the neutral
       in-memory model (representations, descriptive terms, documentation,
       received premis, characterization report).
-- [ ] Walker: reserved top-level names; flat case normalized to one
+- [x] Walker: reserved top-level names; flat case normalized to one
       representation; `representations/` case with content-elsewhere
       violation; rep-name character rule.
-- [ ] Walker rules: symlinks are an error; OS artifacts (`.DS_Store`,
+- [x] Walker rules: symlinks are an error; OS artifacts (`.DS_Store`,
       `Thumbs.db`, `desktop.ini`, `._*`) silently ignored; NFC-normalized
-      path comparison; natural sort of file paths.
-- [ ] Sidecar handling: decode `siegfried.json` when present (reuses
+      path comparison; stable file order. *(Deviation, 2026-08-19 review:
+      natural sort dropped — no spec assigns semantics to file order, and
+      explicit sequencing is the deferred manifest → METS `ORDER` feature.
+      Order is deterministic lexical traversal; spec §2/§7 reworded to
+      match.)*
+- [x] Sidecar handling: decode `siegfried.json` when present (reuses
       `characterization.DecodeSiegfried`); absent is fine.
-- [ ] CSV decoder: UTF-8 + BOM, CRLF, RFC 4180 quoting; `key,value` header;
+- [x] CSV decoder: UTF-8 + BOM, CRLF, RFC 4180 quoting; `key,value` header;
       repeated keys; `[lang]` suffixes; the plain-key → dcterms table;
       `dcterms:*`/`schema:*` prefixed keys; required `identifier`/`title`;
       unknown key is a violation.
-- [ ] Per-representation `metadata.csv` variant (identifier/title optional).
-- [ ] `input.Violations`: collect-all `error`, one plain-language line per
+- [x] Per-representation `metadata.csv` variant (identifier/title optional).
+- [x] `input.Violations`: collect-all `error`, one plain-language line per
       finding naming the file or folder; SHOULD findings as warnings.
-- [ ] Go tests: table cases for every MUST rule above, plus a
+- [x] Go tests: table cases for every MUST rule above, plus a
       three-violations-reports-all-three case.
-- [ ] Gate: `./build.sh basic` + `eark` green, baseline diff clean
+- [x] Gate: `./build.sh basic` + `eark` green, baseline diff clean
       (trivially — nothing is wired).
 
 ### I2 — the terms encoding
 
-- [ ] `metadata.Terms`: exported ordered `(element, lang, value)` triples,
+- [x] `metadata.Terms`: exported ordered `(element, lang, value)` triples,
       plainly constructible; implements `sip.Descriptive`; carries
       `SetObjectIdentifier`/`GetLocalIdentifier`.
-- [ ] New dcterms template define rendering the same document shape (root,
+- [x] New dcterms template define rendering the same document shape (root,
       namespaces), one element per term, `xml:lang` when set.
-- [ ] Family seam re-pointed at the terms encoding (ADR-0007 mechanics).
-- [ ] Unit tests pin the XML shape: repeated elements, `xml:lang`,
-      escaping, term order preserved.
-- [ ] Gate: builds green, baseline clean (still not reachable from the CLI).
+- [x] Family seam re-pointed at the terms encoding (ADR-0007 mechanics).
+- [x] `Terms` validation next to the type (legal element names — the DCMI
+      vocabulary table and schema-shape rule — and language-tag shape all
+      move here from `cli/input`); the CSV decoder wraps its findings as
+      `Violations` with file/line context, keeping only the key *syntax*
+      (plain-key spelling table, `[lang]` brackets) as transport.
+- [x] Unit tests pin the XML shape: repeated elements, `xml:lang`,
+      escaping, term order preserved — plus term validation (bogus element
+      rejected identically via CSV and via direct construction).
+- [x] Gate: builds green, baseline clean (still not reachable from the CLI).
 
 ### I3 — the cut-over
 
@@ -237,9 +279,16 @@ builder is purely data-fed.
 - [ ] `tmp/basic` and the eark fixture rewritten in the new convention;
       `build.sh` untouched or minimally adjusted (sidecar regeneration
       unchanged).
+- [ ] Builder validates its input data before assembling (fail-fast
+      errors): ≥1 representation, each with ≥1 file; descriptive present
+      with identifier and title, exactly one local identifier; terms valid;
+      portable-charset labels; no duplicate logical paths — the
+      embedding-caller guardrail (see "Validation splits in two").
 - [ ] Assemble test: hand-constructed `profiles.Config` (no `metadata.csv`
       / `siegfried.json` on disk) assembles the same graph as the folder
-      path — the embedding-caller contract.
+      path — the embedding-caller contract. Its negative twin: an invalid
+      hand-constructed config (zero representations, bogus term element)
+      is rejected with nothing written.
 - [ ] **Baseline re-bless**: descriptive XML may change shape, everything
       else diffs identical; recorded in the commit message and
       `tmp/baseline/README.md`.
@@ -309,7 +358,7 @@ builder is purely data-fed.
    content, reserved-name misuse, NFC mismatch pair), CSV decode (BOM, CRLF,
    quoting, repeated keys, `[lang]`, unknown key, missing required key),
    collect-all (a folder with three violations reports all three), terms
-   encoding shape, natural-sort ordering into the structMap.
+   encoding shape, stable file ordering into the structMap.
 3. The data-not-files contract, pinned by a test: a build driven by a
    hand-constructed `profiles.Config` — `Terms` and `Report` supplied as
    values, essence as plain source paths, no `metadata.csv` or
@@ -328,6 +377,8 @@ builder is purely data-fed.
 Everything in the spec's §8 deferred list (explicit manifest,
 operator-supplied descriptive XML, multiple intellectual entities, BagIt
 input, per-package config overrides), plus the remaining library-API arc:
-stream-first essence, supplied fixity, `Package.Validate()`
-([TODO.md](../TODO.md) keeps ownership). PREMIS *events* for received files
+stream-first essence, supplied fixity, and `Package.Validate()`'s
+graph-level checks — identifier uniqueness, the no-empty-`Mime` invariant
+([TODO.md](../TODO.md) keeps ownership; the *input-data* validation slice
+was pulled into I2/I3, see "Validation splits in two"). PREMIS *events* for received files
 stay with the format-provenance design question.
