@@ -114,10 +114,10 @@ func (t Terms) Has(element string) bool {
 	return false
 }
 
-// GetLocalIdentifier returns the value of the dcterms:identifier term —
+// LocalIdentifier returns the value of the dcterms:identifier term —
 // the producer's local catalog/inventory number ("" when absent or the
-// scheme is unknown). Mirrors Description.GetLocalIdentifier.
-func (t Terms) GetLocalIdentifier(scheme string) string {
+// scheme is unknown).
+func (t Terms) LocalIdentifier(scheme string) string {
 	if scheme != "dcterms" {
 		return ""
 	}
@@ -132,7 +132,7 @@ func (t Terms) GetLocalIdentifier(scheme string) string {
 // SetObjectIdentifier replaces the dcterms:identifier term's value in
 // place (a no-op when the terms carry none). Unlike Description, Terms
 // keeps no second identifier slot: read the local identifier with
-// GetLocalIdentifier before swapping in the object identifier. What to do
+// LocalIdentifier before swapping in the object identifier. What to do
 // with each identifier is assembly policy, not data behavior.
 func (t Terms) SetObjectIdentifier(id string) {
 	for i, term := range t {

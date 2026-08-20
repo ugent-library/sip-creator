@@ -163,15 +163,15 @@ func TestTermsValidateDuplicateIdentifier(t *testing.T) {
 func TestTermsIdentifierSeams(t *testing.T) {
 	terms := testTerms()
 
-	if got := terms.GetLocalIdentifier("dcterms"); got != "BIB.FA.2026.001" {
-		t.Fatalf("GetLocalIdentifier = %q", got)
+	if got := terms.LocalIdentifier("dcterms"); got != "BIB.FA.2026.001" {
+		t.Fatalf("LocalIdentifier = %q", got)
 	}
-	if got := terms.GetLocalIdentifier("mods"); got != "" {
+	if got := terms.LocalIdentifier("mods"); got != "" {
 		t.Fatalf("unknown scheme must return empty, got %q", got)
 	}
 
 	terms.SetObjectIdentifier("uuid-entity-1")
-	if got := terms.GetLocalIdentifier("dcterms"); got != "uuid-entity-1" {
+	if got := terms.LocalIdentifier("dcterms"); got != "uuid-entity-1" {
 		t.Fatalf("identifier not swapped in place, got %q", got)
 	}
 

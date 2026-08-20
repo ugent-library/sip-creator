@@ -56,7 +56,7 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 	// the meemoo spec the emitted document carries the entity identifier;
 	// the producer's own identifier travels as MEEMOO-LOCAL-ID.
 	if def.LocalIdentifierScheme != "" {
-		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", d.GetLocalIdentifier(def.LocalIdentifierScheme))
+		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", d.LocalIdentifier(def.LocalIdentifierScheme))
 	}
 	d.SetObjectIdentifier(e.Identifier)
 	e.Description = d

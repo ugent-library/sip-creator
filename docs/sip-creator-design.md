@@ -144,7 +144,7 @@ The workflow around the tool ([ADR-0005](decisions/0005-dockerized-validation-an
 These are true of the code today and tracked in [TODO.md](TODO.md):
 
 - **`mets/@TYPE` is a fixed registry value** (`Photographs – Digital` — legal meemoo-1.2 vocabulary, and apt for the sample fixture) where it should ultimately be operator- or content-selectable per package. Data in `profiles/definition.go`; the remaining work is input/config plumbing, not a fix.
-- **The `sip.Identifier` interface and `sip.Event` stub are unused.** Identifiers are bare strings; PREMIS events are not modeled.
+- **The `sip.Event` stub is unused.** PREMIS events are not modeled; the stub anchors the events design question in [TODO.md](TODO.md). (The once-unused `sip.Identifier` interface was deleted 2026-08-20; identifiers are bare `uuid-<uuid>` strings, validated by `sip.ValidateIdentifier`.)
 - **The `representation_([0-9]+)$` regex is stricter than either spec requires** and silently skips non-matching directories — a representation named `master` is dropped with no error.
 
 The [refactoring plan](archive/refactoring-plan.md) and its companions have shipped: the assemble/emit split, `store/` package, and declarative `Definition` registry (Phases 0–2), the optional-enrichment decision ([format-identification plan](archive/format-identification-optional.md), since superseded in part), and the eark profile ([eark-writer plan](plans/eark-writer.md), awaiting field acceptance on RODA). The [characterization-sidecar plan](archive/characterization-sidecar.md) has landed in full: Step A (sidecar input) and Step B (METS `@MIMETYPE` emitted from resolved per-file mime — the long-standing hardcoded-`text/xml` lie is gone).

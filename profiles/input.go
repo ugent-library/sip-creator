@@ -101,7 +101,7 @@ func (in *Input) Validate() error {
 	if err := in.Descriptive.Validate(); err != nil {
 		return err
 	}
-	if in.Descriptive.GetLocalIdentifier("dcterms") == "" {
+	if in.Descriptive.LocalIdentifier("dcterms") == "" {
 		return fmt.Errorf("descriptive metadata carries no dcterms:identifier — the local identifier is required")
 	}
 	if !in.Descriptive.Has("dcterms:title") {

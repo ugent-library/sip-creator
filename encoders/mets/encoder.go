@@ -120,7 +120,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	</metsHdr>
 
 	<!-- ref to descriptive metadata about IE -->
-	{{ range .GetDescriptiveFiles -}}
+	{{ range .DescriptiveFiles -}}
     <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
         <mdRef LOCTYPE="URL" MDTYPE="{{ $.Spec.DescriptiveMDType }}"{{ with $.Spec.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
     </dmdSec>

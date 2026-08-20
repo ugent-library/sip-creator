@@ -138,7 +138,7 @@ func TestAssemble(t *testing.T) {
 	if !ok {
 		t.Fatalf("Description is %T, want metadata.Terms", e.Description)
 	}
-	if got := d.GetLocalIdentifier("dcterms"); got != e.Identifier {
+	if got := d.LocalIdentifier("dcterms"); got != e.Identifier {
 		t.Errorf("description identifier = %q, want entity identifier %q", got, e.Identifier)
 	}
 
@@ -518,7 +518,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	}
 	r2 := pkg2.Root.Representations[0]
 	d2 := r2.Description.(metadata.Terms)
-	if got := d2.GetLocalIdentifier("dcterms"); got != r2.Identifier {
+	if got := d2.LocalIdentifier("dcterms"); got != r2.Identifier {
 		t.Errorf("rep descriptive identifier = %q, want the representation identifier %q", got, r2.Identifier)
 	}
 

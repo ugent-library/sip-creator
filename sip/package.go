@@ -15,12 +15,10 @@ type Package struct {
 	PremisFile *File
 	// ReceivedPremisFiles are preservation documents delivered with the
 	// input — copied as received, never parsed (input spec §5).
-	ReceivedPremisFiles     []*File
-	MetsFile                *File
-	DescriptiveFiles        []*File
-	RepresentationMetsFiles []*File
-	SchemaFiles             []*File
-	DocumentationFiles      []*File
+	ReceivedPremisFiles []*File
+	MetsFile            *File
+	SchemaFiles         []*File
+	DocumentationFiles  []*File
 }
 
 func (p *Package) AddRootEntity(e *Entity) {
@@ -58,7 +56,7 @@ func (p *Package) AddDocumentationFiles(files []*File) {
 	p.DocumentationFiles = files
 }
 
-func (p *Package) GetDescriptiveFiles() []*File {
+func (p *Package) DescriptiveFiles() []*File {
 	var tmp []*File
 	var fn func(e *Entity)
 

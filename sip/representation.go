@@ -66,10 +66,6 @@ func (r *Representation) SetEntity(e *Entity) {
 	r.Entity = e
 }
 
-func (r *Representation) GetEntity() *Entity {
-	return r.Entity
-}
-
 func NewRepresentation(name string) *Representation {
 	return &Representation{
 		Name:       name,
