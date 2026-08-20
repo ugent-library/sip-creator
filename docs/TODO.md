@@ -40,6 +40,7 @@ mandates), `eark` against 2.2.0. The old SIP2 failure was a spec-version
 mismatch, not a package defect; the old XSD-failure evidence stopped
 reproducing under commons-ip 2.11.2.
 
-One SHOULD-level warning remains for `basic`: **CSIPSTR16** (no `documentation`
-folder). The code supports documentation for every profile — the warning is
-fixture-level; add a `documentation/` dir to `tmp/basic` to clear it.
+**Resolved 2026-08-20** ([input-convention plan](plans/input-convention.md)
+I6b): the last SHOULD-level warning, **CSIPSTR16**, cleared once `tmp/basic`
+gained `documentation/` at package and representation level — both profiles
+now validate **VALID with zero warnings**.
