@@ -6,6 +6,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 // SourceFile is one input file for the build: where its bytes live now and
@@ -28,6 +29,10 @@ type SourceFile struct {
 type SourceRepresentation struct {
 	Label string       // producer's label; the profile decides package-side naming
 	Files []SourceFile // content files, in packaging order
+	// Descriptive optionally describes this version only (input spec §3):
+	// identity (identifier, title) is not required here — the package-level
+	// descriptive carries the work's identity.
+	Descriptive metadata.Terms
 }
 
 // Input is one package's source material — data, not files to parse:
@@ -39,6 +44,10 @@ type SourceRepresentation struct {
 // Build takes ownership of the data: the descriptive terms are mutated
 // (the entity identifier is swapped in) during assembly.
 type Input struct {
+	// PackageIdentifier optionally supplies the package identifier instead
+	// of minting one — how an update reuses the original package's
+	// mets/@OBJID. Must take the uuid-<uuid> form when set.
+	PackageIdentifier string
 	// Descriptive is the package-level descriptive metadata.
 	Descriptive metadata.Terms
 	// Representations is the content, at least one.
@@ -72,6 +81,11 @@ func ValidateRepresentationLabel(label string) error {
 // hit them here (the input-convention plan's "validation splits in two").
 // Fail-fast: one error, developer-phrased.
 func (in *Input) Validate() error {
+	if in.PackageIdentifier != "" {
+		if err := sip.ValidateIdentifier(in.PackageIdentifier); err != nil {
+			return err
+		}
+	}
 	if len(in.Descriptive) == 0 {
 		return fmt.Errorf("no descriptive metadata supplied")
 	}
@@ -102,6 +116,11 @@ func (in *Input) Validate() error {
 		}
 		if err := validateFiles(fmt.Sprintf("representation %q", r.Label), r.Files); err != nil {
 			return err
+		}
+		if r.Descriptive != nil {
+			if err := r.Descriptive.Validate(); err != nil {
+				return fmt.Errorf("representation %q descriptive: %w", r.Label, err)
+			}
 		}
 	}
 

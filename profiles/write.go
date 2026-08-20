@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"path"
 
+	"github.com/ugent-library/sip-creator/encoders/metadata"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/premis"
 	"github.com/ugent-library/sip-creator/schemas"
@@ -32,7 +33,7 @@ func (b *Builder) write(st *store.Store, pkg *sip.Package, def Definition, encod
 	if err := b.writeDescriptive(st, pkg, encodeDescriptive); err != nil {
 		return err
 	}
-	if err := b.writeRepresentationMetadata(st, pkg, def); err != nil {
+	if err := b.writeRepresentationMetadata(st, pkg, def, encodeDescriptive); err != nil {
 		return err
 	}
 	if def.EmitPackagePremis {
@@ -91,7 +92,7 @@ func (b *Builder) writeDocumentation(st *store.Store, pkg *sip.Package) error {
 
 func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 	return pkg.Root.EachRepresentation(func(r *sip.Representation) error {
-		base := "representations/" + r.Label
+		base := "representations/" + r.Name
 		if err := st.MkdirAll(base + "/data"); err != nil {
 			return err
 		}
@@ -120,7 +121,8 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 func (b *Builder) writeDescriptive(st *store.Store, pkg *sip.Package, encode descriptiveEncoder) error {
 	df := pkg.Root.DescriptionFile
 	info, err := st.WriteMetadata(df.Path, func(w io.Writer) error {
-		return encode(w, pkg.Root.Description)
+		// From metadata/descriptive/, the package's schemas/ is two up.
+		return encode(w, pkg.Root.Description, metadata.PackageSchemas)
 	})
 	if err != nil {
 		return err
@@ -129,15 +131,34 @@ func (b *Builder) writeDescriptive(st *store.Store, pkg *sip.Package, encode des
 	return nil
 }
 
-func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package, def Definition) error {
+func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package, def Definition, encodeDescriptive descriptiveEncoder) error {
 	return pkg.Root.EachRepresentation(func(r *sip.Representation) error {
+		if r.Description != nil {
+			// Same family encoder as the package descriptive; written
+			// before the representation METS, which embeds its fixity.
+			df := r.DescriptionFile
+			if err := st.MkdirAll("representations/" + r.Name + "/metadata/descriptive"); err != nil {
+				return err
+			}
+			info, err := st.WriteMetadata("representations/"+r.Name+"/"+df.Path, func(w io.Writer) error {
+				// From representations/<name>/metadata/descriptive/, the
+				// package's schemas/ is four up.
+				return encodeDescriptive(w, r.Description, "../../../../schemas")
+			})
+			if err != nil {
+				return err
+			}
+			backfill(df, info)
+			b.Logger.Info("created a representation descriptive file", slog.Any("id", df.Identifier))
+		}
+
 		if def.EmitRepresentationPremis {
 			// PREMIS first: the representation METS embeds its fixity.
 			pf := sip.NewFile()
 			pf.Name = "premis.xml"
 			pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
 			pf.Mime = "text/xml"                         // generated XML by construction
-			info, err := st.WriteMetadata("representations/"+r.Label+"/"+pf.Path, func(w io.Writer) error {
+			info, err := st.WriteMetadata("representations/"+r.Name+"/"+pf.Path, func(w io.Writer) error {
 				return premis.EncodeRepresentation(w, r)
 			})
 			if err != nil {
@@ -150,8 +171,8 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 
 		mf := sip.NewFile()
 		mf.Name = "METS.xml"
-		mf.Path = "representations/" + r.Label + "/METS.xml" // package-relative: referenced from package METS
-		mf.Mime = "text/xml"                                 // generated XML by construction
+		mf.Path = "representations/" + r.Name + "/METS.xml" // package-relative: referenced from package METS
+		mf.Mime = "text/xml"                                // generated XML by construction
 		info, err := st.WriteMetadata(mf.Path, func(w io.Writer) error {
 			return mets.EncodeRepresentation(w, r, pkg.Spec)
 		})

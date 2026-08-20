@@ -42,6 +42,24 @@ func TestTermsEncode(t *testing.T) {
 	if strings.Index(out, "dcterms:title") > strings.Index(out, "dcterms:created") {
 		t.Error("term order not preserved")
 	}
+
+	// Encode is the package-level default; the schema-location hint must
+	// resolve from metadata/descriptive/.
+	if !strings.Contains(out, "../../schemas/descriptive_basic.xsd") {
+		t.Error("package-level schema location hint missing")
+	}
+}
+
+// The schema-location hint follows the document: a representation-level
+// document (four levels deep) must point four levels up.
+func TestEncodeTermsSchemaLocation(t *testing.T) {
+	var buf bytes.Buffer
+	if err := EncodeTerms(&buf, testTerms(), "../../../../schemas"); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), `xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic ../../../../schemas/descriptive_basic.xsd"`) {
+		t.Errorf("rep-level schema location hint wrong:\n%s", buf.String())
+	}
 }
 
 func TestTermsEncodeRefusesInvalid(t *testing.T) {
@@ -70,13 +88,14 @@ func TestEncodeDCTerms(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	if err := EncodeDCTerms(&buf, terms); err != nil {
+	if err := EncodeDCTerms(&buf, terms, PackageSchemas); err != nil {
 		t.Fatalf("EncodeDCTerms: %v", err)
 	}
 	out := buf.String()
 
 	for _, want := range []string{
 		"<simpledc",
+		`xsi:noNamespaceSchemaLocation="../../schemas/dc.xsd"`,
 		"<identifier>uuid-x</identifier>",
 		"<title>Alt</title>",                   // alternative → title
 		"<date>1913</date>",                    // created → date

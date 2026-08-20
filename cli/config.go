@@ -26,6 +26,11 @@ type config struct {
 		// profiles, where it becomes the agent's IDENTIFICATIONCODE note.
 		ORID string `env:"OR_ID"`
 	} `envPrefix:"SIP_SUBMITTER_"`
+	// Default content category for created packages (mets/@TYPE, CSIP
+	// content-category vocabulary), e.g. "Photographs – Digital". Empty
+	// means the profile's registry value; --content-category overrides
+	// both per run.
+	ContentCategory string `env:"SIP_CONTENT_CATEGORY"`
 	// Build provenance, stamped by the deployment environment. Unused by the CLI itself.
 	Version struct {
 		// Git branch this build was made from.

@@ -10,7 +10,7 @@ import (
 )
 
 // The terms templates interpolate element names from data, which the
-// Description templates never do — so encoding validates first (element
+// Description templates never did — so encoding validates first (element
 // names come from the closed vocabularies) and every value is escaped.
 var termsMD = template.Must(template.New("").Funcs(template.FuncMap{
 	"esc":  escapeXML,
@@ -24,41 +24,63 @@ var termsMD = template.Must(template.New("").Funcs(template.FuncMap{
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:edtf="http://id.loc.gov/datatypes/edtf/"
 	xmlns:schema="https://schema.org/"
-	xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic ../../schemas/descriptive_basic.xsd">
-{{ range . }}
+	xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic {{ .Schemas }}/descriptive_basic.xsd">
+{{ range .Terms }}
 	<{{ .Element }}{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}{{ if edtf .Element }} xsi:type="edtf:EDTF-level1"{{ end }}>{{ esc .Value }}</{{ .Element }}>
 {{- end }}
 </metadata>
 {{ end }}
 {{ define "dc-terms" -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<simpledc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../schemas/dc.xsd">
-{{ range . }}
+<simpledc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{{ .Schemas }}/dc.xsd">
+{{ range .Terms }}
 	<{{ .Element }}>{{ esc .Value }}</{{ .Element }}>
 {{- end }}
 </simpledc>
 {{ end }}
 `))
 
-// Encode writes the terms as the meemoo descriptive document — the same
-// document shape as the dc+schema define, one element per term, order
-// preserved. It implements sip.Descriptive; the family seam selects
-// EncodeDCTerms for the eark shape instead.
+// termsDoc is one descriptive document to render: the terms plus the
+// relative path from the document's location to the package's bundled
+// schemas/ dir — the writer knows where the document lands, the template
+// only carries the hint.
+type termsDoc struct {
+	Terms   Terms
+	Schemas string
+}
+
+// PackageSchemas is the schemas/ dir as seen from a package-level
+// descriptive document (metadata/descriptive/*.xml).
+const PackageSchemas = "../../schemas"
+
+// Encode writes the terms as a package-level meemoo descriptive document.
+// It satisfies sip.Descriptive; the writer's family seam calls EncodeTerms
+// with an explicit schema location instead, because only the writer knows
+// where a document lands.
 func (t Terms) Encode(w io.Writer) error {
+	return EncodeTerms(w, t, PackageSchemas)
+}
+
+// EncodeTerms writes the terms as the meemoo descriptive document — the
+// same document shape as the retired dc+schema define, one element per
+// term, order preserved. schemas is the relative path from the document to
+// the package's schemas/ dir.
+func EncodeTerms(w io.Writer, t Terms, schemas string) error {
 	if err := t.Validate(); err != nil {
 		return fmt.Errorf("descriptive terms: %w", err)
 	}
-	return termsMD.ExecuteTemplate(w, "terms", t)
+	return termsMD.ExecuteTemplate(w, "terms", termsDoc{t, schemas})
 }
 
 // EncodeDCTerms writes the terms as a simple Dublin Core document (the
 // dc_SimpleDC20021212 shape RODA renders and indexes natively), dumbing
-// qualified terms down to their Simple DC parent element.
-func EncodeDCTerms(w io.Writer, t Terms) error {
+// qualified terms down to their Simple DC parent element. schemas is the
+// relative path from the document to the package's schemas/ dir.
+func EncodeDCTerms(w io.Writer, t Terms, schemas string) error {
 	if err := t.Validate(); err != nil {
 		return fmt.Errorf("descriptive terms: %w", err)
 	}
-	return termsMD.ExecuteTemplate(w, "dc-terms", dumbDown(t))
+	return termsMD.ExecuteTemplate(w, "dc-terms", termsDoc{dumbDown(t), schemas})
 }
 
 // simpleDC maps each Dublin Core term onto the Simple DC element it dumbs
@@ -112,7 +134,7 @@ func dumbDown(t Terms) Terms {
 }
 
 // isEDTFTyped marks the terms the meemoo document types as EDTF dates —
-// the same two the dc+schema define types.
+// the same two the dc+schema define typed.
 func isEDTFTyped(element string) bool {
 	return element == "dcterms:created" || element == "dcterms:issued"
 }

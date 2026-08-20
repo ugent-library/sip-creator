@@ -42,15 +42,21 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	xmlns:sip="https://DILCIS.eu/XML/METS/SIPExtensionMETS" 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	xmlns:xlink="http://www.w3.org/1999/xlink" 
-	OBJID="{{ .Label }}"
+	OBJID="{{ .Name }}"
 	TYPE="{{ .Spec.Type }}"
-	LABEL=""
+	LABEL="{{ .Label }}"
 	PROFILE="{{ .Spec.ProfileURL }}"
 	csip:CONTENTINFORMATIONTYPE="{{ .Spec.ContentInformationType }}"
 	{{ with .Spec.OtherContentInformationType }}csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"{{ end }}
 	xsi:schemaLocation="http://www.loc.gov/METS/ ../../schemas/mets1_12.xsd http://www.w3.org/1999/xlink ../../schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS ../../schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS ../../schemas/DILCISExtensionSIPMETS.xsd">
 
 	<metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP" />
+
+	{{ with .DescriptionFile -}}
+    <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
+        <mdRef LOCTYPE="URL" MDTYPE="{{ $.Spec.DescriptiveMDType }}"{{ with $.Spec.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
+    </dmdSec>
+	{{- end }}
 
 	{{ $provMDID := identifier -}}
 	{{ with .PremisFile -}}
@@ -73,8 +79,8 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
     </fileSec>
 
     <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
-        <div ID="{{ identifier }}" LABEL="{{ .Label }}">
-            <div ID="{{ identifier }}" LABEL="Metadata" {{ if .PremisFile }}
+        <div ID="{{ identifier }}" LABEL="{{ .Name }}">
+            <div ID="{{ identifier }}" LABEL="Metadata"{{ with .DescriptionFile }} DMDID="{{ .Identifier }}"{{ end }} {{ if .PremisFile }}
                 ADMID="{{ $provMDID }}" {{ end }}/>
             <div ID="{{ identifier }}" LABEL="Data">
                 <fptr FILEID="{{ $fileGrpID }}" />
@@ -101,7 +107,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	{{ with .Spec.OtherContentInformationType }}csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"{{ end }}
  	xsi:schemaLocation="http://www.loc.gov/METS/ schemas/mets1_12.xsd http://www.w3.org/1999/xlink schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS schemas/DILCISExtensionSIPMETS.xsd">
 
-	<metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP">
+	<metsHdr CREATEDATE="{{ now }}"{{ with .Spec.RecordStatus }} RECORDSTATUS="{{ . }}"{{ end }} csip:OAISPACKAGETYPE="SIP">
 	{{- range .Spec.Agents }}
 		<agent ROLE="{{ .Role }}"{{ if .OtherRole }} OTHERROLE="{{ .OtherRole }}"{{ end }} TYPE="{{ .Type }}"{{ if .OtherType }} OTHERTYPE="{{ .OtherType }}"{{ end }}>
 			<name>{{ .Name }}</name>
@@ -147,7 +153,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 		</fileGrp>
 		{{ end -}}
 		{{ range .Root.Representations -}}
-        <fileGrp ID="{{ .Identifier }}" USE="Representations/{{ .Label }}">
+        <fileGrp ID="{{ .Identifier }}" USE="Representations/{{ .Name }}">
             <file ID="{{ .MetsFile.Identifier }}" MIMETYPE="{{ .MetsFile.Mime }}" SIZE="{{ .MetsFile.Size }}" CREATED="{{ .MetsFile.Created }}" CHECKSUM="{{ .MetsFile.Checksum }}" CHECKSUMTYPE="MD5">
                 <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .MetsFile.Path }}"/>
             </file>
@@ -167,7 +173,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
             </div>
 			{{ end -}}
 			{{ range .Root.Representations -}}
-			<div ID="{{ identifier }}" LABEL="Representations/{{ .Label }}">
+			<div ID="{{ identifier }}" LABEL="Representations/{{ .Name }}">
 				<mptr xlink:type="simple" xlink:href="{{ .MetsFile.Path }}" LOCTYPE="URL" xlink:title="{{ .Identifier }}" />
 			</div>
 			{{ end }}
@@ -178,7 +184,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 `))
 
 // repView pairs a representation with the package-level spec its METS
-// template needs; the embedded Representation keeps .Label/.Files/etc.
+// template needs; the embedded Representation keeps .Name/.Label/.Files/etc.
 // resolving unchanged.
 type repView struct {
 	*sip.Representation

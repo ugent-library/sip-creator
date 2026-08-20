@@ -8,11 +8,15 @@ import (
 	"github.com/ugent-library/sip-creator/archive"
 	"github.com/ugent-library/sip-creator/cli/input"
 	"github.com/ugent-library/sip-creator/profiles"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 func init() {
 	createCmd.Flags().String("profile", "", "Set the profile of the SIP")
 	createCmd.Flags().Bool("no-zip", false, "Skip zipping; the package directory is the deliverable (e.g. for external bagging, see ADR-0008)")
+	createCmd.Flags().String("status", "", "Record status of the package (SIP3 vocabulary: new, supplement, replacement, test, version, delete); omitted means new")
+	createCmd.Flags().String("updates", "", "Identifier of the package this one updates; reused as this package's identifier (mets/@OBJID)")
+	createCmd.Flags().String("content-category", "", "Content category of the package (mets/@TYPE, CSIP vocabulary); overrides SIP_CONTENT_CATEGORY and the profile default")
 	rootCmd.AddCommand(createCmd)
 }
 
@@ -37,6 +41,34 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("%w (set SIP_SUBMITTER_NAME and SIP_SUBMITTER_OR_ID)", err)
 		}
 
+		// --status and --updates are coupled: an update-class status names
+		// an earlier package, and naming one demands an update-class
+		// status (input spec §6). Strict pairing is CLI policy — library
+		// callers may supply a package identifier for other reasons.
+		flagStatus, _ := cmd.Flags().GetString("status")
+		updates, _ := cmd.Flags().GetString("updates")
+		status := strings.ToUpper(flagStatus)
+		if status != "" {
+			if err := sip.ValidateRecordStatus(status); err != nil {
+				return err
+			}
+		}
+		switch {
+		case updates != "" && !sip.IsUpdateRecordStatus(status):
+			return fmt.Errorf("--updates names an earlier package, which needs --status supplement, replacement, version or delete")
+		case updates == "" && sip.IsUpdateRecordStatus(status):
+			return fmt.Errorf("--status %s updates an earlier package — pass its identifier with --updates", strings.ToLower(status))
+		}
+		def.Mets.RecordStatus = status
+
+		// Content category precedence: flag, then configured default, then
+		// the profile's registry value.
+		if cc, _ := cmd.Flags().GetString("content-category"); cc != "" {
+			def.Mets.Type = cc
+		} else if cfg.ContentCategory != "" {
+			def.Mets.Type = cfg.ContentCategory
+		}
+
 		pkg, err := input.Read(args[0])
 		if err != nil {
 			return fmt.Errorf("input folder %s does not conform to the input specification:\n%w", args[0], err)
@@ -53,7 +85,10 @@ var createCmd = &cobra.Command{
 			Logger:      logger,
 		})
 
-		built, err := builder.Build(def, pkg.BuilderInput())
+		in := pkg.BuilderInput()
+		in.PackageIdentifier = updates
+
+		built, err := builder.Build(def, in)
 		if err != nil {
 			return err
 		}
@@ -74,9 +109,6 @@ func reportUnsupported(pkg *input.Package) {
 		logger.Warn("premis/ found but received-PREMIS pass-through is not supported yet; the files are not packaged")
 	}
 	for _, r := range pkg.Representations {
-		if r.Descriptive != nil {
-			logger.Warn("representation metadata.csv is not supported yet; it is not packaged", "representation", r.Label)
-		}
 		if len(r.Documentation) > 0 {
 			logger.Warn("representation documentation/ is not supported yet; the files are not packaged", "representation", r.Label)
 		}

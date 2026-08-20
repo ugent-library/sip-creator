@@ -22,19 +22,27 @@ const FamilyEARK Family = "eark"
 
 // descriptiveEncoder is the one behavioral choice a family makes today.
 // It grows into a struct of choices when families make more (ADR-0007).
-type descriptiveEncoder func(io.Writer, sip.Descriptive) error
+// schemas is the relative path from the document being written to the
+// package's schemas/ dir — only the writer knows where a document lands.
+type descriptiveEncoder func(w io.Writer, d sip.Descriptive, schemas string) error
 
 func (f Family) descriptiveEncoder() (descriptiveEncoder, error) {
 	switch f {
 	case FamilyMeemoo:
-		return func(w io.Writer, d sip.Descriptive) error { return d.Encode(w) }, nil
+		return func(w io.Writer, d sip.Descriptive, schemas string) error {
+			t, ok := d.(metadata.Terms)
+			if !ok {
+				return fmt.Errorf("meemoo descriptive encoding needs metadata.Terms, got %T", d)
+			}
+			return metadata.EncodeTerms(w, t, schemas)
+		}, nil
 	case FamilyEARK:
-		return func(w io.Writer, d sip.Descriptive) error {
+		return func(w io.Writer, d sip.Descriptive, schemas string) error {
 			t, ok := d.(metadata.Terms)
 			if !ok {
 				return fmt.Errorf("eark descriptive encoding needs metadata.Terms, got %T", d)
 			}
-			return metadata.EncodeDCTerms(w, t)
+			return metadata.EncodeDCTerms(w, t, schemas)
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown output family %q", f)

@@ -57,8 +57,8 @@ type Package struct {
 // the CLI-side half of "the folder is one transport": an embedding system
 // constructs the same profiles.Input from its own stores. Parts of the
 // model the builder cannot emit yet (received PREMIS, per-representation
-// descriptive and documentation) are deliberately not mapped — the create
-// command warns about them until their emission steps land.
+// documentation) are deliberately not mapped — the create command warns
+// about them until their emission steps land.
 func (p *Package) BuilderInput() *profiles.Input {
 	in := &profiles.Input{
 		Descriptive:      p.Descriptive,
@@ -67,8 +67,9 @@ func (p *Package) BuilderInput() *profiles.Input {
 	}
 	for _, rep := range p.Representations {
 		in.Representations = append(in.Representations, profiles.SourceRepresentation{
-			Label: rep.Label,
-			Files: sourceFiles(rep.Files),
+			Label:       rep.Label,
+			Files:       sourceFiles(rep.Files),
+			Descriptive: rep.Descriptive,
 		})
 	}
 	return in

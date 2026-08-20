@@ -305,26 +305,38 @@ builder is purely data-fed.
 
 ### I4 — status, updates, content category
 
-- [ ] `sip.Spec.RecordStatus` → `metsHdr/@RECORDSTATUS` (SIP3 vocabulary,
+- [x] `sip.Spec.RecordStatus` → `metsHdr/@RECORDSTATUS` (SIP3 vocabulary,
       default `NEW`); metsHdr template addition.
-- [ ] Caller-supplied package identifier: `sip.NewPackage` accepts one,
+- [x] Caller-supplied package identifier: `sip.NewPackage` accepts one,
       mints only when none given.
-- [ ] CLI flags: `--status`, `--updates <id>` (reuses the original
+- [x] CLI flags: `--status`, `--updates <id>` (reuses the original
       identifier as `mets/@OBJID`), `--content-category` with a configured
       default landing in `sip.Spec.Type`.
-- [ ] Config addition regenerated: `go generate ./cli` → `CONFIG.md`.
-- [ ] Validator loop: a `--status replacement --updates <id>` fixture run
+- [x] Config addition regenerated: `go generate ./cli` → `CONFIG.md`.
+- [x] Validator loop: a `--status replacement --updates <id>` fixture run
       conforms (SIP3), both profiles stay VALID.
-- [ ] Gate: builds green, baseline clean (defaults leave output unchanged).
+- [x] Gate: builds green, baseline clean (defaults leave output unchanged).
 
 ### I5 — per-representation descriptive
 
-- [ ] Domain slots: `sip.Representation.Description`/`DescriptionFile`.
-- [ ] Writer step: rep `metadata.csv` terms → rep
+- [x] Domain slots: `sip.Representation.Description`/`DescriptionFile`.
+- [x] Writer step: rep `metadata.csv` terms → rep
       `metadata/descriptive/*.xml` in the canonical emission order.
-- [ ] Rep-METS template: dmdSec referencing it (CSIPSTR12/13).
-- [ ] Fixture with a rep-level `metadata.csv`; validator loop until VALID.
-- [ ] Gate: builds green; baseline clean (basic fixture carries none unless
+- [x] Rep-METS template: dmdSec referencing it (CSIPSTR12/13).
+- [x] Fixture with a rep-level `metadata.csv`; validator loop until VALID.
+      *(The eark fixture carries one permanently, so every `./build.sh
+      eark` exercises the rep dmdSec; basic verified via a scratch fixture
+      at 2.0.4 — the standing basic fixture stays rep-descriptive-free to
+      keep the baseline maximally sensitive.)*
+- [x] Producer label homed (added in review, 2026-08-19): the operator's
+      representation label is emitted as the rep METS `mets/@LABEL`
+      (spec §2's "keeps your label as the human-readable name").
+      `sip.Representation` split `Name` (package-side: directory, OBJID,
+      paths) from `Label` (the human-readable name) so field names match
+      the METS attributes they feed. **Deliberate baseline re-bless** —
+      the reviewed delta was exactly `LABEL=""` → `LABEL="master"`;
+      recorded in `tmp/baseline/README.md`.
+- [x] Gate: builds green; baseline clean (basic fixture carries none unless
       deliberately added — if added, conscious re-bless).
 
 ### I6 — received PREMIS pass-through

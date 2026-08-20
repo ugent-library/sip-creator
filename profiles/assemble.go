@@ -21,7 +21,7 @@ import (
 // with its Path declared, and the writer later back-fills fixity as it
 // emits.
 func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
-	pkg := sip.NewPackage(b.OutDir)
+	pkg := sip.NewPackage(b.OutDir, in.PackageIdentifier)
 	b.Logger.Info("created a new package", slog.Any("id", pkg.Identifier))
 
 	pkg.Spec = &def.Mets
@@ -35,7 +35,7 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 	if err := b.assembleDocumentation(pkg, in); err != nil {
 		return nil, err
 	}
-	if err := b.assembleRepresentations(e, in); err != nil {
+	if err := b.assembleRepresentations(e, def, in); err != nil {
 		return nil, err
 	}
 
@@ -112,13 +112,33 @@ func (b *Builder) assembleDocumentation(pkg *sip.Package, in *Input) error {
 }
 
 // assembleRepresentations turns each supplied representation into a graph
-// node. The package-side directory name is the profile family's convention
-// (meemoo's representation_N, in supplied order); the producer's label is
-// input-side naming and does not reach the package yet.
-func (b *Builder) assembleRepresentations(e *sip.Entity, in *Input) error {
+// node. The package-side name (representation_N, in supplied order) is
+// this project's stable convention, taken from the meemoo spec's
+// illustrated layout — no spec mandates the name: CSIP requires only
+// uniqueness, and meemoo 2.x only that the dir name equal the rep METS
+// OBJID (which setting both from Name satisfies for free). The producer's
+// label rides along as the human-readable name (rep METS mets/@LABEL).
+func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Input) error {
 	for i, sr := range in.Representations {
 		r := sip.NewRepresentation(fmt.Sprintf("representation_%d", i+1))
+		r.Label = sr.Label
 		b.Logger.Info("created a representation", slog.Any("id", r.Identifier), slog.String("label", sr.Label))
+
+		if sr.Descriptive != nil {
+			// Mirror the package-level swap: when the terms carry an
+			// identifier, the emitted document carries the representation
+			// identifier instead (a no-op when they carry none — rep-level
+			// identity is optional, spec §3).
+			sr.Descriptive.SetObjectIdentifier(r.Identifier)
+			r.Description = sr.Descriptive
+
+			df := sip.NewFile()
+			df.Name = def.DescriptiveName
+			df.Path = "metadata/descriptive/" + df.Name // rep-relative, per File.Path
+			df.Mime = "text/xml"                        // the writer renders it as XML by construction
+			r.AddDescriptionFile(df)
+			b.Logger.Info("created a representation descriptive file", slog.Any("id", df.Identifier))
+		}
 
 		for _, src := range sr.Files {
 			f := sip.NewFile()

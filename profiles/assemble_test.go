@@ -172,14 +172,17 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("schema nodes not sorted: %v", names)
 	}
 
-	// One representation: package-side name is the meemoo convention, not
-	// the producer's label.
+	// One representation: the package-side name is the meemoo convention,
+	// the producer's label rides along for the METS @LABEL.
 	if len(e.Representations) != 1 {
 		t.Fatalf("representations = %d, want 1", len(e.Representations))
 	}
 	r := e.Representations[0]
-	if r.Label != "representation_1" {
-		t.Errorf("Label = %q, want %q", r.Label, "representation_1")
+	if r.Name != "representation_1" {
+		t.Errorf("Name = %q, want %q", r.Name, "representation_1")
+	}
+	if r.Label != "master" {
+		t.Errorf("Label = %q, want the producer label %q", r.Label, "master")
 	}
 	if r.Entity != e {
 		t.Error("representation not wired back to the entity")
@@ -232,13 +235,13 @@ func TestAssembleRepresentations(t *testing.T) {
 		t.Fatalf("assemble: %v", err)
 	}
 
-	var labels []string
+	var names []string
 	for _, r := range pkg.Root.Representations {
-		labels = append(labels, r.Label)
+		names = append(names, r.Name)
 	}
 	want := []string{"representation_1", "representation_2"}
-	if !slices.Equal(labels, want) {
-		t.Fatalf("representation labels = %v, want %v", labels, want)
+	if !slices.Equal(names, want) {
+		t.Fatalf("representation names = %v, want %v", names, want)
 	}
 
 	rep2 := pkg.Root.Representations[1]
@@ -448,6 +451,12 @@ func TestInputValidate(t *testing.T) {
 		{"file without source", func(c *Input) {
 			c.Representations[0].Files[0].Source = ""
 		}, "needs both a Source and a Path"},
+		{"malformed package identifier", func(c *Input) {
+			c.PackageIdentifier = "not-a-uuid"
+		}, "uuid-<uuid> form"},
+		{"invalid representation descriptive", func(c *Input) {
+			c.Representations[0].Descriptive = metadata.Terms{{Element: "dcterms:titel", Value: "x"}}
+		}, "not a Dublin Core term"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -462,6 +471,77 @@ func TestInputValidate(t *testing.T) {
 
 	if err := valid(t).Validate(); err != nil {
 		t.Fatalf("valid config rejected: %v", err)
+	}
+}
+
+// A representation may carry its own descriptive terms (spec §3): they
+// land on the representation with a rep-relative file node, an identifier
+// term is swapped for the representation identifier, and identity is not
+// required.
+func TestAssembleRepresentationDescriptive(t *testing.T) {
+	b, in, _ := newTestBuilder(t)
+	in.Representations[0].Descriptive = metadata.Terms{
+		{Element: "dcterms:license", Value: "publiek domein"},
+	}
+
+	pkg, err := b.assemble(basicDef(t), in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	r := pkg.Root.Representations[0]
+	if r.Description == nil {
+		t.Fatal("representation descriptive not assembled")
+	}
+	df := r.DescriptionFile
+	if df == nil {
+		t.Fatal("no representation description file node")
+	}
+	if df.Path != "metadata/descriptive/dc+schema.xml" {
+		t.Errorf("Path = %q, want rep-relative %q", df.Path, "metadata/descriptive/dc+schema.xml")
+	}
+
+	// With an identifier term present, the representation identifier is
+	// swapped in — mirroring the package-level behavior.
+	b2, in2, _ := newTestBuilder(t)
+	in2.Representations[0].Descriptive = metadata.Terms{
+		{Element: "dcterms:identifier", Value: "rep-local-1"},
+	}
+	pkg2, err := b2.assemble(basicDef(t), in2)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	r2 := pkg2.Root.Representations[0]
+	d2 := r2.Description.(metadata.Terms)
+	if got := d2.GetLocalIdentifier("dcterms"); got != r2.Identifier {
+		t.Errorf("rep descriptive identifier = %q, want the representation identifier %q", got, r2.Identifier)
+	}
+
+	// Without rep terms, no node exists.
+	b3, in3, _ := newTestBuilder(t)
+	pkg3, err := b3.assemble(basicDef(t), in3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pkg3.Root.Representations[0].DescriptionFile != nil {
+		t.Error("description file node created for a representation without terms")
+	}
+}
+
+// A supplied package identifier is reused verbatim — how an update keeps
+// the original package's mets/@OBJID; empty means mint.
+func TestAssemblePackageIdentifier(t *testing.T) {
+	b, in, outDir := newTestBuilder(t)
+	in.PackageIdentifier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
+
+	pkg, err := b.assemble(basicDef(t), in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	if pkg.Identifier != in.PackageIdentifier {
+		t.Errorf("Identifier = %q, want the supplied %q", pkg.Identifier, in.PackageIdentifier)
+	}
+	if want := filepath.Join(outDir, in.PackageIdentifier); pkg.Location != want {
+		t.Errorf("Location = %q, want %q", pkg.Location, want)
 	}
 }
 

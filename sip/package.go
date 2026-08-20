@@ -57,8 +57,13 @@ func (p *Package) GetDescriptiveFiles() []*File {
 	return tmp
 }
 
-func NewPackage(baseDir string) *Package {
-	identifier := fmt.Sprintf("uuid-%s", uuid.New().String())
+// NewPackage roots a package under baseDir. A caller-supplied identifier
+// is reused as the package identifier (how an update keeps the original's
+// mets/@OBJID); empty means mint a fresh one.
+func NewPackage(baseDir, identifier string) *Package {
+	if identifier == "" {
+		identifier = fmt.Sprintf("uuid-%s", uuid.New().String())
+	}
 	return &Package{
 		Identifier: identifier,
 		Location:   fmt.Sprintf("%s/%s", baseDir, identifier),
