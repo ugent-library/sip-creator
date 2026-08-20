@@ -432,7 +432,7 @@ func TestInputValidate(t *testing.T) {
 		{"no descriptive", func(c *Input) { c.Descriptive = nil }, "no descriptive metadata"},
 		{"invalid term", func(c *Input) {
 			c.Descriptive = append(c.Descriptive, metadata.Term{Element: "dcterms:titel", Value: "x"})
-		}, "not a Dublin Core term"},
+		}, "not in the descriptive vocabulary"},
 		{"no identifier", func(c *Input) {
 			c.Descriptive = metadata.Terms{{Element: "dcterms:title", Value: "x"}}
 		}, "no dcterms:identifier"},
@@ -456,7 +456,7 @@ func TestInputValidate(t *testing.T) {
 		}, "uuid-<uuid> form"},
 		{"invalid representation descriptive", func(c *Input) {
 			c.Representations[0].Descriptive = metadata.Terms{{Element: "dcterms:titel", Value: "x"}}
-		}, "not a Dublin Core term"},
+		}, "not in the descriptive vocabulary"},
 		{"received premis claims the generated name", func(c *Input) {
 			c.Premis = []SourceFile{{Source: "/x/premis.xml", Path: "premis.xml"}}
 		}, "reserved for the generated"},

@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"strings"
 	"text/template"
 )
 
@@ -13,8 +12,8 @@ import (
 // Description templates never did — so encoding validates first (element
 // names come from the closed vocabularies) and every value is escaped.
 var termsMD = template.Must(template.New("").Funcs(template.FuncMap{
-	"esc":  escapeXML,
-	"edtf": isEDTFTyped,
+	"esc":     escapeXML,
+	"xsitype": xsiType,
 }).Parse(`
 {{ define "terms" -}}
 <?xml version='1.0' encoding='UTF-8'?>
@@ -26,7 +25,7 @@ var termsMD = template.Must(template.New("").Funcs(template.FuncMap{
 	xmlns:schema="https://schema.org/"
 	xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic {{ .Schemas }}/descriptive_basic.xsd">
 {{ range .Terms }}
-	<{{ .Element }}{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}{{ if edtf .Element }} xsi:type="edtf:EDTF-level1"{{ end }}>{{ esc .Value }}</{{ .Element }}>
+	<{{ .Element }}{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}{{ with xsitype .Element }} xsi:type="{{ . }}"{{ end }}>{{ esc .Value }}</{{ .Element }}>
 {{- end }}
 </metadata>
 {{ end }}
@@ -83,60 +82,25 @@ func EncodeDCTerms(w io.Writer, t Terms, schemas string) error {
 	return termsMD.ExecuteTemplate(w, "dc-terms", termsDoc{dumbDown(t), schemas})
 }
 
-// simpleDC maps each Dublin Core term onto the Simple DC element it dumbs
-// down to: the fifteen elements onto themselves, refinements onto their
-// DCMI parent. Source: the "Subproperty Of" relations in the DCMI Metadata
-// Terms spec (dublincore.org/specifications/dublin-core/dcmi-terms/),
-// applied per DCMI's dumb-down principle. Terms with no declared parent
-// among the fifteen (rightsHolder, provenance, audience refinements, all
-// schema:*) are omitted — inventing a mapping would assert semantics DCMI
-// doesn't.
-var simpleDC = map[string]string{
-	"title": "title", "creator": "creator", "subject": "subject",
-	"description": "description", "publisher": "publisher",
-	"contributor": "contributor", "date": "date", "type": "type",
-	"format": "format", "identifier": "identifier", "source": "source",
-	"language": "language", "relation": "relation", "coverage": "coverage",
-	"rights": "rights",
-
-	"alternative": "title",
-	"abstract":    "description", "tableOfContents": "description",
-	"created": "date", "valid": "date", "available": "date",
-	"issued": "date", "modified": "date", "dateAccepted": "date",
-	"dateCopyrighted": "date", "dateSubmitted": "date",
-	"extent": "format", "medium": "format",
-	"isVersionOf": "relation", "hasVersion": "relation",
-	"isReplacedBy": "relation", "replaces": "relation",
-	"isRequiredBy": "relation", "requires": "relation",
-	"isPartOf": "relation", "hasPart": "relation",
-	"isReferencedBy": "relation", "references": "relation",
-	"isFormatOf": "relation", "hasFormat": "relation",
-	"conformsTo": "relation",
-	"spatial":    "coverage", "temporal": "coverage",
-	"accessRights": "rights", "license": "rights",
-	"bibliographicCitation": "identifier",
-}
-
+// dumbDown maps each term onto the vocabulary row's Simple DC parent (the
+// dumb-down principle); rows with no parent are omitted. Callers validate
+// first, so every element has a row.
 func dumbDown(t Terms) Terms {
 	out := make(Terms, 0, len(t))
 	for _, term := range t {
-		base, ok := strings.CutPrefix(term.Element, "dcterms:")
-		if !ok {
-			continue // schema:* has no Simple DC home
-		}
-		simple, ok := simpleDC[base]
-		if !ok {
-			continue // no DCMI dumb-down relationship
+		simple := vocabularyByElement[term.Element].SimpleDC
+		if simple == "" {
+			continue
 		}
 		out = append(out, Term{Element: simple, Value: term.Value})
 	}
 	return out
 }
 
-// isEDTFTyped marks the terms the meemoo document types as EDTF dates —
-// the same two the dc+schema define typed.
-func isEDTFTyped(element string) bool {
-	return element == "dcterms:created" || element == "dcterms:issued"
+// xsiType is the xsi:type the vocabulary declares for the element — how
+// the meemoo document marks its EDTF dates ("" for untyped elements).
+func xsiType(element string) string {
+	return vocabularyByElement[element].XSIType
 }
 
 // escapeXML makes a data value safe as XML character data or a quoted

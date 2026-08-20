@@ -1,0 +1,81 @@
+package metadata
+
+import "strings"
+
+// cardinality says how often a key may occur in one descriptive document.
+// meemoo counts lang-tagged elements per language: oncePerLanguage allows
+// title[nl] plus title[en], but not two title[nl] rows.
+type cardinality int
+
+const (
+	once cardinality = iota
+	oncePerLanguage
+	many
+)
+
+// vocabularyRow is one entry of the descriptive vocabulary: everything the
+// tool knows about one key — the element it emits, meemoo's conformance
+// marks, the xsi:type the element carries, and the Simple DC parent the
+// element dumbs down to.
+type vocabularyRow struct {
+	Key      string      // plain metadata.csv key (input spec §3)
+	Element  string      // emitted element name
+	Required bool        // meemoo basic profile 1..1 mark (enforced per family)
+	Repeat   cardinality // meemoo basic profile cardinality (enforced per family)
+	XSIType  string      // xsi:type on the emitted element; "" for none
+	SimpleDC string      // Simple DC parent for dumb-down; "" for no home
+}
+
+// vocabulary is the closed descriptive vocabulary: the flat-expressible
+// elements of meemoo's SIP 1.2 basic content profile, in the input spec §3
+// table's order. This table is the metadata model — the CSV decoder,
+// validation, and the templates all read from it (ADR-0011). The Required
+// and Repeat marks are meemoo's; whether they bind is the profile family's
+// call. The SimpleDC column follows the "Subproperty Of" relations in the
+// DCMI Metadata Terms spec; elements with no declared parent among the
+// fifteen Simple DC elements (rightsHolder, schema:*) carry "" — inventing
+// a mapping would assert semantics DCMI doesn't.
+var vocabulary = []vocabularyRow{
+	{"identifier", "dcterms:identifier", true, once, "", "identifier"},
+	{"title", "dcterms:title", true, oncePerLanguage, "", "title"},
+	{"description", "dcterms:description", true, oncePerLanguage, "", "description"},
+	{"created", "dcterms:created", true, once, "edtf:EDTF-level1", "date"},
+	{"alternative", "dcterms:alternative", false, many, "", "title"},
+	{"abstract", "dcterms:abstract", false, oncePerLanguage, "", "description"},
+	{"creator", "dcterms:creator", false, many, "", "creator"},
+	{"contributor", "dcterms:contributor", false, many, "", "contributor"},
+	{"publisher", "dcterms:publisher", false, many, "", "publisher"},
+	{"issued", "dcterms:issued", false, once, "edtf:EDTF-level1", "date"},
+	{"available", "dcterms:available", false, once, "", "date"},
+	{"subject", "dcterms:subject", false, many, "", "subject"},
+	{"spatial", "dcterms:spatial", false, many, "", "coverage"},
+	{"temporal", "dcterms:temporal", false, many, "", "coverage"},
+	{"extent", "dcterms:extent", false, once, "", "format"},
+	{"language", "dcterms:language", false, many, "", "language"},
+	{"type", "dcterms:type", false, many, "", "type"},
+	{"ispartof", "dcterms:isPartOf", false, many, "", "relation"},
+	{"license", "dcterms:license", false, many, "", "rights"},
+	{"rights", "dcterms:rights", false, oncePerLanguage, "", "rights"},
+	{"rightsholder", "dcterms:rightsHolder", false, once, "", ""},
+	{"artmedium", "schema:artMedium", false, many, "", ""},
+	{"artform", "schema:artform", false, many, "", ""},
+}
+
+var (
+	vocabularyByKey     = make(map[string]vocabularyRow, len(vocabulary))
+	vocabularyByElement = make(map[string]vocabularyRow, len(vocabulary))
+)
+
+func init() {
+	for _, row := range vocabulary {
+		vocabularyByKey[row.Key] = row
+		vocabularyByElement[row.Element] = row
+	}
+}
+
+// ResolveKey maps a plain metadata.csv key (input spec §3) onto the element
+// it generates. Keys are case-insensitive per the convention.
+func ResolveKey(key string) (element string, ok bool) {
+	row, ok := vocabularyByKey[strings.ToLower(key)]
+	return row.Element, ok
+}

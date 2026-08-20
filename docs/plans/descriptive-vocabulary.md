@@ -44,7 +44,13 @@ structures encode today:
 |---|---|---|---|---|---|
 | `created` | `dcterms:created` | yes | no | `edtf:EDTF-level1` | `date` |
 | `subject` | `dcterms:subject` | no | yes | — | `subject` |
-| `abstract` | `dcterms:abstract` | no | no | — | `description` |
+| `abstract` | `dcterms:abstract` | no | per-language | — | `description` |
+
+`repeatable` is tri-state: **no** / **yes** / **per-language**. meemoo counts
+cardinality per `xml:lang` value for its lang-tagged elements — two
+`title[nl]` rows are invalid, `title[nl]` + `title[en]` is fine — so the
+1..1/0..1 elements that carry a language (`title`, `description`,
+`abstract`, `rights`) are *per-language*, not *no*.
 
 This **replaces**: `plainKeys` (cli/input), the DCMI-55 `dctermsProperties`
 map, `schemaPropertyRx`, `isEDTFTyped`, and the `dumbDown` map. The CSV
@@ -69,6 +75,12 @@ convention's own MUSTs (identifier, title — identity plumbing). Mechanism:
 the `Definition` names its required set (data, per ADR-0007's
 profiles-as-data), the builder checks it in `Build`.
 
+**The Dutch-entry MUST is family data too.** meemoo requires that every
+lang-tagged element present includes an occurrence with `xml:lang="nl"`
+(other languages are welcome alongside; Dutch must be among them). Same
+mechanism as requiredness: the `Definition` carries a required language
+(`nl` for the meemoo family, empty for eark), the builder checks it.
+
 **Prefixed keys (`dcterms:*`, `schema:*`) leave the input convention.**
 Spec §3's "MAY use prefixed keys" clause moves to §8 (deferred, chosen
 against for v1): every element meemoo accepts has a plain key, so the open
@@ -78,30 +90,40 @@ escape hatch only lets operators build invalid packages.
 
 ### V1 — the table
 
-- [ ] Vocabulary table type + the one instance in `encoders/metadata`
-      (key, element, required, repeatable, xsi:type, simple-DC parent).
-- [ ] CSV decoder maps keys through it; unknown key stays a violation with
-      file/line context; prefixed-key parsing removed.
-- [ ] Validation against the table replaces the DCMI-55 membership check;
+- [x] Vocabulary table type + the one instance in `encoders/metadata`
+      (key, element, required, repeatable [no/yes/per-language], xsi:type,
+      simple-DC parent). *(`vocabulary.go`: `vocabularyRow`, the
+      `vocabulary` slice, indexes by key and element, `ResolveKey`.)*
+- [x] CSV decoder maps keys through it; unknown key stays a violation with
+      file/line context; prefixed-key parsing removed (a prefixed key gets
+      a pointed "every element has a plain key" violation).
+- [x] Validation against the table replaces the DCMI-55 membership check;
       `schemaPropertyRx` and the open-prefix branch go. Lang-shape,
       non-empty-value, and the validate-before-render guard stay as they
       are.
-- [ ] Templates read typing from the row (`isEDTFTyped` deleted);
+- [x] Templates read typing from the row (`isEDTFTyped` deleted);
       `EncodeDCTerms` maps through the row's simple-DC parent (`dumbDown`
       and the DCMI-refinement map deleted).
-- [ ] Tests updated: table membership, new keys (`abstract`, `alternative`,
+- [x] Tests updated: table membership, new keys (`abstract`, `alternative`,
       `issued`), rejection of `dcterms:accrualPolicy` and any prefixed key.
-- [ ] Gate: builds green; baseline clean (same elements emitted for the
+- [x] Gate: builds green; baseline clean (same elements emitted for the
       current fixtures once `dcterms:abstract[nl]` becomes `abstract[nl]`).
+      *(2026-08-20: basic and eark both VALID, baseline structurally
+      identical.)*
 
 ### V2 — profile conformance
 
 - [ ] Requiredness per family: basic enforces meemoo's four
       (`identifier`, `title`, `description`, `created`); eark the input
       convention's two. Carried as `Definition` data.
-- [ ] Repeatability enforced: a second `abstract` row is a violation
-      (CLI, with line context) and a fail-fast error (builder, for
-      embedding callers) — the standing two-audiences split.
+- [ ] Repeatability enforced per the tri-state marks: a second `abstract`
+      row *in the same language* is a violation (CLI, with line context)
+      and a fail-fast error (builder, for embedding callers) — the
+      standing two-audiences split. eark enforces none of the meemoo
+      cardinality marks.
+- [ ] Required language enforced: under the basic definition, any
+      lang-tagged element present must include an `nl` occurrence; eark
+      carries no required language. Same two-audiences split.
 - [ ] The eark fixture's `metadata.csv` slims to the convention's own
       MUSTs (identifier, title — without `description`/`created`), so the
       eark gate exercises the relaxed requiredness on every run; the basic
@@ -128,10 +150,11 @@ escape hatch only lets operators build invalid packages.
 1. `./build.sh basic` + `eark` VALID after every step; baseline clean
    throughout (no output change for the current fixtures beyond the
    fixture's own `dcterms:abstract` → `abstract` respelling).
-2. Go tests: every table column exercised (required, repeatable, typing,
-   dumb-down parent); prefixed keys rejected via CSV and via direct
-   `Terms` construction; meemoo's four-required rule on basic and its
-   absence on eark.
+2. Go tests: every table column exercised (required, repeatable including
+   per-language counting, typing, dumb-down parent); prefixed keys
+   rejected via CSV and via direct `Terms` construction; meemoo's
+   four-required rule and the `nl` required-language rule on basic and
+   their absence on eark.
 3. By hand: a folder with a repeated `abstract` reports the violation with
    a line number; `check` needs no configuration, as before.
 
@@ -141,3 +164,11 @@ Structured schema.org values and operator-supplied descriptive XML
 (spec §8); RODA-in-style form/template UI; in-process XSD/SHACL validation
 (ADR-0003 — meemoo's SHACL and commons-ip stay the referees); MODS and the
 bibliographic profile (TODO).
+
+Also deliberately out: **value-shape validation of typed values** — EDTF
+on `created`/`issued`, `xs:duration` on `extent`, `xs:dateTime` on
+`available`, BCP47 on `language` beyond the existing lang-shape check.
+The table drives *emission* of `xsi:type`; checking the values themselves
+means maintaining an EDTF parser plus two XSD lexical checkers that can
+only drift from what meemoo's SHACL actually accepts. A malformed value
+surfaces in the standing validator loop instead (ADR-0003).

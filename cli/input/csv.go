@@ -12,27 +12,6 @@ import (
 	"github.com/ugent-library/sip-creator/encoders/metadata"
 )
 
-// plainKeys maps the spec's plain metadata.csv keys (§3) onto the Dublin
-// Core elements they generate (§7).
-var plainKeys = map[string]string{
-	"identifier":   "dcterms:identifier",
-	"title":        "dcterms:title",
-	"description":  "dcterms:description",
-	"created":      "dcterms:created",
-	"creator":      "dcterms:creator",
-	"contributor":  "dcterms:contributor",
-	"publisher":    "dcterms:publisher",
-	"subject":      "dcterms:subject",
-	"spatial":      "dcterms:spatial",
-	"extent":       "dcterms:extent",
-	"language":     "dcterms:language",
-	"type":         "dcterms:type",
-	"ispartof":     "dcterms:isPartOf",
-	"license":      "dcterms:license",
-	"rights":       "dcterms:rights",
-	"rightsholder": "dcterms:rightsHolder",
-}
-
 // decodeMetadataCSV decodes one metadata.csv into ordered descriptive
 // terms, collecting a violation per broken rule (input spec §3). The
 // package-level file requires identifier and title; a representation-level
@@ -132,10 +111,10 @@ func isHeaderRow(row []string) bool {
 }
 
 // parseKey handles the key *syntax* of the CSV convention — the optional
-// [lang] bracket and the plain-key spelling table (§3) — and returns the
-// element name the key maps onto. Whether that element (or the language
-// tag inside the brackets) is *valid* is metadata.Term.Validate's rule:
-// prefixed keys pass through untouched for it to judge.
+// [lang] bracket and the plain-key spellings of the descriptive vocabulary
+// (§3) — and returns the element name the key maps onto. Whether the
+// language tag inside the brackets is *valid* is metadata.Term.Validate's
+// rule; the decoder only adds the file/line context.
 func (r *reader) parseKey(file string, line int, raw string) (element, lang string, ok bool) {
 	key := raw
 	if i := strings.IndexByte(key, '['); i >= 0 {
@@ -147,10 +126,14 @@ func (r *reader) parseKey(file string, line int, raw string) (element, lang stri
 		key = key[:i]
 	}
 
+	// Prefixed keys left the convention (§8): every supported element has
+	// a plain key, so point the operator at the spelling table instead of
+	// a generic unknown-key message.
 	if strings.Contains(key, ":") {
-		return key, lang, true
+		r.violate("%s line %d: prefixed keys like %q are not supported — every element has a plain key; see the supported keys in the input specification", file, line, raw)
+		return "", "", false
 	}
-	element, known := plainKeys[strings.ToLower(key)]
+	element, known := metadata.ResolveKey(key)
 	if !known {
 		r.violate("%s line %d: unknown key %q — a typo would silently drop metadata; see the supported keys in the input specification", file, line, raw)
 		return "", "", false

@@ -6,10 +6,10 @@ import (
 	"strings"
 )
 
-// Term is one descriptive statement: a prefixed element name from a
-// supported vocabulary, an optional language tag, and the value.
+// Term is one descriptive statement: an element name from the descriptive
+// vocabulary, an optional language tag, and the value.
 type Term struct {
-	Element string // prefixed element name, e.g. "dcterms:title"
+	Element string // vocabulary element name, e.g. "dcterms:title"
 	Lang    string // xml:lang value; empty when unspecified
 	Value   string
 }
@@ -24,57 +24,16 @@ type Term struct {
 // the rules on what a term may say; Encode refuses invalid terms.
 type Terms []Term
 
-// dctermsProperties is the DCMI Metadata Terms property vocabulary — the
-// closed list a dcterms: element must name, embedded so a typo like
-// dcterms:titel is caught at build time instead of by a downstream XSD.
-var dctermsProperties = map[string]bool{
-	"abstract": true, "accessRights": true, "accrualMethod": true,
-	"accrualPeriodicity": true, "accrualPolicy": true, "alternative": true,
-	"audience": true, "available": true, "bibliographicCitation": true,
-	"conformsTo": true, "contributor": true, "coverage": true,
-	"created": true, "creator": true, "date": true, "dateAccepted": true,
-	"dateCopyrighted": true, "dateSubmitted": true, "description": true,
-	"educationLevel": true, "extent": true, "format": true,
-	"hasFormat": true, "hasPart": true, "hasVersion": true,
-	"identifier": true, "instructionalMethod": true, "isFormatOf": true,
-	"isPartOf": true, "isReferencedBy": true, "isReplacedBy": true,
-	"isRequiredBy": true, "issued": true, "isVersionOf": true,
-	"language": true, "license": true, "mediator": true, "medium": true,
-	"modified": true, "provenance": true, "publisher": true,
-	"references": true, "relation": true, "replaces": true,
-	"requires": true, "rights": true, "rightsHolder": true, "source": true,
-	"spatial": true, "subject": true, "tableOfContents": true,
-	"temporal": true, "title": true, "type": true, "valid": true,
-}
-
-var (
-	// langRx is a pragmatic language-tag shape (primary subtag plus
-	// optional subtags), not full BCP 47 validation.
-	langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
-	// schemaPropertyRx bounds schema.org property names by shape only: the
-	// vocabulary is open-ended, so unlike dcterms there is no closed list
-	// to check against.
-	schemaPropertyRx = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*$`)
-)
+// langRx is a pragmatic language-tag shape (primary subtag plus optional
+// subtags), not full BCP 47 validation.
+var langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
 
 // Validate reports why the term cannot be emitted: an element outside the
-// supported vocabularies, a malformed language tag, or an empty value.
+// descriptive vocabulary, a malformed language tag, or an empty value.
 // These rules bind every producer, not just the CSV transport.
 func (t Term) Validate() error {
-	prefix, base, prefixed := strings.Cut(t.Element, ":")
-	switch {
-	case !prefixed:
-		return fmt.Errorf("%q is not a prefixed element name (dcterms: or schema:)", t.Element)
-	case prefix == "dcterms":
-		if !dctermsProperties[base] {
-			return fmt.Errorf("%q is not a Dublin Core term", t.Element)
-		}
-	case prefix == "schema":
-		if !schemaPropertyRx.MatchString(base) {
-			return fmt.Errorf("%q is not a schema.org property name", t.Element)
-		}
-	default:
-		return fmt.Errorf("unknown vocabulary prefix in %q — supported: dcterms:, schema:", t.Element)
+	if _, ok := vocabularyByElement[t.Element]; !ok {
+		return fmt.Errorf("%q is not in the descriptive vocabulary — see the supported keys in the input specification", t.Element)
 	}
 	if t.Lang != "" && !langRx.MatchString(t.Lang) {
 		return fmt.Errorf("%q is not a language tag", t.Lang)

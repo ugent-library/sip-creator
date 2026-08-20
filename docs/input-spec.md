@@ -62,8 +62,8 @@ A two-column CSV (`key,value`) describing what the package contains. This is the
 
 - MUST be UTF-8 with a `key,value` header row. The tool MUST accept a UTF-8 BOM and CRLF line endings (spreadsheet tools produce both) and RFC 4180 quoting.
 - `identifier` and `title` MUST be present and non-empty. The identifier is your local catalog or inventory number; it travels with the package as its local identifier. Meemoo profiles additionally require `description` and `created` (their basic content profile mandates all four); the tool refuses to build a meemoo package without them.
-- Repeat a key for multiple values (two `creator` lines for two creators) — only for keys the table marks repeatable; a second row for a single-valued key MUST be an error.
-- Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`.
+- Repeat a key for multiple values (two `creator` lines for two creators) — only for keys the table marks repeatable. Keys marked *per-language* may repeat only with distinct language tags (`title[nl]` plus `title[en]` is fine; two `title[nl]` rows are not). A second row for a single-valued key, or a repeated language on a per-language key, MUST be an error.
+- Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`. Meemoo profiles require that wherever a language-tagged key is used, a Dutch entry (`[nl]`) is among the rows — other languages are welcome alongside, but Dutch must be present.
 - Unknown keys MUST be an error — a typo must not silently drop metadata. The table below is the entire vocabulary; it follows the flat-expressible elements of meemoo's basic content profile.
 
 Supported keys (plain names; the specialist mapping is in [§7](#7-mapping-to-the-sip-informative-for-specialists)):
@@ -71,15 +71,15 @@ Supported keys (plain names; the specialist mapping is in [§7](#7-mapping-to-th
 | key | meaning | repeatable |
 |---|---|---|
 | `identifier` | local catalog/inventory number (required) | no |
-| `title` | title of the work (required) | no |
-| `description` | free-text description (required for meemoo) | no |
+| `title` | title of the work (required) | per-language |
+| `description` | free-text description (required for meemoo) | per-language |
 | `created` | creation date of the original (year or ISO date) (required for meemoo) | no |
 | `alternative` | alternative title | yes |
-| `abstract` | summary or abstract | no |
+| `abstract` | summary or abstract | per-language |
 | `creator` | maker of the work (photographer, author, artist) | yes |
 | `contributor` | other contributors | yes |
 | `publisher` | publisher | yes |
-| `issued` | date of issue or publication | yes |
+| `issued` | date of issue or publication | no |
 | `available` | date the material became available | no |
 | `subject` | subject keyword | yes |
 | `spatial` | place depicted or covered | yes |
@@ -89,7 +89,7 @@ Supported keys (plain names; the specialist mapping is in [§7](#7-mapping-to-th
 | `type` | kind of work | yes |
 | `ispartof` | collection or series this belongs to | yes |
 | `license` | license on the content | yes |
-| `rights` | rights statement | no |
+| `rights` | rights statement | per-language |
 | `rightsholder` | rights holder | no |
 | `artmedium` | material or medium of an artwork | yes |
 | `artform` | form of an artwork | yes |
@@ -166,7 +166,7 @@ Deliberate trade-off: because organization details come from configuration, an i
 | representation folders (or the flat single-representation case) | `representations/<name>/data/`, METS fileSec + structMap |
 | file order (stable, no semantics) | document order within the representation structMap — METS `ORDER` attributes are the real sequencing mechanism, deferred with the manifest (§8) |
 | `documentation/` (package and representation level) | `documentation/` folders, conformant per CSIPSTR16; METS fileSec `USE="DOCUMENTATION"` |
-| `metadata.csv` keys | the vocabulary table's elements — `dcterms:*` (`identifier`→`dcterms:identifier`, `rightsholder`→`dcterms:rightsHolder`, `ispartof`→`dcterms:isPartOf`, the rest 1:1) and `schema:*` (`artmedium`→`schema:artMedium`, `artform`→`schema:artForm`) — in `metadata/descriptive/*.xml`, METS dmdSec |
+| `metadata.csv` keys | the vocabulary table's elements — `dcterms:*` (`identifier`→`dcterms:identifier`, `rightsholder`→`dcterms:rightsHolder`, `ispartof`→`dcterms:isPartOf`, the rest 1:1) and `schema:*` (`artmedium`→`schema:artMedium`, `artform`→`schema:artform`) — in `metadata/descriptive/*.xml`, METS dmdSec |
 | `representations/<name>/metadata.csv` | `representations/<name>/metadata/descriptive/*.xml`, dmdSec of that representation's METS (CSIPSTR12/13) |
 | `[lang]` suffixes | `xml:lang` attributes |
 | configuration: organizations, contacts | METS `metsHdr/agent` (`ROLE=CREATOR TYPE=ORGANIZATION` submitter; `ROLE=ARCHIVIST TYPE=ORGANIZATION` archival creator; individuals as contact agents) |

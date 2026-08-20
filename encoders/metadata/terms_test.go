@@ -123,11 +123,16 @@ func TestTermValidate(t *testing.T) {
 		want string // "" means valid; else substring of the error
 	}{
 		{"valid plain", Term{Element: "dcterms:title", Value: "x"}, ""},
-		{"valid schema with lang", Term{Element: "schema:artForm", Lang: "nl-BE", Value: "x"}, ""},
-		{"unprefixed", Term{Element: "title", Value: "x"}, "not a prefixed element"},
-		{"misspelled dcterms", Term{Element: "dcterms:titel", Value: "x"}, "not a Dublin Core term"},
-		{"bad schema shape", Term{Element: "schema:9bad", Value: "x"}, "not a schema.org property"},
-		{"unknown prefix", Term{Element: "foo:bar", Value: "x"}, "unknown vocabulary prefix"},
+		{"valid schema with lang", Term{Element: "schema:artform", Lang: "nl-BE", Value: "x"}, ""},
+		{"valid new key element", Term{Element: "dcterms:abstract", Value: "x"}, ""},
+		{"unprefixed", Term{Element: "title", Value: "x"}, "not in the descriptive vocabulary"},
+		{"misspelled dcterms", Term{Element: "dcterms:titel", Value: "x"}, "not in the descriptive vocabulary"},
+		// a real DCMI term meemoo's profile excludes — the old DCMI-55
+		// membership check accepted it
+		{"dcterms outside the profile", Term{Element: "dcterms:accrualPolicy", Value: "x"}, "not in the descriptive vocabulary"},
+		// schema.org is no longer an open passthrough
+		{"schema outside the profile", Term{Element: "schema:duration", Value: "x"}, "not in the descriptive vocabulary"},
+		{"unknown prefix", Term{Element: "foo:bar", Value: "x"}, "not in the descriptive vocabulary"},
 		{"bad lang", Term{Element: "dcterms:title", Lang: "nl!", Value: "x"}, "not a language tag"},
 		{"empty value", Term{Element: "dcterms:subject", Value: "  "}, "empty value"},
 	}

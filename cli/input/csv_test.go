@@ -19,8 +19,8 @@ func readCSV(t *testing.T, csv string) (*Package, error) {
 }
 
 func TestMetadataCSVHappy(t *testing.T) {
-	// BOM, CRLF, RFC 4180 quoting, repeated keys, [lang] tags, prefixed
-	// keys, and the two renamed plain-key mappings — in one file.
+	// BOM, CRLF, RFC 4180 quoting, repeated keys, [lang] tags, the renamed
+	// plain-key mappings, and the schema.org keys — in one file.
 	csv := "\ufeffkey,value\r\n" +
 		"identifier,BIB.FA.2026.001\r\n" +
 		"title[nl],Fotoalbum Gent 1913\r\n" +
@@ -29,8 +29,8 @@ func TestMetadataCSVHappy(t *testing.T) {
 		"subject[nl],wereldtentoonstellingen\r\n" +
 		"ispartof,Collectie Sacré\r\n" +
 		"rightsholder,Universiteitsbibliotheek Gent\r\n" +
-		"dcterms:abstract[en],A photo album\r\n" +
-		"schema:artMedium[nl],zilvergelatinedruk\r\n"
+		"abstract[en],A photo album\r\n" +
+		"artmedium[nl],zilvergelatinedruk\r\n"
 
 	pkg, err := readCSV(t, csv)
 	if err != nil {
@@ -66,9 +66,10 @@ func TestMetadataCSVViolations(t *testing.T) {
 	}{
 		{"missing header", "identifier,ID-1\ntitle,T\n", `header "key,value"`},
 		{"unknown key", minimalCSV + "titel,Oeps\n", `unknown key "titel"`},
-		{"unknown prefix", minimalCSV + "foo:bar,x\n", "unknown vocabulary prefix"},
-		{"misspelled dcterms", minimalCSV + "dcterms:titel,x\n", "not a Dublin Core term"},
-		{"bad schema property", minimalCSV + "schema:9bad,x\n", "not a schema.org property"},
+		{"dcterms outside the profile", minimalCSV + "accrualpolicy,x\n", `unknown key "accrualpolicy"`},
+		{"prefixed dcterms key", minimalCSV + "dcterms:abstract,x\n", "prefixed keys"},
+		{"prefixed schema key", minimalCSV + "schema:artMedium,x\n", "prefixed keys"},
+		{"unknown prefix", minimalCSV + "foo:bar,x\n", "prefixed keys"},
 		{"empty value", minimalCSV + "subject,\n", "empty value"},
 		{"missing identifier", "key,value\ntitle,T\n", "identifier is missing"},
 		{"missing title", "key,value\nidentifier,ID-1\n", "title is missing"},
