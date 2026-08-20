@@ -56,10 +56,7 @@ type Package struct {
 
 // BuilderInput maps the validated folder onto the library's build input —
 // the CLI-side half of "the folder is one transport": an embedding system
-// constructs the same profiles.Input from its own stores. The one part of
-// the model the builder cannot emit yet (per-representation documentation)
-// is deliberately not mapped — the create command warns about it until its
-// emission step lands.
+// constructs the same profiles.Input from its own stores.
 func (p *Package) BuilderInput() *profiles.Input {
 	in := &profiles.Input{
 		Descriptive:      p.Descriptive,
@@ -69,10 +66,11 @@ func (p *Package) BuilderInput() *profiles.Input {
 	}
 	for _, rep := range p.Representations {
 		in.Representations = append(in.Representations, profiles.SourceRepresentation{
-			Label:       rep.Label,
-			Files:       sourceFiles(rep.Files),
-			Descriptive: rep.Descriptive,
-			Premis:      sourceFiles(rep.Premis),
+			Label:         rep.Label,
+			Files:         sourceFiles(rep.Files),
+			Descriptive:   rep.Descriptive,
+			Premis:        sourceFiles(rep.Premis),
+			Documentation: sourceFiles(rep.Documentation),
 		})
 	}
 	return in

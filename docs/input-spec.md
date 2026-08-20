@@ -1,6 +1,6 @@
 # SIP Creator input specification
 
-Status: **Draft** — implementation in progress ([input-convention plan](plans/input-convention.md)): implemented except §5 (received PREMIS pass-through) and representation-level documentation (§4); the tool warns when a folder carries those. The §3 vocabulary follows the [descriptive-vocabulary plan](plans/descriptive-vocabulary.md) (revised 2026-08-20).
+Status: **Draft** — fully implemented ([input-convention plan](plans/input-convention.md), 2026-08-20); the status flips to current with that plan's closing docs sweep. The §3 vocabulary follows the [descriptive-vocabulary plan](plans/descriptive-vocabulary.md) (revised 2026-08-20, implementation pending).
 
 This document describes how to prepare a folder so that the SIP Creator **CLI** can turn it into an E-ARK submission package. It is written for the people preparing material; the section [Mapping to the SIP](#7-mapping-to-the-sip-informative-for-specialists) at the end is for specialists and explains how each rule lands in the E-ARK CSIP/SIP structure.
 

@@ -73,7 +73,6 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("input folder %s does not conform to the input specification:\n%w", args[0], err)
 		}
-		reportUnsupported(pkg)
 
 		builder := profiles.New(&profiles.Config{
 			Destination: args[1],
@@ -99,15 +98,4 @@ var createCmd = &cobra.Command{
 
 		return nil
 	},
-}
-
-// reportUnsupported warns about legal input the tool cannot emit yet, so
-// nothing an operator prepared vanishes without a trace. The warning
-// disappears when its emission step lands (input-convention plan).
-func reportUnsupported(pkg *input.Package) {
-	for _, r := range pkg.Representations {
-		if len(r.Documentation) > 0 {
-			logger.Warn("representation documentation/ is not supported yet; the files are not packaged", "representation", r.Label)
-		}
-	}
 }

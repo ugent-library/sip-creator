@@ -38,6 +38,9 @@ type SourceRepresentation struct {
 	// this representation (input spec §5) — copied, never parsed. Each
 	// must be a well-formed premis:premis document (checked at assembly).
 	Premis []SourceFile
+	// Documentation optionally documents this representation only
+	// (input spec §4).
+	Documentation []SourceFile
 }
 
 // Input is one package's source material — data, not files to parse:
@@ -132,6 +135,9 @@ func (in *Input) Validate() error {
 			}
 		}
 		if err := validatePremisNames(fmt.Sprintf("representation %q", r.Label), r.Premis); err != nil {
+			return err
+		}
+		if err := validateFiles(fmt.Sprintf("representation %q documentation", r.Label), r.Documentation); err != nil {
 			return err
 		}
 	}

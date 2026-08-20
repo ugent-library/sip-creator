@@ -69,6 +69,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	{{- end }}
 
 	{{ $fileGrpID := identifier -}}
+	{{ $docGrpID := identifier -}}
     <fileSec ID="{{ identifier}}">
         <fileGrp USE="data" ID="{{ $fileGrpID }}">
 		{{ range .Files -}}
@@ -77,6 +78,15 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
             </file>
 		{{ end -}}
         </fileGrp>
+		{{ with .DocumentationFiles -}}
+        <fileGrp USE="Documentation" ID="{{ $docGrpID }}">
+		{{ range . -}}
+            <file ID="{{ .Identifier }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
+                <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .Path }}"/>
+            </file>
+		{{ end -}}
+        </fileGrp>
+		{{ end -}}
     </fileSec>
 
     <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
@@ -86,6 +96,11 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
             <div ID="{{ identifier }}" LABEL="Data">
                 <fptr FILEID="{{ $fileGrpID }}" />
             </div>
+			{{ with .DocumentationFiles -}}
+            <div ID="{{ identifier }}" LABEL="Documentation">
+                <fptr FILEID="{{ $docGrpID }}"/>
+            </div>
+			{{ end -}}
         </div>
     </structMap>
 </mets>

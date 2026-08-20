@@ -575,6 +575,32 @@ func TestAssembleReceivedPremis(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
+// Representation documentation gets the same treatment as package
+// documentation: nodes under documentation/, lenient characterization.
+func TestAssembleRepresentationDocumentation(t *testing.T) {
+	b, in, outDir := newTestBuilder(t)
+	inDir := t.TempDir()
+	note := writeEssence(t, inDir, "sub/scan-notes.txt", "doc")
+	in.Representations[0].Documentation = []SourceFile{note}
+
+	pkg, err := b.assemble(basicDef(t), in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	r := pkg.Root.Representations[0]
+	if len(r.DocumentationFiles) != 1 {
+		t.Fatalf("rep documentation nodes = %d, want 1", len(r.DocumentationFiles))
+	}
+	f := r.DocumentationFiles[0]
+	if f.Path != "documentation/sub/scan-notes.txt" {
+		t.Errorf("Path = %q (nesting preserved under documentation/)", f.Path)
+	}
+	if f.Mime != "application/octet-stream" {
+		t.Errorf("Mime = %q, want octet-stream without a report entry", f.Mime)
+	}
+	requireEmpty(t, outDir)
+}
+
 // A received file that is not a PREMIS document aborts assembly: packaging
 // it under metadata/preservation/ would be a false preservation claim.
 func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {

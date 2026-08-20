@@ -188,6 +188,20 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 			b.Logger.Info("created a representation PREMIS file", slog.Any("id", pf.Identifier))
 		}
 
+		// Representation documentation lands before the representation
+		// METS, which embeds its fixity; per-file MkdirAll keeps a
+		// documentation-less representation free of an empty dir.
+		for _, f := range r.DocumentationFiles {
+			if err := st.MkdirAll("representations/" + r.Name + "/" + path.Dir(f.Path)); err != nil {
+				return err
+			}
+			info, err := st.CopyFile(f.Source, "representations/"+r.Name+"/"+f.Path)
+			if err != nil {
+				return err
+			}
+			backfill(f, info)
+		}
+
 		// Received preservation documents are copies, not renders; they
 		// land before the representation METS, which embeds their fixity.
 		for _, f := range r.ReceivedPremisFiles {

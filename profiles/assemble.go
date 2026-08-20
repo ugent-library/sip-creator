@@ -33,9 +33,11 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 	b.assembleDescriptive(e, def, in)
 	pkg.AddSchemaFiles(schemaFileNodes())
 
-	if err := b.assembleDocumentation(pkg, in); err != nil {
+	docs, err := b.assembleDocumentationNodes(in.Documentation, in.Characterization)
+	if err != nil {
 		return nil, err
 	}
+	pkg.AddDocumentationFiles(docs)
 	received, err := b.assembleReceivedPremis("package", in.Premis)
 	if err != nil {
 		return nil, err
@@ -85,25 +87,26 @@ func schemaFileNodes() []*sip.File {
 	return files
 }
 
-// assembleDocumentation declares graph nodes for the optional package-level
-// documentation files.
-func (b *Builder) assembleDocumentation(pkg *sip.Package, in *Input) error {
+// assembleDocumentationNodes declares graph nodes for documentation files —
+// the same treatment at package and representation level: Path relative to
+// the container's documentation/ dir. Documentation is lenient where
+// essence is strict (ADR-0009): these files carry no premis:format and may
+// postdate the characterization report, so no entry is required — but a
+// present entry must still be checksum-true, because a mismatch proves the
+// report stale.
+func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars characterization.Report) ([]*sip.File, error) {
 	var files []*sip.File
-	for _, src := range in.Documentation {
+	for _, src := range sources {
 		f := sip.NewFile()
 		f.Name = path.Base(src.Path)
 		f.Source = src.Source
 		f.Path = "documentation/" + src.Path
 		f.Mime = "application/octet-stream" // the admitted unknown, never a guess
 
-		// Documentation is lenient where essence is strict (ADR-0009):
-		// these files carry no premis:format and may postdate the report,
-		// so no entry is required — but a present entry must still be
-		// checksum-true, because a mismatch proves the report stale.
-		if in.Characterization != nil {
-			if rec, ok := in.Characterization[src.Key]; ok && rec.MD5 != "" {
+		if chars != nil {
+			if rec, ok := chars[src.Key]; ok && rec.MD5 != "" {
 				if err := verifyReportMD5(src.Source, rec); err != nil {
-					return err
+					return nil, err
 				}
 				if rec.Mime != "" {
 					f.Mime = rec.Mime
@@ -113,8 +116,7 @@ func (b *Builder) assembleDocumentation(pkg *sip.Package, in *Input) error {
 
 		files = append(files, f)
 	}
-	pkg.AddDocumentationFiles(files)
-	return nil
+	return files, nil
 }
 
 // assembleRepresentations turns each supplied representation into a graph
@@ -176,6 +178,12 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			return err
 		}
 		r.AddReceivedPremisFiles(received)
+
+		docs, err := b.assembleDocumentationNodes(sr.Documentation, in.Characterization)
+		if err != nil {
+			return err
+		}
+		r.AddDocumentationFiles(docs)
 
 		r.SetEntity(e)
 		e.AddRepresentation(r)

@@ -28,7 +28,9 @@ type Representation struct {
 	// input (vendor/lab PREMIS) — copied into the package as received,
 	// never parsed or merged (input spec §5).
 	ReceivedPremisFiles []*File
-	MetsFile            *File
+	// DocumentationFiles document this representation only (input spec §4).
+	DocumentationFiles []*File
+	MetsFile           *File
 }
 
 func (r *Representation) AddFile(f *File) {
@@ -45,6 +47,10 @@ func (r *Representation) AddPremisFile(f *File) {
 
 func (r *Representation) AddReceivedPremisFiles(files []*File) {
 	r.ReceivedPremisFiles = files
+}
+
+func (r *Representation) AddDocumentationFiles(files []*File) {
+	r.DocumentationFiles = files
 }
 
 // PremisFiles lists every preservation document the representation METS

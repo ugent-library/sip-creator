@@ -353,6 +353,26 @@ builder is purely data-fed.
       VALID.
 - [x] Gate: builds green, baseline clean.
 
+### I6b — representation documentation (added in review, 2026-08-20)
+
+The gap between I5 and I6: spec §4's representation-level documentation
+was never scheduled, guarded only by a create-time warning.
+
+- [x] `sip.Representation.DocumentationFiles`;
+      `SourceRepresentation.Documentation`; the package-level
+      documentation-node logic became the shared
+      `assembleDocumentationNodes` (same ADR-0009 leniency at both levels).
+- [x] Writer copies under `representations/<name>/documentation/`; rep METS
+      gains the `fileGrp USE="Documentation"` and structMap Documentation
+      division, mirroring the package METS.
+- [x] `reportUnsupported` deleted — no legal input goes unpackaged any more.
+- [x] The eark fixture carries rep-level documentation permanently; a basic
+      scratch run with documentation at both levels validates
+      **VALID, 0 warnings, 132 passed** — the first fully clean basic
+      verdict: CSIPSTR16 clears.
+- [x] Gate: builds green, baseline clean (the standing basic fixture is
+      unchanged).
+
 ### I7 — docs and retirement
 
 - [ ] [input-spec.md](../input-spec.md): status flips from draft to
