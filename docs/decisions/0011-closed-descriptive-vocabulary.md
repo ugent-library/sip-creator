@@ -1,8 +1,8 @@
 # 0011 — The descriptive vocabulary is one closed table, owned as profile data
 
-Status: **Proposed** (drafted 2026-08-20 with the
-[descriptive-vocabulary plan](../plans/descriptive-vocabulary.md); accept
-when it ships).
+Status: **Accepted** (2026-08-20 — shipped the same day with the
+[descriptive-vocabulary plan](../archive/descriptive-vocabulary.md);
+drafted with it).
 
 ## Context
 
@@ -28,9 +28,10 @@ knowledge in template data files over a generic engine; Archivematica's
 row per key: CSV key, emitted element, required, repeatable, `xsi:type`,
 simple-DC dumb-down parent. The parsing, validation, and rendering engines
 are generic and read the table; nothing else in the code knows an element
-name. Requiredness applies per profile family (meemoo's four mandatory
-elements bind the basic profile only), carried on the `Definition` per
-ADR-0007's profiles-as-data rule. Prefixed keys are not accepted; the key
+name. Requiredness, the cardinality marks, and meemoo's required-language
+rule (a Dutch entry wherever a lang-tagged element appears) apply per
+profile family — the basic profile enforces them, plain E-ARK does not —
+carried on the `Definition` per ADR-0007's profiles-as-data rule. Prefixed keys are not accepted; the key
 set follows the meemoo basic profile's flat-expressible elements.
 
 ## Alternatives rejected

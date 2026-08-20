@@ -1,9 +1,10 @@
 # Plan: the descriptive vocabulary becomes one closed table
 
-*Status: **Draft** (2026-08-20) — for review. Accompanied by
-[ADR-0011](../decisions/0011-closed-descriptive-vocabulary.md) (proposed).
-Independent of the [input-convention plan](input-convention.md)'s remaining
-steps; its I7 docs sweep should land after this.*
+*Status: **implemented** (2026-08-20 — drafted, reviewed, and shipped the
+same day; V1 landed as commit 6ce79e8, V2 as 230cacd). Companion decision:
+[ADR-0011](../decisions/0011-closed-descriptive-vocabulary.md) (accepted).
+Independent of the [input-convention plan](../plans/input-convention.md)'s
+remaining steps; its I7 docs sweep should land after this.*
 
 ## Context
 
@@ -149,10 +150,14 @@ escape hatch only lets operators build invalid packages.
       keys and a "repeatable" column; the prefixed-keys clause moved to §8;
       required keys per profile noted. *(Done at plan drafting, 2026-08-20,
       so the operator contract leads the implementation.)*
-- [ ] [ADR-0011](../decisions/0011-closed-descriptive-vocabulary.md) →
-      Accepted.
-- [ ] Design doc: encoder section describes the table; TODO housekeeping.
-- [ ] Plan retires to `archive/`.
+- [x] [ADR-0011](../decisions/0011-closed-descriptive-vocabulary.md) →
+      Accepted (decision text extended with the per-family cardinality and
+      required-language rules V2 added).
+- [x] Design doc: the descriptive bullet and encoders entry describe the
+      table; the validation-splits bullet names the conformance seam. TODO
+      housekeeping: no backlog entry covered these gaps (they surfaced in
+      the 2026-08-20 design review), so nothing to remove.
+- [x] Plan retires to `archive/`.
 
 ## Verification
 

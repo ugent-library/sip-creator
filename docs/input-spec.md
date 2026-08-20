@@ -1,6 +1,6 @@
 # SIP Creator input specification
 
-Status: **Draft** — fully implemented ([input-convention plan](plans/input-convention.md), 2026-08-20); the status flips to current with that plan's closing docs sweep. The §3 vocabulary follows the [descriptive-vocabulary plan](plans/descriptive-vocabulary.md) (revised 2026-08-20, implementation pending).
+Status: **Draft** — fully implemented ([input-convention plan](plans/input-convention.md), 2026-08-20); the status flips to current with that plan's closing docs sweep. The §3 vocabulary follows the [descriptive-vocabulary plan](archive/descriptive-vocabulary.md) (implemented 2026-08-20 with [ADR-0011](decisions/0011-closed-descriptive-vocabulary.md)).
 
 This document describes how to prepare a folder so that the SIP Creator **CLI** can turn it into an E-ARK submission package. It is written for the people preparing material; the section [Mapping to the SIP](#7-mapping-to-the-sip-informative-for-specialists) at the end is for specialists and explains how each rule lands in the E-ARK CSIP/SIP structure.
 
