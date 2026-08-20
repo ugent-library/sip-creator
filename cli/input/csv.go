@@ -35,7 +35,6 @@ func (r *reader) decodeMetadataCSV(src string, packageLevel bool) metadata.Terms
 	cr.FieldsPerRecord = -1 // row width is checked per row, for a better message
 
 	var terms metadata.Terms
-	identifiers, titles := 0, 0
 	headerSeen := false
 	for {
 		row, err := cr.Read()
@@ -78,28 +77,31 @@ func (r *reader) decodeMetadataCSV(src string, packageLevel bool) metadata.Terms
 			r.violate("%s line %d: %v", rel, line, err)
 			continue
 		}
-
-		switch element {
-		case "dcterms:identifier":
-			identifiers++
-		case "dcterms:title":
-			titles++
-		}
 		terms = append(terms, term)
 	}
 
-	if packageLevel {
-		if identifiers == 0 {
-			r.violate("%s: identifier is missing — the local catalog or inventory number is required", rel)
-		}
-		if titles == 0 {
-			r.violate("%s: title is missing — a title is required", rel)
+	// The convention's own cardinality rule (§3): single-valued and
+	// per-language keys must not repeat, whatever the profile — the same
+	// rule for every metadata.csv, so check needs no configuration. It is
+	// a cross-row rule checked on the finished list: each finding names
+	// the element and language, which locates the rows in a keyed file.
+	if err := terms.ValidateCardinality(); err != nil {
+		if joined, ok := err.(interface{ Unwrap() []error }); ok {
+			for _, finding := range joined.Unwrap() {
+				r.violate("%s: %v", rel, finding)
+			}
+		} else {
+			r.violate("%s: %v", rel, err)
 		}
 	}
-	// One local identifier is the package's identity; two is an ambiguity
-	// the tool cannot resolve for the operator.
-	if identifiers > 1 {
-		r.violate("%s: identifier appears %d times — give exactly one", rel, identifiers)
+
+	if packageLevel {
+		if !terms.Has("dcterms:identifier") {
+			r.violate("%s: identifier is missing — the local catalog or inventory number is required", rel)
+		}
+		if !terms.Has("dcterms:title") {
+			r.violate("%s: title is missing — a title is required", rel)
+		}
 	}
 	return terms
 }

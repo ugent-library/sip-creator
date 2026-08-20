@@ -104,11 +104,12 @@ func (in *Input) Validate() error {
 	if err := in.Descriptive.Validate(); err != nil {
 		return err
 	}
+	// The identifier is checked here mechanically — assembly swaps it for
+	// the object identifier, so the graph cannot build without one. All
+	// other requiredness is profile policy: Definition.RequiredElements,
+	// checked by Build.
 	if in.Descriptive.LocalIdentifier("dcterms") == "" {
 		return fmt.Errorf("descriptive metadata carries no dcterms:identifier — the local identifier is required")
-	}
-	if !in.Descriptive.Has("dcterms:title") {
-		return fmt.Errorf("descriptive metadata carries no dcterms:title — a title is required")
 	}
 
 	if len(in.Representations) == 0 {

@@ -4,13 +4,14 @@ import "strings"
 
 // cardinality says how often a key may occur in one descriptive document.
 // meemoo counts lang-tagged elements per language: oncePerLanguage allows
-// title[nl] plus title[en], but not two title[nl] rows.
+// title[nl] plus title[en], but not two title[nl] rows. The zero value is
+// many so an element outside the table never trips a false repeat error.
 type cardinality int
 
 const (
-	once cardinality = iota
+	many cardinality = iota
+	once
 	oncePerLanguage
-	many
 )
 
 // vocabularyRow is one entry of the descriptive vocabulary: everything the

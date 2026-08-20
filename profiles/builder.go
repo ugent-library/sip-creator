@@ -45,6 +45,9 @@ func (b *Builder) Build(def Definition, in *Input) (*sip.Package, error) {
 	if err := in.Validate(); err != nil {
 		return nil, fmt.Errorf("input: %w", err)
 	}
+	if err := def.validateDescriptive(in); err != nil {
+		return nil, fmt.Errorf("descriptive metadata does not satisfy profile %q:\n%w", def.Name, err)
+	}
 
 	b.Logger.Info("starting...")
 

@@ -11,7 +11,7 @@ import (
 // The terms templates interpolate element names from data, which the
 // Description templates never did — so encoding validates first (element
 // names come from the closed vocabularies) and every value is escaped.
-var termsMD = template.Must(template.New("").Funcs(template.FuncMap{
+var termsTemplates = template.Must(template.New("").Funcs(template.FuncMap{
 	"esc":     escapeXML,
 	"xsitype": xsiType,
 }).Parse(`
@@ -68,7 +68,7 @@ func EncodeTerms(w io.Writer, t Terms, schemas string) error {
 	if err := t.Validate(); err != nil {
 		return fmt.Errorf("descriptive terms: %w", err)
 	}
-	return termsMD.ExecuteTemplate(w, "terms", termsDoc{t, schemas})
+	return termsTemplates.ExecuteTemplate(w, "terms", termsDoc{t, schemas})
 }
 
 // EncodeDCTerms writes the terms as a simple Dublin Core document (the
@@ -79,7 +79,7 @@ func EncodeDCTerms(w io.Writer, t Terms, schemas string) error {
 	if err := t.Validate(); err != nil {
 		return fmt.Errorf("descriptive terms: %w", err)
 	}
-	return termsMD.ExecuteTemplate(w, "dc-terms", termsDoc{dumbDown(t), schemas})
+	return termsTemplates.ExecuteTemplate(w, "dc-terms", termsDoc{dumbDown(t), schemas})
 }
 
 // dumbDown maps each term onto the vocabulary row's Simple DC parent (the

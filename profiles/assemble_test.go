@@ -27,10 +27,14 @@ func fileMD5(t *testing.T, path string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// testDescriptive satisfies the strictest registered profile: meemoo's
+// four required elements, Dutch entries on the lang-tagged ones.
 func testDescriptive() metadata.Terms {
 	return metadata.Terms{
 		{Element: "dcterms:identifier", Value: "local-id-001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
+		{Element: "dcterms:description", Lang: "nl", Value: "Een testkat"},
+		{Element: "dcterms:created", Value: "2026"},
 	}
 }
 
@@ -436,9 +440,6 @@ func TestInputValidate(t *testing.T) {
 		{"no identifier", func(c *Input) {
 			c.Descriptive = metadata.Terms{{Element: "dcterms:title", Value: "x"}}
 		}, "no dcterms:identifier"},
-		{"no title", func(c *Input) {
-			c.Descriptive = metadata.Terms{{Element: "dcterms:identifier", Value: "x"}}
-		}, "no dcterms:title"},
 		{"no representations", func(c *Input) { c.Representations = nil }, "at least one version"},
 		{"bad label", func(c *Input) { c.Representations[0].Label = "master copy" }, "may only contain"},
 		{"duplicate label", func(c *Input) {
@@ -641,6 +642,23 @@ func TestBuildInvalidConfigWritesNothing(t *testing.T) {
 
 	if _, err := b.Build(basicDef(t), in); err == nil {
 		t.Fatal("Build succeeded on an invalid config")
+	}
+	requireEmpty(t, outDir)
+}
+
+// The required sets bind in Build: identity-only terms build a complete
+// eark package and are refused under basic before any side effect.
+func TestBuildRequiredElementsPerFamily(t *testing.T) {
+	b, in, _ := newTestBuilder(t)
+	in.Descriptive = identityTerms()
+	if _, err := b.Build(earkDef(t), in); err != nil {
+		t.Fatalf("eark Build refused identity-only terms: %v", err)
+	}
+
+	b, in, outDir := newTestBuilder(t)
+	in.Descriptive = identityTerms()
+	if _, err := b.Build(basicDef(t), in); err == nil {
+		t.Fatal("basic Build accepted terms without description and created")
 	}
 	requireEmpty(t, outDir)
 }

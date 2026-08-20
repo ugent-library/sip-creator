@@ -74,6 +74,9 @@ func TestMetadataCSVViolations(t *testing.T) {
 		{"missing identifier", "key,value\ntitle,T\n", "identifier is missing"},
 		{"missing title", "key,value\nidentifier,ID-1\n", "title is missing"},
 		{"duplicate identifier", minimalCSV + "identifier,ID-2\n", "exactly one"},
+		{"single-valued key repeated", minimalCSV + "created,1913\ncreated,1914\n", "exactly one"},
+		{"per-language key repeated in one language", minimalCSV + "abstract[nl],a\nabstract[nl],b\n", `language "nl"`},
+		{"per-language key repeated untagged", minimalCSV + "abstract,a\nabstract,b\n", "distinct language tags"},
 		{"empty lang tag", minimalCSV + "subject[],x\n", "malformed language tag"},
 		{"bad lang tag", minimalCSV + "subject[nl!],x\n", "not a language tag"},
 		{"three columns", minimalCSV + "subject,a,b\n", "exactly two columns"},
@@ -97,6 +100,23 @@ func TestMetadataCSVMissingHeaderStillDecodes(t *testing.T) {
 func TestMetadataCSVLineNumbers(t *testing.T) {
 	_, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle,T\ntitel,Oeps\n")
 	assertViolation(t, err, "line 4")
+}
+
+// A cardinality violation is a cross-row finding: no line number, but the
+// element and language it names locate the rows in a keyed file.
+func TestMetadataCSVRepeatNamesElementAndLanguage(t *testing.T) {
+	_, err := readCSV(t, minimalCSV+"abstract[nl],a\nabstract[nl],b\n")
+	assertViolation(t, err, `dcterms:abstract appears more than once in language "nl"`)
+}
+
+// Per-language keys repeat freely across languages (title[nl] + title[en]);
+// only a same-language repeat is a violation.
+func TestMetadataCSVPerLanguageRepeat(t *testing.T) {
+	if _, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle[nl],Kat\ntitle[en],Cat\n"); err != nil {
+		t.Fatalf("distinct languages must be accepted: %v", err)
+	}
+	_, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle[nl],Kat\ntitle[nl],Poes\n")
+	assertViolation(t, err, `language "nl"`)
 }
 
 func TestRepresentationCSVNeedsNoIdentity(t *testing.T) {

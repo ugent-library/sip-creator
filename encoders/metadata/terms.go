@@ -1,11 +1,5 @@
 package metadata
 
-import (
-	"fmt"
-	"regexp"
-	"strings"
-)
-
 // Term is one descriptive statement: an element name from the descriptive
 // vocabulary, an optional language tag, and the value.
 type Term struct {
@@ -23,45 +17,6 @@ type Term struct {
 // is one transport, not the API). Whatever the producer, Validate holds
 // the rules on what a term may say; Encode refuses invalid terms.
 type Terms []Term
-
-// langRx is a pragmatic language-tag shape (primary subtag plus optional
-// subtags), not full BCP 47 validation.
-var langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
-
-// Validate reports why the term cannot be emitted: an element outside the
-// descriptive vocabulary, a malformed language tag, or an empty value.
-// These rules bind every producer, not just the CSV transport.
-func (t Term) Validate() error {
-	if _, ok := vocabularyByElement[t.Element]; !ok {
-		return fmt.Errorf("%q is not in the descriptive vocabulary — see the supported keys in the input specification", t.Element)
-	}
-	if t.Lang != "" && !langRx.MatchString(t.Lang) {
-		return fmt.Errorf("%q is not a language tag", t.Lang)
-	}
-	if strings.TrimSpace(t.Value) == "" {
-		return fmt.Errorf("%s has an empty value", t.Element)
-	}
-	return nil
-}
-
-// Validate checks every term plus the one cross-term rule: at most one
-// dcterms:identifier — the local identifier is an identity, and two of
-// them is an ambiguity no consumer can resolve.
-func (t Terms) Validate() error {
-	identifiers := 0
-	for i, term := range t {
-		if err := term.Validate(); err != nil {
-			return fmt.Errorf("term %d: %w", i+1, err)
-		}
-		if term.Element == "dcterms:identifier" {
-			identifiers++
-		}
-	}
-	if identifiers > 1 {
-		return fmt.Errorf("dcterms:identifier appears %d times — give exactly one", identifiers)
-	}
-	return nil
-}
 
 // Has reports whether any term states the given element.
 func (t Terms) Has(element string) bool {

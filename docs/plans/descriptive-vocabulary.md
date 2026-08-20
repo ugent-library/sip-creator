@@ -113,26 +113,35 @@ escape hatch only lets operators build invalid packages.
 
 ### V2 — profile conformance
 
-- [ ] Requiredness per family: basic enforces meemoo's four
+- [x] Requiredness per family: basic enforces meemoo's four
       (`identifier`, `title`, `description`, `created`); eark the input
-      convention's two. Carried as `Definition` data.
-- [ ] Repeatability enforced per the tri-state marks: a second `abstract`
-      row *in the same language* is a violation (CLI, with line context)
-      and a fail-fast error (builder, for embedding callers) — the
-      standing two-audiences split. eark enforces none of the meemoo
-      cardinality marks.
-- [ ] Required language enforced: under the basic definition, any
-      lang-tagged element present must include an `nl` occurrence; eark
+      convention's two. Carried as `Definition` data (`RequiredElements`),
+      checked fail-fast in `Build` via `Definition.validateDescriptive`
+      with all findings joined.
+- [x] Repeatability enforced per the tri-state marks: a second `abstract`
+      row *in the same language* is a violation (CLI — the convention's
+      own §3 rule, so `check` stays configuration-free) and a fail-fast
+      error (builder, for embedding callers under `EnforceCardinality`) —
+      the standing two-audiences split. eark enforces none of the meemoo
+      cardinality marks at the builder. One mechanism for both audiences:
+      `Terms.ValidateCardinality`, run by the decoder on the finished list
+      — a cross-row finding names the element and language, which locates
+      the rows in a keyed file without line numbers (reviewed 2026-08-20:
+      an incremental per-row variant wasn't worth its bookkeeping). The
+      decoder's hand-rolled identifier counting is subsumed.
+- [x] Required language enforced: under the basic definition, any
+      lang-tagged element present must include an `nl` occurrence
+      (`Definition.RequiredLang`, `Terms.ValidateRequiredLang`); eark
       carries no required language. Same two-audiences split.
-- [ ] The eark fixture's `metadata.csv` slims to the convention's own
+- [x] The eark fixture's `metadata.csv` slims to the convention's own
       MUSTs (identifier, title — without `description`/`created`), so the
       eark gate exercises the relaxed requiredness on every run; the basic
       fixture keeps all four.
-- [ ] Tests pin the per-family required sets: terms without
+- [x] Tests pin the per-family required sets: terms without
       `description`/`created` build under the eark definition and are
       refused under basic (fail-fast) and by the CLI (violation).
-- [ ] Validator loop: both profiles VALID.
-- [ ] Gate: builds green; baseline clean.
+- [x] Validator loop: both profiles VALID. *(2026-08-20.)*
+- [x] Gate: builds green; baseline clean.
 
 ### V3 — spec and docs
 
@@ -155,8 +164,8 @@ escape hatch only lets operators build invalid packages.
    rejected via CSV and via direct `Terms` construction; meemoo's
    four-required rule and the `nl` required-language rule on basic and
    their absence on eark.
-3. By hand: a folder with a repeated `abstract` reports the violation with
-   a line number; `check` needs no configuration, as before.
+3. By hand: a folder with a repeated `abstract` reports a violation naming
+   the element and language; `check` needs no configuration, as before.
 
 ## Out of scope, recorded
 

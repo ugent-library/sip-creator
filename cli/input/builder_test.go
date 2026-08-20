@@ -27,9 +27,15 @@ func TestBuilderInputEquivalence(t *testing.T) {
 	}
 	discard := slog.New(slog.NewTextHandler(io.Discard, nil))
 
-	// Via the folder convention.
+	// Via the folder convention. The basic profile requires meemoo's four
+	// elements, so the file carries more than the convention's minimum.
+	csv := "key,value\n" +
+		"identifier,ID-1\n" +
+		"title,Test\n" +
+		"description[nl],Testbeschrijving\n" +
+		"created,2026\n"
 	root := writeTree(t, map[string]string{
-		"metadata.csv":                     minimalCSV,
+		"metadata.csv":                     csv,
 		"representations/master/scan.tiff": "essence bytes",
 	})
 	pkg, err := Read(root)
@@ -52,6 +58,8 @@ func TestBuilderInputEquivalence(t *testing.T) {
 		Descriptive: metadata.Terms{
 			{Element: "dcterms:identifier", Value: "ID-1"},
 			{Element: "dcterms:title", Value: "Test"},
+			{Element: "dcterms:description", Lang: "nl", Value: "Testbeschrijving"},
+			{Element: "dcterms:created", Value: "2026"},
 		},
 		Representations: []profiles.SourceRepresentation{
 			{Label: "master", Files: []profiles.SourceFile{

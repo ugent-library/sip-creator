@@ -1,6 +1,7 @@
 package profiles
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -61,6 +62,38 @@ type Definition struct {
 	EmitPackagePremis        bool
 	EmitRepresentationPremis bool
 	Mets                     sip.Spec
+
+	// RequiredElements are the descriptive elements the profile's spec makes
+	// mandatory at package level: meemoo's basic profile mandates four,
+	// plain E-ARK only the input convention's identity MUSTs.
+	RequiredElements []string
+	// RequiredLang, when set, requires every language-tagged element in
+	// the descriptive terms to include a value in this language — meemoo
+	// demands an entry in Dutch wherever a lang-tagged element appears.
+	RequiredLang string
+	// EnforceCardinality binds the vocabulary table's repeatability marks
+	// (meemoo's 0..1/1..1 restrictions); plain E-ARK has no such rule.
+	EnforceCardinality bool
+}
+
+// validateDescriptive checks the input's descriptive terms against the
+// profile's conformance rules — requiredness, required language, and the
+// vocabulary's cardinality marks, all Definition data. Findings are joined
+// so one failed build names every gap at once.
+func (d Definition) validateDescriptive(in *Input) error {
+	errs := []error{
+		in.Descriptive.ValidateRequired(d.RequiredElements...),
+		in.Descriptive.ValidateRequiredLang(d.RequiredLang),
+	}
+	if d.EnforceCardinality {
+		errs = append(errs, in.Descriptive.ValidateCardinality())
+		for _, r := range in.Representations {
+			if err := r.Descriptive.ValidateCardinality(); err != nil {
+				errs = append(errs, fmt.Errorf("representation %q: %w", r.Label, err))
+			}
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // WithSubmitter returns a copy of the definition whose METS agents include
@@ -98,6 +131,12 @@ var registry = map[string]Definition{
 		LocalIdentifierScheme:    "dcterms",
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
+		// meemoo's basic content profile: four mandatory elements, a Dutch
+		// entry wherever a lang-tagged element appears, and the vocabulary
+		// table's cardinalities bind.
+		RequiredElements:   []string{"dcterms:identifier", "dcterms:title", "dcterms:description", "dcterms:created"},
+		RequiredLang:       "nl",
+		EnforceCardinality: true,
 		Mets: sip.Spec{
 			// meemoo SIP 1.2, the stable spec (docs/archive/meemoo-12.md):
 			// 1.2 mandates the unversioned E-ARK SIP profile URL and the
@@ -123,6 +162,9 @@ var registry = map[string]Definition{
 		LocalIdentifierScheme:    "", // MEEMOO-LOCAL-ID is a meemoo concept
 		EmitPackagePremis:        false,
 		EmitRepresentationPremis: false, // RODA drops non-agent/event package PREMIS; v1 is essence + descriptive
+		// Only the input convention's identity MUSTs; no required language,
+		// and meemoo's cardinality marks don't bind a plain E-ARK package.
+		RequiredElements: []string{"dcterms:identifier", "dcterms:title"},
 		Mets: sip.Spec{
 			// The version-pinned profile URL: commons-ip's SIP2 check for
 			// spec 2.2.0 compares against this exact value (its error
