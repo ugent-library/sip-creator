@@ -102,18 +102,12 @@ var createCmd = &cobra.Command{
 }
 
 // reportUnsupported warns about legal input the tool cannot emit yet, so
-// nothing an operator prepared vanishes without a trace. Each warning
-// disappears when its emission step lands (input-convention plan I5/I6).
+// nothing an operator prepared vanishes without a trace. The warning
+// disappears when its emission step lands (input-convention plan).
 func reportUnsupported(pkg *input.Package) {
-	if len(pkg.Premis) > 0 {
-		logger.Warn("premis/ found but received-PREMIS pass-through is not supported yet; the files are not packaged")
-	}
 	for _, r := range pkg.Representations {
 		if len(r.Documentation) > 0 {
 			logger.Warn("representation documentation/ is not supported yet; the files are not packaged", "representation", r.Label)
-		}
-		if len(r.Premis) > 0 {
-			logger.Warn("representation premis/ is not supported yet; the files are not packaged", "representation", r.Label)
 		}
 	}
 }

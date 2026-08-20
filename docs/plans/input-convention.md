@@ -341,23 +341,26 @@ builder is purely data-fed.
 
 ### I6 — received PREMIS pass-through
 
-- [ ] Graph slots for received-premis file lists on `sip.Package` and
+- [x] Graph slots for received-premis file lists on `sip.Package` and
       `sip.Representation` (nodes copied, never parsed).
-- [ ] Acceptance check per the Design note: well-formed XML, root
+- [x] Acceptance check per the Design note: well-formed XML, root
       `premis:premis` in the PREMIS 3.0 namespace — no XSD validation.
-- [ ] Writer: copy under `metadata/preservation/` (package and rep level);
+- [x] Writer: copy under `metadata/preservation/` (package and rep level);
       amdSec/digiprovMD references in the templates.
-- [ ] Coexistence verified: received files alongside the *generated*
+- [x] Coexistence verified: received files alongside the *generated*
       PREMIS in the same amdSec.
-- [ ] Fixture with received PREMIS at both levels; validator loop until
+- [x] Fixture with received PREMIS at both levels; validator loop until
       VALID.
-- [ ] Gate: builds green, baseline clean.
+- [x] Gate: builds green, baseline clean.
 
 ### I7 — docs and retirement
 
 - [ ] [input-spec.md](../input-spec.md): status flips from draft to
       current; §5 wording revised (MUST well-formed PREMIS 3.0-namespaced,
-      SHOULD schema-valid).
+      SHOULD schema-valid); §1's check-mode sentence scoped honestly
+      (check validates structure and metadata rules; content verification —
+      characterization bindings, premis conformance — happens at build;
+      decided in the 2026-08-20 I6 review).
 - [ ] [ADR-0010](../decisions/0010-config-over-self-describing-input.md)
       status → Accepted (if not already flipped at I3).
 - [ ] Design doc: input-contract section rewritten; CLI/library known-gap

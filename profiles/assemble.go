@@ -12,6 +12,7 @@ import (
 	"slices"
 
 	"github.com/ugent-library/sip-creator/characterization"
+	"github.com/ugent-library/sip-creator/encoders/premis"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -35,6 +36,11 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 	if err := b.assembleDocumentation(pkg, in); err != nil {
 		return nil, err
 	}
+	received, err := b.assembleReceivedPremis("package", in.Premis)
+	if err != nil {
+		return nil, err
+	}
+	pkg.AddReceivedPremisFiles(received)
 	if err := b.assembleRepresentations(e, def, in); err != nil {
 		return nil, err
 	}
@@ -165,10 +171,46 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			b.Logger.Info("placed an essence file", slog.Any("id", f.Identifier))
 		}
 
+		received, err := b.assembleReceivedPremis(fmt.Sprintf("representation %q", sr.Label), sr.Premis)
+		if err != nil {
+			return err
+		}
+		r.AddReceivedPremisFiles(received)
+
 		r.SetEntity(e)
 		e.AddRepresentation(r)
 	}
 	return nil
+}
+
+// assembleReceivedPremis declares graph nodes for received preservation
+// documents (input spec §5): copied as received, never parsed or merged —
+// but each must actually be a premis:premis document (well-formed, PREMIS 3
+// namespace), because packaging a non-PREMIS file under
+// metadata/preservation/ would be a false preservation claim. The check
+// binds every producer, so it lives here, not in the CLI walker alone.
+func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile) ([]*sip.File, error) {
+	var files []*sip.File
+	for _, src := range sources {
+		f, err := os.Open(src.Source)
+		if err != nil {
+			return nil, fmt.Errorf("%s premis: %w", container, err)
+		}
+		err = premis.ValidateReceived(f)
+		f.Close()
+		if err != nil {
+			return nil, fmt.Errorf("%s premis %s: %w", container, src.Path, err)
+		}
+
+		node := sip.NewFile()
+		node.Name = path.Base(src.Path)
+		node.Source = src.Source
+		node.Path = "metadata/preservation/" + src.Path // container-relative, per File.Path
+		node.Mime = "text/xml"                          // verified XML above
+		files = append(files, node)
+		b.Logger.Info("placed a received preservation file", slog.Any("id", node.Identifier))
+	}
+	return files, nil
 }
 
 // essenceRecord looks up the file's record and enforces ADR-0009's

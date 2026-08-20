@@ -457,6 +457,12 @@ func TestInputValidate(t *testing.T) {
 		{"invalid representation descriptive", func(c *Input) {
 			c.Representations[0].Descriptive = metadata.Terms{{Element: "dcterms:titel", Value: "x"}}
 		}, "not a Dublin Core term"},
+		{"received premis claims the generated name", func(c *Input) {
+			c.Premis = []SourceFile{{Source: "/x/premis.xml", Path: "premis.xml"}}
+		}, "reserved for the generated"},
+		{"rep received premis claims the generated name", func(c *Input) {
+			c.Representations[0].Premis = []SourceFile{{Source: "/x/premis.xml", Path: "sub/premis.xml"}}
+		}, "reserved for the generated"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -525,6 +531,62 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	if pkg3.Root.Representations[0].DescriptionFile != nil {
 		t.Error("description file node created for a representation without terms")
 	}
+}
+
+const validPremis = `<?xml version="1.0"?><premis:premis xmlns:premis="http://www.loc.gov/premis/v3" version="3.0"><premis:event/></premis:premis>`
+
+// Received preservation files become graph nodes at both levels — copied,
+// never parsed — and must actually be premis:premis documents.
+func TestAssembleReceivedPremis(t *testing.T) {
+	b, in, outDir := newTestBuilder(t)
+	inDir := t.TempDir()
+	pkgPremis := writeEssence(t, inDir, "vendor.xml", validPremis)
+	repPremis := writeEssence(t, inDir, "scanner/ocr.xml", validPremis)
+	in.Premis = []SourceFile{pkgPremis}
+	in.Representations[0].Premis = []SourceFile{repPremis}
+
+	pkg, err := b.assemble(basicDef(t), in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+
+	if len(pkg.ReceivedPremisFiles) != 1 {
+		t.Fatalf("package received premis nodes = %d, want 1", len(pkg.ReceivedPremisFiles))
+	}
+	if got := pkg.ReceivedPremisFiles[0].Path; got != "metadata/preservation/vendor.xml" {
+		t.Errorf("package received Path = %q", got)
+	}
+	r := pkg.Root.Representations[0]
+	if len(r.ReceivedPremisFiles) != 1 {
+		t.Fatalf("rep received premis nodes = %d, want 1", len(r.ReceivedPremisFiles))
+	}
+	if got := r.ReceivedPremisFiles[0].Path; got != "metadata/preservation/scanner/ocr.xml" {
+		t.Errorf("rep received Path = %q (nesting preserved)", got)
+	}
+	if got := r.ReceivedPremisFiles[0].Mime; got != "text/xml" {
+		t.Errorf("received Mime = %q", got)
+	}
+
+	// PremisFiles feeds the METS amdSec: generated first (the writer adds
+	// it later), received after — before write, received only.
+	if files := r.PremisFiles(); len(files) != 1 || files[0] != r.ReceivedPremisFiles[0] {
+		t.Errorf("PremisFiles = %v, want the received node", files)
+	}
+	requireEmpty(t, outDir)
+}
+
+// A received file that is not a PREMIS document aborts assembly: packaging
+// it under metadata/preservation/ would be a false preservation claim.
+func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {
+	b, in, outDir := newTestBuilder(t)
+	inDir := t.TempDir()
+	bad := writeEssence(t, inDir, "vendor.xml", "not xml at all")
+	in.Premis = []SourceFile{bad}
+
+	if _, err := b.assemble(basicDef(t), in); err == nil {
+		t.Fatal("assemble accepted a non-PREMIS received file")
+	}
+	requireEmpty(t, outDir)
 }
 
 // A supplied package identifier is reused verbatim — how an update keeps

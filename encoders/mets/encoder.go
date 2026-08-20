@@ -58,12 +58,13 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
     </dmdSec>
 	{{- end }}
 
-	{{ $provMDID := identifier -}}
-	{{ with .PremisFile -}}
+	{{ with .PremisFiles -}}
     <amdSec>
-        <digiprovMD ID="{{ $provMDID }}" STATUS="CURRENT">
+	{{ range . -}}
+        <digiprovMD ID="{{ .Identifier }}" STATUS="CURRENT">
             <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
         </digiprovMD>
+	{{ end -}}
     </amdSec>
 	{{- end }}
 
@@ -80,8 +81,8 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 
     <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
         <div ID="{{ identifier }}" LABEL="{{ .Name }}">
-            <div ID="{{ identifier }}" LABEL="Metadata"{{ with .DescriptionFile }} DMDID="{{ .Identifier }}"{{ end }} {{ if .PremisFile }}
-                ADMID="{{ $provMDID }}" {{ end }}/>
+            <div ID="{{ identifier }}" LABEL="Metadata"{{ with .DescriptionFile }} DMDID="{{ .Identifier }}"{{ end }} {{ with .PremisFiles }}
+                ADMID="{{ joinIdentifiers . }}" {{ end }}/>
             <div ID="{{ identifier }}" LABEL="Data">
                 <fptr FILEID="{{ $fileGrpID }}" />
             </div>
@@ -126,11 +127,13 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 	{{- end }}
 
 	<!-- ref to the PREMIS metadata about IE/subIE(s)/package -->
-    {{ with .PremisFile -}}
+    {{ with .PremisFiles -}}
     <amdSec>
+	{{ range . -}}
         <digiprovMD ID="{{ .Identifier }}" STATUS="CURRENT">
             <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
         </digiprovMD>
+	{{ end -}}
     </amdSec>
     {{- end }}
 
@@ -163,7 +166,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
 
     <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
         <div ID="{{ identifier }}" LABEL="{{ $OBJID }}">
-            <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ .Root.DescriptionFile.Identifier }}"{{ with .PremisFile }} ADMID="{{ .Identifier }}"{{ end }}/>
+            <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ .Root.DescriptionFile.Identifier }}"{{ with .PremisFiles }} ADMID="{{ joinIdentifiers . }}"{{ end }}/>
             <div ID="{{ identifier }}" LABEL="Schemas">
                 <fptr FILEID="{{ $SCHEMAID }}"/>
             </div>

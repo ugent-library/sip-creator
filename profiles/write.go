@@ -41,7 +41,26 @@ func (b *Builder) write(st *store.Store, pkg *sip.Package, def Definition, encod
 			return err
 		}
 	}
+	if err := b.writeReceivedPremis(st, pkg); err != nil {
+		return err
+	}
 	return b.writePackageMets(st, pkg)
+}
+
+// writeReceivedPremis copies the package-level received preservation
+// documents — before the package METS, which embeds their fixity.
+func (b *Builder) writeReceivedPremis(st *store.Store, pkg *sip.Package) error {
+	for _, f := range pkg.ReceivedPremisFiles {
+		if err := st.MkdirAll(path.Dir(f.Path)); err != nil {
+			return err
+		}
+		info, err := st.CopyFile(f.Source, f.Path)
+		if err != nil {
+			return err
+		}
+		backfill(f, info)
+	}
+	return nil
 }
 
 func (b *Builder) writeSkeleton(st *store.Store) error {
@@ -167,6 +186,19 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 			backfill(pf, info)
 			r.AddPremisFile(pf)
 			b.Logger.Info("created a representation PREMIS file", slog.Any("id", pf.Identifier))
+		}
+
+		// Received preservation documents are copies, not renders; they
+		// land before the representation METS, which embeds their fixity.
+		for _, f := range r.ReceivedPremisFiles {
+			if err := st.MkdirAll("representations/" + r.Name + "/" + path.Dir(f.Path)); err != nil {
+				return err
+			}
+			info, err := st.CopyFile(f.Source, "representations/"+r.Name+"/"+f.Path)
+			if err != nil {
+				return err
+			}
+			backfill(f, info)
 		}
 
 		mf := sip.NewFile()

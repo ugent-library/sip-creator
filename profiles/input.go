@@ -2,6 +2,7 @@ package profiles
 
 import (
 	"fmt"
+	"path"
 	"regexp"
 
 	"github.com/ugent-library/sip-creator/characterization"
@@ -33,6 +34,10 @@ type SourceRepresentation struct {
 	// identity (identifier, title) is not required here — the package-level
 	// descriptive carries the work's identity.
 	Descriptive metadata.Terms
+	// Premis optionally supplies received preservation documents about
+	// this representation (input spec §5) — copied, never parsed. Each
+	// must be a well-formed premis:premis document (checked at assembly).
+	Premis []SourceFile
 }
 
 // Input is one package's source material — data, not files to parse:
@@ -54,6 +59,10 @@ type Input struct {
 	Representations []SourceRepresentation
 	// Documentation optionally documents the whole package.
 	Documentation []SourceFile
+	// Premis optionally supplies received preservation documents about the
+	// whole package (input spec §5) — copied, never parsed. Each must be a
+	// well-formed premis:premis document (checked at assembly).
+	Premis []SourceFile
 	// Characterization optionally supplies a pre-decoded characterization
 	// report; nil means the build proceeds without format info (ADR-0009).
 	// Fully strict when present: every essence file must have a
@@ -122,9 +131,30 @@ func (in *Input) Validate() error {
 				return fmt.Errorf("representation %q descriptive: %w", r.Label, err)
 			}
 		}
+		if err := validatePremisNames(fmt.Sprintf("representation %q", r.Label), r.Premis); err != nil {
+			return err
+		}
 	}
 
-	return validateFiles("documentation", in.Documentation)
+	if err := validateFiles("documentation", in.Documentation); err != nil {
+		return err
+	}
+	return validatePremisNames("package", in.Premis)
+}
+
+// validatePremisNames guards the received-premis file list: the usual file
+// rules plus one naming rule — premis.xml is the generated document's
+// name, and a received file must never shadow or collide with it.
+func validatePremisNames(container string, files []SourceFile) error {
+	if err := validateFiles(container+" premis", files); err != nil {
+		return err
+	}
+	for _, f := range files {
+		if path.Base(f.Path) == "premis.xml" {
+			return fmt.Errorf("%s premis: %q — premis.xml is reserved for the generated preservation document; rename the received file", container, f.Path)
+		}
+	}
+	return nil
 }
 
 func validateFiles(container string, files []SourceFile) error {

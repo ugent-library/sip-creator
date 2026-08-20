@@ -61,6 +61,13 @@ func (r *reader) readRepresentation(dir, label string) Representation {
 				continue
 			}
 			rep.Premis = r.collectFiles(src)
+			// premis.xml is reserved for the generated document — the same
+			// rule as the package-level premis/ (see read).
+			for _, f := range rep.Premis {
+				if path.Base(f.Path) == "premis.xml" {
+					r.violate("%s: premis.xml is reserved for the generated preservation document — rename the received file", f.Rel)
+				}
+			}
 		case e.IsDir():
 			r.walkContent(dir, src, &rep.Files)
 		default:

@@ -10,6 +10,7 @@ package input
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/ugent-library/sip-creator/characterization"
@@ -55,21 +56,23 @@ type Package struct {
 
 // BuilderInput maps the validated folder onto the library's build input —
 // the CLI-side half of "the folder is one transport": an embedding system
-// constructs the same profiles.Input from its own stores. Parts of the
-// model the builder cannot emit yet (received PREMIS, per-representation
-// documentation) are deliberately not mapped — the create command warns
-// about them until their emission steps land.
+// constructs the same profiles.Input from its own stores. The one part of
+// the model the builder cannot emit yet (per-representation documentation)
+// is deliberately not mapped — the create command warns about it until its
+// emission step lands.
 func (p *Package) BuilderInput() *profiles.Input {
 	in := &profiles.Input{
 		Descriptive:      p.Descriptive,
 		Characterization: p.Characterization,
 		Documentation:    sourceFiles(p.Documentation),
+		Premis:           sourceFiles(p.Premis),
 	}
 	for _, rep := range p.Representations {
 		in.Representations = append(in.Representations, profiles.SourceRepresentation{
 			Label:       rep.Label,
 			Files:       sourceFiles(rep.Files),
 			Descriptive: rep.Descriptive,
+			Premis:      sourceFiles(rep.Premis),
 		})
 	}
 	return in
@@ -165,6 +168,16 @@ func (r *reader) read() *Package {
 				continue
 			}
 			pkg.Premis = r.collectFiles(src)
+			// The one transport-level premis rule: premis.xml belongs to
+			// the generated document. Content conformance (well-formed
+			// premis:premis) is deliberately a build-time check, like the
+			// characterization MD5 binding — check validates structure,
+			// content verification happens at assembly.
+			for _, f := range pkg.Premis {
+				if path.Base(f.Path) == "premis.xml" {
+					r.violate("%s: premis.xml is reserved for the generated preservation document — rename the received file", f.Rel)
+				}
+			}
 		case sidecarName:
 			if e.IsDir() {
 				r.violate("siegfried.json is a folder — the reserved name is for the characterization report")

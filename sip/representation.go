@@ -24,7 +24,11 @@ type Representation struct {
 	Description     Descriptive
 	DescriptionFile *File
 	PremisFile      *File
-	MetsFile        *File
+	// ReceivedPremisFiles are preservation documents delivered with the
+	// input (vendor/lab PREMIS) — copied into the package as received,
+	// never parsed or merged (input spec §5).
+	ReceivedPremisFiles []*File
+	MetsFile            *File
 }
 
 func (r *Representation) AddFile(f *File) {
@@ -37,6 +41,21 @@ func (r *Representation) AddDescriptionFile(f *File) {
 
 func (r *Representation) AddPremisFile(f *File) {
 	r.PremisFile = f
+}
+
+func (r *Representation) AddReceivedPremisFiles(files []*File) {
+	r.ReceivedPremisFiles = files
+}
+
+// PremisFiles lists every preservation document the representation METS
+// must reference: the generated PREMIS (when emitted) first, then the
+// received ones — one digiprovMD each, in one amdSec.
+func (r *Representation) PremisFiles() []*File {
+	var files []*File
+	if r.PremisFile != nil {
+		files = append(files, r.PremisFile)
+	}
+	return append(files, r.ReceivedPremisFiles...)
 }
 
 func (r *Representation) AddMetsFile(f *File) {

@@ -10,6 +10,10 @@ import (
 
 const minimalCSV = "key,value\nidentifier,ID-1\ntitle,Test\n"
 
+// validPremis is the smallest document the received-preservation rules
+// accept: well-formed, premis:premis root, PREMIS 3 namespace.
+const validPremis = `<?xml version="1.0"?><premis:premis xmlns:premis="http://www.loc.gov/premis/v3" version="3.0"><premis:event/></premis:premis>`
+
 // writeTree builds an input folder from slash paths: a key ending in "/"
 // creates an empty directory, anything else a file with the given content.
 func writeTree(t *testing.T, files map[string]string) string {
@@ -104,13 +108,13 @@ func TestReadRepresentations(t *testing.T) {
 		"metadata.csv":                              minimalCSV,
 		"siegfried.json":                            `{"siegfried":"1.11.0","files":[]}`,
 		"documentation/report.pdf":                  "r",
-		"premis/vendor.xml":                         "<premis/>",
+		"premis/vendor.xml":                         validPremis,
 		"representations/master/scan_2.tiff":        "b",
 		"representations/master/scan_10.tiff":       "c",
 		"representations/access/book.pdf":           "p",
 		"representations/access/metadata.csv":       "key,value\ntitle,PDF-versie\n",
 		"representations/access/documentation/n.md": "n",
-		"representations/access/premis/ocr.xml":     "<premis/>",
+		"representations/access/premis/ocr.xml":     validPremis,
 	})
 
 	pkg, err := Read(root)
@@ -254,6 +258,29 @@ func TestReadReservedNameWrongKind(t *testing.T) {
 	_, err := Read(root)
 	assertViolation(t, err, "metadata.csv is a folder")
 	assertViolation(t, err, "documentation is a file")
+}
+
+// The read-time premis rule is the naming rule only: premis.xml belongs to
+// the generated document. Content conformance is deliberately NOT a read
+// concern — it is enforced at assembly, like the characterization MD5
+// binding, so a folder with malformed premis content passes Read/check and
+// fails at build.
+func TestReadPremisNamingRule(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"metadata.csv":       minimalCSV,
+		"scan.tiff":          "x",
+		"premis/premis.xml":  validPremis,
+		"premis/garbage.xml": "not xml — read does not judge content",
+	})
+
+	_, err := Read(root)
+	assertViolation(t, err, "premis.xml is reserved")
+
+	var v Violations
+	errors.As(err, &v)
+	if len(v) != 1 {
+		t.Errorf("want only the naming violation, got:\n%s", v.Error())
+	}
 }
 
 func TestReadBadSidecar(t *testing.T) {
