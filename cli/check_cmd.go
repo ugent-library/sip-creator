@@ -23,8 +23,7 @@ var checkCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		pkg, err := input.Read(args[0])
 		if err != nil {
-			var v input.Violations
-			if errors.As(err, &v) {
+			if v, ok := errors.AsType[input.Violations](err); ok {
 				for _, line := range v {
 					fmt.Fprintln(cmd.ErrOrStderr(), line)
 				}
