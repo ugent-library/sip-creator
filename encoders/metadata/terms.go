@@ -12,7 +12,7 @@ type Term struct {
 // producer stated them in is preserved through to the emitted XML.
 //
 // Terms is plainly constructible by design: any producer builds it
-// directly — the CLI's metadata.csv decoder is one, an embedding system
+// directly. The CLI's metadata.csv decoder is one, an embedding system
 // mapping its own records is another (the input-convention plan: the file
 // is one transport, not the API). Whatever the producer, Validate holds
 // the rules on what a term may say; Encode refuses invalid terms.
@@ -28,7 +28,7 @@ func (t Terms) Has(element string) bool {
 	return false
 }
 
-// LocalIdentifier returns the value of the dcterms:identifier term —
+// LocalIdentifier returns the value of the dcterms:identifier term:
 // the producer's local catalog/inventory number ("" when absent or the
 // scheme is unknown).
 func (t Terms) LocalIdentifier(scheme string) string {

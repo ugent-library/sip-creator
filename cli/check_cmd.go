@@ -14,7 +14,7 @@ func init() {
 
 // checkCmd is the input spec's check-only mode (§1): validate a folder
 // against every input rule without building anything. It deliberately
-// needs no configuration — input rules are config-independent (ADR-0010).
+// needs no configuration: input rules are config-independent (ADR-0010).
 var checkCmd = &cobra.Command{
 	Use:          "check [src]",
 	Short:        "Check an input folder against the input specification without building",

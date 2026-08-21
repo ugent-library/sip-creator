@@ -17,7 +17,7 @@ var (
 		Use:   "sip-creator",
 		Short: "SIP Creator CLI",
 		// Execute would print a RunE error and then CheckErr prints it
-		// again — silence the first so every error appears exactly once.
+		// again; silence the first so every error appears exactly once.
 		SilenceErrors: true,
 	}
 )

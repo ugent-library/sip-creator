@@ -12,8 +12,8 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// The embedding-caller contract: a hand-constructed profiles.Input — no
-// metadata.csv or siegfried.json anywhere on disk — must build the same
+// The embedding-caller contract: a hand-constructed profiles.Input, with
+// no metadata.csv or siegfried.json anywhere on disk, must build the same
 // package graph the folder convention produces. The folder is one
 // transport, not the API.
 func TestBuilderInputEquivalence(t *testing.T) {

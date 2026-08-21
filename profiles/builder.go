@@ -9,7 +9,7 @@ import (
 )
 
 // Config is the builder's wiring: where packages land and how the build
-// narrates. The material for a package is not configuration — it arrives
+// narrates. The material for a package is not configuration; it arrives
 // per build as an Input.
 type Config struct {
 	Destination string

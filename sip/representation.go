@@ -27,8 +27,8 @@ type Representation struct {
 	DescriptionFile *File
 	PremisFile      *File
 	// ReceivedPremisFiles are preservation documents delivered with the
-	// input (vendor/lab PREMIS) — copied into the package as received,
-	// never parsed or merged (input spec §5).
+	// input (vendor/lab PREMIS). They are copied into the package as
+	// received, never parsed or merged (input spec §5).
 	ReceivedPremisFiles []*File
 	// DocumentationFiles document this representation only (input spec §4).
 	DocumentationFiles []*File
@@ -57,7 +57,7 @@ func (r *Representation) AddDocumentationFiles(files []*File) {
 
 // PremisFiles lists every preservation document the representation METS
 // must reference: the generated PREMIS (when emitted) first, then the
-// received ones — one digiprovMD each, in one amdSec.
+// received ones. Each gets one digiprovMD, all in one amdSec.
 func (r *Representation) PremisFiles() []*File {
 	var files []*File
 	if r.PremisFile != nil {

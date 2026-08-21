@@ -27,7 +27,7 @@ func (r *reader) decodeMetadataCSV(src string, packageLevel bool) metadata.Terms
 	// Spreadsheet tools produce a UTF-8 BOM; accept and drop it (§3).
 	data = bytes.TrimPrefix(data, []byte("\ufeff"))
 	if !utf8.Valid(data) {
-		r.violate("%s: not valid UTF-8 — re-export the file as UTF-8", rel)
+		r.violate("%s: not valid UTF-8; re-export the file as UTF-8", rel)
 		return nil
 	}
 
@@ -55,7 +55,7 @@ func (r *reader) decodeMetadataCSV(src string, packageLevel bool) metadata.Terms
 				continue
 			}
 			// A missing header is a violation, but the row itself may be
-			// data — keep decoding so its findings surface too.
+			// data; keep decoding so its findings surface too.
 			r.violate(`%s: the first row must be the header "key,value"`, rel)
 		}
 
@@ -70,7 +70,7 @@ func (r *reader) decodeMetadataCSV(src string, packageLevel bool) metadata.Terms
 			continue
 		}
 		// What a term may say (vocabulary, language tag, non-empty value)
-		// is the library's rule — the same one an embedding caller hits;
+		// is the library's rule, the same one an embedding caller hits;
 		// the decoder only adds the file/line context.
 		term := metadata.Term{Element: element, Lang: lang, Value: value}
 		if err := term.Validate(); err != nil {
@@ -81,9 +81,9 @@ func (r *reader) decodeMetadataCSV(src string, packageLevel bool) metadata.Terms
 	}
 
 	// The convention's own cardinality rule (§3): single-valued and
-	// per-language keys must not repeat, whatever the profile — the same
-	// rule for every metadata.csv, so check needs no configuration. It is
-	// a cross-row rule checked on the finished list: each finding names
+	// per-language keys must not repeat, whatever the profile. The rule is
+	// the same for every metadata.csv, so check needs no configuration. It
+	// is a cross-row rule checked on the finished list: each finding names
 	// the element and language, which locates the rows in a keyed file.
 	if err := terms.ValidateCardinality(); err != nil {
 		if joined, ok := err.(interface{ Unwrap() []error }); ok {
@@ -97,10 +97,10 @@ func (r *reader) decodeMetadataCSV(src string, packageLevel bool) metadata.Terms
 
 	if packageLevel {
 		if !terms.Has("dcterms:identifier") {
-			r.violate("%s: identifier is missing — the local catalog or inventory number is required", rel)
+			r.violate("%s: identifier is missing; the local catalog or inventory number is required", rel)
 		}
 		if !terms.Has("dcterms:title") {
-			r.violate("%s: title is missing — a title is required", rel)
+			r.violate("%s: title is missing; a title is required", rel)
 		}
 	}
 	return terms
@@ -112,16 +112,16 @@ func isHeaderRow(row []string) bool {
 		strings.EqualFold(strings.TrimSpace(row[1]), "value")
 }
 
-// parseKey handles the key *syntax* of the CSV convention — the optional
-// [lang] bracket and the plain-key spellings of the descriptive vocabulary
-// (§3) — and returns the element name the key maps onto. Whether the
+// parseKey handles the key *syntax* of the CSV convention (the optional
+// [lang] bracket and the plain-key spellings of the descriptive vocabulary,
+// §3) and returns the element name the key maps onto. Whether the
 // language tag inside the brackets is *valid* is metadata.Term.Validate's
 // rule; the decoder only adds the file/line context.
 func (r *reader) parseKey(file string, line int, raw string) (element, lang string, ok bool) {
 	key := raw
 	if i := strings.IndexByte(key, '['); i >= 0 {
 		if !strings.HasSuffix(key, "]") || i+2 > len(key)-1 {
-			r.violate("%s line %d: malformed language tag in %q — write it like title[nl]", file, line, raw)
+			r.violate("%s line %d: malformed language tag in %q; write it like title[nl]", file, line, raw)
 			return "", "", false
 		}
 		lang = key[i+1 : len(key)-1]
@@ -132,12 +132,12 @@ func (r *reader) parseKey(file string, line int, raw string) (element, lang stri
 	// a plain key, so point the operator at the spelling table instead of
 	// a generic unknown-key message.
 	if strings.Contains(key, ":") {
-		r.violate("%s line %d: prefixed keys like %q are not supported — every element has a plain key; see the supported keys in the input specification", file, line, raw)
+		r.violate("%s line %d: prefixed keys like %q are not supported: every element has a plain key; see the supported keys in the input specification", file, line, raw)
 		return "", "", false
 	}
 	element, known := metadata.ResolveKey(key)
 	if !known {
-		r.violate("%s line %d: unknown key %q — a typo would silently drop metadata; see the supported keys in the input specification", file, line, raw)
+		r.violate("%s line %d: unknown key %q: a typo would silently drop metadata; see the supported keys in the input specification", file, line, raw)
 		return "", "", false
 	}
 	return element, lang, true

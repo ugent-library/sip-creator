@@ -19,7 +19,7 @@ func (r *reader) readRepresentations(dir string) []Representation {
 			continue
 		}
 		label := e.Name()
-		// The folder-name rule (spec §2) is the library's label rule —
+		// The folder-name rule (spec §2) is the library's label rule:
 		// one source of truth for what a representation may be called.
 		if err := profiles.ValidateRepresentationLabel(label); err != nil {
 			// Still read the folder: the naming fix shouldn't hide any
@@ -29,7 +29,7 @@ func (r *reader) readRepresentations(dir string) []Representation {
 		reps = append(reps, r.readRepresentation(filepath.Join(dir, e.Name()), label))
 	}
 	if len(reps) == 0 {
-		r.violate("representations/ contains no representation folders — a package needs at least one version of the content")
+		r.violate("representations/ contains no representation folders: a package needs at least one version of the content")
 	}
 	return reps
 }
@@ -37,7 +37,7 @@ func (r *reader) readRepresentations(dir string) []Representation {
 func (r *reader) readRepresentation(dir, label string) Representation {
 	rep := Representation{Label: label}
 	for _, e := range r.readDir(dir) {
-		// The reserved names are ASCII, so byte comparison is exact — NFC
+		// The reserved names are ASCII, so byte comparison is exact; NFC
 		// normalization is needed only where non-ASCII can occur (see
 		// readDir and newFile).
 		name := e.Name()
@@ -45,27 +45,27 @@ func (r *reader) readRepresentation(dir, label string) Representation {
 		switch {
 		case name == metadataName:
 			if e.IsDir() {
-				r.violate("%s is a folder — the reserved name is for the metadata file", r.rel(src))
+				r.violate("%s is a folder; the reserved name is for the metadata file", r.rel(src))
 				continue
 			}
 			rep.Descriptive = r.decodeMetadataCSV(src, false)
 		case name == documentationName:
 			if !e.IsDir() {
-				r.violate("%s is a file — the reserved name is for a folder", r.rel(src))
+				r.violate("%s is a file; the reserved name is for a folder", r.rel(src))
 				continue
 			}
 			rep.Documentation = r.collectFiles(src)
 		case name == premisName:
 			if !e.IsDir() {
-				r.violate("%s is a file — the reserved name is for a folder", r.rel(src))
+				r.violate("%s is a file; the reserved name is for a folder", r.rel(src))
 				continue
 			}
 			rep.Premis = r.collectFiles(src)
-			// premis.xml is reserved for the generated document — the same
+			// premis.xml is reserved for the generated document, the same
 			// rule as the package-level premis/ (see read).
 			for _, f := range rep.Premis {
 				if path.Base(f.Path) == "premis.xml" {
-					r.violate("%s: premis.xml is reserved for the generated preservation document — rename the received file", f.Rel)
+					r.violate("%s: premis.xml is reserved for the generated preservation document; rename the received file", f.Rel)
 				}
 			}
 		case e.IsDir():
@@ -100,7 +100,7 @@ func (r *reader) readFlatRepresentation(entries []os.DirEntry) Representation {
 }
 
 // collectFiles gathers every file under dir recursively with Path relative
-// to dir — documentation/, premis/, and representation content all collect
+// to dir; documentation/, premis/, and representation content all collect
 // the same way.
 func (r *reader) collectFiles(dir string) []File {
 	var files []File
@@ -139,15 +139,15 @@ func (r *reader) newFile(base, src string) File {
 
 // readDir lists dir applying the rules that hold everywhere in the input
 // tree (input spec §1): symbolic links are a violation and are never
-// followed; OS artifacts are silently ignored — never packaged, never
-// warned about; and two names identical after NFC normalization are a
-// collision — such pairs can coexist on non-normalizing filesystems and
-// would collide in the package.
+// followed; OS artifacts are silently ignored (never packaged, never
+// warned about); and two names identical after NFC normalization are a
+// collision, because such pairs can coexist on non-normalizing filesystems
+// and would collide in the package.
 //
 // os.ReadDir lists lexically, so every file list built over it is in
-// deterministic traversal order. That order carries no meaning — neither
-// CSIP nor meemoo assigns semantics to file order (explicit sequencing is
-// the deferred manifest feature, input spec §8) — but it must be stable:
+// deterministic traversal order. That order carries no meaning (neither
+// CSIP nor meemoo assigns semantics to file order; explicit sequencing is
+// the deferred manifest feature, input spec §8), but it must be stable:
 // METS emission and the baseline gate depend on run-to-run identical order.
 func (r *reader) readDir(dir string) []os.DirEntry {
 	entries, err := os.ReadDir(dir)
@@ -163,12 +163,12 @@ func (r *reader) readDir(dir string) []os.DirEntry {
 			continue
 		}
 		if e.Type()&fs.ModeSymlink != 0 {
-			r.violate("%s is a symbolic link — symbolic links are not allowed anywhere in an input folder", r.rel(filepath.Join(dir, e.Name())))
+			r.violate("%s is a symbolic link; symbolic links are not allowed anywhere in an input folder", r.rel(filepath.Join(dir, e.Name())))
 			continue
 		}
 		name := norm.NFC.String(e.Name())
 		if prev, ok := seen[name]; ok {
-			r.violate("%s: %q and %q are the same name after Unicode normalization — rename one", r.rel(dir), prev, e.Name())
+			r.violate("%s: %q and %q are the same name after Unicode normalization; rename one", r.rel(dir), prev, e.Name())
 			continue
 		}
 		seen[name] = e.Name()

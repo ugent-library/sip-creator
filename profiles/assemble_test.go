@@ -211,10 +211,10 @@ func TestAssemble(t *testing.T) {
 	}
 
 	// Assembly leaves the graph complete: the generated PREMIS and METS
-	// nodes are born here too (basic emits both PREMIS files), each with
+	// nodes are created here too (basic emits both PREMIS files), each with
 	// its Path declared; the writer only emits and back-fills.
 	if pkg.PremisFile == nil || pkg.MetsFile == nil || r.PremisFile == nil || r.MetsFile == nil {
-		t.Fatal("assemble left generated premis/mets nodes unborn; the graph must be complete before write")
+		t.Fatal("assemble left generated premis/mets nodes missing; the graph must be complete before write")
 	}
 	if got := pkg.MetsFile.Path; got != "METS.xml" {
 		t.Errorf("package METS Path = %q, want %q", got, "METS.xml")
@@ -229,7 +229,7 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("representation PREMIS Path = %q, want %q", got, "metadata/preservation/premis.xml")
 	}
 
-	// The load-bearing guarantee: assembly writes nothing.
+	// The core guarantee: assembly writes nothing.
 	requireEmpty(t, outDir)
 }
 
@@ -247,10 +247,10 @@ func TestAssemblePremislessProfile(t *testing.T) {
 
 	r := pkg.Root.Representations[0]
 	if pkg.PremisFile != nil || r.PremisFile != nil {
-		t.Error("premis nodes born although the profile emits no PREMIS")
+		t.Error("premis nodes created although the profile emits no PREMIS")
 	}
 	if pkg.MetsFile == nil || r.MetsFile == nil {
-		t.Error("METS nodes must be born regardless of the PREMIS emission flags")
+		t.Error("METS nodes must be created regardless of the PREMIS emission flags")
 	}
 }
 
@@ -329,7 +329,7 @@ func TestAssembleReportNoMatch(t *testing.T) {
 }
 
 // A match that asserts no mime still yields the Format, and the mime falls
-// back to the admitted unknown — the two facts are independent.
+// back to the admitted unknown; the two facts are independent.
 func TestAssembleReportMatchWithoutMime(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 	src := in.Representations[0].Files[0]
@@ -419,7 +419,7 @@ func TestAssembleDocumentation(t *testing.T) {
 	notes := writeEssence(t, inDir, "sub/notes.txt", "doc")
 	in.Documentation = []SourceFile{manual, notes}
 	// The report knows the essence and one documentation file; the other
-	// documentation file has no entry — allowed.
+	// documentation file has no entry, which is allowed.
 	in.Characterization = report(t, in.Representations[0].Files[0], manual)
 
 	pkg, err := b.assemble(basicDef(t), in)
@@ -539,7 +539,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	}
 
 	// With an identifier term present, the representation identifier is
-	// swapped in — mirroring the package-level behavior.
+	// swapped in, mirroring the package-level behavior.
 	b2, in2, _ := newTestBuilder(t)
 	in2.Representations[0].Descriptive = metadata.Terms{
 		{Element: "dcterms:identifier", Value: "rep-local-1"},
@@ -566,8 +566,8 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 
 const validPremis = `<?xml version="1.0"?><premis:premis xmlns:premis="http://www.loc.gov/premis/v3" version="3.0"><premis:event/></premis:premis>`
 
-// Received preservation files become graph nodes at both levels — copied,
-// never parsed — and must actually be premis:premis documents.
+// Received preservation files become graph nodes at both levels (copied,
+// never parsed) and must actually be premis:premis documents.
 func TestAssembleReceivedPremis(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	inDir := t.TempDir()
@@ -598,8 +598,8 @@ func TestAssembleReceivedPremis(t *testing.T) {
 		t.Errorf("received Mime = %q", got)
 	}
 
-	// PremisFiles feeds the METS amdSec: the generated node first (born at
-	// assembly, basic emits it), the received one after.
+	// PremisFiles feeds the METS amdSec: the generated node first (created
+	// at assembly, basic emits it), the received one after.
 	if files := r.PremisFiles(); len(files) != 2 || files[0] != r.PremisFile || files[1] != r.ReceivedPremisFiles[0] {
 		t.Errorf("PremisFiles = %v, want [generated, received]", files)
 	}
@@ -646,8 +646,8 @@ func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// A supplied package identifier is reused verbatim — how an update keeps
-// the original package's mets/@OBJID; empty means mint.
+// A supplied package identifier is reused verbatim (how an update keeps
+// the original package's mets/@OBJID); empty means mint.
 func TestAssemblePackageIdentifier(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	in.PackageIdentifier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"

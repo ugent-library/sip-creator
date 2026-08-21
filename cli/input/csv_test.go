@@ -20,7 +20,7 @@ func readCSV(t *testing.T, csv string) (*Package, error) {
 
 func TestMetadataCSVHappy(t *testing.T) {
 	// BOM, CRLF, RFC 4180 quoting, repeated keys, [lang] tags, the renamed
-	// plain-key mappings, and the schema.org keys — in one file.
+	// plain-key mappings, and the schema.org keys, all in one file.
 	csv := "\ufeffkey,value\r\n" +
 		"identifier,BIB.FA.2026.001\r\n" +
 		"title[nl],Fotoalbum Gent 1913\r\n" +

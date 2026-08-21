@@ -9,7 +9,7 @@ import (
 )
 
 // The terms templates interpolate element names from data, which the
-// Description templates never did — so encoding validates first (element
+// Description templates never did, so encoding validates first (element
 // names come from the closed vocabularies) and every value is escaped.
 var termsTemplates = template.Must(template.New("").Funcs(template.FuncMap{
 	"esc":     escapeXML,
@@ -41,7 +41,7 @@ var termsTemplates = template.Must(template.New("").Funcs(template.FuncMap{
 
 // termsDoc is one descriptive document to render: the terms plus the
 // relative path from the document's location to the package's bundled
-// schemas/ dir — the writer knows where the document lands, the template
+// schemas/ dir. The writer knows where the document lands; the template
 // only carries the hint.
 type termsDoc struct {
 	Terms   Terms
@@ -52,7 +52,7 @@ type termsDoc struct {
 // descriptive document (metadata/descriptive/*.xml).
 const PackageSchemas = "../../schemas"
 
-// EncodeTerms writes the terms as the meemoo descriptive document — the
+// EncodeTerms writes the terms as the meemoo descriptive document: the
 // same document shape as the retired dc+schema define, one element per
 // term, order preserved. schemas is the relative path from the document to
 // the package's schemas/ dir.
@@ -89,15 +89,15 @@ func dumbDown(t Terms) Terms {
 	return out
 }
 
-// xsiType is the xsi:type the vocabulary declares for the element — how
+// xsiType is the xsi:type the vocabulary declares for the element: how
 // the meemoo document marks its EDTF dates ("" for untyped elements).
 func xsiType(element string) string {
 	return vocabularyByElement[element].XSIType
 }
 
 // escapeXML makes a data value safe as XML character data or a quoted
-// attribute value. The Description templates never needed this — their
-// fixture data was controlled — but terms carry arbitrary operator input.
+// attribute value. The Description templates never needed this (their
+// fixture data was controlled), but terms carry arbitrary operator input.
 func escapeXML(s string) string {
 	var b bytes.Buffer
 	xml.EscapeText(&b, []byte(s)) // never fails on a bytes.Buffer

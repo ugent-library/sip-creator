@@ -14,7 +14,7 @@ type Package struct {
 	Root       *Entity
 	PremisFile *File
 	// ReceivedPremisFiles are preservation documents delivered with the
-	// input — copied as received, never parsed (input spec §5).
+	// input. They are copied as received, never parsed (input spec §5).
 	ReceivedPremisFiles []*File
 	MetsFile            *File
 	SchemaFiles         []*File
@@ -34,8 +34,8 @@ func (p *Package) AddReceivedPremisFiles(files []*File) {
 }
 
 // PremisFiles lists every preservation document the package METS must
-// reference: the generated PREMIS (when emitted) first, then the received
-// ones — one digiprovMD each, in one amdSec.
+// reference: the generated PREMIS (when emitted) first, then the
+// received ones. Each gets one digiprovMD, all in one amdSec.
 func (p *Package) PremisFiles() []*File {
 	var files []*File
 	if p.PremisFile != nil {

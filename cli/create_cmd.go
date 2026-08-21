@@ -43,7 +43,7 @@ var createCmd = &cobra.Command{
 
 		// --status and --updates are coupled: an update-class status names
 		// an earlier package, and naming one demands an update-class
-		// status (input spec §6). Strict pairing is CLI policy — library
+		// status (input spec §6). Strict pairing is CLI policy; library
 		// callers may supply a package identifier for other reasons.
 		flagStatus, _ := cmd.Flags().GetString("status")
 		updates, _ := cmd.Flags().GetString("updates")
@@ -57,7 +57,7 @@ var createCmd = &cobra.Command{
 		case updates != "" && !sip.IsUpdateRecordStatus(status):
 			return fmt.Errorf("--updates names an earlier package, which needs --status supplement, replacement, version or delete")
 		case updates == "" && sip.IsUpdateRecordStatus(status):
-			return fmt.Errorf("--status %s updates an earlier package — pass its identifier with --updates", strings.ToLower(status))
+			return fmt.Errorf("--status %s updates an earlier package; pass its identifier with --updates", strings.ToLower(status))
 		}
 		def.Mets.RecordStatus = status
 

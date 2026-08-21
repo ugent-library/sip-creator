@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// md5 of "hello world", computed independently — the tests must not
+// md5 of "hello world", computed independently; the tests must not
 // reimplement the store's own hashing to check it.
 const helloWorldMD5 = "5eb63bbbe01eeed093cb22bb8f5acdc3"
 

@@ -7,7 +7,7 @@ import (
 
 // Spec holds the profile-level values a METS document declares: the
 // profile URL, the content typing, and the agents responsible for the
-// package. Profiles differ in these values, not in build logic — Spec is
+// package. Profiles differ in these values, not in build logic: Spec is
 // data the templates read, set once on the Package at assembly.
 type Spec struct {
 	ProfileURL                  string // mets/@PROFILE
@@ -38,7 +38,7 @@ func ValidateRecordStatus(status string) error {
 }
 
 // IsUpdateRecordStatus reports whether status declares this package an
-// update of an earlier one — a package that must reuse the original's
+// update of an earlier one: a package that must reuse the original's
 // identifier as its mets/@OBJID.
 func IsUpdateRecordStatus(status string) bool {
 	switch strings.ToUpper(status) {

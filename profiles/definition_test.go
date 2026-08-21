@@ -17,7 +17,7 @@ func earkDef(t *testing.T) Definition {
 	return def
 }
 
-// identityTerms is the input convention's own MUSTs and nothing more —
+// identityTerms is the input convention's own MUSTs and nothing more:
 // enough for eark, short of meemoo's four.
 func identityTerms() metadata.Terms {
 	return metadata.Terms{
@@ -44,7 +44,7 @@ func TestValidateDescriptiveRequiredPerFamily(t *testing.T) {
 		}
 	}
 
-	// A title is required by both families' sets — since Input.Validate no
+	// A title is required by both families' sets; since Input.Validate no
 	// longer checks it, the Definition is the only guard.
 	in = &Input{Descriptive: metadata.Terms{{Element: "dcterms:identifier", Value: "x"}}}
 	for _, def := range []Definition{basicDef(t), earkDef(t)} {
@@ -55,7 +55,7 @@ func TestValidateDescriptiveRequiredPerFamily(t *testing.T) {
 }
 
 // The cardinality marks bind the meemoo family only: a repeated abstract
-// (same language) fails basic — at package and representation level — and
+// (same language) fails basic, at package and representation level, and
 // passes eark.
 func TestValidateDescriptiveCardinalityPerFamily(t *testing.T) {
 	repeated := metadata.Terms{

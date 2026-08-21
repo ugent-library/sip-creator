@@ -141,7 +141,7 @@ func TestReadRepresentations(t *testing.T) {
 		t.Errorf("access descriptive = %v, want its title term", access.Descriptive)
 	}
 	if got := paths(access.Files); strings.Join(got, ",") != "book.pdf" {
-		t.Errorf("access content = %v — reserved names must not count as content", got)
+		t.Errorf("access content = %v; reserved names must not count as content", got)
 	}
 	if len(access.Documentation) != 1 || len(access.Premis) != 1 {
 		t.Errorf("access documentation/premis = %d/%d, want 1/1", len(access.Documentation), len(access.Premis))
@@ -262,7 +262,7 @@ func TestReadReservedNameWrongKind(t *testing.T) {
 
 // The read-time premis rule is the naming rule only: premis.xml belongs to
 // the generated document. Content conformance is deliberately NOT a read
-// concern — it is enforced at assembly, like the characterization MD5
+// concern; it is enforced at assembly, like the characterization MD5
 // binding, so a folder with malformed premis content passes Read/check and
 // fails at build.
 func TestReadPremisNamingRule(t *testing.T) {
@@ -270,7 +270,7 @@ func TestReadPremisNamingRule(t *testing.T) {
 		"metadata.csv":       minimalCSV,
 		"scan.tiff":          "x",
 		"premis/premis.xml":  validPremis,
-		"premis/garbage.xml": "not xml — read does not judge content",
+		"premis/garbage.xml": "not xml; read does not judge content",
 	})
 
 	_, err := Read(root)
@@ -298,7 +298,7 @@ func TestReadNFCCollision(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"metadata.csv": minimalCSV,
 	})
-	// The same name in NFC and NFD form — they can coexist only on a
+	// The same name in NFC and NFD form; they can coexist only on a
 	// filesystem that does not normalize names (e.g. ext4).
 	nfc := "caf\u00e9.tiff"  // é precomposed
 	nfd := "cafe\u0301.tiff" // e + combining acute

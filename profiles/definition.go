@@ -24,7 +24,7 @@ const FamilyEARK Family = "eark"
 // descriptiveEncoder is the one behavioral choice a family makes today.
 // It grows into a struct of choices when families make more (ADR-0007).
 // schemas is the relative path from the document being written to the
-// package's schemas/ dir — only the writer knows where a document lands.
+// package's schemas/ dir; only the writer knows where a document lands.
 type descriptiveEncoder func(w io.Writer, t metadata.Terms, schemas string) error
 
 func (f Family) descriptiveEncoder() (descriptiveEncoder, error) {
@@ -40,7 +40,7 @@ func (f Family) descriptiveEncoder() (descriptiveEncoder, error) {
 
 // Definition declares a profile as data: what descriptive source it reads,
 // which metadata it emits, and the values its METS documents carry.
-// Profiles differ in these values, not in build logic — one engine
+// Profiles differ in these values, not in build logic: one engine
 // (Builder.Build) reads them; a name looks up values in the registry.
 type Definition struct {
 	Name                     string
@@ -56,7 +56,7 @@ type Definition struct {
 	// plain E-ARK only the input convention's identity MUSTs.
 	RequiredElements []string
 	// RequiredLang, when set, requires every language-tagged element in
-	// the descriptive terms to include a value in this language — meemoo
+	// the descriptive terms to include a value in this language; meemoo
 	// demands an entry in Dutch wherever a lang-tagged element appears.
 	RequiredLang string
 	// EnforceCardinality binds the vocabulary table's repeatability marks
@@ -65,8 +65,8 @@ type Definition struct {
 }
 
 // validateDescriptive checks the input's descriptive terms against the
-// profile's conformance rules — requiredness, required language, and the
-// vocabulary's cardinality marks, all Definition data. Findings are joined
+// profile's conformance rules (requiredness, required language, and the
+// vocabulary's cardinality marks), all Definition data. Findings are joined
 // so one failed build names every gap at once.
 func (d Definition) validateDescriptive(in *Input) error {
 	errs := []error{
@@ -135,7 +135,7 @@ var registry = map[string]Definition{
 			OtherContentInformationType: "https://data.hetarchief.be/id/sip/1.2/basic",
 			DescriptiveMDType:           "DC",
 			// Only the software agent: the submitting ORGANIZATION agent is
-			// operator identity, not profile data — WithSubmitter appends it.
+			// operator identity, not profile data; WithSubmitter appends it.
 			Agents: []sip.Agent{
 				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1.", NoteType: "SOFTWARE VERSION"},
 			},
@@ -162,7 +162,7 @@ var registry = map[string]Definition{
 			ContentInformationType:   "MIXED", // becomes the AIP type in RODA
 			DescriptiveMDType:        "DC",
 			DescriptiveMDTypeVersion: "SimpleDC20021212", // the shape RODA renders natively
-			// Only the software agent — see the basic entry: the submitting
+			// Only the software agent (see the basic entry): the submitting
 			// ORGANIZATION agent comes from WithSubmitter.
 			Agents: []sip.Agent{
 				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1.", NoteType: "SOFTWARE VERSION"},

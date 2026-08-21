@@ -18,7 +18,7 @@ import (
 )
 
 // assemble builds the complete package graph from the caller-supplied
-// input without writing anything to disk: every File node is born here
+// input without writing anything to disk: every File node is created here
 // with its Path declared, and the writer later back-fills fixity as it
 // emits.
 func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
@@ -91,7 +91,7 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 
 // schemaFileNodes declares one graph node per bundled XSD, sorted so METS
 // emission is deterministic (schemas.Get() is a map; iterating it directly
-// reordered the fileSec on every run — the Phase-0 baseline finding).
+// reordered the fileSec on every run, the Phase-0 baseline finding).
 func schemaFileNodes() []*sip.File {
 	xsds := schemas.Get()
 	files := make([]*sip.File, 0, len(xsds))
@@ -105,11 +105,11 @@ func schemaFileNodes() []*sip.File {
 	return files
 }
 
-// assembleDocumentationNodes declares graph nodes for documentation files —
-// the same treatment at package and representation level: Path relative to
-// the container's documentation/ dir. Documentation is lenient where
+// assembleDocumentationNodes declares graph nodes for documentation files,
+// with the same treatment at package and representation level: Path relative
+// to the container's documentation/ dir. Documentation is lenient where
 // essence is strict (ADR-0009): these files carry no premis:format and may
-// postdate the characterization report, so no entry is required — but a
+// postdate the characterization report, so no entry is required, but a
 // present entry must still be checksum-true, because a mismatch proves the
 // report stale.
 func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars characterization.Report) ([]*sip.File, error) {
@@ -140,7 +140,7 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 // assembleRepresentations turns each supplied representation into a graph
 // node. The package-side name (representation_N, in supplied order) is
 // this project's stable convention, taken from the meemoo spec's
-// illustrated layout — no spec mandates the name: CSIP requires only
+// illustrated layout. No spec mandates the name: CSIP requires only
 // uniqueness, and meemoo 2.x only that the dir name equal the rep METS
 // OBJID (which setting both from Name satisfies for free). The producer's
 // label rides along as the human-readable name (rep METS mets/@LABEL).
@@ -153,7 +153,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 		if sr.Descriptive != nil {
 			// Mirror the package-level swap: when the terms carry an
 			// identifier, the emitted document carries the representation
-			// identifier instead (a no-op when they carry none — rep-level
+			// identifier instead (a no-op when they carry none; rep-level
 			// identity is optional, spec §3).
 			sr.Descriptive.SetObjectIdentifier(r.Identifier)
 			r.Description = sr.Descriptive
@@ -173,7 +173,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			f.Path = "data/" + src.Path // rep-relative, per File.Path semantics
 			// Characterization is an optional enricher (ADR-0009): the report
 			// asserts formats for SOURCE files, and the MD5 binding proves each
-			// record still describes the bytes on disk. Fixity is not its job —
+			// record still describes the bytes on disk. Fixity is not its job;
 			// the writer computes that during the streamed copy.
 			f.Mime = "application/octet-stream" // the admitted unknown, never a guess
 			if in.Characterization != nil {
@@ -226,7 +226,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 }
 
 // assembleReceivedPremis declares graph nodes for received preservation
-// documents (input spec §5): copied as received, never parsed or merged —
+// documents (input spec §5): copied as received, never parsed or merged,
 // but each must actually be a premis:premis document (well-formed, PREMIS 3
 // namespace), because packaging a non-PREMIS file under
 // metadata/preservation/ would be a false preservation claim. The check
@@ -257,20 +257,20 @@ func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile)
 
 // essenceRecord looks up the file's record and enforces ADR-0009's
 // strictness: every essence file must be present in the report, error-free,
-// and checksum-bound to the bytes on disk — a stale format claim in
+// and checksum-bound to the bytes on disk; a stale format claim in
 // preservation metadata is worse than none.
 func (b *Builder) essenceRecord(chars characterization.Report, src SourceFile) (characterization.Record, error) {
 	rec, ok := chars[src.Key]
 	if !ok {
 		return characterization.Record{}, fmt.Errorf(
-			"characterization report has no entry for %q (report keys look like %s) — generate the report from the input root: sf -hash md5 -json .",
+			"characterization report has no entry for %q (report keys look like %s); generate the report from the input root: sf -hash md5 -json .",
 			src.Key, sampleKey(chars))
 	}
 	if rec.Errors != "" {
 		return characterization.Record{}, fmt.Errorf("characterization report records an error for %q: %s", src.Key, rec.Errors)
 	}
 	if rec.MD5 == "" {
-		return characterization.Record{}, fmt.Errorf("characterization report carries no checksum for %q — generate it with sf -hash md5 -json", src.Key)
+		return characterization.Record{}, fmt.Errorf("characterization report carries no checksum for %q; generate it with sf -hash md5 -json", src.Key)
 	}
 	if err := verifyReportMD5(src.Source, rec); err != nil {
 		return characterization.Record{}, err
@@ -296,7 +296,7 @@ func verifyReportMD5(src string, rec characterization.Record) error {
 		return err
 	}
 	if sum != rec.MD5 {
-		return fmt.Errorf("%s changed since the characterization report was generated (file md5 %s, report has %s) — regenerate the report", src, sum, rec.MD5)
+		return fmt.Errorf("%s changed since the characterization report was generated (file md5 %s, report has %s); regenerate the report", src, sum, rec.MD5)
 	}
 	return nil
 }

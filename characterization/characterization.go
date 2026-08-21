@@ -1,6 +1,6 @@
 // Package characterization decodes pre-computed file-characterization
-// reports — the siegfried.json sidecar an operator generates with
-// `sf -hash md5 -json` — into per-file records the assembler consumes.
+// reports (the siegfried.json sidecar an operator generates with
+// `sf -hash md5 -json`) into per-file records the assembler consumes.
 // Decoding carries the report's facts (format, mime, checksum, per-file
 // tool errors) without judging them: a whole-tree report legitimately
 // contains entries no consumer ever looks up, so strictness policy

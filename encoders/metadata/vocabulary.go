@@ -14,10 +14,10 @@ const (
 	oncePerLanguage
 )
 
-// vocabularyRow is one entry of the descriptive vocabulary: everything the
-// tool knows about one key — the element it emits, meemoo's conformance
-// marks, the xsi:type the element carries, and the Simple DC parent the
-// element dumbs down to.
+// vocabularyRow is one entry of the descriptive vocabulary. It holds
+// everything the tool knows about one key: the element it emits, meemoo's
+// conformance marks, the xsi:type the element carries, and the Simple DC
+// parent the element dumbs down to.
 type vocabularyRow struct {
 	Key      string      // plain metadata.csv key (input spec §3)
 	Element  string      // emitted element name
@@ -29,13 +29,13 @@ type vocabularyRow struct {
 
 // vocabulary is the closed descriptive vocabulary: the flat-expressible
 // elements of meemoo's SIP 1.2 basic content profile, in the input spec §3
-// table's order. This table is the metadata model — the CSV decoder,
+// table's order. This table is the metadata model: the CSV decoder,
 // validation, and the templates all read from it (ADR-0011). The Required
 // and Repeat marks are meemoo's; whether they bind is the profile family's
 // call. The SimpleDC column follows the "Subproperty Of" relations in the
 // DCMI Metadata Terms spec; elements with no declared parent among the
-// fifteen Simple DC elements (rightsHolder, schema:*) carry "" — inventing
-// a mapping would assert semantics DCMI doesn't.
+// fifteen Simple DC elements (rightsHolder, schema:*) carry "", because
+// inventing a mapping would assert semantics DCMI doesn't.
 var vocabulary = []vocabularyRow{
 	{"identifier", "dcterms:identifier", true, once, "", "identifier"},
 	{"title", "dcterms:title", true, oncePerLanguage, "", "title"},
@@ -81,8 +81,8 @@ func ResolveKey(key string) (element string, ok bool) {
 	return row.Element, ok
 }
 
-// RequiredElements lists the elements the vocabulary marks required — the
-// meemoo basic profile's 1..1 marks, in table order. Whether they bind is
+// RequiredElements lists the elements the vocabulary marks required (the
+// meemoo basic profile's 1..1 marks), in table order. Whether they bind is
 // the profile family's call: the meemoo family reads this list; a family
 // with its own requiredness rules (eark) declares its own.
 func RequiredElements() []string {

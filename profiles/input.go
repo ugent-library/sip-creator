@@ -25,17 +25,17 @@ type SourceFile struct {
 }
 
 // SourceRepresentation is one version of the content, as the caller
-// supplies it — the CLI's input convention is one producer, an embedding
+// supplies it. The CLI's input convention is one producer; an embedding
 // system constructing it from its own stores is another.
 type SourceRepresentation struct {
 	Label string       // producer's label; the profile decides package-side naming
 	Files []SourceFile // content files, in packaging order
 	// Descriptive optionally describes this version only (input spec §3):
-	// identity (identifier, title) is not required here — the package-level
+	// identity (identifier, title) is not required here; the package-level
 	// descriptive carries the work's identity.
 	Descriptive metadata.Terms
 	// Premis optionally supplies received preservation documents about
-	// this representation (input spec §5) — copied, never parsed. Each
+	// this representation (input spec §5): copied, never parsed. Each
 	// must be a well-formed premis:premis document (checked at assembly).
 	Premis []SourceFile
 	// Documentation optionally documents this representation only
@@ -43,7 +43,7 @@ type SourceRepresentation struct {
 	Documentation []SourceFile
 }
 
-// Input is one package's source material — data, not files to parse:
+// Input is one package's source material, given as data, not files to parse:
 // descriptive metadata as terms, characterization as a decoded report,
 // essence and documentation as source paths. The CLI's folder convention
 // (cli/input) is one transport producing these values; embedding systems
@@ -53,7 +53,7 @@ type SourceRepresentation struct {
 // (the entity identifier is swapped in) during assembly.
 type Input struct {
 	// PackageIdentifier optionally supplies the package identifier instead
-	// of minting one — how an update reuses the original package's
+	// of minting one; this is how an update reuses the original package's
 	// mets/@OBJID. Must take the uuid-<uuid> form when set.
 	PackageIdentifier string
 	// Descriptive is the package-level descriptive metadata.
@@ -63,7 +63,7 @@ type Input struct {
 	// Documentation optionally documents the whole package.
 	Documentation []SourceFile
 	// Premis optionally supplies received preservation documents about the
-	// whole package (input spec §5) — copied, never parsed. Each must be a
+	// whole package (input spec §5): copied, never parsed. Each must be a
 	// well-formed premis:premis document (checked at assembly).
 	Premis []SourceFile
 	// Characterization optionally supplies a pre-decoded characterization
@@ -88,7 +88,7 @@ func ValidateRepresentationLabel(label string) error {
 }
 
 // Validate reports the first invariant the input breaks. These are the
-// graph rules every producer must satisfy — the folder convention enforces
+// graph rules every producer must satisfy: the folder convention enforces
 // them with operator-phrased Violations before building; embedding callers
 // hit them here (the input-convention plan's "validation splits in two").
 // Fail-fast: one error, developer-phrased.
@@ -104,16 +104,16 @@ func (in *Input) Validate() error {
 	if err := in.Descriptive.Validate(); err != nil {
 		return err
 	}
-	// The identifier is checked here mechanically — assembly swaps it for
+	// The identifier is checked here mechanically: assembly swaps it for
 	// the object identifier, so the graph cannot build without one. All
 	// other requiredness is profile policy: Definition.RequiredElements,
 	// checked by Build.
 	if in.Descriptive.LocalIdentifier("dcterms") == "" {
-		return fmt.Errorf("descriptive metadata carries no dcterms:identifier — the local identifier is required")
+		return fmt.Errorf("descriptive metadata carries no dcterms:identifier; the local identifier is required")
 	}
 
 	if len(in.Representations) == 0 {
-		return fmt.Errorf("no representations supplied — a package needs at least one version of the content")
+		return fmt.Errorf("no representations supplied: a package needs at least one version of the content")
 	}
 	labels := make(map[string]bool, len(in.Representations))
 	for _, r := range in.Representations {
@@ -149,8 +149,8 @@ func (in *Input) Validate() error {
 	return validatePremisNames("package", in.Premis)
 }
 
-// validatePremisNames guards the received-premis file list: the usual file
-// rules plus one naming rule — premis.xml is the generated document's
+// validatePremisNames guards the received-premis file list with the usual
+// file rules plus one naming rule: premis.xml is the generated document's
 // name, and a received file must never shadow or collide with it.
 func validatePremisNames(container string, files []SourceFile) error {
 	if err := validateFiles(container+" premis", files); err != nil {
@@ -158,7 +158,7 @@ func validatePremisNames(container string, files []SourceFile) error {
 	}
 	for _, f := range files {
 		if path.Base(f.Path) == "premis.xml" {
-			return fmt.Errorf("%s premis: %q — premis.xml is reserved for the generated preservation document; rename the received file", container, f.Path)
+			return fmt.Errorf("%s premis: premis.xml is reserved for the generated preservation document; rename the received file %q", container, f.Path)
 		}
 	}
 	return nil

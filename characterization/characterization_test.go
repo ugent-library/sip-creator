@@ -86,8 +86,8 @@ func TestDecodeSiegfriedMalformed(t *testing.T) {
 	}
 }
 
-// The shape guard is load-bearing: any JSON object decodes into the sf
-// structs without error, leaving a silently empty report.
+// Without the shape guard, any JSON object decodes into the sf structs
+// without error, leaving a silently empty report.
 func TestDecodeSiegfriedWrongShape(t *testing.T) {
 	f, err := os.Open(filepath.Join("testdata", "wrongshape.json"))
 	if err != nil {

@@ -3,7 +3,7 @@
 //
 // It is the CLI's frontend to the library: the library (profiles/, sip/)
 // never imports it, and systems embedding the library construct the same
-// data directly from their own stores instead of preparing a folder — the
+// data directly from their own stores instead of preparing a folder. The
 // folder is one transport, not the API.
 package input
 
@@ -30,7 +30,7 @@ type File struct {
 	Rel string
 	// Path is the logical path relative to the file's container (the
 	// representation, documentation/ or premis/ root), slash-separated and
-	// NFC-normalized — the shape the file will take inside the package.
+	// NFC-normalized: the shape the file will take inside the package.
 	Path string
 }
 
@@ -54,9 +54,9 @@ type Package struct {
 	Warnings         []string                // SHOULD-level findings; the build proceeds
 }
 
-// BuilderInput maps the validated folder onto the library's build input —
-// the CLI-side half of "the folder is one transport": an embedding system
-// constructs the same profiles.Input from its own stores.
+// BuilderInput maps the validated folder onto the library's build input.
+// It is the CLI-side half of "the folder is one transport": an embedding
+// system constructs the same profiles.Input from its own stores.
 func (p *Package) BuilderInput() *profiles.Input {
 	in := &profiles.Input{
 		Descriptive:      p.Descriptive,
@@ -143,42 +143,42 @@ func (r *reader) read() *Package {
 		switch name {
 		case metadataName:
 			if e.IsDir() {
-				r.violate("metadata.csv is a folder — the reserved name is for the metadata file")
+				r.violate("metadata.csv is a folder; the reserved name is for the metadata file")
 				continue
 			}
 			sawMetadata = true
 			pkg.Descriptive = r.decodeMetadataCSV(src, true)
 		case representationsName:
 			if !e.IsDir() {
-				r.violate("representations is a file — the reserved name is for the folder of representations")
+				r.violate("representations is a file; the reserved name is for the folder of representations")
 				continue
 			}
 			repsDir = src
 		case documentationName:
 			if !e.IsDir() {
-				r.violate("documentation is a file — the reserved name is for a folder")
+				r.violate("documentation is a file; the reserved name is for a folder")
 				continue
 			}
 			pkg.Documentation = r.collectFiles(src)
 		case premisName:
 			if !e.IsDir() {
-				r.violate("premis is a file — the reserved name is for a folder")
+				r.violate("premis is a file; the reserved name is for a folder")
 				continue
 			}
 			pkg.Premis = r.collectFiles(src)
 			// The one transport-level premis rule: premis.xml belongs to
 			// the generated document. Content conformance (well-formed
 			// premis:premis) is deliberately a build-time check, like the
-			// characterization MD5 binding — check validates structure,
+			// characterization MD5 binding: check validates structure,
 			// content verification happens at assembly.
 			for _, f := range pkg.Premis {
 				if path.Base(f.Path) == "premis.xml" {
-					r.violate("%s: premis.xml is reserved for the generated preservation document — rename the received file", f.Rel)
+					r.violate("%s: premis.xml is reserved for the generated preservation document; rename the received file", f.Rel)
 				}
 			}
 		case sidecarName:
 			if e.IsDir() {
-				r.violate("siegfried.json is a folder — the reserved name is for the characterization report")
+				r.violate("siegfried.json is a folder; the reserved name is for the characterization report")
 				continue
 			}
 			pkg.Characterization = r.decodeSidecar(src)
@@ -188,7 +188,7 @@ func (r *reader) read() *Package {
 	}
 
 	if !sawMetadata {
-		r.violate("metadata.csv is missing — every package folder needs one describing the content (input specification §3)")
+		r.violate("metadata.csv is missing: every package folder needs one describing the content (input specification §3)")
 	}
 
 	if repsDir != "" {
@@ -219,7 +219,7 @@ func (r *reader) decodeSidecar(src string) characterization.Report {
 
 	report, err := characterization.DecodeSiegfried(f)
 	if err != nil {
-		r.violate("siegfried.json: %v — regenerate it from the input root with: sf -hash md5 -json .", err)
+		r.violate("siegfried.json: %v; regenerate it from the input root with: sf -hash md5 -json .", err)
 		return nil
 	}
 	return report

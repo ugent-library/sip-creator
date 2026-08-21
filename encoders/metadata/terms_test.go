@@ -126,7 +126,7 @@ func TestTermValidate(t *testing.T) {
 		{"valid new key element", Term{Element: "dcterms:abstract", Value: "x"}, ""},
 		{"unprefixed", Term{Element: "title", Value: "x"}, "not in the descriptive vocabulary"},
 		{"misspelled dcterms", Term{Element: "dcterms:titel", Value: "x"}, "not in the descriptive vocabulary"},
-		// a real DCMI term meemoo's profile excludes — the old DCMI-55
+		// a real DCMI term meemoo's profile excludes; the old DCMI-55
 		// membership check accepted it
 		{"dcterms outside the profile", Term{Element: "dcterms:accrualPolicy", Value: "x"}, "not in the descriptive vocabulary"},
 		// schema.org is no longer an open passthrough
@@ -163,7 +163,7 @@ func TestTermsValidateDuplicateIdentifier(t *testing.T) {
 }
 
 // The identifier swap: read the local identifier first, then replace it
-// with the object identifier — the order assemble must follow.
+// with the object identifier. Assemble must follow that order.
 func TestTermsIdentifierSeams(t *testing.T) {
 	terms := testTerms()
 

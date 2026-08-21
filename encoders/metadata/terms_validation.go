@@ -16,7 +16,7 @@ var langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
 // These rules bind every producer, not just the CSV transport.
 func (t Term) Validate() error {
 	if _, ok := vocabularyByElement[t.Element]; !ok {
-		return fmt.Errorf("%q is not in the descriptive vocabulary — see the supported keys in the input specification", t.Element)
+		return fmt.Errorf("%q is not in the descriptive vocabulary; see the supported keys in the input specification", t.Element)
 	}
 	if t.Lang != "" && !langRx.MatchString(t.Lang) {
 		return fmt.Errorf("%q is not a language tag", t.Lang)
@@ -28,9 +28,9 @@ func (t Term) Validate() error {
 }
 
 // Validate checks every term plus the one cross-term rule: at most one
-// dcterms:identifier — the local identifier is an identity, and two of
+// dcterms:identifier. The local identifier is an identity, and two of
 // them is an ambiguity no consumer can resolve. The vocabulary also marks
-// identifier `once`, so ValidateCardinality states this rule again — that
+// identifier `once`, so ValidateCardinality states this rule again. That
 // is deliberate, not a candidate for dedup: cardinality binds only where a
 // profile enforces it (the meemoo family), while the identifier rule is
 // unconditional and must hold for eark too.
@@ -45,14 +45,14 @@ func (t Terms) Validate() error {
 		}
 	}
 	if identifiers > 1 {
-		return fmt.Errorf("dcterms:identifier appears %d times — give exactly one", identifiers)
+		return fmt.Errorf("dcterms:identifier appears %d times; give exactly one", identifiers)
 	}
 	return nil
 }
 
 // ValidateCardinality reports every term that exceeds its element's
-// cardinality mark — meemoo's 0..1/1..1 restrictions, counted per language
-// for lang-tagged elements. Whether the marks bind is the profile family's
+// cardinality mark (meemoo's 0..1/1..1 restrictions, counted per language
+// for lang-tagged elements). Whether the marks bind is the profile family's
 // call: the meemoo family enforces them, plain E-ARK does not. Findings
 // name the element (and language), which locates the offending rows in a
 // keyed file; one joined error carries them all.
@@ -64,7 +64,7 @@ func (t Terms) ValidateCardinality() error {
 		case once:
 			seen[term.Element]++
 			if seen[term.Element] == 2 {
-				errs = append(errs, fmt.Errorf("%s appears more than once — give exactly one value", term.Element))
+				errs = append(errs, fmt.Errorf("%s appears more than once; give exactly one value", term.Element))
 			}
 		case oncePerLanguage:
 			// "\x00" cannot appear in an element name, so per-language
@@ -75,10 +75,10 @@ func (t Terms) ValidateCardinality() error {
 				continue // report each offending element/language pair once
 			}
 			if term.Lang == "" {
-				errs = append(errs, fmt.Errorf("%s appears more than once — repeat it only with distinct language tags (title[nl], title[en])", term.Element))
+				errs = append(errs, fmt.Errorf("%s appears more than once; repeat it only with distinct language tags (title[nl], title[en])", term.Element))
 				continue
 			}
-			errs = append(errs, fmt.Errorf("%s appears more than once in language %q — give one value per language", term.Element, term.Lang))
+			errs = append(errs, fmt.Errorf("%s appears more than once in language %q; give one value per language", term.Element, term.Lang))
 		}
 	}
 	return errors.Join(errs...)

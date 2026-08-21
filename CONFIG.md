@@ -3,9 +3,9 @@
 ## config
 
 Application config: the CLI's operator contract, read from the
-environment. The library never sees it — embedding systems supply their
+environment. The library never sees it: embedding systems supply their
 destination and logger as data (profiles.Config), and each package's
-material — characterization report included — as a profiles.Input, not
+material (characterization report included) as a profiles.Input, not
 via env vars. Format info comes from the siegfried.json sidecar in the
 input folder (ADR-0009), not from configuration.
 

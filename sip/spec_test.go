@@ -51,7 +51,7 @@ func TestNewPackageIdentifier(t *testing.T) {
 		t.Errorf("Location %q does not end in the identifier", minted.Location)
 	}
 
-	// An update reuses the original's identifier — and its directory name.
+	// An update reuses the original's identifier and its directory name.
 	reused := NewPackage("/dest", "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e")
 	if reused.Identifier != "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e" {
 		t.Errorf("supplied identifier not reused: %q", reused.Identifier)

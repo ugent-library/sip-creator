@@ -13,10 +13,11 @@ import (
 )
 
 // write emits pkg to disk in dependency order, back-filling fixity on File
-// nodes as each file lands. Every node was born at assembly — the writer
-// creates no graph nodes. The ordering is load-bearing and encoded only
-// here: representation METS embeds the fixity of its PREMIS file, and
-// package METS embeds the fixity of everything before it — strictly last.
+// nodes as each file lands. Every node was created at assembly; the writer
+// creates no graph nodes. The ordering is encoded only here and must not be
+// changed casually: representation METS embeds the fixity of its PREMIS
+// file, and package METS embeds the fixity of everything before it, so it
+// goes strictly last.
 func (b *Builder) write(st *store.Store, pkg *sip.Package, encodeDescriptive descriptiveEncoder) error {
 	if err := b.writeSkeleton(st); err != nil {
 		return err
@@ -48,7 +49,7 @@ func (b *Builder) write(st *store.Store, pkg *sip.Package, encodeDescriptive des
 }
 
 // writeReceivedPremis copies the package-level received preservation
-// documents — before the package METS, which embeds their fixity.
+// documents before the package METS, which embeds their fixity.
 func (b *Builder) writeReceivedPremis(st *store.Store, pkg *sip.Package) error {
 	return copyFiles(st, "", pkg.ReceivedPremisFiles)
 }
