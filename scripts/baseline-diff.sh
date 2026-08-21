@@ -8,8 +8,8 @@
 # Normalized (legitimately different on every run):
 #   - UUIDs, mapped to uuid-1, uuid-2, ... in first-seen order per document,
 #     so cross-references (structMap -> fileSec, PREMIS relationships) must
-#     still line up structurally — unlike mapping every UUID to one token,
-#     which would hide a dangling or swapped reference.
+#     still line up structurally. Mapping every UUID to one token would
+#     instead hide a dangling or swapped reference.
 #   - ISO datetimes (CREATED/CREATEDATE attrs and PREMIS element text).
 #   - SIZE/CHECKSUM of *generated XML* entries (mdRef and file/FLocat whose
 #     href is an .xml outside data/): their raw bytes contain UUIDs and
@@ -55,7 +55,7 @@ normalize() {
 
         # Generated-XML fixity: mdRef carries its href inline; file elements
         # carry it on the FLocat child. Blank SIZE/CHECKSUM only when the href
-        # is an .xml outside data/ — essence and schema fixity must survive.
+        # is an .xml outside data/; essence and schema fixity must survive.
         sub is_generated { my ($href) = @_; return $href =~ /\.xml$/ && $href !~ m{(^|/|%2F)data(/|%2F)}i }
         sub blank { my ($tag) = @_; $tag =~ s/SIZE="[0-9]+"/SIZE="N"/; $tag =~ s/CHECKSUM="[0-9a-fA-F]+"/CHECKSUM="X"/; return $tag }
         s{<mdRef\b[^>]*>}{

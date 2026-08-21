@@ -65,7 +65,7 @@ run_csip() {
 status=0
 for input in "$@"; do
     if [ ! -e "$input" ]; then
-        echo "== $input: ERROR — no such file or directory" >&2
+        echo "== $input: ERROR: no such file or directory" >&2
         status=1
         continue
     fi
@@ -73,7 +73,7 @@ for input in "$@"; do
     # csip is chatty and exits 0 even for INVALID packages; keep its output for
     # crash diagnosis only and read the verdict from the JSON report.
     if ! csip_output="$(run_csip "$input" 2>&1)"; then
-        echo "== $input: ERROR — csip failed" >&2
+        echo "== $input: ERROR: csip failed" >&2
         echo "$csip_output" >&2
         status=1
         continue
@@ -81,7 +81,7 @@ for input in "$@"; do
 
     report="$(find "$report_dir" -name "$(basename "$input")_validation-report_*.json" | sort | tail -n 1)"
     if [ -z "$report" ]; then
-        echo "== $input: ERROR — csip produced no validation report" >&2
+        echo "== $input: ERROR: csip produced no validation report" >&2
         echo "$csip_output" >&2
         status=1
         continue
