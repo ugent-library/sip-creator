@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -17,20 +18,20 @@ type Config struct {
 }
 
 type Archive struct {
-	BaseDir string
-	Logger  *slog.Logger
+	Destination string
+	Logger      *slog.Logger
 }
 
 func New(config *Config) *Archive {
 	return &Archive{
-		BaseDir: config.Destination,
-		Logger:  config.Logger,
+		Destination: config.Destination,
+		Logger:      config.Logger,
 	}
 }
 
 func (a *Archive) Zip(pkg *sip.Package) error {
 	src := pkg.Location
-	dest := fmt.Sprintf("%s/%s.zip", a.BaseDir, pkg.Identifier)
+	dest := filepath.Join(a.Destination, pkg.Identifier+".zip")
 
 	file, err := os.Create(dest)
 	if err != nil {
@@ -40,45 +41,48 @@ func (a *Archive) Zip(pkg *sip.Package) error {
 
 	w := zip.NewWriter(file)
 
-	walker := func(path string, info os.FileInfo, err error) error {
+	walker := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		a.Logger.Info(fmt.Sprintf("Zipping: %s", path[len(a.BaseDir)+1:]))
-		if info.IsDir() {
+		// Entry names are relative to the destination dir, so the package
+		// dir (uuid-<uuid>/) stays the top-level entry; zip names are
+		// slash-separated regardless of platform.
+		rel, err := filepath.Rel(a.Destination, path)
+		if err != nil {
+			return err
+		}
+		name := filepath.ToSlash(rel)
+		a.Logger.Info("zipping", slog.String("path", name))
+		if d.IsDir() {
 			// Directories need explicit entries (name ending in "/"):
 			// readers otherwise infer them from file paths, and empty
 			// directories vanish from the zip entirely.
 			_, err := w.CreateHeader(&zip.FileHeader{
-				Name:   path[len(a.BaseDir)+1:] + "/",
+				Name:   name + "/",
 				Method: zip.Store,
 			})
 			return err
 		}
-		file, err := os.Open(path)
+		in, err := os.Open(path)
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		defer in.Close()
 
-		// Don't use any compression by setting Method to zip.Store
+		// Method zip.Store keeps the entry uncompressed.
 		f, err := w.CreateHeader(&zip.FileHeader{
-			Name:   path[len(a.BaseDir)+1:],
+			Name:   name,
 			Method: zip.Store,
 		})
-
 		if err != nil {
 			return err
 		}
 
-		_, err = io.Copy(f, file)
-		if err != nil {
-			return err
-		}
-
-		return nil
+		_, err = io.Copy(f, in)
+		return err
 	}
-	if err := filepath.Walk(src, walker); err != nil {
+	if err := filepath.WalkDir(src, walker); err != nil {
 		w.Close()
 		return fmt.Errorf("zipping %s: %w", src, err)
 	}

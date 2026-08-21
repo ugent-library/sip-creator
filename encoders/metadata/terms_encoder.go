@@ -52,6 +52,11 @@ type termsDoc struct {
 // descriptive document (metadata/descriptive/*.xml).
 const PackageSchemas = "../../schemas"
 
+// RepresentationSchemas is the package's schemas/ dir as seen from a
+// representation-level descriptive document
+// (representations/<name>/metadata/descriptive/*.xml).
+const RepresentationSchemas = "../../../../schemas"
+
 // EncodeTerms writes the terms as the meemoo descriptive document: the
 // same document shape as the retired dc+schema define, one element per
 // term, order preserved. schemas is the relative path from the document to

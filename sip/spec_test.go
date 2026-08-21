@@ -19,12 +19,13 @@ func TestValidateRecordStatus(t *testing.T) {
 }
 
 func TestIsUpdateRecordStatus(t *testing.T) {
-	for _, yes := range []string{"SUPPLEMENT", "REPLACEMENT", "VERSION", "DELETE", "replacement"} {
+	for _, yes := range []string{"SUPPLEMENT", "REPLACEMENT", "VERSION", "DELETE"} {
 		if !IsUpdateRecordStatus(yes) {
 			t.Errorf("IsUpdateRecordStatus(%q) = false, want true", yes)
 		}
 	}
-	for _, no := range []string{"NEW", "TEST", ""} {
+	// Lowercase is the caller's job to normalize, same as ValidateRecordStatus.
+	for _, no := range []string{"NEW", "TEST", "replacement", ""} {
 		if IsUpdateRecordStatus(no) {
 			t.Errorf("IsUpdateRecordStatus(%q) = true, want false", no)
 		}

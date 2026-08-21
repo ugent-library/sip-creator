@@ -2,7 +2,6 @@ package sip
 
 import (
 	"fmt"
-	"strings"
 )
 
 // Spec holds the profile-level values a METS document declares: the
@@ -39,9 +38,10 @@ func ValidateRecordStatus(status string) error {
 
 // IsUpdateRecordStatus reports whether status declares this package an
 // update of an earlier one: a package that must reuse the original's
-// identifier as its mets/@OBJID.
+// identifier as its mets/@OBJID. Like ValidateRecordStatus, it expects the
+// uppercase SIP3 form; callers normalize case before calling either.
 func IsUpdateRecordStatus(status string) bool {
-	switch strings.ToUpper(status) {
+	switch status {
 	case "SUPPLEMENT", "REPLACEMENT", "VERSION", "DELETE":
 		return true
 	}

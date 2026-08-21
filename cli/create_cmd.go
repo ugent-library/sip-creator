@@ -79,7 +79,7 @@ var createCmd = &cobra.Command{
 			Logger:      logger,
 		})
 
-		archive := archive.New(&archive.Config{
+		zipper := archive.New(&archive.Config{
 			Destination: args[1],
 			Logger:      logger,
 		})
@@ -93,7 +93,7 @@ var createCmd = &cobra.Command{
 		}
 
 		if noZip, _ := cmd.Flags().GetBool("no-zip"); !noZip {
-			return archive.Zip(built)
+			return zipper.Zip(built)
 		}
 
 		return nil

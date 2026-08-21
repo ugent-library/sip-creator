@@ -2,6 +2,7 @@ package sip
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/google/uuid"
 )
@@ -56,21 +57,16 @@ func (p *Package) AddDocumentationFiles(files []*File) {
 	p.DocumentationFiles = files
 }
 
+// DescriptiveFiles lists every descriptive document the package METS must
+// reference: sub-entities first, then the root. Sub-entities never nest
+// deeper than one level today (nothing assembles them yet); revisit this
+// when they do.
 func (p *Package) DescriptiveFiles() []*File {
-	var tmp []*File
-	var fn func(e *Entity)
-
-	fn = func(e *Entity) {
-		for _, v := range e.Entities {
-			fn(v)
-		}
-
-		tmp = append(tmp, e.DescriptionFile)
+	var files []*File
+	for _, e := range p.Root.Entities {
+		files = append(files, e.DescriptionFile)
 	}
-
-	fn(p.Root)
-
-	return tmp
+	return append(files, p.Root.DescriptionFile)
 }
 
 // NewPackage roots a package under baseDir. A caller-supplied identifier
@@ -82,6 +78,6 @@ func NewPackage(baseDir, identifier string) *Package {
 	}
 	return &Package{
 		Identifier: identifier,
-		Location:   fmt.Sprintf("%s/%s", baseDir, identifier),
+		Location:   filepath.Join(baseDir, identifier),
 	}
 }

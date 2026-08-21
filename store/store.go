@@ -48,13 +48,15 @@ func (s *Store) CopyFile(src, rel string) (Info, error) {
 	if err != nil {
 		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
 	}
-	defer out.Close()
 
 	hash := md5.New()
 	if _, err := io.Copy(io.MultiWriter(out, hash), in); err != nil {
 		out.Close()
 		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
 	}
+	// Close is checked, not deferred: a failed close means the bytes may
+	// not all be on disk, and the fixity below must describe the file as
+	// written.
 	if err := out.Close(); err != nil {
 		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
 	}

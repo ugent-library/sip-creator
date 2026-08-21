@@ -119,7 +119,6 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 func (b *Builder) writeDescriptive(st *store.Store, pkg *sip.Package, encode descriptiveEncoder) error {
 	df := pkg.Root.DescriptionFile
 	info, err := st.WriteMetadata(df.Path, func(w io.Writer) error {
-		// From metadata/descriptive/, the package's schemas/ is two up.
 		return encode(w, pkg.Root.Description, metadata.PackageSchemas)
 	})
 	if err != nil {
@@ -141,9 +140,7 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 				return err
 			}
 			info, err := st.WriteMetadata(base+df.Path, func(w io.Writer) error {
-				// From representations/<name>/metadata/descriptive/, the
-				// package's schemas/ is four up.
-				return encodeDescriptive(w, r.Description, "../../../../schemas")
+				return encodeDescriptive(w, r.Description, metadata.RepresentationSchemas)
 			})
 			if err != nil {
 				return err

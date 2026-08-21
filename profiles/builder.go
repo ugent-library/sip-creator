@@ -20,14 +20,14 @@ type Config struct {
 // profile Definition. It reads no input tree: the CLI's folder convention
 // and any embedding system deliver the same data.
 type Builder struct {
-	OutDir string
-	Logger *slog.Logger
+	Destination string
+	Logger      *slog.Logger
 }
 
 func New(config *Config) *Builder {
 	return &Builder{
-		OutDir: config.Destination,
-		Logger: config.Logger,
+		Destination: config.Destination,
+		Logger:      config.Logger,
 	}
 }
 

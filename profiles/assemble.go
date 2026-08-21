@@ -22,13 +22,13 @@ import (
 // with its Path declared, and the writer later back-fills fixity as it
 // emits.
 func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
-	pkg := sip.NewPackage(b.OutDir, in.PackageIdentifier)
-	b.Logger.Info("created a new package", slog.Any("id", pkg.Identifier))
+	pkg := sip.NewPackage(b.Destination, in.PackageIdentifier)
+	b.Logger.Info("created a new package", slog.String("id", pkg.Identifier))
 
 	pkg.Spec = &def.Mets
 
 	e := sip.NewEntity()
-	b.Logger.Info("created an intellectual entity", slog.Any("id", e.Identifier))
+	b.Logger.Info("created an intellectual entity", slog.String("id", e.Identifier))
 
 	b.assembleDescriptive(e, def, in)
 	pkg.AddSchemaFiles(schemaFileNodes())
@@ -53,7 +53,7 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 		pf.Path = "metadata/preservation/premis.xml"
 		pf.Mime = "text/xml" // generated XML by construction
 		pkg.AddPremisFile(pf)
-		b.Logger.Info("created a package PREMIS file", slog.Any("id", pf.Identifier))
+		b.Logger.Info("created a package PREMIS file", slog.String("id", pf.Identifier))
 	}
 
 	mf := sip.NewFile()
@@ -63,7 +63,7 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 	// nothing references the package METS from inside the package.
 	mf.Mime = "text/xml"
 	pkg.AddMetsFile(mf)
-	b.Logger.Info("created a package METS file", slog.Any("id", mf.Identifier))
+	b.Logger.Info("created a package METS file", slog.String("id", mf.Identifier))
 
 	pkg.AddRootEntity(e)
 	return pkg, nil
@@ -86,7 +86,7 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 	df.Path = "metadata/descriptive/" + df.Name // declared, not derived from disk
 	df.Mime = "text/xml"                        // the writer renders it as XML by construction
 	e.AddDescriptionFile(df)
-	b.Logger.Info("created a descriptive file", slog.Any("id", df.Identifier))
+	b.Logger.Info("created a descriptive file", slog.String("id", df.Identifier))
 }
 
 // schemaFileNodes declares one graph node per bundled XSD, sorted so METS
@@ -148,7 +148,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 	for i, sr := range in.Representations {
 		r := sip.NewRepresentation(fmt.Sprintf("representation_%d", i+1))
 		r.Label = sr.Label
-		b.Logger.Info("created a representation", slog.Any("id", r.Identifier), slog.String("label", sr.Label))
+		b.Logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("label", sr.Label))
 
 		if sr.Descriptive != nil {
 			// Mirror the package-level swap: when the terms carry an
@@ -163,7 +163,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			df.Path = "metadata/descriptive/" + df.Name // rep-relative, per File.Path
 			df.Mime = "text/xml"                        // the writer renders it as XML by construction
 			r.AddDescriptionFile(df)
-			b.Logger.Info("created a representation descriptive file", slog.Any("id", df.Identifier))
+			b.Logger.Info("created a representation descriptive file", slog.String("id", df.Identifier))
 		}
 
 		for _, src := range sr.Files {
@@ -188,7 +188,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			}
 			f.SetRepresentation(r)
 			r.AddFile(f)
-			b.Logger.Info("placed an essence file", slog.Any("id", f.Identifier))
+			b.Logger.Info("placed an essence file", slog.String("id", f.Identifier))
 		}
 
 		received, err := b.assembleReceivedPremis(fmt.Sprintf("representation %q", sr.Label), sr.Premis)
@@ -209,7 +209,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
 			pf.Mime = "text/xml"                         // generated XML by construction
 			r.AddPremisFile(pf)
-			b.Logger.Info("created a representation PREMIS file", slog.Any("id", pf.Identifier))
+			b.Logger.Info("created a representation PREMIS file", slog.String("id", pf.Identifier))
 		}
 
 		mf := sip.NewFile()
@@ -217,7 +217,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 		mf.Path = "representations/" + r.Name + "/METS.xml" // package-relative: referenced from package METS
 		mf.Mime = "text/xml"                                // generated XML by construction
 		r.AddMetsFile(mf)
-		b.Logger.Info("created a representation METS file", slog.Any("id", mf.Identifier))
+		b.Logger.Info("created a representation METS file", slog.String("id", mf.Identifier))
 
 		r.SetEntity(e)
 		e.AddRepresentation(r)
@@ -250,7 +250,7 @@ func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile)
 		node.Path = "metadata/preservation/" + src.Path // container-relative, per File.Path
 		node.Mime = "text/xml"                          // verified XML above
 		files = append(files, node)
-		b.Logger.Info("placed a received preservation file", slog.Any("id", node.Identifier))
+		b.Logger.Info("placed a received preservation file", slog.String("id", node.Identifier))
 	}
 	return files, nil
 }
