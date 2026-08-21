@@ -25,7 +25,6 @@ type File struct {
 
 type Format struct {
 	FormatRegistry *FormatRegistry
-	// FormatDesignation FormatDesignation
 }
 
 type FormatRegistry struct {
@@ -42,10 +41,6 @@ func NewFormatRegistry() *FormatRegistry {
 
 func (f *File) SetRepresentation(r *Representation) {
 	f.Representation = r
-}
-
-func (f *File) GetRepresentation() *Representation {
-	return f.Representation
 }
 
 func NewFile() *File {

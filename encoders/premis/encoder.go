@@ -7,9 +7,7 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-var funcs = template.FuncMap{}
-
-var premis = template.Must(template.New("").Funcs(funcs).Parse(`
+var premis = template.Must(template.New("").Parse(`
 {{ define "entity" -}}
 <?xml version='1.0' encoding='UTF-8'?>
 <premis:premis version="3.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:premis="http://www.loc.gov/premis/v3" xsi:schemaLocation="http://www.loc.gov/premis/v3 https://www.loc.gov/standards/premis/premis.xsd">

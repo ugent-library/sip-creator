@@ -28,10 +28,6 @@ func (e *Entity) AddDescriptionFile(f *File) {
 	e.DescriptionFile = f
 }
 
-func (e *Entity) AddSubIntellectualEntity(sub *Entity) {
-	e.Entities = append(e.Entities, sub)
-}
-
 func (e *Entity) AddRepresentation(r *Representation) {
 	e.Representations = append(e.Representations, r)
 }
