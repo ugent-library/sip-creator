@@ -25,16 +25,15 @@ var funcs = template.FuncMap{
 		return time.Now().Format(time.RFC3339Nano)
 	},
 	"joinIdentifiers": func(files []*sip.File) string {
-		var tmp []string
+		var ids []string
 		for _, f := range files {
-			tmp = append(tmp, f.Identifier)
+			ids = append(ids, f.Identifier)
 		}
-
-		return strings.Join(tmp[:], " ")
+		return strings.Join(ids, " ")
 	},
 }
 
-var dc = template.Must(template.New("").Funcs(funcs).Parse(`
+var templates = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ define "representation" -}}
 <?xml version='1.0' encoding='UTF-8'?>
 <mets xmlns="http://www.loc.gov/METS/" 
@@ -73,7 +72,7 @@ var dc = template.Must(template.New("").Funcs(funcs).Parse(`
     <fileSec ID="{{ identifier}}">
         <fileGrp USE="data" ID="{{ $fileGrpID }}">
 		{{ range .Files -}}
-            <file ID="{{ identifier }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
+            <file ID="{{ .Identifier }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
                 <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .Path }}"/>
             </file>
 		{{ end -}}
@@ -210,9 +209,9 @@ type repView struct {
 }
 
 func EncodeRepresentation(w io.Writer, r *sip.Representation, spec *sip.Spec) error {
-	return dc.ExecuteTemplate(w, "representation", repView{r, spec})
+	return templates.ExecuteTemplate(w, "representation", repView{r, spec})
 }
 
 func EncodePackage(w io.Writer, p *sip.Package) error {
-	return dc.ExecuteTemplate(w, "package", p)
+	return templates.ExecuteTemplate(w, "package", p)
 }
