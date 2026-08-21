@@ -74,16 +74,17 @@ A profile is **data, not code**: a `profiles.Definition` (descriptive source fil
 2. Decode `src/dc+schema.json`, swap the entity's UUID in as `dcterms:identifier`, lift the source `dcterms:identifier` out to the entity as `MEEMOO-LOCAL-ID`, and park the decoded description on the entity (`Entity.Description`) for the writer to serialize. The descriptive `File` node is declared with its path; decoding stays behind a single call (`decodeDescriptive`) so future input formats plug in there.
 3. Declare one schema `File` node per bundled XSD, in sorted order (deterministic METS emission).
 4. Walk `src` for directories matching `representation_([0-9]+)$`; for each essence file, record `File.Source` plus the representation-relative `Path`, and — when a characterization report is present (a caller-supplied `characterization.Report`, else the profile's `siegfried.json` sidecar, resolved at the start of assembly) — enrich it from the report's record for the **source file** ([ADR-0009](decisions/0009-characterization-as-sidecar-input.md)): no report is skipped; a present report is strict (missing essence entry, per-entry sf error, missing checksum, or an MD5 mismatch against the source bytes aborts assembly); a recorded no-match leaves that file's `Format` nil. Documentation files need no entry but are checksum-verified when one exists.
+5. Declare the generated-metadata `File` nodes: per representation a `premis.xml` (only when the definition's `EmitRepresentationPremis` says so) and its `METS.xml`, plus the package `premis.xml` (per `EmitPackagePremis`) and the package `METS.xml`. Assembly leaves the graph complete — the writer creates no nodes, it only emits what the graph declares and back-fills fixity.
 
 **Phase 2 — write** (`profiles/write.go`, backed by the `store/` package), in a dependency order that is load-bearing and encoded exactly once, top to bottom in `write()`:
 
-5. Skeleton directories.
-6. Schema files (package METS references their fixity).
-7. Per representation: directories, then essence copies — fixity is computed during the streamed copy and back-filled onto the graph nodes, so it describes the bytes actually in the package.
-8. Descriptive XML (serialized from `Entity.Description`).
-9. Per representation: `premis.xml`, then `METS.xml` (the representation METS embeds its PREMIS file's fixity). These `File` nodes are born in the writer, not the assembler — their existence is toggled by the definition's `EmitRepresentationPremis`/`EmitPackagePremis` flags, and the METS templates render their references conditionally so a premis-less profile stays valid.
-10. Package `premis.xml` (the intellectual entity).
-11. Package `METS.xml` — **strictly last**, because it references every representation METS, the package PREMIS, the descriptive file, and every schema file by checksum.
+6. Skeleton directories.
+7. Schema files (package METS references their fixity).
+8. Per representation: directories, then essence copies — fixity is computed during the streamed copy and back-filled onto the graph nodes, so it describes the bytes actually in the package.
+9. Descriptive XML (serialized from `Entity.Description`).
+10. Per representation: `premis.xml`, then `METS.xml` (the representation METS embeds its PREMIS file's fixity). Whether a PREMIS node exists was decided at assembly by the emission flags, and the METS templates render their references conditionally, so a premis-less profile stays valid.
+11. Package `premis.xml` (the intellectual entity).
+12. Package `METS.xml` — **strictly last**, because it references every representation METS, the package PREMIS, the descriptive file, and every schema file by checksum.
 
 The assembled package is returned to the CLI, which zips it.
 

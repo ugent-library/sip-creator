@@ -47,6 +47,24 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 		return nil, err
 	}
 
+	if def.EmitPackagePremis {
+		pf := sip.NewFile()
+		pf.Name = "premis.xml"
+		pf.Path = "metadata/preservation/premis.xml"
+		pf.Mime = "text/xml" // generated XML by construction
+		pkg.AddPremisFile(pf)
+		b.Logger.Info("created a package PREMIS file", slog.Any("id", pf.Identifier))
+	}
+
+	mf := sip.NewFile()
+	mf.Name = "METS.xml"
+	mf.Path = "METS.xml"
+	// Set for the no-empty-Mime invariant even though no template reads it:
+	// nothing references the package METS from inside the package.
+	mf.Mime = "text/xml"
+	pkg.AddMetsFile(mf)
+	b.Logger.Info("created a package METS file", slog.Any("id", mf.Identifier))
+
 	pkg.AddRootEntity(e)
 	return pkg, nil
 }
@@ -184,6 +202,22 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			return err
 		}
 		r.AddDocumentationFiles(docs)
+
+		if def.EmitRepresentationPremis {
+			pf := sip.NewFile()
+			pf.Name = "premis.xml"
+			pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
+			pf.Mime = "text/xml"                         // generated XML by construction
+			r.AddPremisFile(pf)
+			b.Logger.Info("created a representation PREMIS file", slog.Any("id", pf.Identifier))
+		}
+
+		mf := sip.NewFile()
+		mf.Name = "METS.xml"
+		mf.Path = "representations/" + r.Name + "/METS.xml" // package-relative: referenced from package METS
+		mf.Mime = "text/xml"                                // generated XML by construction
+		r.AddMetsFile(mf)
+		b.Logger.Info("created a representation METS file", slog.Any("id", mf.Identifier))
 
 		r.SetEntity(e)
 		e.AddRepresentation(r)

@@ -2,7 +2,6 @@ package profiles
 
 import (
 	"io"
-	"log/slog"
 	"path"
 
 	"github.com/ugent-library/sip-creator/encoders/metadata"
@@ -14,10 +13,11 @@ import (
 )
 
 // write emits pkg to disk in dependency order, back-filling fixity on File
-// nodes as each file lands. The ordering is load-bearing and encoded only
+// nodes as each file lands. Every node was born at assembly — the writer
+// creates no graph nodes. The ordering is load-bearing and encoded only
 // here: representation METS embeds the fixity of its PREMIS file, and
 // package METS embeds the fixity of everything before it — strictly last.
-func (b *Builder) write(st *store.Store, pkg *sip.Package, def Definition, encodeDescriptive descriptiveEncoder) error {
+func (b *Builder) write(st *store.Store, pkg *sip.Package, encodeDescriptive descriptiveEncoder) error {
 	if err := b.writeSkeleton(st); err != nil {
 		return err
 	}
@@ -33,10 +33,10 @@ func (b *Builder) write(st *store.Store, pkg *sip.Package, def Definition, encod
 	if err := b.writeDescriptive(st, pkg, encodeDescriptive); err != nil {
 		return err
 	}
-	if err := b.writeRepresentationMetadata(st, pkg, def, encodeDescriptive); err != nil {
+	if err := b.writeRepresentationMetadata(st, pkg, encodeDescriptive); err != nil {
 		return err
 	}
-	if def.EmitPackagePremis {
+	if pkg.PremisFile != nil {
 		if err := b.writePackagePremis(st, pkg); err != nil {
 			return err
 		}
@@ -50,17 +50,7 @@ func (b *Builder) write(st *store.Store, pkg *sip.Package, def Definition, encod
 // writeReceivedPremis copies the package-level received preservation
 // documents — before the package METS, which embeds their fixity.
 func (b *Builder) writeReceivedPremis(st *store.Store, pkg *sip.Package) error {
-	for _, f := range pkg.ReceivedPremisFiles {
-		if err := st.MkdirAll(path.Dir(f.Path)); err != nil {
-			return err
-		}
-		info, err := st.CopyFile(f.Source, f.Path)
-		if err != nil {
-			return err
-		}
-		backfill(f, info)
-	}
-	return nil
+	return copyFiles(st, "", pkg.ReceivedPremisFiles)
 }
 
 func (b *Builder) writeSkeleton(st *store.Store) error {
@@ -92,21 +82,9 @@ func (b *Builder) writeSchemas(st *store.Store, pkg *sip.Package) error {
 	return nil
 }
 
-// writeDocumentation copies the optional documentation files; directories
-// are created per file, so a package without documentation gains no empty
-// documentation/ dir.
+// writeDocumentation copies the optional package-level documentation files.
 func (b *Builder) writeDocumentation(st *store.Store, pkg *sip.Package) error {
-	for _, f := range pkg.DocumentationFiles {
-		if err := st.MkdirAll(path.Dir(f.Path)); err != nil {
-			return err
-		}
-		info, err := st.CopyFile(f.Source, f.Path)
-		if err != nil {
-			return err
-		}
-		backfill(f, info)
-	}
-	return nil
+	return copyFiles(st, "", pkg.DocumentationFiles)
 }
 
 func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
@@ -150,16 +128,18 @@ func (b *Builder) writeDescriptive(st *store.Store, pkg *sip.Package, encode des
 	return nil
 }
 
-func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package, def Definition, encodeDescriptive descriptiveEncoder) error {
+func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package, encodeDescriptive descriptiveEncoder) error {
 	return pkg.Root.EachRepresentation(func(r *sip.Representation) error {
+		base := "representations/" + r.Name + "/"
+
 		if r.Description != nil {
 			// Same family encoder as the package descriptive; written
 			// before the representation METS, which embeds its fixity.
 			df := r.DescriptionFile
-			if err := st.MkdirAll("representations/" + r.Name + "/metadata/descriptive"); err != nil {
+			if err := st.MkdirAll(base + "metadata/descriptive"); err != nil {
 				return err
 			}
-			info, err := st.WriteMetadata("representations/"+r.Name+"/"+df.Path, func(w io.Writer) error {
+			info, err := st.WriteMetadata(base+df.Path, func(w io.Writer) error {
 				// From representations/<name>/metadata/descriptive/, the
 				// package's schemas/ is four up.
 				return encodeDescriptive(w, r.Description, "../../../../schemas")
@@ -168,57 +148,30 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 				return err
 			}
 			backfill(df, info)
-			b.Logger.Info("created a representation descriptive file", slog.Any("id", df.Identifier))
 		}
 
-		if def.EmitRepresentationPremis {
+		if pf := r.PremisFile; pf != nil {
 			// PREMIS first: the representation METS embeds its fixity.
-			pf := sip.NewFile()
-			pf.Name = "premis.xml"
-			pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
-			pf.Mime = "text/xml"                         // generated XML by construction
-			info, err := st.WriteMetadata("representations/"+r.Name+"/"+pf.Path, func(w io.Writer) error {
+			info, err := st.WriteMetadata(base+pf.Path, func(w io.Writer) error {
 				return premis.EncodeRepresentation(w, r)
 			})
 			if err != nil {
 				return err
 			}
 			backfill(pf, info)
-			r.AddPremisFile(pf)
-			b.Logger.Info("created a representation PREMIS file", slog.Any("id", pf.Identifier))
 		}
 
-		// Representation documentation lands before the representation
-		// METS, which embeds its fixity; per-file MkdirAll keeps a
-		// documentation-less representation free of an empty dir.
-		for _, f := range r.DocumentationFiles {
-			if err := st.MkdirAll("representations/" + r.Name + "/" + path.Dir(f.Path)); err != nil {
-				return err
-			}
-			info, err := st.CopyFile(f.Source, "representations/"+r.Name+"/"+f.Path)
-			if err != nil {
-				return err
-			}
-			backfill(f, info)
+		// Documentation and received preservation documents are copies, not
+		// renders; both land before the representation METS, which embeds
+		// their fixity.
+		if err := copyFiles(st, base, r.DocumentationFiles); err != nil {
+			return err
+		}
+		if err := copyFiles(st, base, r.ReceivedPremisFiles); err != nil {
+			return err
 		}
 
-		// Received preservation documents are copies, not renders; they
-		// land before the representation METS, which embeds their fixity.
-		for _, f := range r.ReceivedPremisFiles {
-			if err := st.MkdirAll("representations/" + r.Name + "/" + path.Dir(f.Path)); err != nil {
-				return err
-			}
-			info, err := st.CopyFile(f.Source, "representations/"+r.Name+"/"+f.Path)
-			if err != nil {
-				return err
-			}
-			backfill(f, info)
-		}
-
-		mf := sip.NewFile()
-		mf.Name = "METS.xml"
-		mf.Path = "representations/" + r.Name + "/METS.xml" // package-relative: referenced from package METS
-		mf.Mime = "text/xml"                                // generated XML by construction
+		mf := r.MetsFile
 		info, err := st.WriteMetadata(mf.Path, func(w io.Writer) error {
 			return mets.EncodeRepresentation(w, r, pkg.Spec)
 		})
@@ -226,18 +179,13 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 			return err
 		}
 		backfill(mf, info)
-		r.AddMetsFile(mf)
-		b.Logger.Info("created a representation METS file", slog.Any("id", mf.Identifier))
 		return nil
 	})
 }
 
 func (b *Builder) writePackagePremis(st *store.Store, pkg *sip.Package) error {
 	// TODO also account for sub-IE(s) tied to the root entity
-	pf := sip.NewFile()
-	pf.Name = "premis.xml"
-	pf.Path = "metadata/preservation/premis.xml"
-	pf.Mime = "text/xml" // generated XML by construction
+	pf := pkg.PremisFile
 	info, err := st.WriteMetadata(pf.Path, func(w io.Writer) error {
 		return premis.EncodeEntity(w, pkg.Root)
 	})
@@ -245,18 +193,11 @@ func (b *Builder) writePackagePremis(st *store.Store, pkg *sip.Package) error {
 		return err
 	}
 	backfill(pf, info)
-	pkg.AddPremisFile(pf)
-	b.Logger.Info("created a package PREMIS file", slog.Any("id", pf.Identifier))
 	return nil
 }
 
 func (b *Builder) writePackageMets(st *store.Store, pkg *sip.Package) error {
-	mf := sip.NewFile()
-	mf.Name = "METS.xml"
-	mf.Path = "METS.xml"
-	// Set for the no-empty-Mime invariant even though no template reads it:
-	// nothing references the package METS from inside the package.
-	mf.Mime = "text/xml"
+	mf := pkg.MetsFile
 	info, err := st.WriteMetadata(mf.Path, func(w io.Writer) error {
 		return mets.EncodePackage(w, pkg)
 	})
@@ -264,8 +205,24 @@ func (b *Builder) writePackageMets(st *store.Store, pkg *sip.Package) error {
 		return err
 	}
 	backfill(mf, info)
-	pkg.AddMetsFile(mf)
-	b.Logger.Info("created a package METS file", slog.Any("id", mf.Identifier))
+	return nil
+}
+
+// copyFiles copies pre-declared file nodes into the package under prefix
+// (empty for package level, "representations/<name>/" for a representation),
+// back-filling fixity from each streamed copy. Directories are created per
+// file, so a container without such files gains no empty dir.
+func copyFiles(st *store.Store, prefix string, files []*sip.File) error {
+	for _, f := range files {
+		if err := st.MkdirAll(path.Dir(prefix + f.Path)); err != nil {
+			return err
+		}
+		info, err := st.CopyFile(f.Source, prefix+f.Path)
+		if err != nil {
+			return err
+		}
+		backfill(f, info)
+	}
 	return nil
 }
 

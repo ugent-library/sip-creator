@@ -214,13 +214,48 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("essence Mime = %q, want %q from the report", f.Mime, "image/test")
 	}
 
-	// PREMIS and METS nodes are the writer's to create, not the assembler's.
-	if pkg.PremisFile != nil || pkg.MetsFile != nil || r.PremisFile != nil || r.MetsFile != nil {
-		t.Error("assemble created premis/mets nodes; those belong to write")
+	// Assembly leaves the graph complete: the generated PREMIS and METS
+	// nodes are born here too (basic emits both PREMIS files), each with
+	// its Path declared; the writer only emits and back-fills.
+	if pkg.PremisFile == nil || pkg.MetsFile == nil || r.PremisFile == nil || r.MetsFile == nil {
+		t.Fatal("assemble left generated premis/mets nodes unborn; the graph must be complete before write")
+	}
+	if got := pkg.MetsFile.Path; got != "METS.xml" {
+		t.Errorf("package METS Path = %q, want %q", got, "METS.xml")
+	}
+	if got := pkg.PremisFile.Path; got != "metadata/preservation/premis.xml" {
+		t.Errorf("package PREMIS Path = %q, want %q", got, "metadata/preservation/premis.xml")
+	}
+	if got := r.MetsFile.Path; got != "representations/representation_1/METS.xml" {
+		t.Errorf("representation METS Path = %q, want %q", got, "representations/representation_1/METS.xml")
+	}
+	if got := r.PremisFile.Path; got != "metadata/preservation/premis.xml" {
+		t.Errorf("representation PREMIS Path = %q, want %q", got, "metadata/preservation/premis.xml")
 	}
 
 	// The load-bearing guarantee: assembly writes nothing.
 	requireEmpty(t, outDir)
+}
+
+func TestAssemblePremislessProfile(t *testing.T) {
+	b, in, _ := newTestBuilder(t)
+
+	def := basicDef(t)
+	def.EmitPackagePremis = false
+	def.EmitRepresentationPremis = false
+
+	pkg, err := b.assemble(def, in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+
+	r := pkg.Root.Representations[0]
+	if pkg.PremisFile != nil || r.PremisFile != nil {
+		t.Error("premis nodes born although the profile emits no PREMIS")
+	}
+	if pkg.MetsFile == nil || r.MetsFile == nil {
+		t.Error("METS nodes must be born regardless of the PREMIS emission flags")
+	}
 }
 
 func TestAssembleRepresentations(t *testing.T) {
@@ -568,10 +603,10 @@ func TestAssembleReceivedPremis(t *testing.T) {
 		t.Errorf("received Mime = %q", got)
 	}
 
-	// PremisFiles feeds the METS amdSec: generated first (the writer adds
-	// it later), received after — before write, received only.
-	if files := r.PremisFiles(); len(files) != 1 || files[0] != r.ReceivedPremisFiles[0] {
-		t.Errorf("PremisFiles = %v, want the received node", files)
+	// PremisFiles feeds the METS amdSec: the generated node first (born at
+	// assembly, basic emits it), the received one after.
+	if files := r.PremisFiles(); len(files) != 2 || files[0] != r.PremisFile || files[1] != r.ReceivedPremisFiles[0] {
+		t.Errorf("PremisFiles = %v, want [generated, received]", files)
 	}
 	requireEmpty(t, outDir)
 }

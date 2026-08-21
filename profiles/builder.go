@@ -57,7 +57,7 @@ func (b *Builder) Build(def Definition, in *Input) (*sip.Package, error) {
 	}
 
 	st := store.New(pkg.Location)
-	if err := b.write(st, pkg, def, encodeDescriptive); err != nil {
+	if err := b.write(st, pkg, encodeDescriptive); err != nil {
 		return nil, err
 	}
 
