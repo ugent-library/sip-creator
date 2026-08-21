@@ -1,8 +1,8 @@
 # 0010 — Administrative values come from configuration, not the input folder
 
-Status: **Proposed** (drafted 2026-08-18 with the
-[input-convention plan](../plans/input-convention.md); accept when its I3
-cut-over lands).
+Status: **Accepted** (2026-08-21, with the
+[input-convention plan](../archive/input-convention.md); drafted 2026-08-18,
+the I3 cut-over landed 2026-08-19).
 
 ## Context
 

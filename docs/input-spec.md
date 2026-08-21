@@ -1,6 +1,6 @@
 # SIP Creator input specification
 
-Status: **Draft**, fully implemented ([input-convention plan](plans/input-convention.md), 2026-08-20); the status flips to current with that plan's closing docs sweep. The §3 vocabulary follows the [descriptive-vocabulary plan](archive/descriptive-vocabulary.md) (implemented 2026-08-20 with [ADR-0011](decisions/0011-closed-descriptive-vocabulary.md)).
+Status: **Current** (2026-08-21) — this is the input contract the tool enforces. Implemented by the [input-convention plan](archive/input-convention.md) with [ADR-0010](decisions/0010-config-over-self-describing-input.md); the §3 vocabulary by the [descriptive-vocabulary plan](archive/descriptive-vocabulary.md) with [ADR-0011](decisions/0011-closed-descriptive-vocabulary.md).
 
 This document describes how to prepare a folder so that the SIP Creator **CLI** can turn it into an E-ARK submission package. It is written for the people preparing material; the section [Mapping to the SIP](#7-mapping-to-the-sip-informative-for-specialists) at the end is for specialists and explains how each rule lands in the E-ARK CSIP/SIP structure.
 
@@ -43,7 +43,7 @@ Institution details (who submits, who archives, contact person, agreement number
 - Symbolic links anywhere in the input MUST be an error.
 - The tool MUST compare paths after Unicode canonical normalization (NFC), because macOS file names and typed CSV values often differ only in normalization form.
 - The tool MUST refuse to build when any MUST rule is violated, and MUST report all violations at once, in plain language, naming the file or folder concerned. SHOULD violations produce warnings.
-- The tool MUST offer a check-only mode that validates a folder against every rule here without building anything.
+- The tool MUST offer a check-only mode that validates a folder's structure and metadata against the rules here without building anything. Content-level verification — the characterization report's checksum bindings (§2) and the PREMIS conformance of received preservation files (§5) — happens at build, not at check: those rules bind whoever supplies the data, however it arrives.
 
 ## 2. Content files and representations
 
@@ -136,7 +136,7 @@ Digitization vendors and lab equipment sometimes deliver preservation metadata a
 
 Rules:
 
-- Files here MUST be valid PREMIS 3.0 XML. They are included in the package as received: not parsed, edited, or merged.
+- Files here MUST be well-formed XML whose root is a `premis:premis` element in the PREMIS 3 namespace, and SHOULD be schema-valid PREMIS 3.0 — the tool checks the former at build time and leaves schema validation to the external validators, like all content validation. They are included in the package as received: not parsed, edited, or merged.
 - Because these files cannot know the identifiers the tool generates, they SHOULD identify their subject using local identifiers built from your `identifier` and the representation name (e.g. `BIB.FA.2026.001-master`), so a future reader can correlate them with the generated preservation metadata.
 
 ## 6. What comes from configuration and the command line

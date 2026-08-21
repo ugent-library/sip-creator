@@ -81,6 +81,17 @@ This writes the package directory `basic-uuid/uuid-<uuid>/` and zips it (uncompr
 `basic-uuid/uuid-<uuid>.zip`. Pass `--no-zip` to skip the zip when the package directory
 itself is what you need next.
 
+Further flags:
+
+* `--content-category` sets the package's content category (`mets/@TYPE`,
+  CSIP vocabulary), overriding `SIP_CONTENT_CATEGORY` and the profile default.
+* `--status` sets the record status (SIP3 vocabulary: `new`, `supplement`,
+  `replacement`, `test`, `version`, `delete`; omitted means `new`). A status
+  that updates an earlier package requires `--updates <identifier>`: the
+  original package's identifier is reused as this package's identifier
+  (`mets/@OBJID`) — how a conformant archive matches the update to its
+  holdings.
+
 **Delivering to meemoo (basic profile):** meemoo's transfer format wraps the SIP in a
 BagIt bag — an envelope this tool deliberately does not produce
 ([ADR-0008](docs/decisions/0008-bag-layer-out-of-scope.md)). Bag the package *directory*
@@ -118,24 +129,33 @@ an unzipped package directory when debugging structure. See
 
 ## Input
 
-The input needs to adhere to these requirements:
+One folder is one package, prepared per the
+[input specification](docs/input-spec.md) — the authoritative statement of
+every rule. In short:
 
-**Basic profile**
+* **`metadata.csv`** (required): the descriptive metadata as two-column
+  `key,value` rows — a closed vocabulary of Dublin Core terms (see the
+  spec's key table). `identifier` and `title` are always required; meemoo
+  profiles also require `description` and `created`, and a Dutch entry
+  wherever a language-tagged key is used (`title[nl]`).
+* **Content**: either flat in the folder (one representation), or one folder
+  per version under `representations/<your-name>/` — names are free-form
+  labels (letters, digits, `._-`); the tool decides the package-side naming
+  and keeps your label as the human-readable name.
+* **Optional**: `documentation/` (context material; also per representation —
+  recommended: validators flag its absence as a SHOULD-level warning),
+  `premis/` (preservation XML received from a vendor, passed through as-is;
+  also per representation), a per-representation `metadata.csv` (e.g. a
+  license that differs between master and access copy), and the
+  `siegfried.json` characterization sidecar (see Format characterization).
 
-* There must be exactly one `dc+schema.json` file.
-* The metadata is serialized in `JSON-LD`. 
-  * The `@context` property refers to these two ontologies:
-    * `dcterms`: `http://purl.org/dc/terms/`
-    * `schema`: `http://schema.org/`
-  * meemoo SIP 1.2 requires `dcterms:title`, `dcterms:description` and
-    `dcterms:created` in the descriptive metadata — supply them or the SIP
-    will not conform. `dcterms:identifier` is where your own (local) identifier
-    goes; it is preserved as the `MEEMOO-LOCAL-ID`.
-* There must be one or more representation directories named `representation_N`
-  (`representation_1`, `representation_2`, …), each holding at least one essence file.
-  Directories not matching that name pattern are currently skipped silently.
-* An optional `documentation/` directory is copied into the package
-  (recommended: validators flag its absence as a SHOULD-level warning).
+Validate a folder without building anything (no configuration needed):
+
+```
+./bin/sip-creator check ./your-input
+```
+
+It reports every violation at once, in plain language.
 
 ## Documentation
 

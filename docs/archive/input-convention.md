@@ -1,9 +1,9 @@
 # Plan: implement the input convention
 
-*Status: **Draft** (2026-08-18) — for review, not yet started. Enacts
-[input-spec.md](../input-spec.md); accompanied by
-[ADR-0010](../decisions/0010-config-over-self-describing-input.md) (the
-config-over-self-describing-input trade-off the spec bakes in).*
+*Status: **Shipped** (2026-08-21; drafted 2026-08-18, steps I1–I6b landed
+2026-08-19 through 2026-08-20). Enacts [input-spec.md](../input-spec.md)
+(now **current**); the trade-off is [ADR-0010](../decisions/0010-config-over-self-describing-input.md)
+(**accepted**). Both profiles finish the arc at VALID with zero warnings.*
 
 ## Context
 
@@ -375,22 +375,22 @@ was never scheduled, guarded only by a create-time warning.
 
 ### I7 — docs and retirement
 
-- [ ] [input-spec.md](../input-spec.md): status flips from draft to
+- [x] [input-spec.md](../input-spec.md): status flips from draft to
       current; §5 wording revised (MUST well-formed PREMIS 3.0-namespaced,
       SHOULD schema-valid); §1's check-mode sentence scoped honestly
       (check validates structure and metadata rules; content verification —
       characterization bindings, premis conformance — happens at build;
       decided in the 2026-08-20 I6 review).
-- [ ] [ADR-0010](../decisions/0010-config-over-self-describing-input.md)
+- [x] [ADR-0010](../decisions/0010-config-over-self-describing-input.md)
       status → Accepted (if not already flipped at I3).
-- [ ] Design doc: input-contract section rewritten; CLI/library known-gap
+- [x] Design doc: input-contract section rewritten; CLI/library known-gap
       paragraph updated (input discovery now CLI-side, builder data-fed).
-- [ ] README: usage, input requirements, `check` command, new flags.
-- [ ] CLAUDE.md: system-shape input description updated.
-- [ ] TODO housekeeping: input-contract, `mets/@TYPE`, and rep-naming items
+- [x] README: usage, input requirements, `check` command, new flags.
+- [x] CLAUDE.md: system-shape input description updated.
+- [x] TODO housekeeping: input-contract, `mets/@TYPE`, and rep-naming items
       close; library-API item trimmed of what this arc delivered.
-- [ ] This plan retires to `archive/` per the docs lifecycle.
-- [ ] Gate: final `./build.sh basic` + `eark` run green.
+- [x] This plan retires to `archive/` per the docs lifecycle.
+- [x] Gate: final `./build.sh basic` + `eark` run green.
 
 ## Verification
 

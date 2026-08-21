@@ -3,7 +3,7 @@
 *Status: **implemented** (2026-08-20 — drafted, reviewed, and shipped the
 same day; V1 landed as commit 6ce79e8, V2 as 230cacd). Companion decision:
 [ADR-0011](../decisions/0011-closed-descriptive-vocabulary.md) (accepted).
-Independent of the [input-convention plan](../plans/input-convention.md)'s
+Independent of the [input-convention plan](../archive/input-convention.md)'s
 remaining steps; its I7 docs sweep should land after this.*
 
 ## Context
