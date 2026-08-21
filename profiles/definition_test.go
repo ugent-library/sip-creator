@@ -83,7 +83,8 @@ func TestValidateDescriptiveCardinalityPerFamily(t *testing.T) {
 }
 
 // The required language is meemoo family data: lang-tagged elements
-// without a Dutch entry fail basic and pass eark.
+// without a Dutch entry fail basic and pass eark, at package and
+// representation level.
 func TestValidateDescriptiveRequiredLangPerFamily(t *testing.T) {
 	terms := testDescriptive()
 	terms = append(terms, metadata.Term{Element: "dcterms:subject", Lang: "en", Value: "cats"})
@@ -95,6 +96,18 @@ func TestValidateDescriptiveRequiredLangPerFamily(t *testing.T) {
 	err := basicDef(t).validateDescriptive(in)
 	if err == nil || !strings.Contains(err.Error(), `"nl"`) {
 		t.Fatalf("basic did not demand the Dutch entry: %v", err)
+	}
+
+	in = &Input{
+		Descriptive: testDescriptive(),
+		Representations: []SourceRepresentation{{
+			Label:       "master",
+			Descriptive: metadata.Terms{{Element: "dcterms:title", Lang: "en", Value: "Cats"}},
+		}},
+	}
+	err = basicDef(t).validateDescriptive(in)
+	if err == nil || !strings.Contains(err.Error(), `representation "master"`) || !strings.Contains(err.Error(), `"nl"`) {
+		t.Fatalf("basic did not demand the Dutch entry at representation level: %v", err)
 	}
 }
 

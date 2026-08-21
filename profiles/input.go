@@ -108,7 +108,7 @@ func (in *Input) Validate() error {
 	// the object identifier, so the graph cannot build without one. All
 	// other requiredness is profile policy: Definition.RequiredElements,
 	// checked by Build.
-	if in.Descriptive.LocalIdentifier("dcterms") == "" {
+	if in.Descriptive.LocalIdentifier() == "" {
 		return fmt.Errorf("descriptive metadata carries no dcterms:identifier; the local identifier is required")
 	}
 

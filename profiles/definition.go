@@ -46,7 +46,7 @@ type Definition struct {
 	Name                     string
 	Family                   Family
 	DescriptiveName          string // emitted filename of the descriptive document under metadata/descriptive/
-	LocalIdentifierScheme    string // scheme for MEEMOO-LOCAL-ID extraction; "" disables
+	EmitLocalIdentifier      bool   // lift the producer's identifier onto the entity as MEEMOO-LOCAL-ID
 	EmitPackagePremis        bool
 	EmitRepresentationPremis bool
 	Mets                     sip.Spec
@@ -66,8 +66,11 @@ type Definition struct {
 
 // validateDescriptive checks the input's descriptive terms against the
 // profile's conformance rules (requiredness, required language, and the
-// vocabulary's cardinality marks), all Definition data. Findings are joined
-// so one failed build names every gap at once.
+// vocabulary's cardinality marks), all Definition data. Requiredness binds
+// the package level only (identity lives there; representation descriptive
+// is optional), but the language and cardinality rules constrain what any
+// emitted document may say, so they bind representation descriptive too.
+// Findings are joined so one failed build names every gap at once.
 func (d Definition) validateDescriptive(in *Input) error {
 	errs := []error{
 		in.Descriptive.ValidateRequired(d.RequiredElements...),
@@ -75,8 +78,14 @@ func (d Definition) validateDescriptive(in *Input) error {
 	}
 	if d.EnforceCardinality {
 		errs = append(errs, in.Descriptive.ValidateCardinality())
-		for _, r := range in.Representations {
-			if err := r.Descriptive.ValidateCardinality(); err != nil {
+	}
+	for _, r := range in.Representations {
+		repErrs := []error{r.Descriptive.ValidateRequiredLang(d.RequiredLang)}
+		if d.EnforceCardinality {
+			repErrs = append(repErrs, r.Descriptive.ValidateCardinality())
+		}
+		for _, err := range repErrs {
+			if err != nil {
 				errs = append(errs, fmt.Errorf("representation %q: %w", r.Label, err))
 			}
 		}
@@ -116,7 +125,7 @@ var registry = map[string]Definition{
 		// The filename meemoo's basic profile expects for the descriptive
 		// document; kept from the pre-terms era so packages stay identical.
 		DescriptiveName:          "dc+schema.xml",
-		LocalIdentifierScheme:    "dcterms",
+		EmitLocalIdentifier:      true,
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
 		// meemoo's basic content profile: the vocabulary table's Required
@@ -137,7 +146,7 @@ var registry = map[string]Definition{
 			// Only the software agent: the submitting ORGANIZATION agent is
 			// operator identity, not profile data; WithSubmitter appends it.
 			Agents: []sip.Agent{
-				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1.", NoteType: "SOFTWARE VERSION"},
+				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1", NoteType: "SOFTWARE VERSION"},
 			},
 		},
 	},
@@ -147,7 +156,7 @@ var registry = map[string]Definition{
 		// Honest name for the simple-DC document RODA renders; no meemoo
 		// naming convention applies to the eark family.
 		DescriptiveName:          "dc.xml",
-		LocalIdentifierScheme:    "", // MEEMOO-LOCAL-ID is a meemoo concept
+		EmitLocalIdentifier:      false, // MEEMOO-LOCAL-ID is a meemoo concept
 		EmitPackagePremis:        false,
 		EmitRepresentationPremis: false, // RODA drops non-agent/event package PREMIS; v1 is essence + descriptive
 		// Only the input convention's identity MUSTs; no required language,
@@ -165,7 +174,7 @@ var registry = map[string]Definition{
 			// Only the software agent (see the basic entry): the submitting
 			// ORGANIZATION agent comes from WithSubmitter.
 			Agents: []sip.Agent{
-				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1.", NoteType: "SOFTWARE VERSION"},
+				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1", NoteType: "SOFTWARE VERSION"},
 			},
 		},
 	},

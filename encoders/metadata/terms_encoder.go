@@ -19,7 +19,6 @@ var termsTemplates = template.Must(template.New("").Funcs(template.FuncMap{
 <?xml version='1.0' encoding='UTF-8'?>
 <metadata xmlns="https://data.hetarchief.be/id/sip/1.2/basic"
 	xmlns:dcterms="http://purl.org/dc/terms/"
-	xmlns:xs="http://www.w3.org/2001/XMLSchema/"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:edtf="http://id.loc.gov/datatypes/edtf/"
 	xmlns:schema="https://schema.org/"

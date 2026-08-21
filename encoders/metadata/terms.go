@@ -28,13 +28,9 @@ func (t Terms) Has(element string) bool {
 	return false
 }
 
-// LocalIdentifier returns the value of the dcterms:identifier term:
-// the producer's local catalog/inventory number ("" when absent or the
-// scheme is unknown).
-func (t Terms) LocalIdentifier(scheme string) string {
-	if scheme != "dcterms" {
-		return ""
-	}
+// LocalIdentifier returns the value of the dcterms:identifier term: the
+// producer's local catalog/inventory number ("" when absent).
+func (t Terms) LocalIdentifier() string {
 	for _, term := range t {
 		if term.Element == "dcterms:identifier" {
 			return term.Value

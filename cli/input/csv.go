@@ -120,12 +120,16 @@ func isHeaderRow(row []string) bool {
 func (r *reader) parseKey(file string, line int, raw string) (element, lang string, ok bool) {
 	key := raw
 	if i := strings.IndexByte(key, '['); i >= 0 {
-		if !strings.HasSuffix(key, "]") || i+2 > len(key)-1 {
+		if !strings.HasSuffix(key, "]") {
 			r.violate("%s line %d: malformed language tag in %q; write it like title[nl]", file, line, raw)
 			return "", "", false
 		}
 		lang = key[i+1 : len(key)-1]
 		key = key[:i]
+		if lang == "" {
+			r.violate("%s line %d: malformed language tag in %q; write it like title[nl]", file, line, raw)
+			return "", "", false
+		}
 	}
 
 	// Prefixed keys left the convention (§8): every supported element has

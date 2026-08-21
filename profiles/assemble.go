@@ -75,8 +75,8 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 	// the terms hold one identifier slot, and the swap overwrites it. Per
 	// the meemoo spec the emitted document carries the entity identifier;
 	// the producer's own identifier travels as MEEMOO-LOCAL-ID.
-	if def.LocalIdentifierScheme != "" {
-		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", d.LocalIdentifier(def.LocalIdentifierScheme))
+	if def.EmitLocalIdentifier {
+		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", d.LocalIdentifier())
 	}
 	d.SetObjectIdentifier(e.Identifier)
 	e.Description = d
