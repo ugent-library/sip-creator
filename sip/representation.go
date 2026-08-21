@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+
+	"github.com/ugent-library/sip-creator/encoders/metadata"
 )
 
 type Representation struct {
@@ -21,7 +23,7 @@ type Representation struct {
 	// Description optionally describes this version of the content only
 	// (e.g. a license that differs between master and access copy);
 	// the work's identity stays on the Entity.
-	Description     Descriptive
+	Description     metadata.Terms
 	DescriptionFile *File
 	PremisFile      *File
 	// ReceivedPremisFiles are preservation documents delivered with the

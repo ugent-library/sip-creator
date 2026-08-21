@@ -52,14 +52,6 @@ type termsDoc struct {
 // descriptive document (metadata/descriptive/*.xml).
 const PackageSchemas = "../../schemas"
 
-// Encode writes the terms as a package-level meemoo descriptive document.
-// It satisfies sip.Descriptive; the writer's family seam calls EncodeTerms
-// with an explicit schema location instead, because only the writer knows
-// where a document lands.
-func (t Terms) Encode(w io.Writer) error {
-	return EncodeTerms(w, t, PackageSchemas)
-}
-
 // EncodeTerms writes the terms as the meemoo descriptive document — the
 // same document shape as the retired dc+schema define, one element per
 // term, order preserved. schemas is the relative path from the document to

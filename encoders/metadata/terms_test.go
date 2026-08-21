@@ -16,10 +16,10 @@ func testTerms() Terms {
 	}
 }
 
-func TestTermsEncode(t *testing.T) {
+func TestEncodeTerms(t *testing.T) {
 	var buf bytes.Buffer
-	if err := testTerms().Encode(&buf); err != nil {
-		t.Fatalf("Encode: %v", err)
+	if err := EncodeTerms(&buf, testTerms(), PackageSchemas); err != nil {
+		t.Fatalf("EncodeTerms: %v", err)
 	}
 	out := buf.String()
 
@@ -43,8 +43,7 @@ func TestTermsEncode(t *testing.T) {
 		t.Error("term order not preserved")
 	}
 
-	// Encode is the package-level default; the schema-location hint must
-	// resolve from metadata/descriptive/.
+	// PackageSchemas resolves from metadata/descriptive/.
 	if !strings.Contains(out, "../../schemas/descriptive_basic.xsd") {
 		t.Error("package-level schema location hint missing")
 	}
@@ -62,14 +61,14 @@ func TestEncodeTermsSchemaLocation(t *testing.T) {
 	}
 }
 
-func TestTermsEncodeRefusesInvalid(t *testing.T) {
+func TestEncodeTermsRefusesInvalid(t *testing.T) {
 	bad := Terms{{Element: "dcterms:titel", Value: "x"}}
 	var buf bytes.Buffer
-	if err := bad.Encode(&buf); err == nil {
-		t.Fatal("Encode accepted an invalid element")
+	if err := EncodeTerms(&buf, bad, PackageSchemas); err == nil {
+		t.Fatal("EncodeTerms accepted an invalid element")
 	}
 	if buf.Len() != 0 {
-		t.Errorf("Encode wrote %d bytes despite refusing", buf.Len())
+		t.Errorf("EncodeTerms wrote %d bytes despite refusing", buf.Len())
 	}
 }
 
@@ -181,7 +180,7 @@ func TestTermsIdentifierSeams(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	if err := terms.Encode(&buf); err != nil {
+	if err := EncodeTerms(&buf, terms, PackageSchemas); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "<dcterms:identifier>uuid-entity-1</dcterms:identifier>") {

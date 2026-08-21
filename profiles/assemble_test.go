@@ -138,11 +138,7 @@ func TestAssemble(t *testing.T) {
 	if got := e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; got != "local-id-001" {
 		t.Errorf("MEEMOO-LOCAL-ID = %q, want %q", got, "local-id-001")
 	}
-	d, ok := e.Description.(metadata.Terms)
-	if !ok {
-		t.Fatalf("Description is %T, want metadata.Terms", e.Description)
-	}
-	if got := d.LocalIdentifier("dcterms"); got != e.Identifier {
+	if got := e.Description.LocalIdentifier("dcterms"); got != e.Identifier {
 		t.Errorf("description identifier = %q, want entity identifier %q", got, e.Identifier)
 	}
 
@@ -553,8 +549,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 		t.Fatalf("assemble: %v", err)
 	}
 	r2 := pkg2.Root.Representations[0]
-	d2 := r2.Description.(metadata.Terms)
-	if got := d2.LocalIdentifier("dcterms"); got != r2.Identifier {
+	if got := r2.Description.LocalIdentifier("dcterms"); got != r2.Identifier {
 		t.Errorf("rep descriptive identifier = %q, want the representation identifier %q", got, r2.Identifier)
 	}
 
