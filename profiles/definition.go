@@ -119,10 +119,10 @@ var registry = map[string]Definition{
 		LocalIdentifierScheme:    "dcterms",
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
-		// meemoo's basic content profile: four mandatory elements, a Dutch
-		// entry wherever a lang-tagged element appears, and the vocabulary
-		// table's cardinalities bind.
-		RequiredElements:   []string{"dcterms:identifier", "dcterms:title", "dcterms:description", "dcterms:created"},
+		// meemoo's basic content profile: the vocabulary table's Required
+		// marks bind, a Dutch entry wherever a lang-tagged element appears,
+		// and the table's cardinalities bind.
+		RequiredElements:   metadata.RequiredElements(),
 		RequiredLang:       "nl",
 		EnforceCardinality: true,
 		Mets: sip.Spec{

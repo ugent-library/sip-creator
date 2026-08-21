@@ -1,6 +1,20 @@
 package metadata
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
+
+// The Required marks are a spec contract: meemoo's basic content profile
+// mandates exactly these four elements. The basic profile derives its
+// required list from the table, so an accidental table edit would silently
+// change conformance — this pins it.
+func TestRequiredElements(t *testing.T) {
+	want := []string{"dcterms:identifier", "dcterms:title", "dcterms:description", "dcterms:created"}
+	if got := RequiredElements(); !slices.Equal(got, want) {
+		t.Errorf("RequiredElements() = %v, want %v", got, want)
+	}
+}
 
 func TestResolveKey(t *testing.T) {
 	tests := []struct {

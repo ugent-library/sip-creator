@@ -4,9 +4,10 @@
 
 Application config: the CLI's operator contract, read from the
 environment. The library never sees it — embedding systems supply their
-logger and characterization report as data (profiles.Config), not via
-env vars. Format info comes from the siegfried.json sidecar in the input
-tree (ADR-0009), not from configuration.
+destination and logger as data (profiles.Config), and each package's
+material — characterization report included — as a profiles.Input, not
+via env vars. Format info comes from the siegfried.json sidecar in the
+input folder (ADR-0009), not from configuration.
 
  - The submitting organization, stamped into every package's METS as a
 CREATOR agent. `create` requires NAME for every profile and OR_ID for
@@ -20,8 +21,4 @@ profiles, where it becomes the agent's IDENTIFICATIONCODE note.
 content-category vocabulary), e.g. "Photographs – Digital". Empty
 means the profile's registry value; --content-category overrides
 both per run.
- - Build provenance, stamped by the deployment environment. Unused by the CLI itself.
-   - `SOURCE_BRANCH` - Git branch this build was made from.
-   - `SOURCE_COMMIT` - Git commit this build was made from.
-   - `IMAGE_NAME` - Name of the container image carrying this build.
 

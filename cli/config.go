@@ -32,15 +32,6 @@ type config struct {
 	// means the profile's registry value; --content-category overrides
 	// both per run.
 	ContentCategory string `env:"SIP_CONTENT_CATEGORY"`
-	// Build provenance, stamped by the deployment environment. Unused by the CLI itself.
-	Version struct {
-		// Git branch this build was made from.
-		Branch string `env:"SOURCE_BRANCH"`
-		// Git commit this build was made from.
-		Commit string `env:"SOURCE_COMMIT"`
-		// Name of the container image carrying this build.
-		Image string `env:"IMAGE_NAME"`
-	}
 }
 
 func configFromEnv() (*config, error) {

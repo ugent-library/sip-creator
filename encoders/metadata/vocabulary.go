@@ -80,3 +80,17 @@ func ResolveKey(key string) (element string, ok bool) {
 	row, ok := vocabularyByKey[strings.ToLower(key)]
 	return row.Element, ok
 }
+
+// RequiredElements lists the elements the vocabulary marks required — the
+// meemoo basic profile's 1..1 marks, in table order. Whether they bind is
+// the profile family's call: the meemoo family reads this list; a family
+// with its own requiredness rules (eark) declares its own.
+func RequiredElements() []string {
+	var out []string
+	for _, row := range vocabulary {
+		if row.Required {
+			out = append(out, row.Element)
+		}
+	}
+	return out
+}
