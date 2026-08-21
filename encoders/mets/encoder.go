@@ -7,13 +7,13 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
 func identifier() string {
-	return fmt.Sprintf("uuid-%s", uuid.New().String())
+	return fmt.Sprintf("uuid-%s", uuid.NewV4().String())
 }
 
 var funcs = template.FuncMap{

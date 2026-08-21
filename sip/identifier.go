@@ -3,8 +3,7 @@ package sip
 import (
 	"fmt"
 	"strings"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // ValidateIdentifier returns why id is not a package-local identifier:

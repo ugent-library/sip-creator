@@ -3,8 +3,7 @@ package sip
 import (
 	"fmt"
 	"path/filepath"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Package struct {
@@ -74,7 +73,7 @@ func (p *Package) DescriptiveFiles() []*File {
 // mets/@OBJID); empty means mint a fresh one.
 func NewPackage(baseDir, identifier string) *Package {
 	if identifier == "" {
-		identifier = fmt.Sprintf("uuid-%s", uuid.New().String())
+		identifier = fmt.Sprintf("uuid-%s", uuid.NewV4().String())
 	}
 	return &Package{
 		Identifier: identifier,

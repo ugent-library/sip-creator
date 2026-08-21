@@ -2,8 +2,7 @@ package sip
 
 import (
 	"fmt"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"github.com/ugent-library/sip-creator/encoders/metadata"
 )
@@ -77,6 +76,6 @@ func (r *Representation) SetEntity(e *Entity) {
 func NewRepresentation(name string) *Representation {
 	return &Representation{
 		Name:       name,
-		Identifier: fmt.Sprintf("uuid-%s", uuid.New().String()),
+		Identifier: fmt.Sprintf("uuid-%s", uuid.NewV4().String()),
 	}
 }

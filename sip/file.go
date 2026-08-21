@@ -2,8 +2,7 @@ package sip
 
 import (
 	"fmt"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type File struct {
@@ -45,6 +44,6 @@ func (f *File) SetRepresentation(r *Representation) {
 
 func NewFile() *File {
 	return &File{
-		Identifier: fmt.Sprintf("uuid-%s", uuid.New().String()),
+		Identifier: fmt.Sprintf("uuid-%s", uuid.NewV4().String()),
 	}
 }

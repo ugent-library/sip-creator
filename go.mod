@@ -1,10 +1,9 @@
 module github.com/ugent-library/sip-creator
 
-go 1.26
+go 1.27.0
 
 require (
 	github.com/caarlos0/env/v11 v11.1.0
-	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/spf13/cobra v1.8.0
 	golang.org/x/text v0.41.0
