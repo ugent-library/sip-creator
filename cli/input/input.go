@@ -10,7 +10,6 @@ package input
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/ugent-library/sip-creator/characterization"
@@ -165,17 +164,7 @@ func (r *reader) read() *Package {
 				r.violate("premis is a file; the reserved name is for a folder")
 				continue
 			}
-			pkg.Premis = r.collectFiles(src)
-			// The one transport-level premis rule: premis.xml belongs to
-			// the generated document. Content conformance (well-formed
-			// premis:premis) is deliberately a build-time check, like the
-			// characterization MD5 binding: check validates structure,
-			// content verification happens at assembly.
-			for _, f := range pkg.Premis {
-				if path.Base(f.Path) == "premis.xml" {
-					r.violate("%s: premis.xml is reserved for the generated preservation document; rename the received file", f.Rel)
-				}
-			}
+			pkg.Premis = r.collectPremisFiles(src)
 		case sidecarName:
 			if e.IsDir() {
 				r.violate("siegfried.json is a folder; the reserved name is for the characterization report")

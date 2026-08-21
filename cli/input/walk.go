@@ -60,14 +60,7 @@ func (r *reader) readRepresentation(dir, label string) Representation {
 				r.violate("%s is a file; the reserved name is for a folder", r.rel(src))
 				continue
 			}
-			rep.Premis = r.collectFiles(src)
-			// premis.xml is reserved for the generated document, the same
-			// rule as the package-level premis/ (see read).
-			for _, f := range rep.Premis {
-				if path.Base(f.Path) == "premis.xml" {
-					r.violate("%s: premis.xml is reserved for the generated preservation document; rename the received file", f.Rel)
-				}
-			}
+			rep.Premis = r.collectPremisFiles(src)
 		case e.IsDir():
 			r.walkContent(dir, src, &rep.Files)
 		default:
@@ -105,6 +98,22 @@ func (r *reader) readFlatRepresentation(entries []os.DirEntry) Representation {
 func (r *reader) collectFiles(dir string) []File {
 	var files []File
 	r.walkContent(dir, dir, &files)
+	return files
+}
+
+// collectPremisFiles collects a premis/ folder (package- or
+// representation-level, same rule both places) and flags the one
+// transport-level premis rule: premis.xml belongs to the generated
+// document. Content conformance (well-formed premis:premis) is
+// deliberately a build-time check, like the characterization MD5 binding:
+// check validates structure, content verification happens at assembly.
+func (r *reader) collectPremisFiles(dir string) []File {
+	files := r.collectFiles(dir)
+	for _, f := range files {
+		if path.Base(f.Path) == "premis.xml" {
+			r.violate("%s: premis.xml is reserved for the generated preservation document; rename the received file", f.Rel)
+		}
+	}
 	return files
 }
 
