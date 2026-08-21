@@ -67,8 +67,9 @@ Two designs were considered and rejected during review because they re-created t
 `Basic()`/`Roda()` duplication this codebase already paid to remove:
 
 1. **Sibling writers** (`write_meemoo.go` / `write_eark.go`) would carry two copies
-   of the canonical emission order — the load-bearing invariant Phase 1 encoded
-   exactly once. Auditing the actual writer showed the family-varying surface is
+   of the canonical emission order, the invariant Phase 1 deliberately encoded
+   exactly once. Two copies drift, and the drifted one emits packages whose METS
+   checksum references no longer match the files. Auditing the actual writer showed the family-varying surface is
    three encoder call sites plus one data-conditional step; forking an 80-line
    orchestrator to vary that is the Basic/Roda mistake with better branding.
 2. **A sibling eark METS template family** guarded against structural differences
