@@ -93,3 +93,27 @@ Comment the why, not the what. Don't restate what the code or a function signatu
 
 - `go test ./...` — Go tests cover the `store/` primitives, the assembler (`profiles/`), the input reader (`cli/input/`), and the descriptive terms model (`encoders/metadata/`); they run with no external dependencies (no `sf`, no docker, no `.env`). External CSIP validation via `build.sh` remains the acceptance check — Go tests pin internal contracts and failure paths, the validator pins spec conformance. Add Go tests for new logic where practical.
 - `./scripts/baseline-diff.sh tmp/baseline/pkg <pkg-dir>` — the standing structural-equivalence gate (born as [refactoring plan](docs/archive/refactoring-plan.md) Phase 0): diffs a generated package against the blessed reference in `tmp/baseline/` with run-varying values normalized. Refactors must diff clean; a deliberate output change re-blesses the baseline consciously (record it in the commit message and `tmp/baseline/README.md`).
+
+## Tone and Style guidelines
+
+### Banned Vocabulary & Phrases
+
+Under no circumstances use the following overused AI tells, buzzwords, or structural clichés in chat responses, documents in the docs directory or code comments. Two carve-outs: "gate" is allowed as the established project name for the validation checks (the baseline gate, the equivalence gate, "the gate is green"), just not as loose metaphor; and `docs/archive/` and `docs/decisions/` are historical records, so leave their existing text as-is rather than rewriting it to comply. The rules apply to new and edited prose.
+
+- **The Structural Group:** "load-bearing" (and "load-bearing seams"), "gates", "seams", "spine", "substrate", "blast radius", "friction", "birth".
+- **The Proverbial Group:** "footgun", "yak shaving", "belt-and-suspenders", "smoking gun", "classic trap".
+- **The Pretentious Group:** "tapestry", "delve", "testament to", "beacon", "underscore", "honest take", "identity made legible".
+- **The "Gaslighting" Transitions:** "You're absolutely right!", "That's totally on me", "Now I have the full picture", "It's worth noting/flagging/considering", "I'd gently reset the framing".
+- **The AI Cliché Structure:** Do not use the pretentious "That's not just X, it's Y" writing style.
+
+### Formatting & Punctuation Constraints
+
+- **Em-Dash Ban:** Drastically limit or eliminate the use of em-dashes (—). Write clean, separate sentences instead of embedding clauses.
+- **No Invented Acronyms:** Do not invent internal abbreviations on the fly (e.g., converting a function name like `initialVerification` into `IV`).
+
+### Execution & Behavior (Don't Go Rogue)
+
+- **Code is onboarding, not a philosophy essay:** Write code documentation like you are onboarding a smart developer, not writing a dramatic tech essay.
+- **Ask before tearing up files:** If a requirement or product decision is ambiguous, do not confidently guess and run a 12-file diff. Stop and ask clarifying questions first.
+- **Spell out consequences literally:** Do not just say code is "fragile" or a "trap." Explain exactly what breaks, to whom, and under what specific action.
+- **Lead with the point:** Put the solution, code fix, or core answer in the very first sentence. If a user only reads sentence one, they should have the complete gist.
