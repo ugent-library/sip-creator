@@ -79,8 +79,7 @@ Further flags:
 deliverable; ingest it directly.
 
 **Delivering to meemoo (basic profile):** meemoo's transfer format wraps the SIP in a
-BagIt bag — an envelope this tool deliberately does not produce
-([ADR-0008](docs/decisions/0008-bag-layer-out-of-scope.md)). Bag the package *directory*
+BagIt bag — an envelope this tool deliberately does not produce. Bag the package *directory*
 (not our zip) with a reference BagIt implementation, then follow meemoo's transfer
 instructions:
 

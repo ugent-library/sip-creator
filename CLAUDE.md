@@ -1,6 +1,6 @@
 # SIP Creator agent orientation
 
-SIP Creator is both a Go library and a CLI that builds Submission Information Packages (SIPs). It takes a producer's essence files plus descriptive metadata and assembles them into a standards-conformant package. Its primary target is a valid [E-ARK CSIP](https://earkcsip.dilcis.eu/) package (ingestible by RODA and other CSIP-conformant systems) with [meemoo's SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) (the **stable** version; 2.0/2.1 are release candidates) layered on top as an additional specialization for ingest into the Flemish heritage archive (hetarchief.be). The BagIt envelope meemoo's transfer requires is out of scope: bag the package directory with a reference BagIt implementation ([ADR-0008](docs/decisions/0008-bag-layer-out-of-scope.md)).
+SIP Creator is both a Go library and a CLI that builds Submission Information Packages (SIPs). It takes a producer's essence files plus descriptive metadata and assembles them into a standards-conformant package. Its primary target is a valid [E-ARK CSIP](https://earkcsip.dilcis.eu/) package (ingestible by RODA and other CSIP-conformant systems) with [meemoo's SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) (the **stable** version; 2.0/2.1 are release candidates) layered on top as an additional specialization for ingest into the Flemish heritage archive (hetarchief.be). The BagIt envelope meemoo's transfer requires is out of scope: bag the package directory with a reference BagIt implementation.
 
 ## Scope
 

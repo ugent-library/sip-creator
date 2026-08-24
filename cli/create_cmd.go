@@ -13,7 +13,7 @@ import (
 
 func init() {
 	createCmd.Flags().String("profile", "", "Set the profile of the SIP")
-	createCmd.Flags().Bool("no-zip", false, "Skip zipping; the package directory is the deliverable (e.g. for external bagging, see ADR-0008)")
+	createCmd.Flags().Bool("no-zip", false, "Skip zipping; the package directory is the deliverable (e.g. for external bagging)")
 	createCmd.Flags().String("status", "", "Record status of the package (SIP3 vocabulary: new, supplement, replacement, test, version, delete); omitted means new")
 	createCmd.Flags().String("updates", "", "Identifier of the package this one updates; reused as this package's identifier (mets/@OBJID)")
 	createCmd.Flags().String("content-category", "", "Content category of the package (mets/@TYPE, CSIP vocabulary); overrides SIP_CONTENT_CATEGORY and the profile default")
