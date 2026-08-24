@@ -104,7 +104,7 @@ On exported types, document every field, stdlib style: the rendered doc page is 
 
 Under no circumstances use the following overused AI tells, buzzwords, or structural clichés in chat responses, documents in the docs directory or code comments. Two carve-outs: "gate" is allowed as the established project name for the validation checks (the baseline gate, the equivalence gate, "the gate is green"), just not as loose metaphor; and `docs/archive/` and `docs/decisions/` are historical records, so leave their existing text as-is rather than rewriting it to comply. The rules apply to new and edited prose.
 
-- **The Structural Group:** "load-bearing" (and "load-bearing seams"), "gates", "seams", "spine", "substrate", "blast radius", "friction", "birth", "bucket", "headline", "honestly", "land mine", "blessed", "bind", "baseline", "mark"
+- **The Structural Group:** "load-bearing" (and "load-bearing seams"), "gates", "seams", "spine", "substrate", "blast radius", "friction", "birth", "bucket", "headline", "honestly", "land mine", "blessed", "bind", "baseline", "mark", "bare", "gate"
 - **The Proverbial Group:** "footgun", "yak shaving", "belt-and-suspenders", "smoking gun", "classic trap"
 - **The Pretentious Group:** "tapestry", "delve", "testament to", "beacon", "underscore", "honest take", "identity made legible", "worth saying", "standing pass", "mandate", "demands", "honest gap"
 - **The "Gaslighting" Transitions:** "You're absolutely right!", "That's totally on me", "Now I have the full picture", "It's worth noting/flagging/considering", "I'd gently reset the framing".
@@ -121,3 +121,4 @@ Under no circumstances use the following overused AI tells, buzzwords, or struct
 - **Ask before tearing up files:** If a requirement or product decision is ambiguous, do not confidently guess and run a 12-file diff. Stop and ask clarifying questions first.
 - **Spell out consequences literally:** Do not just say code is "fragile" or a "trap." Explain exactly what breaks, to whom, and under what specific action.
 - **Lead with the point:** Put the solution, code fix, or core answer in the very first sentence. If a user only reads sentence one, they should have the complete gist.
+- **Plain words over coined names in chat:** Do not refer to project checks or tools by their nicknames ("the baseline gate", "the equivalence gate", "the structural-equivalence check") in chat responses. Name the actual script or file and say concretely what it does: "scripts/baseline-diff.sh, which compares a generated package against the reference copy in tmp/baseline/ to catch accidental output changes". The reader should understand the sentence without knowing the project's internal vocabulary.
