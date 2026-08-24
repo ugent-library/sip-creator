@@ -29,9 +29,8 @@ evidence.
 - **root**: authoritative reference:
   - `sip-creator-design.md`: the system design (domain model, package layout, build
     lifecycle, input contract, validation, known gaps). The entry point.
-  - `input-spec.md`: the operator-facing input specification (design genre; **draft**,
-    not yet implemented; the design doc's input contract describes what the code
-    enforces today).
+  - `input-spec.md`: the operator-facing input specification (design genre): the input
+    contract the CLI enforces; the `check` command validates a folder against it.
   - `TODO.md`: the live project backlog.
 - **`decisions/`**: ADRs. The *why*, permanent and live. `0000-template.md` is the shape;
   `0001`+ are real decisions. **Not** archive material: an ADR stays relevant long after
