@@ -36,8 +36,8 @@ ingest job over it selecting the **E-ARK SIP 2** format (the
 package carries none) and "create submission" per local policy.
 
 RODA does **not** run the full specification validator on ingest: it parses
-the package into its model and gates on the parse-level report (METS
-readable, referenced files present, checksums matching). Failures surface in
+the package into its model and accepts or rejects on the parse-level report
+(METS readable, referenced files present, checksums matching). Failures surface in
 the job report per SIP.
 
 ## 4. Verify what arrived

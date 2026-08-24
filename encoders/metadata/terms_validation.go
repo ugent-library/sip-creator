@@ -29,8 +29,8 @@ func (t Term) Validate() error {
 
 // Validate checks every term plus the one cross-term rule: at most one
 // dcterms:identifier. The local identifier is an identity, and two of
-// them is an ambiguity no consumer can resolve. The vocabulary also marks
-// identifier `once`, so ValidateCardinality states this rule again. That
+// them is an ambiguity no consumer can resolve. The vocabulary also lists
+// identifier as `once`, so ValidateCardinality states this rule again. That
 // overlap is deliberate: only the meemoo family enforces cardinality,
 // while the identifier rule holds for every profile, eark included.
 func (t Terms) Validate() error {

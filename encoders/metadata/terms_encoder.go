@@ -92,7 +92,7 @@ func dumbDown(t Terms) Terms {
 }
 
 // xsiType is the xsi:type the vocabulary declares for the element: how
-// the meemoo document marks its EDTF dates ("" for untyped elements).
+// the meemoo document types its EDTF dates ("" for untyped elements).
 func xsiType(element string) string {
 	return vocabularyByElement[element].XSIType
 }

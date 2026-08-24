@@ -9,7 +9,7 @@ import (
 // ValidateIdentifier returns why id is not a package-local identifier:
 // every identifier in this model takes the form uuid-<uuid>. The prefix
 // makes a UUID valid as a METS @ID (an xsd:ID may not start with a
-// digit; a bare UUID can).
+// digit; an unprefixed UUID can).
 func ValidateIdentifier(id string) error {
 	rest, ok := strings.CutPrefix(id, "uuid-")
 	if !ok {

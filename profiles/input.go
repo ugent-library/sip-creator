@@ -69,8 +69,8 @@ type Input struct {
 	Premis []SourceFile
 	// Characterization optionally supplies a pre-decoded characterization
 	// report; nil means the build proceeds without format info (ADR-0009).
-	// Fully strict when present: every essence file must have a
-	// checksum-bound entry.
+	// Fully strict when present: every essence file must have an entry
+	// whose checksum matches the source bytes.
 	Characterization characterization.Report
 }
 

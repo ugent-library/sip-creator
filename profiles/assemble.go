@@ -255,7 +255,7 @@ func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile)
 
 // essenceRecord looks up the file's record and enforces ADR-0009's
 // strictness: every essence file must be present in the report, error-free,
-// and checksum-bound to the bytes on disk; a stale format claim in
+// and its checksum must match the bytes on disk; a stale format claim in
 // preservation metadata is worse than none.
 func (b *Builder) essenceRecord(chars characterization.Report, src SourceFile) (characterization.Record, error) {
 	rec, ok := chars[src.Key]

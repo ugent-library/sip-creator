@@ -82,7 +82,7 @@ func ResolveKey(key string) (element string, ok bool) {
 	return row.Element, ok
 }
 
-// RequiredElements lists the elements the vocabulary marks required, in
+// RequiredElements lists the elements the vocabulary flags as required, in
 // table order. Whether they are enforced is the profile family's call:
 // the meemoo family reads this list; a family with its own requiredness
 // rules (eark) declares its own.

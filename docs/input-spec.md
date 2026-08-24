@@ -1,6 +1,6 @@
 # SIP Creator input specification
 
-Status: **Current** (2026-08-21) — this is the input contract the tool enforces. Implemented by the [input-convention plan](archive/input-convention.md) with [ADR-0010](decisions/0010-config-over-self-describing-input.md); the §3 vocabulary by the [descriptive-vocabulary plan](archive/descriptive-vocabulary.md) with [ADR-0011](decisions/0011-closed-descriptive-vocabulary.md).
+Status: **Current** (2026-08-21). This is the input contract the tool enforces. Implemented by the [input-convention plan](archive/input-convention.md) with [ADR-0010](decisions/0010-config-over-self-describing-input.md); the §3 vocabulary by the [descriptive-vocabulary plan](archive/descriptive-vocabulary.md) with [ADR-0011](decisions/0011-closed-descriptive-vocabulary.md).
 
 This document describes how to prepare a folder so that the SIP Creator **CLI** can turn it into an E-ARK submission package. It is written for the people preparing material; the section [Mapping to the SIP](#7-mapping-to-the-sip-informative-for-specialists) at the end is for specialists and explains how each rule lands in the E-ARK CSIP/SIP structure.
 
@@ -43,7 +43,7 @@ Institution details (who submits, who archives, contact person, agreement number
 - Symbolic links anywhere in the input MUST be an error.
 - The tool MUST compare paths after Unicode canonical normalization (NFC), because macOS file names and typed CSV values often differ only in normalization form.
 - The tool MUST refuse to build when any MUST rule is violated, and MUST report all violations at once, in plain language, naming the file or folder concerned. SHOULD violations produce warnings.
-- The tool MUST offer a check-only mode that validates a folder's structure and metadata against the rules here without building anything. Content-level verification — the characterization report's checksum bindings (§2) and the PREMIS conformance of received preservation files (§5) — happens at build, not at check: those rules bind whoever supplies the data, however it arrives.
+- The tool MUST offer a check-only mode that validates a folder's structure and metadata against the rules here without building anything. Content-level verification (the characterization report's checksum checks in §2 and the PREMIS conformance of received preservation files in §5) happens at build, not at check: those rules apply to whoever supplies the data, however it arrives.
 
 ## 2. Content files and representations
 
@@ -61,8 +61,8 @@ A *representation* is one version of the content: the archival master scans are 
 A two-column CSV (`key,value`) describing what the package contains. This is the only file an operator writes.
 
 - MUST be UTF-8 with a `key,value` header row. The tool MUST accept a UTF-8 BOM and CRLF line endings (spreadsheet tools produce both) and RFC 4180 quoting.
-- `identifier` and `title` MUST be present and non-empty. The identifier is your local catalog or inventory number; it travels with the package as its local identifier. Meemoo profiles additionally require `description` and `created` (their basic content profile mandates all four); the tool refuses to build a meemoo package without them.
-- Repeat a key for multiple values (two `creator` lines for two creators), but only for keys the table marks repeatable. Keys marked *per-language* may repeat only with distinct language tags (`title[nl]` plus `title[en]` is fine; two `title[nl]` rows are not). A second row for a single-valued key, or a repeated language on a per-language key, MUST be an error.
+- `identifier` and `title` MUST be present and non-empty. The identifier is your local catalog or inventory number; it travels with the package as its local identifier. Meemoo profiles additionally require `description` and `created` (their basic content profile requires all four); the tool refuses to build a meemoo package without them.
+- Repeat a key for multiple values (two `creator` lines for two creators), but only for keys the table lists as repeatable. Keys listed as *per-language* may repeat only with distinct language tags (`title[nl]` plus `title[en]` is fine; two `title[nl]` rows are not). A second row for a single-valued key, or a repeated language on a per-language key, MUST be an error.
 - Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`. Meemoo profiles require that wherever a language-tagged key is used, a Dutch entry (`[nl]`) is among the rows; other languages are welcome alongside, but Dutch must be present.
 - Unknown keys MUST be an error: a typo must not silently drop metadata. The table below is the entire vocabulary; it follows the flat-expressible elements of meemoo's basic content profile.
 
@@ -136,7 +136,7 @@ Digitization vendors and lab equipment sometimes deliver preservation metadata a
 
 Rules:
 
-- Files here MUST be well-formed XML whose root is a `premis:premis` element in the PREMIS 3 namespace, and SHOULD be schema-valid PREMIS 3.0 — the tool checks the former at build time and leaves schema validation to the external validators, like all content validation. They are included in the package as received: not parsed, edited, or merged.
+- Files here MUST be well-formed XML whose root is a `premis:premis` element in the PREMIS 3 namespace, and SHOULD be schema-valid PREMIS 3.0. The tool checks the former at build time and leaves schema validation to the external validators, like all content validation. They are included in the package as received: not parsed, edited, or merged.
 - Because these files cannot know the identifiers the tool generates, they SHOULD identify their subject using local identifiers built from your `identifier` and the representation name (e.g. `BIB.FA.2026.001-master`), so a future reader can correlate them with the generated preservation metadata.
 
 ## 6. What comes from configuration and the command line
