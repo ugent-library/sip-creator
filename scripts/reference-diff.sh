@@ -77,10 +77,11 @@ normalize() {
             $open . $body . $close;
         }gse;
 
-        # XML indentation and blank lines are not structural. (Added at
-        # plan Step 7: templated metsHdr agents indent uniformly where the
-        # old hardcoded block mixed tabs and spaces.)
+        # XML indentation, trailing whitespace, and blank lines are not
+        # structural. (Added at plan Step 7: templated metsHdr agents indent
+        # uniformly where the old hardcoded block mixed tabs and spaces.)
         s/^[ \t]+//mg;
+        s/[ \t]+$//mg;
         s/^[ \t]*\n//mg;
 
         # ISO datetimes, attribute or element text. Requires the T-time part,

@@ -18,21 +18,21 @@ var termsTemplates = template.Must(template.New("").Funcs(template.FuncMap{
 {{ define "terms" -}}
 <?xml version='1.0' encoding='UTF-8'?>
 <metadata xmlns="https://data.hetarchief.be/id/sip/1.2/basic"
-	xmlns:dcterms="http://purl.org/dc/terms/"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:edtf="http://id.loc.gov/datatypes/edtf/"
-	xmlns:schema="https://schema.org/"
-	xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic {{ .Schemas }}/descriptive_basic.xsd">
-{{ range .Terms }}
-	<{{ .Element }}{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}{{ with xsitype .Element }} xsi:type="{{ . }}"{{ end }}>{{ esc .Value }}</{{ .Element }}>
+  xmlns:dcterms="http://purl.org/dc/terms/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:edtf="http://id.loc.gov/datatypes/edtf/"
+  xmlns:schema="https://schema.org/"
+  xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic {{ .Schemas }}/descriptive_basic.xsd">
+{{- range .Terms }}
+  <{{ .Element }}{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}{{ with xsitype .Element }} xsi:type="{{ . }}"{{ end }}>{{ esc .Value }}</{{ .Element }}>
 {{- end }}
 </metadata>
 {{ end }}
 {{ define "dc-terms" -}}
 <?xml version='1.0' encoding='UTF-8'?>
 <simpledc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{{ .Schemas }}/dc.xsd">
-{{ range .Terms }}
-	<{{ .Element }}>{{ esc .Value }}</{{ .Element }}>
+{{- range .Terms }}
+  <{{ .Element }}>{{ esc .Value }}</{{ .Element }}>
 {{- end }}
 </simpledc>
 {{ end }}

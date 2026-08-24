@@ -38,73 +38,74 @@ var funcs = template.FuncMap{
 
 var templates = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ define "representation" -}}
+{{ $fileGrpID := identifier -}}
+{{ $docGrpID := identifier -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<mets xmlns="http://www.loc.gov/METS/" 
-	xmlns:csip="https://DILCIS.eu/XML/METS/CSIPExtensionMETS" 
-	xmlns:sip="https://DILCIS.eu/XML/METS/SIPExtensionMETS" 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	xmlns:xlink="http://www.w3.org/1999/xlink" 
-	OBJID="{{ .Name }}"
-	TYPE="{{ .Declaration.Type }}"
-	LABEL="{{ .Label }}"
-	PROFILE="{{ .Declaration.ProfileURL }}"
-	csip:CONTENTINFORMATIONTYPE="{{ .Declaration.ContentInformationType }}"
-	{{ with .Declaration.OtherContentInformationType }}csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"{{ end }}
-	xsi:schemaLocation="http://www.loc.gov/METS/ ../../schemas/mets1_12.xsd http://www.w3.org/1999/xlink ../../schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS ../../schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS ../../schemas/DILCISExtensionSIPMETS.xsd">
+<mets xmlns="http://www.loc.gov/METS/"
+  xmlns:csip="https://DILCIS.eu/XML/METS/CSIPExtensionMETS"
+  xmlns:sip="https://DILCIS.eu/XML/METS/SIPExtensionMETS"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  OBJID="{{ .Name }}"
+  TYPE="{{ .Declaration.Type }}"
+  LABEL="{{ .Label }}"
+  PROFILE="{{ .Declaration.ProfileURL }}"
+  csip:CONTENTINFORMATIONTYPE="{{ .Declaration.ContentInformationType }}"
+  {{- with .Declaration.OtherContentInformationType }}
+  csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"
+  {{- end }}
+  xsi:schemaLocation="http://www.loc.gov/METS/ ../../schemas/mets1_12.xsd http://www.w3.org/1999/xlink ../../schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS ../../schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS ../../schemas/DILCISExtensionSIPMETS.xsd">
 
-	<metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP" />
+  <metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP" />
+  {{- with .DescriptionFile }}
 
-	{{ with .DescriptionFile -}}
-    <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
-        <mdRef LOCTYPE="URL" MDTYPE="{{ $.Declaration.DescriptiveMDType }}"{{ with $.Declaration.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
-    </dmdSec>
-	{{- end }}
+  <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
+    <mdRef LOCTYPE="URL" MDTYPE="{{ $.Declaration.DescriptiveMDType }}"{{ with $.Declaration.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
+  </dmdSec>
+  {{- end }}
+  {{- with .PremisFiles }}
 
-	{{ with .PremisFiles -}}
-    <amdSec>
-	{{ range . -}}
-        <digiprovMD ID="{{ .Identifier }}" STATUS="CURRENT">
-            <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
-        </digiprovMD>
-	{{ end -}}
-    </amdSec>
-	{{- end }}
+  <amdSec>
+    {{- range . }}
+    <digiprovMD ID="{{ .Identifier }}" STATUS="CURRENT">
+      <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
+    </digiprovMD>
+    {{- end }}
+  </amdSec>
+  {{- end }}
 
-	{{ $fileGrpID := identifier -}}
-	{{ $docGrpID := identifier -}}
-    <fileSec ID="{{ identifier}}">
-        <fileGrp USE="data" ID="{{ $fileGrpID }}">
-		{{ range .Files -}}
-            <file ID="{{ .Identifier }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
-                <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .Path }}"/>
-            </file>
-		{{ end -}}
-        </fileGrp>
-		{{ with .DocumentationFiles -}}
-        <fileGrp USE="Documentation" ID="{{ $docGrpID }}">
-		{{ range . -}}
-            <file ID="{{ .Identifier }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
-                <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .Path }}"/>
-            </file>
-		{{ end -}}
-        </fileGrp>
-		{{ end -}}
-    </fileSec>
+  <fileSec ID="{{ identifier }}">
+    <fileGrp USE="data" ID="{{ $fileGrpID }}">
+      {{- range .Files }}
+      <file ID="{{ .Identifier }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
+        <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .Path }}"/>
+      </file>
+      {{- end }}
+    </fileGrp>
+    {{- with .DocumentationFiles }}
+    <fileGrp USE="Documentation" ID="{{ $docGrpID }}">
+      {{- range . }}
+      <file ID="{{ .Identifier }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
+        <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .Path }}"/>
+      </file>
+      {{- end }}
+    </fileGrp>
+    {{- end }}
+  </fileSec>
 
-    <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
-        <div ID="{{ identifier }}" LABEL="{{ .Name }}">
-            <div ID="{{ identifier }}" LABEL="Metadata"{{ with .DescriptionFile }} DMDID="{{ .Identifier }}"{{ end }} {{ with .PremisFiles }}
-                ADMID="{{ joinIdentifiers . }}" {{ end }}/>
-            <div ID="{{ identifier }}" LABEL="Data">
-                <fptr FILEID="{{ $fileGrpID }}" />
-            </div>
-			{{ with .DocumentationFiles -}}
-            <div ID="{{ identifier }}" LABEL="Documentation">
-                <fptr FILEID="{{ $docGrpID }}"/>
-            </div>
-			{{ end -}}
-        </div>
-    </structMap>
+  <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
+    <div ID="{{ identifier }}" LABEL="{{ .Name }}">
+      <div ID="{{ identifier }}" LABEL="Metadata"{{ with .DescriptionFile }} DMDID="{{ .Identifier }}"{{ end }}{{ with .PremisFiles }} ADMID="{{ joinIdentifiers . }}"{{ end }}/>
+      <div ID="{{ identifier }}" LABEL="Data">
+        <fptr FILEID="{{ $fileGrpID }}" />
+      </div>
+      {{- with .DocumentationFiles }}
+      <div ID="{{ identifier }}" LABEL="Documentation">
+        <fptr FILEID="{{ $docGrpID }}"/>
+      </div>
+      {{- end }}
+    </div>
+  </structMap>
 </mets>
 {{ end}}
 {{ define "package" -}}
@@ -112,93 +113,95 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ $SCHEMAID := identifier -}}
 {{ $DOCID := identifier -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<mets xmlns="http://www.loc.gov/METS/" 
-	xmlns:csip="https://DILCIS.eu/XML/METS/CSIPExtensionMETS" 
-	xmlns:sip="https://DILCIS.eu/XML/METS/SIPExtensionMETS" 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	xmlns:xlink="http://www.w3.org/1999/xlink" 
-	OBJID="{{ $OBJID }}"
-	LABEL=""
-	TYPE="{{ .Declaration.Type }}"
-	PROFILE="{{ .Declaration.ProfileURL }}"
-	csip:CONTENTINFORMATIONTYPE="{{ .Declaration.ContentInformationType }}"
-	{{ with .Declaration.OtherContentInformationType }}csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"{{ end }}
- 	xsi:schemaLocation="http://www.loc.gov/METS/ schemas/mets1_12.xsd http://www.w3.org/1999/xlink schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS schemas/DILCISExtensionSIPMETS.xsd">
+<mets xmlns="http://www.loc.gov/METS/"
+  xmlns:csip="https://DILCIS.eu/XML/METS/CSIPExtensionMETS"
+  xmlns:sip="https://DILCIS.eu/XML/METS/SIPExtensionMETS"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  OBJID="{{ $OBJID }}"
+  LABEL=""
+  TYPE="{{ .Declaration.Type }}"
+  PROFILE="{{ .Declaration.ProfileURL }}"
+  csip:CONTENTINFORMATIONTYPE="{{ .Declaration.ContentInformationType }}"
+  {{- with .Declaration.OtherContentInformationType }}
+  csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"
+  {{- end }}
+  xsi:schemaLocation="http://www.loc.gov/METS/ schemas/mets1_12.xsd http://www.w3.org/1999/xlink schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS schemas/DILCISExtensionSIPMETS.xsd">
 
-	<metsHdr CREATEDATE="{{ now }}"{{ with .Declaration.RecordStatus }} RECORDSTATUS="{{ . }}"{{ end }} csip:OAISPACKAGETYPE="SIP">
-	{{- range .Declaration.Agents }}
-		<agent ROLE="{{ .Role }}"{{ if .OtherRole }} OTHERROLE="{{ .OtherRole }}"{{ end }} TYPE="{{ .Type }}"{{ if .OtherType }} OTHERTYPE="{{ .OtherType }}"{{ end }}>
-			<name>{{ .Name }}</name>
-			{{- if .Note }}
-			<note csip:NOTETYPE="{{ .NoteType }}">{{ .Note }}</note>
-			{{- end }}
-		</agent>
-	{{- end }}
-	</metsHdr>
-
-	<!-- ref to descriptive metadata about IE -->
-	{{ range .DescriptiveFiles -}}
-    <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
-        <mdRef LOCTYPE="URL" MDTYPE="{{ $.Declaration.DescriptiveMDType }}"{{ with $.Declaration.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
-    </dmdSec>
-	{{- end }}
-
-	<!-- ref to the PREMIS metadata about IE/subIE(s)/package -->
-    {{ with .PremisFiles -}}
-    <amdSec>
-	{{ range . -}}
-        <digiprovMD ID="{{ .Identifier }}" STATUS="CURRENT">
-            <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
-        </digiprovMD>
-	{{ end -}}
-    </amdSec>
+  <metsHdr CREATEDATE="{{ now }}"{{ with .Declaration.RecordStatus }} RECORDSTATUS="{{ . }}"{{ end }} csip:OAISPACKAGETYPE="SIP">
+    {{- range .Declaration.Agents }}
+    <agent ROLE="{{ .Role }}"{{ if .OtherRole }} OTHERROLE="{{ .OtherRole }}"{{ end }} TYPE="{{ .Type }}"{{ if .OtherType }} OTHERTYPE="{{ .OtherType }}"{{ end }}>
+      <name>{{ .Name }}</name>
+      {{- if .Note }}
+      <note csip:NOTETYPE="{{ .NoteType }}">{{ .Note }}</note>
+      {{- end }}
+    </agent>
     {{- end }}
+  </metsHdr>
 
-    <!-- file section -->
-    <fileSec ID="{{ identifier }}">
-		<fileGrp ID="{{ $SCHEMAID }}" USE="Schemas">
-			{{ range .SchemaFiles -}}
-			<file ID="{{ .Identifier }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
-				<FLocat xlink:type="simple" xlink:href="{{ .Path }}" LOCTYPE="URL"/>
-			</file>
-			{{ end}}
-		</fileGrp>
-		{{ with .DocumentationFiles -}}
-		<fileGrp ID="{{ $DOCID }}" USE="Documentation">
-			{{ range . -}}
-			<file ID="{{ .Identifier }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
-				<FLocat xlink:type="simple" xlink:href="{{ .Path }}" LOCTYPE="URL"/>
-			</file>
-			{{ end -}}
-		</fileGrp>
-		{{ end -}}
-		{{ range .Root.Representations -}}
-        <fileGrp ID="{{ .Identifier }}" USE="Representations/{{ .Name }}">
-            <file ID="{{ .MetsFile.Identifier }}" MIMETYPE="{{ .MetsFile.Mime }}" SIZE="{{ .MetsFile.Size }}" CREATED="{{ .MetsFile.Created }}" CHECKSUM="{{ .MetsFile.Checksum }}" CHECKSUMTYPE="MD5">
-                <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .MetsFile.Path }}"/>
-            </file>
-        </fileGrp>
-		{{ end }}
-    </fileSec>
+  <!-- ref to descriptive metadata about IE -->
+  {{- range .DescriptiveFiles }}
+  <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
+    <mdRef LOCTYPE="URL" MDTYPE="{{ $.Declaration.DescriptiveMDType }}"{{ with $.Declaration.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
+  </dmdSec>
+  {{- end }}
+  {{- with .PremisFiles }}
 
-    <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
-        <div ID="{{ identifier }}" LABEL="{{ $OBJID }}">
-            <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ .Root.DescriptionFile.Identifier }}"{{ with .PremisFiles }} ADMID="{{ joinIdentifiers . }}"{{ end }}/>
-            <div ID="{{ identifier }}" LABEL="Schemas">
-                <fptr FILEID="{{ $SCHEMAID }}"/>
-            </div>
-			{{ with .DocumentationFiles -}}
-            <div ID="{{ identifier }}" LABEL="Documentation">
-                <fptr FILEID="{{ $DOCID }}"/>
-            </div>
-			{{ end -}}
-			{{ range .Root.Representations -}}
-			<div ID="{{ identifier }}" LABEL="Representations/{{ .Name }}">
-				<mptr xlink:type="simple" xlink:href="{{ .MetsFile.Path }}" LOCTYPE="URL" xlink:title="{{ .Identifier }}" />
-			</div>
-			{{ end }}
-        </div>
-    </structMap>
+  <!-- ref to the PREMIS metadata about IE/subIE(s)/package -->
+  <amdSec>
+    {{- range . }}
+    <digiprovMD ID="{{ .Identifier }}" STATUS="CURRENT">
+      <mdRef LOCTYPE="URL" MDTYPE="PREMIS" xlink:type="simple" xlink:href="{{ .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
+    </digiprovMD>
+    {{- end }}
+  </amdSec>
+  {{- end }}
+
+  <!-- file section -->
+  <fileSec ID="{{ identifier }}">
+    <fileGrp ID="{{ $SCHEMAID }}" USE="Schemas">
+      {{- range .SchemaFiles }}
+      <file ID="{{ .Identifier }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
+        <FLocat xlink:type="simple" xlink:href="{{ .Path }}" LOCTYPE="URL"/>
+      </file>
+      {{- end }}
+    </fileGrp>
+    {{- with .DocumentationFiles }}
+    <fileGrp ID="{{ $DOCID }}" USE="Documentation">
+      {{- range . }}
+      <file ID="{{ .Identifier }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5">
+        <FLocat xlink:type="simple" xlink:href="{{ .Path }}" LOCTYPE="URL"/>
+      </file>
+      {{- end }}
+    </fileGrp>
+    {{- end }}
+    {{- range .Root.Representations }}
+    <fileGrp ID="{{ .Identifier }}" USE="Representations/{{ .Name }}">
+      <file ID="{{ .MetsFile.Identifier }}" MIMETYPE="{{ .MetsFile.Mime }}" SIZE="{{ .MetsFile.Size }}" CREATED="{{ .MetsFile.Created }}" CHECKSUM="{{ .MetsFile.Checksum }}" CHECKSUMTYPE="MD5">
+        <FLocat LOCTYPE="URL" xlink:type="simple" xlink:href="{{ .MetsFile.Path }}"/>
+      </file>
+    </fileGrp>
+    {{- end }}
+  </fileSec>
+
+  <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
+    <div ID="{{ identifier }}" LABEL="{{ $OBJID }}">
+      <div ID="{{ identifier }}" LABEL="Metadata" DMDID="{{ .Root.DescriptionFile.Identifier }}"{{ with .PremisFiles }} ADMID="{{ joinIdentifiers . }}"{{ end }}/>
+      <div ID="{{ identifier }}" LABEL="Schemas">
+        <fptr FILEID="{{ $SCHEMAID }}"/>
+      </div>
+      {{- with .DocumentationFiles }}
+      <div ID="{{ identifier }}" LABEL="Documentation">
+        <fptr FILEID="{{ $DOCID }}"/>
+      </div>
+      {{- end }}
+      {{- range .Root.Representations }}
+      <div ID="{{ identifier }}" LABEL="Representations/{{ .Name }}">
+        <mptr xlink:type="simple" xlink:href="{{ .MetsFile.Path }}" LOCTYPE="URL" xlink:title="{{ .Identifier }}" />
+      </div>
+      {{- end }}
+    </div>
+  </structMap>
 </mets>
 {{ end }}
 `))
