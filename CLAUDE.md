@@ -82,6 +82,10 @@ Keep operational failures (I/O, config) as `error`/`fmt.Errorf`. Domain validati
 
 Comment the why, not the what. Don't restate what the code or a function signature already says; explain why something exists or why it's done the unobvious way. Keep that explanation as short as it can be — usually a sentence — but a longer comment is right when it carries a domain rule or justifies a non-obvious workaround. Delete commented-out code rather than leaving it.
 
+Comment the thing, not its callers. A comment on a data type or field describes the data and its constraints, never what other code does with it or where a constraint is enforced ("checked at assembly" on a field is noise; "must be a well-formed premis:premis document" is the field's own contract). The direction matters: on code that deliberately delegates or abstains, naming who owns the rule is a legitimate why, because it stops the next reader from adding the check twice.
+
+On exported types, document every field, stdlib style: the rendered doc page is the reader's only context there. Each field doc goes on its own line above the field, as a sentence starting with the field name, never as an end-of-line comment. Inside unexported code, comment only what a name can't say, and compact inline comments are fine.
+
 ## Development commands
 
 - `go build -o bin/sip-creator .` — produces the binary in the gitignored `bin/`.
@@ -92,7 +96,7 @@ Comment the why, not the what. Don't restate what the code or a function signatu
 - `go generate ./cli` — regenerate `CONFIG.md` from the config struct.
 
 - `go test ./...` — Go tests cover the `store/` primitives, the assembler (`profiles/`), the input reader (`cli/input/`), and the descriptive terms model (`encoders/metadata/`); they run with no external dependencies (no `sf`, no docker, no `.env`). External CSIP validation via `build.sh` remains the acceptance check — Go tests pin internal contracts and failure paths, the validator pins spec conformance. Add Go tests for new logic where practical.
-- `./scripts/baseline-diff.sh tmp/baseline/pkg <pkg-dir>` — the standing structural-equivalence gate (born as [refactoring plan](docs/archive/refactoring-plan.md) Phase 0): diffs a generated package against the blessed reference in `tmp/baseline/` with run-varying values normalized. Refactors must diff clean; a deliberate output change re-blesses the baseline consciously (record it in the commit message and `tmp/baseline/README.md`).
+- `./scripts/baseline-diff.sh tmp/baseline/pkg <pkg-dir>` — the standing structural-equivalence gate (born as [refactoring plan](docs/archive/refactoring-plan.md) Phase 0): diffs a generated package against the reference in `tmp/baseline/` with run-varying values normalized. Refactors must diff clean; a deliberate output change updates the baseline consciously (record it in the commit message and `tmp/baseline/README.md`).
 
 ## Tone and Style guidelines
 
@@ -100,9 +104,9 @@ Comment the why, not the what. Don't restate what the code or a function signatu
 
 Under no circumstances use the following overused AI tells, buzzwords, or structural clichés in chat responses, documents in the docs directory or code comments. Two carve-outs: "gate" is allowed as the established project name for the validation checks (the baseline gate, the equivalence gate, "the gate is green"), just not as loose metaphor; and `docs/archive/` and `docs/decisions/` are historical records, so leave their existing text as-is rather than rewriting it to comply. The rules apply to new and edited prose.
 
-- **The Structural Group:** "load-bearing" (and "load-bearing seams"), "gates", "seams", "spine", "substrate", "blast radius", "friction", "birth".
-- **The Proverbial Group:** "footgun", "yak shaving", "belt-and-suspenders", "smoking gun", "classic trap".
-- **The Pretentious Group:** "tapestry", "delve", "testament to", "beacon", "underscore", "honest take", "identity made legible".
+- **The Structural Group:** "load-bearing" (and "load-bearing seams"), "gates", "seams", "spine", "substrate", "blast radius", "friction", "birth", "bucket", "headline", "honestly", "land mine", "blessed", "bind", "baseline", "mark"
+- **The Proverbial Group:** "footgun", "yak shaving", "belt-and-suspenders", "smoking gun", "classic trap"
+- **The Pretentious Group:** "tapestry", "delve", "testament to", "beacon", "underscore", "honest take", "identity made legible", "worth saying", "standing pass", "mandate", "demands", "honest gap"
 - **The "Gaslighting" Transitions:** "You're absolutely right!", "That's totally on me", "Now I have the full picture", "It's worth noting/flagging/considering", "I'd gently reset the framing".
 - **The AI Cliché Structure:** Do not use the pretentious "That's not just X, it's Y" writing style.
 
