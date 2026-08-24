@@ -4,17 +4,17 @@
 #
 # usage: build.sh [profile]    (default: basic)
 #
-# Exits non-zero iff the generated package is not VALID. Both gates are
-# expected green. Each profile validates against the E-ARK spec version of
-# its era: basic (meemoo 1.2) against 2.0.4, eark against 2.2.0
-# (docs/archive/meemoo-12.md).
+# Exits non-zero iff the generated package is not VALID. Each profile
+# validates against the E-ARK spec version of its era: basic (meemoo 1.2)
+# against 2.0.4, eark against 2.2.0 (docs/archive/meemoo-12.md).
 #
 # Input fixture: ./tmp/<profile> (untracked). The eark fixture is the basic
 # one plus an optional documentation/ directory (recommended: CSIPSTR16 is a
 # SHOULD, and package-level documentation satisfies it).
 # Requires: go, docker, jq. Siegfried (sf) on PATH is recommended: the
-# fixture's siegfried.json sidecar is regenerated each run, because its MD5
-# binding makes a stale sidecar a hard build failure by design (ADR-0009).
+# fixture's siegfried.json sidecar is regenerated each run: the assembler
+# verifies its MD5s against the source bytes, so a stale sidecar is a hard
+# build failure by design (ADR-0009).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -53,7 +53,7 @@ rm -rf "$OUT"
 run_dir="reports/runs/$(date -u +%Y%m%dT%H%M%SZ)-$PROFILE"
 mkdir -p "$run_dir"
 
-# The gate: validate the zip only; the zip is the deliverable that gets ingested.
+# The acceptance check: validate the zip only; the zip is the deliverable that gets ingested.
 status=0
 ./scripts/validate.sh -o "$run_dir" -s "$SPEC_VERSION" "$OUT"/uuid-*.zip || status=$?
 

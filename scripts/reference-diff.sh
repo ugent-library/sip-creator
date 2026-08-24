@@ -2,8 +2,8 @@
 # Structural diff of two generated SIP package trees (refactoring-plan Phase 0).
 # Normalizes run-varying values, then diffs; exits non-zero on any difference.
 #
-# usage: baseline-diff.sh <ref-pkg-dir> <new-pkg-dir>
-#   e.g. baseline-diff.sh tmp/baseline/pkg basic-uuid/uuid-*/
+# usage: reference-diff.sh <ref-pkg-dir> <new-pkg-dir>
+#   e.g. reference-diff.sh tmp/reference/pkg basic-uuid/uuid-*/
 #
 # Normalized (legitimately different on every run):
 #   - UUIDs, mapped to uuid-1, uuid-2, ... in first-seen order per document,
@@ -68,7 +68,7 @@ normalize() {
         }ge;
 
         # The submitting organization is operator config (SIP_SUBMITTER_*),
-        # not code output: blank its name and OR-id note so the baseline
+        # not code output: blank its name and OR-id note so the reference copy
         # never encodes one operator env. The agent structure still compares.
         s{(<agent ROLE="CREATOR" TYPE="ORGANIZATION">)(.*?)(</agent>)}{
             my ($open, $body, $close) = ($1, $2, $3);
@@ -87,8 +87,8 @@ normalize() {
         # so descriptive dates like <dcterms:created>2022-01-01 survive.
         s/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+(Z|[+-][0-9]{2}:[0-9]{2})?/TS/g;
 
-        # UUIDs -> first-seen sequence numbers (map is per document: BEGIN-less
-        # perl -pi runs this once per file with %map reset by local).
+        # UUIDs -> first-seen sequence numbers (map is per document: with no
+        # BEGIN block, perl -pi runs this once per file with %map reset by local).
         our %map; local %map = (); our $n; local $n = 0;
         s/uuid-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/$map{$&} \/\/= "uuid-" . ++$n/ge;
     ' {} +

@@ -155,7 +155,7 @@ func (r *reader) newFile(base, src string) File {
 // deterministic traversal order. That order carries no meaning (neither
 // CSIP nor meemoo assigns semantics to file order; explicit sequencing is
 // a deferred manifest feature), but it must be stable:
-// METS emission and the baseline gate depend on run-to-run identical order.
+// METS emission and scripts/reference-diff.sh depend on run-to-run identical order.
 func (r *reader) readDir(dir string) []os.DirEntry {
 	entries, err := os.ReadDir(dir)
 	if err != nil {

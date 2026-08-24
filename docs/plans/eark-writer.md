@@ -12,7 +12,7 @@ E2–E4 landed in one day; E5's desk-check became the [runbook](../development-r
 - **Package-level documentation satisfies CSIPSTR16.** The E1 open question about per-representation documentation folders resolved empirically: not needed.
 - **`build-eark.sh` never shipped**: review folded it into a parameterized `./build.sh [profile]` (same three-variable difference, same duplication instinct as the writers). Each profile validates against its era's spec version.
 - **Phase 2's template guards for packages without PREMIS were exercised for real** for the first time, as predicted.
-- E6's docs landed incrementally with adjacent passes (README, design doc, CLAUDE.md all describe the eark profile, families, and green gates).* Expands the [refactoring plan](../archive/refactoring-plan.md)'s Phase 3 outline; enacts the direction of [ADR-0004](../decisions/0004-eark-base-meemoo-specialization.md). The family mechanism is [ADR-0007](../decisions/0007-profile-families-share-one-writer.md).*
+- E6's docs landed incrementally with adjacent passes (README, design doc, CLAUDE.md all describe the eark profile, families, and the passing validations).* Expands the [refactoring plan](../archive/refactoring-plan.md)'s Phase 3 outline; enacts the direction of [ADR-0004](../decisions/0004-eark-base-meemoo-specialization.md). The family mechanism is [ADR-0007](../decisions/0007-profile-families-share-one-writer.md).*
 
 ## Context: what an "eark" profile is
 
@@ -158,7 +158,7 @@ Recorded in [TODO.md](../TODO.md) Known-INVALID.
   (its CSIPSTR16 message points inside `representation_1`); rep-level support is
   added then if required, not speculatively.
 - **The basic profile is untouched behaviorally**: shared templates change only
-  inside data-guards that are empty for basic; every step re-runs the baseline gate.
+  inside data-guards that are empty for basic; every step re-runs `scripts/reference-diff.sh`.
 
 ## Steps
 
@@ -166,15 +166,15 @@ Recorded in [TODO.md](../TODO.md) Known-INVALID.
   `FamilyMeemoo`; `Build` (or the writer's descriptive step) resolves the family's
   descriptive encoder and errors on an unknown family; test: hand-built definition
   with a bogus/empty family → clean error, nothing written. No renames, no new
-  files beyond tests. Gate green.
+  files beyond tests. All checks green.
 - **E3: the eark data and encodings.** `metadata.EncodeDC` corrected against the
   RODA corpora sample; `MDTYPE`/`MDTYPEVERSION` onto `sip.Spec` + shared templates
   (basic's validated output unchanged); documentation assembly + writer step + template blocks;
   the `eark` registry entry (UGent agents, vocabulary content types, premis flags
   off, `LocalIdentifierScheme: ""`); definition-driven tests (no MEEMOO-LOCAL-ID,
   documentation nodes, output without PREMIS, simple-DC shape).
-- **E4: validator acceptance loop.** A sibling `build-eark.sh` (build.sh stays
-  the basic gate; merge once basic itself goes VALID): generate from `tmp/basic`
+- **E4: validator acceptance loop.** A sibling `build-eark.sh` (build.sh keeps
+  validating basic only; merge once basic itself goes VALID): generate from `tmp/basic`
   (+ a documentation fixture), validate, iterate until **VALID**. Settle the
   rep-level-documentation question here.
 - **E5: RODA desk-check + handoff.** Walk the eark package through
@@ -188,7 +188,7 @@ Recorded in [TODO.md](../TODO.md) Known-INVALID.
 
 ## Verification
 
-1. `./build.sh` + `baseline-diff.sh`: basic output structurally identical after
+1. `./build.sh` + `reference-diff.sh`: basic output structurally identical after
    every step; the meemoo path must not move.
 2. `build-eark.sh`: commons-ip reports **VALID** for the eark package (target; the
    loop in E4 iterates until it holds).

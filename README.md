@@ -113,7 +113,7 @@ the sample SIP from `tmp/<profile>`, validates the zip with
 [commons-ip](https://github.com/keeps/commons-ip) (dockerized, release jar pinned),
 prints every FAILED check with its messages, and exits non-zero if the package is not
 `VALID`. Each profile validates against the E-ARK spec version of its era: `basic`
-(meemoo 1.2) against 2.0.4, `eark` against 2.2.0. Both gates are expected green.
+(meemoo 1.2) against 2.0.4, `eark` against 2.2.0. Both are expected to report `VALID`.
 
 Each run's validation reports are published to `reports/runs/<timestamp>/`. To browse them
 as HTML (run history, per-check detail, links into the E-ARK specs):
