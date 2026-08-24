@@ -183,7 +183,7 @@ Recorded so they are chosen against, not forgotten:
 
 - An optional explicit manifest (per-file roles, exclusions, custom ordering, per-file labels) for curator-style workflows.
 - Prefixed vocabulary keys (`dcterms:*`, `schema:*`) beyond the table (withdrawn 2026-08-20, [ADR-0011](decisions/0011-closed-descriptive-vocabulary.md): every meemoo-legal flat element has a plain key, and an open vocabulary lets an operator build packages meemoo rejects).
-- Operator-supplied descriptive XML (MODS/EAD-shaped material) with the validation rules it requires; also the home for structured schema.org values (`schema:creator` with roles, `schema:isPartOf` variants) that `key,value` cannot express.
+- Operator-supplied descriptive XML (MODS, EAD, or similar) with the validation rules it requires; also the home for structured schema.org values (`schema:creator` with roles, `schema:isPartOf` variants) that `key,value` cannot express.
 - Describing multiple intellectual entities / hierarchies in one package.
 - Accepting a BagIt bag as input (fixity from `manifest-sha256.txt`).
 - Per-package overrides of configured administrative values.

@@ -90,8 +90,8 @@ func ValidateRepresentationLabel(label string) error {
 
 // Validate reports the first invariant the input breaks. These are the
 // graph rules every producer must satisfy: the folder convention enforces
-// them with operator-phrased Violations before building; embedding callers
-// hit them here. Fail-fast: one error, developer-phrased.
+// them with Violations phrased for the operator before building; embedding
+// callers hit them here. Fail-fast: one error, phrased for the developer.
 func (in *Input) Validate() error {
 	if in.PackageIdentifier != "" {
 		if err := sip.ValidateIdentifier(in.PackageIdentifier); err != nil {

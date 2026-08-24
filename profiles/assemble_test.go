@@ -59,8 +59,8 @@ func testFormat() *sip.Format {
 	return &sip.Format{FormatRegistry: fr}
 }
 
-// report builds a characterization report with a checksum-bound entry (and
-// the canned format) for every given source file.
+// report builds a characterization report with an entry (matching checksum,
+// canned format) for every given source file.
 func report(t *testing.T, files ...SourceFile) characterization.Report {
 	t.Helper()
 	rep := make(characterization.Report, len(files))

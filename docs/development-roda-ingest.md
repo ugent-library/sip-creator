@@ -53,7 +53,7 @@ code does with what our package contains:
 | `dc+schema.xml`, `MDTYPE="DC"` + `MDTYPEVERSION="SimpleDC20021212"`, simple-DC shape | recognized descriptive metadata (`dc_SimpleDC20021212`) | title/description **rendered and indexed** (searchable), form-editable; if RODA shows raw XML instead, the typing didn't match |
 | `documentation/` files | mapped into AIP documentation | visible under the AIP's documentation |
 | `schemas/` XSDs | mapped into AIP schemas | present (RODA ignores content) |
-| **no PREMIS** (premis-less v1) | nothing to map. Note that package-level PREMIS that isn't an agent/event would be *silently dropped* by RODA anyway | AIP has **no** preservation metadata from the SIP; RODA's own ingest events appear instead. That is expected, not a defect |
+| **no PREMIS** (v1 emits none) | nothing to map. Note that package-level PREMIS that isn't an agent/event would be *silently dropped* by RODA anyway | AIP has **no** preservation metadata from the SIP; RODA's own ingest events appear instead. That is expected, not a defect |
 
 ## 5. Record the outcome
 

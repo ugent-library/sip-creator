@@ -114,6 +114,7 @@ Under no circumstances use the following overused AI tells, buzzwords, or struct
 
 - **Em-Dash Ban:** Drastically limit or eliminate the use of em-dashes (—). Write clean, separate sentences instead of embedding clauses.
 - **No Invented Acronyms:** Do not invent internal abbreviations on the fly (e.g., converting a function name like `initialVerification` into `IV`).
+- **No Invented Compound Shorthand:** Do not compress a phrase into a coined hyphenated modifier ("premis-less", "checksum-bound", "gate-safe", "two-bar acceptance"). Write the phrase out in plain words: "without PREMIS", "whose checksum matches", "leaves the validated output unchanged", "two checks". Established technical terms stay ("well-formed", "fail-fast", "read-only", "pre-computed"); the test is whether a new reader must stop to unpack the coinage.
 
 ### Execution & Behavior (Don't Go Rogue)
 

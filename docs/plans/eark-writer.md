@@ -8,10 +8,10 @@ E2–E4 landed in one day; E5's desk-check became the [runbook](../development-r
 
 - **The eark package validates `VALID (errors=0 warnings=0)`**, this project's first green verdict, and the E4 loop converged in a single iteration after two findings:
   - **commons-ip's SIP2 quirk**: the 2.2.0 validator compares `mets/@PROFILE` against the *version-pinned* `…/E-ARK-SIP-v2-2-0.xml` while its error message prints the unversioned URL. The registry carries the pinned URL with a comment.
-  - **A real zip bug flushed out**: `archive.Zip` wrote no directory entries, so *empty* directories vanished from zips: invisible for basic (all dirs non-empty), fatal for the premis-less eark package (its rep `metadata/` evaporated, failing CSIPSTR13/CSIP107). Fixed with proper trailing-slash entries.
+  - **A real zip bug flushed out**: `archive.Zip` wrote no directory entries, so *empty* directories vanished from zips: invisible for basic (all dirs non-empty), fatal for the eark package, which emits no PREMIS (its rep `metadata/` evaporated, failing CSIPSTR13/CSIP107). Fixed with proper trailing-slash entries.
 - **Package-level documentation satisfies CSIPSTR16.** The E1 open question about per-representation documentation folders resolved empirically: not needed.
 - **`build-eark.sh` never shipped**: review folded it into a parameterized `./build.sh [profile]` (same three-variable difference, same duplication instinct as the writers). Each profile validates against its era's spec version.
-- **Phase 2's premis-less template guards were exercised for real** for the first time, as predicted.
+- **Phase 2's template guards for packages without PREMIS were exercised for real** for the first time, as predicted.
 - E6's docs landed incrementally with adjacent passes (README, design doc, CLAUDE.md all describe the eark profile, families, and green gates).* Expands the [refactoring plan](../archive/refactoring-plan.md)'s Phase 3 outline; enacts the direction of [ADR-0004](../decisions/0004-eark-base-meemoo-specialization.md). The family mechanism is [ADR-0007](../decisions/0007-profile-families-share-one-writer.md).*
 
 ## Context: what an "eark" profile is
@@ -19,11 +19,11 @@ E2–E4 landed in one day; E5's desk-check became the [runbook](../development-r
 The meemoo profiles and the eark profile serve **different consumers**. Meemoo SIPs go
 to hetarchief's pipeline (SHACL validation keyed on `OTHERCONTENTINFORMATIONTYPE`);
 plain E-ARK SIPs go to RODA-class CSIP repositories. UGent will submit real E-ARK
-SIPs to a RODA instance it manages. Scope for v1, deliberately novice-shaped:
+SIPs to a RODA instance it manages. Scope for v1, deliberately kept simple:
 **essence + descriptive metadata + documentation folder**, with no submission
 agreement fields, no PREMIS (see Delta B), no archival-creator/preservation agents.
 
-Acceptance is two-bar, and the bars are not the same thing:
+Acceptance has two checks, and they are not the same thing:
 
 - **commons-ip's full validator** (our dockerized rig, 2.11.2) checks the
   specification exhaustively; the eark package must report **VALID**, which would be
@@ -56,7 +56,7 @@ Each level owns specific data:
 | **leaf/profile** | the content shape | name, content-information type, emission flags, descriptive source |
 | *(neither)* | the agents: organization config, not profile data | "Universiteitsbibliotheek Gent" |
 
-The agents row is a known mis-homing: they live on `Definition.Declaration` today (the
+The agents row is known to sit in the wrong place: they live on `Definition.Declaration` today (the
 right move when Phase 2 lifted them out of templates) but belong to a future
 organization-config axis, already tracked by the library-embeddability item in
 [TODO.md](../TODO.md).
@@ -70,12 +70,12 @@ Two designs were considered and rejected during review because they re-created t
    of the canonical emission order, the invariant Phase 1 deliberately encoded
    exactly once. Two copies drift, and the drifted one emits packages whose METS
    checksum references no longer match the files. Auditing the actual writer showed the family-varying surface is
-   three encoder call sites plus one data-conditional step; forking an 80-line
+   three encoder call sites plus one step conditional on data; forking an 80-line
    orchestrator to vary that is the Basic/Roda mistake with better branding.
 2. **A sibling eark METS template family** guarded against structural differences
    that, at this plan's scope, do not exist: PROFILE/TYPE/content types and agents
    are already data (`sip.Spec`, Phase 2); PREMIS blocks are already conditionally
-   guarded; documentation becomes graph-conditional; dmdSec typing is one
+   guarded; documentation becomes conditional on the graph; dmdSec typing is one
    attribute, expressible as data. Both families are physically CSIP packages;
    that is the premise of the hierarchy above.
 
@@ -90,14 +90,14 @@ instead of purpose is taxonomy, not architecture.
 
 **Fork triggers, recorded so nobody re-wins this argument from scratch:** fork a
 template define when a family needs *structure* that data cannot express cleanly;
-fork a writer only when a family stops being CSIP-shaped (different emission
-sequence or physical layout). Both require evidence (a failing check, a spec
+fork a writer only when a family stops being structured as a CSIP package
+(different emission sequence or physical layout). Both require evidence (a failing check, a spec
 requirement), not anticipation.
 
 ## The two deltas (measured 2026-07-16)
 
 **Delta A: current output → validator-VALID.** Of 156 checks the current basic
-package fails exactly two; everything else passes or is conditional-and-vacuous:
+package fails exactly two; everything else passes or is conditional and vacuously satisfied:
 
 | check | level | eark profile answer |
 |---|---|---|
@@ -117,8 +117,8 @@ documentation is present.
    *event*; our intellectual-entity object matches neither branch and vanishes.
    Representation-level PREMIS maps verbatim ("other" preservation metadata).
    → v1 sets `EmitPackagePremis: false, EmitRepresentationPremis: false` (matches
-   the essence+descriptive scope; Phase 2's premis-less template guards finally get
-   exercised). Rep-level PREMIS can switch on later when provenance/events mature.
+   the essence+descriptive scope; Phase 2's template guards for output without
+   PREMIS finally get exercised). Rep-level PREMIS can switch on later when provenance/events mature.
 2. **Descriptive metadata must be `dc_SimpleDC20021212`** to be rendered, indexed,
    and form-edited by RODA (`ui.browser.metadata.descriptive.types`): dmdSec
    `MDTYPE="DC"` + `MDTYPEVERSION="SimpleDC20021212"`, simple-DC document shape.
@@ -169,10 +169,10 @@ Recorded in [TODO.md](../TODO.md) Known-INVALID.
   files beyond tests. Gate green.
 - **E3: the eark data and encodings.** `metadata.EncodeDC` corrected against the
   RODA corpora sample; `MDTYPE`/`MDTYPEVERSION` onto `sip.Spec` + shared templates
-  (gate-safe for basic); documentation assembly + writer step + template blocks;
+  (basic's validated output unchanged); documentation assembly + writer step + template blocks;
   the `eark` registry entry (UGent agents, vocabulary content types, premis flags
   off, `LocalIdentifierScheme: ""`); definition-driven tests (no MEEMOO-LOCAL-ID,
-  documentation nodes, premis-less output, simple-DC shape).
+  documentation nodes, output without PREMIS, simple-DC shape).
 - **E4: validator acceptance loop.** A sibling `build-eark.sh` (build.sh stays
   the basic gate; merge once basic itself goes VALID): generate from `tmp/basic`
   (+ a documentation fixture), validate, iterate until **VALID**. Settle the
@@ -196,7 +196,7 @@ Recorded in [TODO.md](../TODO.md) Known-INVALID.
    assembly (no MEEMOO-LOCAL-ID, documentation nodes, premis flags respected),
    simple-DC encoding shape.
 4. Negative paths by hand: eark build with no documentation input (SHOULD-level
-   warning acceptable, build succeeds); premis-less output renders valid METS
+   warning acceptable, build succeeds); output without PREMIS renders valid METS
    (no dangling ADMID).
 5. Desk-check record in E5: each `EARKSIP2ToAIPPluginUtils` mapping step answered
    for our package, in the plan or runbook.
