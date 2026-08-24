@@ -139,10 +139,15 @@ var premis = template.Must(template.New("").Parse(`
 {{- end }}
 `))
 
+// EncodeEntity writes the package PREMIS document: the intellectual entity
+// and its relationships to the representations.
 func EncodeEntity(w io.Writer, e *sip.Entity) error {
 	return premis.ExecuteTemplate(w, "entity", e)
 }
 
+// EncodeRepresentation writes a representation's PREMIS document: the
+// representation object, its files with fixity and format, and the
+// relationships tying them together.
 func EncodeRepresentation(w io.Writer, r *sip.Representation) error {
 	return premis.ExecuteTemplate(w, "representation", r)
 }

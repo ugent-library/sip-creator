@@ -7,31 +7,41 @@ import (
 	"github.com/ugent-library/sip-creator/encoders/metadata"
 )
 
+// Representation is one version of the content, e.g. a master or an
+// access copy.
 type Representation struct {
+	// Entity is the intellectual entity this representation represents.
 	Entity *Entity
 	// Name is the package-side name: the directory under representations/,
 	// the representation METS's OBJID, and the fileSec/structMap paths.
 	// The profile decides it (meemoo: representation_N).
 	Name string
-	// Label is the producer's human-readable name for this version
-	// (input spec §2: "keeps your label as the human-readable name"),
+	// Label is the producer's human-readable name for this version,
 	// emitted as the representation METS's mets/@LABEL.
-	Label      string
+	Label string
+	// Identifier identifies the representation in METS and PREMIS
+	// (uuid-<uuid>).
 	Identifier string
-	Files      []*File
+	// Files are the essence files, in packaging order.
+	Files []*File
 	// Description optionally describes this version of the content only
 	// (e.g. a license that differs between master and access copy);
 	// the work's identity stays on the Entity.
-	Description     metadata.Terms
+	Description metadata.Terms
+	// DescriptionFile is the node for the generated descriptive document;
+	// nil when Description is nil.
 	DescriptionFile *File
-	PremisFile      *File
+	// PremisFile is the generated preservation document; nil when the
+	// profile emits none.
+	PremisFile *File
 	// ReceivedPremisFiles are preservation documents delivered with the
 	// input (vendor/lab PREMIS). They are copied into the package as
-	// received, never parsed or merged (input spec §5).
+	// received, never parsed or merged.
 	ReceivedPremisFiles []*File
-	// DocumentationFiles document this representation only (input spec §4).
+	// DocumentationFiles document this representation only.
 	DocumentationFiles []*File
-	MetsFile           *File
+	// MetsFile is the node for the generated representation METS.
+	MetsFile *File
 }
 
 func (r *Representation) AddFile(f *File) {
@@ -73,6 +83,8 @@ func (r *Representation) SetEntity(e *Entity) {
 	r.Entity = e
 }
 
+// NewRepresentation mints a Representation named name, with a fresh
+// uuid-<uuid> identifier.
 func NewRepresentation(name string) *Representation {
 	return &Representation{
 		Name:       name,

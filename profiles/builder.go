@@ -12,16 +12,19 @@ import (
 // narrates. The material for a package is not configuration; it arrives
 // per build as an Input.
 type Config struct {
+	// Destination is the directory packages are created under.
 	Destination string
-	Logger      *slog.Logger
+	// Logger narrates the build.
+	Logger *slog.Logger
 }
 
 // Builder builds SIP packages from caller-supplied Input, driven by a
-// profile Definition. It reads no input tree: the CLI's folder convention
-// and any embedding system deliver the same data.
+// profile Definition. It reads no input tree; callers deliver the data.
 type Builder struct {
+	// Destination is the directory packages are created under.
 	Destination string
-	Logger      *slog.Logger
+	// Logger narrates the build.
+	Logger *slog.Logger
 }
 
 func New(config *Config) *Builder {

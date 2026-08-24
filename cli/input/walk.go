@@ -19,7 +19,7 @@ func (r *reader) readRepresentations(dir string) []Representation {
 			continue
 		}
 		label := e.Name()
-		// The folder-name rule (spec §2) is the library's label rule:
+		// The folder-name rule is the library's label rule:
 		// one source of truth for what a representation may be called.
 		if err := profiles.ValidateRepresentationLabel(label); err != nil {
 			// Still read the folder: the naming fix shouldn't hide any
@@ -37,9 +37,8 @@ func (r *reader) readRepresentations(dir string) []Representation {
 func (r *reader) readRepresentation(dir, label string) Representation {
 	rep := Representation{Label: label}
 	for _, e := range r.readDir(dir) {
-		// The reserved names are ASCII, so byte comparison is exact; NFC
-		// normalization is needed only where non-ASCII can occur (see
-		// readDir and newFile).
+		// Reserved names are ASCII, which NFC normalization never alters,
+		// so comparing unnormalized names is exact.
 		name := e.Name()
 		src := filepath.Join(dir, e.Name())
 		switch {
@@ -73,7 +72,7 @@ func (r *reader) readRepresentation(dir, label string) Representation {
 	return rep
 }
 
-// readFlatRepresentation handles the simple case (input spec §2): no
+// readFlatRepresentation handles the simple case: no
 // representations/ folder, so every non-reserved entry is the content of a
 // single representation, labeled after the input folder itself.
 func (r *reader) readFlatRepresentation(entries []os.DirEntry) Representation {
@@ -105,8 +104,7 @@ func (r *reader) collectFiles(dir string) []File {
 // representation-level, same rule both places) and flags the one
 // transport-level premis rule: premis.xml belongs to the generated
 // document. Content conformance (well-formed premis:premis) is
-// deliberately a build-time check, like the characterization MD5 binding:
-// check validates structure, content verification happens at assembly.
+// deliberately left to assembly.
 func (r *reader) collectPremisFiles(dir string) []File {
 	files := r.collectFiles(dir)
 	for _, f := range files {
@@ -139,15 +137,15 @@ func (r *reader) newFile(base, src string) File {
 	}
 	return File{
 		Source: src,
-		// Rel stays byte-exact (no NFC): it must match the filename the
-		// characterization report recorded from this same filesystem.
+		// Rel is not NFC-normalized: it must match the filename exactly
+		// as the characterization report recorded it.
 		Rel:  path.Clean(filepath.ToSlash(relRoot)),
 		Path: norm.NFC.String(filepath.ToSlash(relBase)),
 	}
 }
 
 // readDir lists dir applying the rules that hold everywhere in the input
-// tree (input spec §1): symbolic links are a violation and are never
+// tree: symbolic links are a violation and are never
 // followed; OS artifacts are silently ignored (never packaged, never
 // warned about); and two names identical after NFC normalization are a
 // collision, because such pairs can coexist on non-normalizing filesystems
@@ -156,7 +154,7 @@ func (r *reader) newFile(base, src string) File {
 // os.ReadDir lists lexically, so every file list built over it is in
 // deterministic traversal order. That order carries no meaning (neither
 // CSIP nor meemoo assigns semantics to file order; explicit sequencing is
-// the deferred manifest feature, input spec §8), but it must be stable:
+// a deferred manifest feature), but it must be stable:
 // METS emission and the baseline gate depend on run-to-run identical order.
 func (r *reader) readDir(dir string) []os.DirEntry {
 	entries, err := os.ReadDir(dir)
@@ -186,8 +184,7 @@ func (r *reader) readDir(dir string) []os.DirEntry {
 	return kept
 }
 
-// isOSArtifact reports whether name is operating-system droppings the spec
-// says to ignore silently (§1).
+// isOSArtifact reports whether name is an OS artifact to ignore silently.
 func isOSArtifact(name string) bool {
 	if strings.HasPrefix(name, "._") {
 		return true

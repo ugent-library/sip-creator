@@ -13,7 +13,7 @@ var langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
 
 // Validate reports why the term cannot be emitted: an element outside the
 // descriptive vocabulary, a malformed language tag, or an empty value.
-// These rules bind every producer, not just the CSV transport.
+// These rules apply to every producer, not just the CSV transport.
 func (t Term) Validate() error {
 	if _, ok := vocabularyByElement[t.Element]; !ok {
 		return fmt.Errorf("%q is not in the descriptive vocabulary; see the supported keys in the input specification", t.Element)
@@ -31,9 +31,8 @@ func (t Term) Validate() error {
 // dcterms:identifier. The local identifier is an identity, and two of
 // them is an ambiguity no consumer can resolve. The vocabulary also marks
 // identifier `once`, so ValidateCardinality states this rule again. That
-// is deliberate, not a candidate for dedup: cardinality binds only where a
-// profile enforces it (the meemoo family), while the identifier rule is
-// unconditional and must hold for eark too.
+// overlap is deliberate: only the meemoo family enforces cardinality,
+// while the identifier rule holds for every profile, eark included.
 func (t Terms) Validate() error {
 	identifiers := 0
 	for i, term := range t {
@@ -51,9 +50,9 @@ func (t Terms) Validate() error {
 }
 
 // ValidateCardinality reports every term that exceeds its element's
-// cardinality mark (meemoo's 0..1/1..1 restrictions, counted per language
-// for lang-tagged elements). Whether the marks bind is the profile family's
-// call: the meemoo family enforces them, plain E-ARK does not. Findings
+// cardinality (meemoo's 0..1/1..1 restrictions, counted per language
+// for lang-tagged elements). Enforcement is the profile family's call:
+// the meemoo family enforces these limits, plain E-ARK does not. Findings
 // name the element (and language), which locates the offending rows in a
 // keyed file; one joined error carries them all.
 func (t Terms) ValidateCardinality() error {
@@ -86,7 +85,7 @@ func (t Terms) ValidateCardinality() error {
 
 // ValidateRequired reports each required element the terms do not state.
 // Which elements are required is profile data (meemoo's basic profile
-// mandates four; plain E-ARK only the input convention's identity MUSTs),
+// requires four; plain E-ARK only the input convention's identity MUSTs),
 // so the set arrives as an argument.
 func (t Terms) ValidateRequired(elements ...string) error {
 	var errs []error
@@ -100,13 +99,15 @@ func (t Terms) ValidateRequired(elements ...string) error {
 
 // ValidateRequiredLang reports each element that carries language-tagged
 // values without one in the required language. meemoo requires an entry in
-// Dutch wherever a lang-tagged element appears; which language (if any) the
-// rule demands is profile data, so it arrives as an argument ("" disables).
+// Dutch wherever a lang-tagged element appears; which language (if any) is
+// required is profile data, so it arrives as an argument ("" disables).
 func (t Terms) ValidateRequiredLang(lang string) error {
 	if lang == "" {
 		return nil
 	}
 	var tagged []string // elements with lang-tagged values, in first-appearance order
+	// missing doubles as the seen set: an element enters as true (missing)
+	// on first sight and flips to false once a value in lang appears.
 	missing := map[string]bool{}
 	for _, term := range t {
 		if term.Lang == "" {

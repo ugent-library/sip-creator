@@ -20,10 +20,16 @@ import (
 
 // Record is one file's characterization facts as the report asserts them.
 type Record struct {
-	Format *sip.Format // nil: the tool ran and found no match
-	Mime   string
-	MD5    string // hex digest binding the record to the bytes it describes
-	Errors string // the tool's per-file error, verbatim; empty means none
+	// Format is the asserted format; nil when the tool ran and found no
+	// match.
+	Format *sip.Format
+	// Mime is the IANA media type the report asserts; empty when it
+	// asserts none.
+	Mime string
+	// MD5 is the hex digest binding the record to the bytes it describes.
+	MD5 string
+	// Errors is the tool's per-file error, verbatim; empty means none.
+	Errors string
 }
 
 // Report maps input-relative slash paths to their characterization records.
@@ -69,9 +75,9 @@ func DecodeSiegfried(r io.Reader) (Report, error) {
 	report := make(Report, len(out.Files))
 	for _, f := range out.Files {
 		rec := Record{MD5: f.MD5, Errors: f.Errors}
-		// First match wins, as the exec-era adapter did. The registry is
-		// always set inside a non-nil Format: the premis template
-		// dereferences FormatRegistry unguarded.
+		// First match wins; the tool takes no view on ambiguous reports.
+		// The registry is always set inside a non-nil Format: the premis
+		// template dereferences FormatRegistry unguarded.
 		if len(f.Matches) > 0 {
 			m := f.Matches[0]
 			fr := sip.NewFormatRegistry()

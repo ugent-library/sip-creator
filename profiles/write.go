@@ -48,8 +48,6 @@ func (b *Builder) write(st *store.Store, pkg *sip.Package, encodeDescriptive des
 	return b.writePackageMets(st, pkg)
 }
 
-// writeReceivedPremis copies the package-level received preservation
-// documents before the package METS, which embeds their fixity.
 func (b *Builder) writeReceivedPremis(st *store.Store, pkg *sip.Package) error {
 	return copyFiles(st, "", pkg.ReceivedPremisFiles)
 }
@@ -83,7 +81,6 @@ func (b *Builder) writeSchemas(st *store.Store, pkg *sip.Package) error {
 	return nil
 }
 
-// writeDocumentation copies the optional package-level documentation files.
 func (b *Builder) writeDocumentation(st *store.Store, pkg *sip.Package) error {
 	return copyFiles(st, "", pkg.DocumentationFiles)
 }
@@ -133,8 +130,6 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 		base := "representations/" + r.Name + "/"
 
 		if r.Description != nil {
-			// Same family encoder as the package descriptive; written
-			// before the representation METS, which embeds its fixity.
 			df := r.DescriptionFile
 			if err := st.MkdirAll(base + "metadata/descriptive"); err != nil {
 				return err
@@ -149,7 +144,6 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 		}
 
 		if pf := r.PremisFile; pf != nil {
-			// PREMIS first: the representation METS embeds its fixity.
 			info, err := st.WriteMetadata(base+pf.Path, func(w io.Writer) error {
 				return premis.EncodeRepresentation(w, r)
 			})
@@ -159,9 +153,6 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 			backfill(pf, info)
 		}
 
-		// Documentation and received preservation documents are copies, not
-		// renders; both land before the representation METS, which embeds
-		// their fixity.
 		if err := copyFiles(st, base, r.DocumentationFiles); err != nil {
 			return err
 		}

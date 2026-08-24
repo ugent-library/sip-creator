@@ -13,7 +13,7 @@ import (
 )
 
 // decodeMetadataCSV decodes one metadata.csv into ordered descriptive
-// terms, collecting a violation per broken rule (input spec §3). The
+// terms, collecting a violation per broken rule. The
 // package-level file requires identifier and title; a representation-level
 // one does not.
 func (r *reader) decodeMetadataCSV(src string, packageLevel bool) metadata.Terms {
@@ -24,7 +24,7 @@ func (r *reader) decodeMetadataCSV(src string, packageLevel bool) metadata.Terms
 		r.violate("%s: %v", rel, err)
 		return nil
 	}
-	// Spreadsheet tools produce a UTF-8 BOM; accept and drop it (§3).
+	// Spreadsheet tools produce a UTF-8 BOM; accept and drop it.
 	data = bytes.TrimPrefix(data, []byte("\ufeff"))
 	if !utf8.Valid(data) {
 		r.violate("%s: not valid UTF-8; re-export the file as UTF-8", rel)
@@ -80,7 +80,7 @@ func (r *reader) decodeMetadataCSV(src string, packageLevel bool) metadata.Terms
 		terms = append(terms, term)
 	}
 
-	// The convention's own cardinality rule (§3): single-valued and
+	// The convention's own cardinality rule: single-valued and
 	// per-language keys must not repeat, whatever the profile. The rule is
 	// the same for every metadata.csv, so check needs no configuration. It
 	// is a cross-row rule checked on the finished list: each finding names
@@ -113,8 +113,8 @@ func isHeaderRow(row []string) bool {
 }
 
 // parseKey handles the key *syntax* of the CSV convention (the optional
-// [lang] bracket and the plain-key spellings of the descriptive vocabulary,
-// §3) and returns the element name the key maps onto. Whether the
+// [lang] bracket and the plain-key spellings of the descriptive
+// vocabulary) and returns the element name the key maps onto. Whether the
 // language tag inside the brackets is *valid* is metadata.Term.Validate's
 // rule; the decoder only adds the file/line context.
 func (r *reader) parseKey(file string, line int, raw string) (element, lang string, ok bool) {
@@ -132,7 +132,7 @@ func (r *reader) parseKey(file string, line int, raw string) (element, lang stri
 		}
 	}
 
-	// Prefixed keys left the convention (§8): every supported element has
+	// Prefixed keys are not supported: every supported element has
 	// a plain key, so point the operator at the spelling table instead of
 	// a generic unknown-key message.
 	if strings.Contains(key, ":") {

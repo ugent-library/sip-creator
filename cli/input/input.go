@@ -22,40 +22,57 @@ import (
 type File struct {
 	// Source is the absolute path of the file on disk.
 	Source string
-	// Rel is the path relative to the input root, slash-separated. It is
-	// the characterization report key and therefore deliberately NOT
-	// Unicode-normalized: it must match the filename bytes the report
-	// recorded from the same filesystem.
+	// Rel is the path relative to the input root, slash-separated.
+	// It is the characterization report key and is deliberately not
+	// Unicode-normalized: a report lookup must match the filename
+	// exactly as siegfried recorded it.
 	Rel string
-	// Path is the logical path relative to the file's container (the
-	// representation, documentation/ or premis/ root), slash-separated and
-	// NFC-normalized: the shape the file will take inside the package.
+	// Path is the path the file will have inside the package, relative
+	// to its container (the representation, documentation/ or premis/
+	// root), slash-separated and NFC-normalized.
 	Path string
 }
 
-// Representation is one version of the content (input spec §2).
+// Representation is one version of the content.
 type Representation struct {
-	Label         string
-	Descriptive   metadata.Terms // nil unless the representation has its own metadata.csv
-	Files         []File         // content files in deterministic traversal order (lexical per directory)
+	// Label is the representation folder's name (the input folder's name
+	// in the flat case).
+	Label string
+	// Descriptive is nil unless the representation has its own
+	// metadata.csv.
+	Descriptive metadata.Terms
+	// Files are the content files, in deterministic traversal order
+	// (lexical per directory).
+	Files []File
+	// Documentation are the files from the representation's
+	// documentation/ folder.
 	Documentation []File
-	Premis        []File // received preservation XML, passed through unparsed
+	// Premis is received preservation XML, passed through unparsed.
+	Premis []File
 }
 
 // Package is the validated result of reading one input folder.
 type Package struct {
-	Root             string
-	Descriptive      metadata.Terms
-	Representations  []Representation
-	Documentation    []File
-	Premis           []File                  // received preservation XML, passed through unparsed
-	Characterization characterization.Report // nil when the folder has no siegfried.json
-	Warnings         []string                // SHOULD-level findings; the build proceeds
+	// Root is the absolute path of the input folder.
+	Root string
+	// Descriptive is the package-level terms from the top-level
+	// metadata.csv.
+	Descriptive metadata.Terms
+	// Representations holds at least one representation; a flat folder
+	// reads as a single one.
+	Representations []Representation
+	// Documentation are the files from the top-level documentation/
+	// folder.
+	Documentation []File
+	// Premis is received preservation XML, passed through unparsed.
+	Premis []File
+	// Characterization is nil when the folder has no siegfried.json.
+	Characterization characterization.Report
+	// Warnings are SHOULD-level findings; the build proceeds.
+	Warnings []string
 }
 
 // BuilderInput maps the validated folder onto the library's build input.
-// It is the CLI-side half of "the folder is one transport": an embedding
-// system constructs the same profiles.Input from its own stores.
 func (p *Package) BuilderInput() *profiles.Input {
 	in := &profiles.Input{
 		Descriptive:      p.Descriptive,
@@ -117,8 +134,8 @@ type reader struct {
 	warnings   []string
 }
 
-// Reserved top-level names (input spec §1). Reserved names inside a
-// representation are a subset (§2).
+// Reserved top-level names. Reserved names inside a representation are
+// a subset.
 const (
 	metadataName        = "metadata.csv"
 	representationsName = "representations"
@@ -135,8 +152,8 @@ func (r *reader) read() *Package {
 	sawMetadata := false
 
 	for _, e := range r.readDir(r.root) {
-		// Reserved names are ASCII; byte comparison is exact (NFC matters
-		// only in readDir's collision check and newFile's Path).
+		// Reserved names are ASCII, which NFC normalization never alters,
+		// so comparing unnormalized names is exact.
 		name := e.Name()
 		src := filepath.Join(r.root, e.Name())
 		switch name {
@@ -182,7 +199,7 @@ func (r *reader) read() *Package {
 
 	if repsDir != "" {
 		// With a representations/ folder, all content lives inside it;
-		// only the reserved names may sit beside it (§2).
+		// only the reserved names may sit beside it.
 		for _, e := range content {
 			r.violate("%s: content must live inside representations/ when that folder exists (only documentation/ and premis/ may sit beside it)", e.Name())
 		}

@@ -11,7 +11,7 @@ import (
 const Namespace = "http://www.loc.gov/premis/v3"
 
 // ValidateReceived reports why r is not acceptable received preservation
-// metadata (input spec §5): it must be well-formed XML whose root element
+// metadata: it must be well-formed XML whose root element
 // is premis:premis in the PREMIS 3 namespace. Deliberately not schema
 // validation, which stays external (ADR-0003); this check only keeps the
 // tool from packaging something that is not a PREMIS document at all.

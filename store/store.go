@@ -12,20 +12,28 @@ import (
 	"time"
 )
 
+// Store writes a package's files under one root directory. Callers speak
+// package-relative slash paths; the store never reads or deletes.
 type Store struct {
 	root string
 }
 
+// New returns a Store rooted at root.
 func New(root string) *Store {
 	return &Store{
 		root: root,
 	}
 }
 
+// Info is what the store measured about a written file: the values the
+// METS and PREMIS documents declare as fixity.
 type Info struct {
-	Size     string
+	// Size is the byte size, decimal.
+	Size string
+	// Checksum is the MD5, hex-encoded.
 	Checksum string
-	Created  string
+	// Created is the modification time, RFC 3339 with nanoseconds.
+	Created string
 }
 
 func (s *Store) MkdirAll(rel string) error {
@@ -36,6 +44,9 @@ func (s *Store) MkdirAll(rel string) error {
 	return nil
 }
 
+// CopyFile streams src to rel, computing the MD5 and size during the copy
+// so large essence files are never buffered in memory. An existing file is
+// truncated.
 func (s *Store) CopyFile(src, rel string) (Info, error) {
 	in, err := os.Open(src)
 	if err != nil {
@@ -73,6 +84,9 @@ func (s *Store) CopyFile(src, rel string) (Info, error) {
 	}, nil
 }
 
+// WriteMetadata renders a document to memory before writing it to rel, so
+// a failed render leaves no partial file on disk. An existing file is
+// truncated.
 func (s *Store) WriteMetadata(rel string, fn func(io.Writer) error) (Info, error) {
 	var buf bytes.Buffer
 	if err := fn(&buf); err != nil {

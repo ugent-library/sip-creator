@@ -42,8 +42,8 @@ var createCmd = &cobra.Command{
 		}
 
 		// --status and --updates are coupled: an update-class status names
-		// an earlier package, and naming one demands an update-class
-		// status (input spec §6). Strict pairing is CLI policy; library
+		// an earlier package, and naming one requires an update-class
+		// status. Strict pairing is CLI policy; library
 		// callers may supply a package identifier for other reasons.
 		flagStatus, _ := cmd.Flags().GetString("status")
 		updates, _ := cmd.Flags().GetString("updates")

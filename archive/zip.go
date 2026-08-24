@@ -12,14 +12,20 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
+// Config is the archiver's wiring: where zips land and how the run logs.
 type Config struct {
+	// Destination is the directory the zip is written to.
 	Destination string
-	Logger      *slog.Logger
+	// Logger narrates the zipping.
+	Logger *slog.Logger
 }
 
+// Archive zips built package directories.
 type Archive struct {
+	// Destination is the directory the zip is written to.
 	Destination string
-	Logger      *slog.Logger
+	// Logger narrates the zipping.
+	Logger *slog.Logger
 }
 
 func New(config *Config) *Archive {
@@ -29,6 +35,8 @@ func New(config *Config) *Archive {
 	}
 }
 
+// Zip writes the package directory to dest/uuid-<uuid>.zip with every
+// entry stored uncompressed.
 func (a *Archive) Zip(pkg *sip.Package) error {
 	src := pkg.Location
 	dest := filepath.Join(a.Destination, pkg.Identifier+".zip")

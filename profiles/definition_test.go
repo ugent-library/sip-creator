@@ -44,8 +44,8 @@ func TestValidateDescriptiveRequiredPerFamily(t *testing.T) {
 		}
 	}
 
-	// A title is required by both families' sets; since Input.Validate no
-	// longer checks it, the Definition is the only guard.
+	// A title is required by both families' sets; Input.Validate doesn't
+	// check it, so the Definition is the only guard.
 	in = &Input{Descriptive: metadata.Terms{{Element: "dcterms:identifier", Value: "x"}}}
 	for _, def := range []Definition{basicDef(t), earkDef(t)} {
 		if err := def.validateDescriptive(in); err == nil || !strings.Contains(err.Error(), "dcterms:title") {
@@ -54,7 +54,7 @@ func TestValidateDescriptiveRequiredPerFamily(t *testing.T) {
 	}
 }
 
-// The cardinality marks bind the meemoo family only: a repeated abstract
+// Only the meemoo family enforces cardinality: a repeated abstract
 // (same language) fails basic, at package and representation level, and
 // passes eark.
 func TestValidateDescriptiveCardinalityPerFamily(t *testing.T) {

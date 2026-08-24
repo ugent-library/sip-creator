@@ -9,16 +9,13 @@ import (
 //go:generate go run github.com/g4s8/envdoc@v0.2.4 --output ../CONFIG.md --all
 
 // Application config: the CLI's operator contract, read from the
-// environment. The library never sees it: embedding systems supply their
-// destination and logger as data (profiles.Config), and each package's
-// material (characterization report included) as a profiles.Input, not
-// via env vars. Format info comes from the siegfried.json sidecar in the
-// input folder (ADR-0009), not from configuration.
+// environment. The library never reads it: embedding systems pass a
+// profiles.Config and per-build profiles.Input instead, and format info
+// arrives via the siegfried.json sidecar (ADR-0009), not configuration.
 type config struct {
 	// The submitting organization, stamped into every package's METS as a
 	// CREATOR agent. `create` requires NAME for every profile and OR_ID for
-	// meemoo profiles; how required each is depends on the profile, so the
-	// check lives at profile resolution, not here.
+	// meemoo profiles.
 	Submitter struct {
 		// Name of the submitting organization, e.g. "Universiteitsbibliotheek Gent".
 		Name string `env:"NAME"`

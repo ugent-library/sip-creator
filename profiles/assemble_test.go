@@ -410,8 +410,8 @@ func TestAssembleReportEntryError(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// Documentation is lenient where essence is strict (ADR-0009): no entry is
-// fine, a present entry enriches the mime but must be checksum-true.
+// Documentation needs no characterization entry (ADR-0009): no entry is
+// fine, a present entry enriches the mime but its checksum must match.
 func TestAssembleDocumentation(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	inDir := t.TempDir()
@@ -512,7 +512,7 @@ func TestInputValidate(t *testing.T) {
 	}
 }
 
-// A representation may carry its own descriptive terms (spec §3): they
+// A representation may carry its own descriptive terms: they
 // land on the representation with a rep-relative file node, an identifier
 // term is swapped for the representation identifier, and identity is not
 // required.
@@ -607,7 +607,8 @@ func TestAssembleReceivedPremis(t *testing.T) {
 }
 
 // Representation documentation gets the same treatment as package
-// documentation: nodes under documentation/, lenient characterization.
+// documentation: nodes under documentation/, no characterization entry
+// required.
 func TestAssembleRepresentationDocumentation(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	inDir := t.TempDir()
@@ -676,7 +677,7 @@ func TestBuildInvalidConfigWritesNothing(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// The required sets bind in Build: identity-only terms build a complete
+// Build enforces the required sets: identity-only terms build a complete
 // eark package and are refused under basic before any side effect.
 func TestBuildRequiredElementsPerFamily(t *testing.T) {
 	b, in, _ := newTestBuilder(t)

@@ -16,26 +16,27 @@ const (
 
 // vocabularyRow is one entry of the descriptive vocabulary. It holds
 // everything the tool knows about one key: the element it emits, meemoo's
-// conformance marks, the xsi:type the element carries, and the Simple DC
-// parent the element dumbs down to.
+// Required and Repeat rules, the xsi:type the element carries, and the
+// Simple DC parent the element dumbs down to.
 type vocabularyRow struct {
-	Key      string      // plain metadata.csv key (input spec §3)
+	Key      string      // plain metadata.csv key
 	Element  string      // emitted element name
-	Required bool        // meemoo basic profile 1..1 mark (enforced per family)
+	Required bool        // required by meemoo's basic profile (enforced per family)
 	Repeat   cardinality // meemoo basic profile cardinality (enforced per family)
 	XSIType  string      // xsi:type on the emitted element; "" for none
 	SimpleDC string      // Simple DC parent for dumb-down; "" for no home
 }
 
-// vocabulary is the closed descriptive vocabulary: the flat-expressible
-// elements of meemoo's SIP 1.2 basic content profile, in the input spec §3
-// table's order. This table is the metadata model: the CSV decoder,
-// validation, and the templates all read from it (ADR-0011). The Required
-// and Repeat marks are meemoo's; whether they bind is the profile family's
+// vocabulary is the closed set of supported descriptive elements: the
+// elements of meemoo's SIP 1.2 basic content profile that fit a single
+// key,value row, in the input specification's table order. This table is
+// the metadata model: the CSV decoder, validation, and the templates all
+// read from it (ADR-0011). The Required and Repeat columns come from
+// meemoo's profile; whether they are enforced is the profile family's
 // call. The SimpleDC column follows the "Subproperty Of" relations in the
-// DCMI Metadata Terms spec; elements with no declared parent among the
-// fifteen Simple DC elements (rightsHolder, schema:*) carry "", because
-// inventing a mapping would assert semantics DCMI doesn't.
+// DCMI Metadata Terms spec; elements without a parent among the fifteen
+// Simple DC elements (rightsHolder, schema:*) carry "", because inventing
+// a mapping would assert semantics DCMI doesn't.
 var vocabulary = []vocabularyRow{
 	{"identifier", "dcterms:identifier", true, once, "", "identifier"},
 	{"title", "dcterms:title", true, oncePerLanguage, "", "title"},
@@ -74,17 +75,17 @@ func init() {
 	}
 }
 
-// ResolveKey maps a plain metadata.csv key (input spec §3) onto the element
+// ResolveKey maps a plain metadata.csv key onto the element
 // it generates. Keys are case-insensitive per the convention.
 func ResolveKey(key string) (element string, ok bool) {
 	row, ok := vocabularyByKey[strings.ToLower(key)]
 	return row.Element, ok
 }
 
-// RequiredElements lists the elements the vocabulary marks required (the
-// meemoo basic profile's 1..1 marks), in table order. Whether they bind is
-// the profile family's call: the meemoo family reads this list; a family
-// with its own requiredness rules (eark) declares its own.
+// RequiredElements lists the elements the vocabulary marks required, in
+// table order. Whether they are enforced is the profile family's call:
+// the meemoo family reads this list; a family with its own requiredness
+// rules (eark) declares its own.
 func RequiredElements() []string {
 	var out []string
 	for _, row := range vocabulary {

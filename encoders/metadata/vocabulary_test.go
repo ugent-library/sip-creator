@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-// The Required marks are a spec contract: meemoo's basic content profile
-// mandates exactly these four elements. The basic profile derives its
+// The Required column is a spec contract: meemoo's basic content profile
+// requires exactly these four elements. The basic profile derives its
 // required list from the table, so an accidental table edit would silently
 // change conformance; this pins it.
 func TestRequiredElements(t *testing.T) {
@@ -22,14 +22,14 @@ func TestResolveKey(t *testing.T) {
 		element string // "" means the key must be unknown
 	}{
 		{"identifier", "dcterms:identifier"},
-		{"ispartof", "dcterms:isPartOf"},  // renamed spelling
+		{"ispartof", "dcterms:isPartOf"},  // flat key, camel-cased element
 		{"artmedium", "schema:artMedium"}, // schema.org, camel-cased element
 		{"artform", "schema:artform"},     // schema.org spells this one flat
-		{"abstract", "dcterms:abstract"},  // extended beyond the spec §3 origin
-		{"Title", "dcterms:title"},        // keys are case-insensitive
-		{"titel", ""},                     // typo
-		{"accrualpolicy", ""},             // DCMI term outside the profile
-		{"dcterms:title", ""},             // prefixed keys left the convention
+		{"abstract", "dcterms:abstract"},
+		{"Title", "dcterms:title"}, // keys are case-insensitive
+		{"titel", ""},              // typo
+		{"accrualpolicy", ""},      // DCMI term outside the profile
+		{"dcterms:title", ""},      // prefixed keys are not supported
 	}
 	for _, tt := range tests {
 		element, ok := ResolveKey(tt.key)

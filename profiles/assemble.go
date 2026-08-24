@@ -51,7 +51,7 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 		pf := sip.NewFile()
 		pf.Name = "premis.xml"
 		pf.Path = "metadata/preservation/premis.xml"
-		pf.Mime = "text/xml" // generated XML by construction
+		pf.Mime = "text/xml" // generated XML
 		pkg.AddPremisFile(pf)
 		b.Logger.Info("created a package PREMIS file", slog.String("id", pf.Identifier))
 	}
@@ -83,15 +83,15 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 
 	df := sip.NewFile()
 	df.Name = def.DescriptiveName
-	df.Path = "metadata/descriptive/" + df.Name // declared, not derived from disk
-	df.Mime = "text/xml"                        // the writer renders it as XML by construction
+	df.Path = "metadata/descriptive/" + df.Name
+	df.Mime = "text/xml" // generated XML
 	e.AddDescriptionFile(df)
 	b.Logger.Info("created a descriptive file", slog.String("id", df.Identifier))
 }
 
 // schemaFileNodes declares one graph node per bundled XSD, sorted so METS
 // emission is deterministic (schemas.Get() is a map; iterating it directly
-// reordered the fileSec on every run, the Phase-0 baseline finding).
+// reorders the fileSec on every run).
 func schemaFileNodes() []*sip.File {
 	xsds := schemas.Get()
 	files := make([]*sip.File, 0, len(xsds))
@@ -99,19 +99,17 @@ func schemaFileNodes() []*sip.File {
 		f := sip.NewFile()
 		f.Name = name
 		f.Path = "schemas/" + name
-		f.Mime = "application/xml" // XSDs by construction
+		f.Mime = "application/xml"
 		files = append(files, f)
 	}
 	return files
 }
 
-// assembleDocumentationNodes declares graph nodes for documentation files,
-// with the same treatment at package and representation level: Path relative
-// to the container's documentation/ dir. Documentation is lenient where
-// essence is strict (ADR-0009): these files carry no premis:format and may
-// postdate the characterization report, so no entry is required, but a
-// present entry must still be checksum-true, because a mismatch proves the
-// report stale.
+// assembleDocumentationNodes declares graph nodes for documentation files
+// (package and representation level alike), Path relative to the container's
+// documentation/ dir. Unlike essence, documentation needs no characterization
+// entry (ADR-0009), but a present entry's checksum must match: a mismatch
+// proves the report stale.
 func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars characterization.Report) ([]*sip.File, error) {
 	var files []*sip.File
 	for _, src := range sources {
@@ -119,7 +117,7 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 		f.Name = path.Base(src.Path)
 		f.Source = src.Source
 		f.Path = "documentation/" + src.Path
-		f.Mime = "application/octet-stream" // the admitted unknown, never a guess
+		f.Mime = "application/octet-stream" // unknown; a report entry may refine it below
 
 		if chars != nil {
 			if rec, ok := chars[src.Key]; ok && rec.MD5 != "" {
@@ -140,7 +138,7 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 // assembleRepresentations turns each supplied representation into a graph
 // node. The package-side name (representation_N, in supplied order) is
 // this project's stable convention, taken from the meemoo spec's
-// illustrated layout. No spec mandates the name: CSIP requires only
+// illustrated layout. No spec dictates the name: CSIP requires only
 // uniqueness, and meemoo 2.x only that the dir name equal the rep METS
 // OBJID (which setting both from Name satisfies for free). The producer's
 // label rides along as the human-readable name (rep METS mets/@LABEL).
@@ -154,14 +152,14 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			// Mirror the package-level swap: when the terms carry an
 			// identifier, the emitted document carries the representation
 			// identifier instead (a no-op when they carry none; rep-level
-			// identity is optional, spec §3).
+			// identity is optional).
 			sr.Descriptive.SetObjectIdentifier(r.Identifier)
 			r.Description = sr.Descriptive
 
 			df := sip.NewFile()
 			df.Name = def.DescriptiveName
 			df.Path = "metadata/descriptive/" + df.Name // rep-relative, per File.Path
-			df.Mime = "text/xml"                        // the writer renders it as XML by construction
+			df.Mime = "text/xml"                        // generated XML
 			r.AddDescriptionFile(df)
 			b.Logger.Info("created a representation descriptive file", slog.String("id", df.Identifier))
 		}
@@ -175,7 +173,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			// asserts formats for SOURCE files, and the MD5 binding proves each
 			// record still describes the bytes on disk. Fixity is not its job;
 			// the writer computes that during the streamed copy.
-			f.Mime = "application/octet-stream" // the admitted unknown, never a guess
+			f.Mime = "application/octet-stream" // unknown; the report may refine it below
 			if in.Characterization != nil {
 				rec, err := b.essenceRecord(in.Characterization, src)
 				if err != nil {
@@ -207,7 +205,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			pf := sip.NewFile()
 			pf.Name = "premis.xml"
 			pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
-			pf.Mime = "text/xml"                         // generated XML by construction
+			pf.Mime = "text/xml"                         // generated XML
 			r.AddPremisFile(pf)
 			b.Logger.Info("created a representation PREMIS file", slog.String("id", pf.Identifier))
 		}
@@ -215,7 +213,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 		mf := sip.NewFile()
 		mf.Name = "METS.xml"
 		mf.Path = "representations/" + r.Name + "/METS.xml" // package-relative: referenced from package METS
-		mf.Mime = "text/xml"                                // generated XML by construction
+		mf.Mime = "text/xml"                                // generated XML
 		r.AddMetsFile(mf)
 		b.Logger.Info("created a representation METS file", slog.String("id", mf.Identifier))
 
@@ -226,11 +224,11 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 }
 
 // assembleReceivedPremis declares graph nodes for received preservation
-// documents (input spec §5): copied as received, never parsed or merged,
+// documents: copied as received, never parsed or merged,
 // but each must actually be a premis:premis document (well-formed, PREMIS 3
 // namespace), because packaging a non-PREMIS file under
 // metadata/preservation/ would be a false preservation claim. The check
-// binds every producer, so it lives here, not in the CLI walker alone.
+// applies to every producer, so it lives here, not in the CLI walker alone.
 func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile) ([]*sip.File, error) {
 	var files []*sip.File
 	for _, src := range sources {

@@ -26,6 +26,8 @@ func newLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(os.Stdout, nil))
 }
 
+// Run executes the CLI: it loads .env when present, reads the environment
+// config, and dispatches the root command.
 func Run() {
 	// .env is optional configuration: a missing file is fine (all vars are
 	// optional), a malformed one is an error.

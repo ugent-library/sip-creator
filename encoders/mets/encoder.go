@@ -12,6 +12,9 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
+// identifier mints a fresh uuid-<uuid> METS ID. The templates mint shared
+// IDs ($fileGrpID, $SCHEMAID, $DOCID) once, up front, so the fileSec and
+// the structMap that points at it carry the same value.
 func identifier() string {
 	return fmt.Sprintf("uuid-%s", uuid.NewV4().String())
 }
@@ -208,10 +211,12 @@ type repView struct {
 	Spec *sip.Spec
 }
 
+// EncodeRepresentation writes a representation's METS document.
 func EncodeRepresentation(w io.Writer, r *sip.Representation, spec *sip.Spec) error {
 	return templates.ExecuteTemplate(w, "representation", repView{r, spec})
 }
 
+// EncodePackage writes the package METS document.
 func EncodePackage(w io.Writer, p *sip.Package) error {
 	return templates.ExecuteTemplate(w, "package", p)
 }

@@ -6,19 +6,31 @@ import (
 	"uuid"
 )
 
+// Package is one assembled SIP: the graph of entities, representations,
+// and file nodes the writer emits.
 type Package struct {
-	Location   string
+	// Location is the package directory on disk: the destination dir
+	// joined with the identifier.
+	Location string
+	// Identifier is the package identifier (uuid-<uuid>): the mets/@OBJID,
+	// the directory name, and the zip name.
 	Identifier string
 	// Spec carries the profile-level METS values; set by the assembler.
-	Spec       *Spec
-	Root       *Entity
+	Spec *Spec
+	// Root is the intellectual entity the package describes.
+	Root *Entity
+	// PremisFile is the generated preservation document; nil when the
+	// profile emits none.
 	PremisFile *File
 	// ReceivedPremisFiles are preservation documents delivered with the
-	// input. They are copied as received, never parsed (input spec §5).
+	// input. They are copied as received, never parsed.
 	ReceivedPremisFiles []*File
-	MetsFile            *File
-	SchemaFiles         []*File
-	DocumentationFiles  []*File
+	// MetsFile is the node for the generated package METS.
+	MetsFile *File
+	// SchemaFiles are the bundled XSDs, copied into schemas/.
+	SchemaFiles []*File
+	// DocumentationFiles document the whole package.
+	DocumentationFiles []*File
 }
 
 func (p *Package) AddRootEntity(e *Entity) {

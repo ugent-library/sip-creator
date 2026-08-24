@@ -25,21 +25,22 @@ type SourceFile struct {
 }
 
 // SourceRepresentation is one version of the content, as the caller
-// supplies it. The CLI's input convention is one producer; an embedding
-// system constructing it from its own stores is another.
+// supplies it.
 type SourceRepresentation struct {
-	Label string       // producer's label; the profile decides package-side naming
-	Files []SourceFile // content files, in packaging order
-	// Descriptive optionally describes this version only (input spec §3):
-	// identity (identifier, title) is not required here; the package-level
+	// Label is the producer's label; the profile decides package-side
+	// naming.
+	Label string
+	// Files are the content files, in packaging order.
+	Files []SourceFile
+	// Descriptive optionally describes this version only: identity
+	// (identifier, title) is not required here; the package-level
 	// descriptive carries the work's identity.
 	Descriptive metadata.Terms
 	// Premis optionally supplies received preservation documents about
-	// this representation (input spec §5): copied, never parsed. Each
-	// must be a well-formed premis:premis document (checked at assembly).
+	// this representation: copied, never parsed. Each must be a
+	// well-formed premis:premis document.
 	Premis []SourceFile
-	// Documentation optionally documents this representation only
-	// (input spec §4).
+	// Documentation optionally documents this representation only.
 	Documentation []SourceFile
 }
 
@@ -63,8 +64,8 @@ type Input struct {
 	// Documentation optionally documents the whole package.
 	Documentation []SourceFile
 	// Premis optionally supplies received preservation documents about the
-	// whole package (input spec §5): copied, never parsed. Each must be a
-	// well-formed premis:premis document (checked at assembly).
+	// whole package: copied, never parsed. Each must be a well-formed
+	// premis:premis document.
 	Premis []SourceFile
 	// Characterization optionally supplies a pre-decoded characterization
 	// report; nil means the build proceeds without format info (ADR-0009).
@@ -90,8 +91,7 @@ func ValidateRepresentationLabel(label string) error {
 // Validate reports the first invariant the input breaks. These are the
 // graph rules every producer must satisfy: the folder convention enforces
 // them with operator-phrased Violations before building; embedding callers
-// hit them here (the input-convention plan's "validation splits in two").
-// Fail-fast: one error, developer-phrased.
+// hit them here. Fail-fast: one error, developer-phrased.
 func (in *Input) Validate() error {
 	if in.PackageIdentifier != "" {
 		if err := sip.ValidateIdentifier(in.PackageIdentifier); err != nil {
