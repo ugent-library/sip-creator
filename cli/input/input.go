@@ -213,7 +213,7 @@ func (r *reader) read() *Package {
 
 // decodeSidecar decodes the optional pre-computed characterization report.
 // Decode strictness is ADR-0009's: a present report must parse; per-entry
-// verification (MD5 binding) stays with the assembler, which knows which
+// verification (the MD5 check) stays with the assembler, which knows which
 // entries it needs.
 func (r *reader) decodeSidecar(src string) characterization.Report {
 	f, err := os.Open(src)

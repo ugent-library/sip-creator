@@ -263,7 +263,7 @@ func TestReadReservedNameWrongKind(t *testing.T) {
 // The read-time premis rule is the naming rule only: premis.xml belongs to
 // the generated document. Content conformance is deliberately NOT a read
 // concern; it is enforced at assembly, like the characterization MD5
-// binding, so a folder with malformed premis content passes Read/check and
+// verification, so a folder with malformed premis content passes Read/check and
 // fails at build.
 func TestReadPremisNamingRule(t *testing.T) {
 	root := writeTree(t, map[string]string{

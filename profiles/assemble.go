@@ -170,7 +170,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			f.Source = src.Source
 			f.Path = "data/" + src.Path // rep-relative, per File.Path semantics
 			// Characterization is an optional enricher (ADR-0009): the report
-			// asserts formats for SOURCE files, and the MD5 binding proves each
+			// asserts formats for SOURCE files, and the MD5 check proves each
 			// record still describes the bytes on disk. Fixity is not its job;
 			// the writer computes that during the streamed copy.
 			f.Mime = "application/octet-stream" // unknown; the report may refine it below
@@ -286,7 +286,7 @@ func sampleKey(chars characterization.Report) string {
 	return fmt.Sprintf("%q", keys[0])
 }
 
-// verifyReportMD5 checks the report's checksum binding for src: the MD5 is
+// verifyReportMD5 checks the report's checksum for src: the MD5 is
 // what ties a record to the bytes it describes (the staleness defense).
 func verifyReportMD5(src string, rec characterization.Record) error {
 	sum, err := md5File(src)

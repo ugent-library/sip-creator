@@ -26,7 +26,7 @@ type Record struct {
 	// Mime is the IANA media type the report asserts; empty when it
 	// asserts none.
 	Mime string
-	// MD5 is the hex digest binding the record to the bytes it describes.
+	// MD5 is the hex digest that ties the record to the bytes it describes.
 	MD5 string
 	// Errors is the tool's per-file error, verbatim; empty means none.
 	Errors string

@@ -306,7 +306,7 @@ func TestAssembleWithoutReport(t *testing.T) {
 	}
 }
 
-// An entry with no match is an honest no-match: Format stays nil for that
+// An entry with no match is a genuine no-match: Format stays nil for that
 // file only, and assembly succeeds.
 func TestAssembleReportNoMatch(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
@@ -364,7 +364,7 @@ func TestAssembleReportMissingEntry(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// Changed bytes fail the MD5 binding: a stale report must never lend its
+// Changed bytes fail the MD5 check: a stale report must never lend its
 // format claims to different content.
 func TestAssembleReportChecksumMismatch(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
@@ -380,8 +380,8 @@ func TestAssembleReportChecksumMismatch(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// A record without a checksum can't bind to bytes, so it aborts rather than
-// being trusted.
+// A record without a checksum can't be verified against the bytes, so it
+// aborts rather than being trusted.
 func TestAssembleReportChecksumless(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	src := in.Representations[0].Files[0]
