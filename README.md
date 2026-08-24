@@ -1,35 +1,235 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/ugent-library/sip-creator.svg)](https://pkg.go.dev/github.com/ugent-library/sip-creator)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 # SIP Creator
 
-Create Submission Information Packages (SIP) based on [Meemoo's SIP Specification](https://developer.meemoo.be/docs/diginstroom/sip/)
+A command-line tool and Go library for building Submission Information Packages (SIPs):
+your content files plus descriptive metadata in, a standards-conformant
+[E-ARK SIP](https://earksip.dilcis.eu/) out, ready for ingest into any repository that
+accepts the E-ARK specification. Profiles specialize the output for a particular
+archive: the meemoo profile builds SIPs conforming to
+[meemoo's SIP Specification](https://developer.meemoo.be/docs/diginstroom/sip/) for
+ingest into the Flemish heritage archive (hetarchief.be).
 
 :warning: **This is an experimental package** :warning:
 
 ## Features
 
-* Implements [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/)
-  (the stable version — 2.0/2.1 are release candidates) and plain
-  [E-ARK SIP](https://earksip.dilcis.eu/) 2.2.0.
-* Profiles are registry entries selected with `--profile`: `basic` (meemoo SIP 1.2) and
-  `eark` (plain E-ARK SIP for RODA-class repositories). An unknown (or omitted)
-  `--profile` fails with the list of available profiles.
-* Optional file format characterization via a pre-computed [Siegfried](https://github.com/richardlehane/siegfried)
-  report: a `siegfried.json` sidecar in the input folder enriches the PREMIS metadata with
-  PRONOM format info (a SHOULD in the meemoo spec); without it the build still succeeds —
-  fixity is computed natively. The tool never runs Siegfried itself (see Format characterization).
+* Implements plain [E-ARK SIP](https://earksip.dilcis.eu/) 2.2.0, with the
+  [meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/)
+  as a specialization on top. Select with `--profile`: `eark` for E-ARK-conformant
+  repositories, `basic` for ingest into the Flemish heritage archive (hetarchief.be).
+* Builds a complete package from a plain input folder: your content files plus a simple
+  `metadata.csv`, out comes a SIP with generated METS and PREMIS metadata and natively
+  computed checksums.
+* Validates an input folder before building (`check`), reporting every violation at once.
+* Optional PRONOM format identification from a pre-computed
+  [Siegfried](https://github.com/richardlehane/siegfried) report (see Format characterization).
 
-## Requisites
+## Installation
 
-* For the validation loop: [Docker](https://www.docker.com/) (runs the commons-ip validator and the report server) and `jq`.
-* Recommended: [Siegfried](https://github.com/richardlehane/siegfried) to generate the characterization sidecar (optional, see Format characterization).
+Both paths require [Go](https://go.dev/dl/) 1.27 or later; there are no prebuilt
+binaries while the tool is experimental.
+
+Install the CLI directly from the module (the binary lands in
+`$(go env GOPATH)/bin` as `sip-creator`; make sure that directory is on your `PATH`):
+
+```sh
+go install github.com/ugent-library/sip-creator@latest
+```
+
+Or build from a clone, which is what the examples in this README assume
+(they invoke `./bin/sip-creator`; with `go install`, invoke `sip-creator` instead):
+
+```sh
+git clone https://github.com/ugent-library/sip-creator.git
+cd sip-creator
+go build -o bin/sip-creator .
+```
+
+## How to use
+
+### As a command-line tool
+
+Assuming you have data in a `./your-input` directory (prepared as described under Input
+below) which you want to convert into a SIP package stored in a `sip-out` directory
+(`create` also needs the submitting organization set in the environment, see
+Configuration below):
+
+```
+./bin/sip-creator create --profile eark ./your-input sip-out
+```
+
+This writes the package directory `sip-out/uuid-<uuid>/` and zips it (uncompressed) to
+`sip-out/uuid-<uuid>.zip`. Pass `--no-zip` to skip the zip when the package directory
+itself is what you need next.
+
+Further flags:
+
+* `--content-category` sets the package's content category (`mets/@TYPE`,
+  CSIP vocabulary), overriding `SIP_CONTENT_CATEGORY` and the profile default.
+* `--status` sets the record status (SIP3 vocabulary: `new`, `supplement`,
+  `replacement`, `test`, `version`, `delete`; omitted means `new`). A status
+  that updates an earlier package requires `--updates <identifier>`: the
+  original package's identifier is reused as this package's identifier
+  (`mets/@OBJID`) — how a conformant archive matches the update to its
+  holdings.
+
+**Delivering to an E-ARK-conformant repository (eark profile):** the zip is the
+deliverable; ingest it directly.
+
+**Delivering to meemoo (basic profile):** meemoo's transfer format wraps the SIP in a
+BagIt bag — an envelope this tool deliberately does not produce
+([ADR-0008](docs/decisions/0008-bag-layer-out-of-scope.md)). Bag the package *directory*
+(not our zip) with a reference BagIt implementation, then follow meemoo's transfer
+instructions:
+
+```
+./bin/sip-creator create --profile basic --no-zip ./your-input sip-out
+bagit.py --md5 sip-out/uuid-<uuid>/
+```
+
+### As a Go library
+
+The input folder is a CLI convention; the library takes the same material as plain Go
+values, and no environment variables are involved: the submitter is data on the profile,
+the destination and logger are configuration. Resolve a profile, attach the submitter,
+and hand `Build` your descriptive terms and content files:
+
+```go
+import (
+	"log/slog"
+
+	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/profiles"
+)
+
+def, _ := profiles.Get("eark")
+// The second argument is the meemoo OR-id: required by meemoo profiles,
+// ignored by plain E-ARK ones.
+def, err := def.WithSubmitter("Universiteitsbibliotheek Gent", "")
+if err != nil {
+	// ...
+}
+
+builder := profiles.New(&profiles.Config{
+	Destination: "./out",
+	Logger:      slog.Default(),
+})
+
+pkg, err := builder.Build(def, &profiles.Input{
+	Descriptive: metadata.Terms{
+		{Element: "dcterms:identifier", Value: "inv.2024.001"},
+		{Element: "dcterms:title", Lang: "nl", Value: "Correspondentie 1914-1918"},
+		{Element: "dcterms:description", Lang: "nl", Value: "Brieven uit de collectie."},
+		{Element: "dcterms:created", Value: "1914/1918"},
+	},
+	Representations: []profiles.SourceRepresentation{{
+		Label: "master",
+		Files: []profiles.SourceFile{
+			{Source: "/data/scans/page-001.tif", Path: "page-001.tif"},
+		},
+	}},
+})
+```
+
+`Build` validates the input against the profile's rules, then writes the complete
+package directory under `Destination` and returns the built package. Zipping is a
+separate step (the `archive` package). The full API is on
+[pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator); the domain model
+and build lifecycle are described in
+[docs/sip-creator-design.md](docs/sip-creator-design.md).
+
+## Input
+
+One folder is one package. The smallest valid input is a `metadata.csv` plus your content
+files, flat in one folder (they become the package's single representation):
+
+```
+your-input/
+├── metadata.csv
+├── scan-001.tif
+└── scan-002.tif
+```
+
+When the content comes in multiple versions (a preservation master and an
+access copy, say), each version gets its own folder under `representations/`,
+and the optional extras slot in per package or per representation:
+
+```
+your-input/
+├── metadata.csv              required: descriptive metadata for the package
+├── siegfried.json            optional: characterization sidecar (see Format characterization)
+├── documentation/            optional: context material about the package
+│   └── README.txt
+├── premis/                   optional: received preservation XML, passed through as-is
+│   └── vendor-events.xml
+└── representations/
+    ├── master/
+    │   ├── scan-001.tif
+    │   ├── scan-002.tif
+    │   ├── metadata.csv      optional: terms that apply to this version only
+    │   ├── documentation/    optional
+    │   │   └── notes.txt
+    │   └── premis/           optional
+    │       └── scanner-events.xml
+    └── access/
+        ├── scan-001.jpg
+        └── scan-002.jpg
+```
+
+`metadata.csv` is a two-column `key,value` file with a header row, and the only file you
+write by hand. Keys come from a closed vocabulary of Dublin Core terms (the full key
+table is in the [input specification](docs/input-spec.md)). Repeat a key for multiple
+values, and tag a value's language in square brackets where it matters:
+
+```csv
+key,value
+identifier,BIB.FA.XXXX.XXX
+title[nl],Fotoalbum Gent 1913
+description[nl],Album met 48 zwart-witfoto's van de Gentse binnenstad
+created,1913
+creator,Onbekend
+subject[nl],stadsgezichten
+subject[nl],wereldtentoonstellingen
+spatial[nl],Gent
+extent[nl],48 foto's
+rights[nl],publiek domein
+```
+
+`identifier` and `title` are always required; meemoo profiles also require `description`
+and `created`, and a Dutch (`[nl]`) entry wherever a language-tagged key is used. An
+unknown key is an error: a typo must not silently drop metadata.
+
+In short:
+
+* **`metadata.csv`** (required): the descriptive metadata, see the example
+  above.
+* **Content**: either flat in the folder (one representation), or one folder
+  per version under `representations/<your-name>/` — names are free-form
+  labels (letters, digits, `._-`); inside the generated SIP the tool
+  chooses its own folder names, and your folder name is kept in the metadata
+  as the version's human-readable name.
+* **Optional**: `documentation/` (context material; also per representation —
+  recommended: validators flag its absence as a SHOULD-level warning),
+  `premis/` (preservation XML received from a vendor, passed through as-is;
+  also per representation), a per-representation `metadata.csv` (e.g. a
+  license that differs between master and access copy), and the
+  `siegfried.json` characterization sidecar (see Format characterization).
+
+Validate a folder without building anything (no configuration needed):
+
+```
+./bin/sip-creator check ./your-input
+```
+
+It reports every violation at once, in plain language.
 
 ## Configuration
 
 Configuration is read from the environment (a `.env` file is loaded when present — start
 from `.env.example`). All environment variables are documented in
-[CONFIG.md](CONFIG.md), which is generated from the config struct — regenerate it with
-`go generate ./cli` rather than editing it by hand.
+[CONFIG.md](CONFIG.md).
 
 **Submitting organization** (required for `create`)
 
@@ -48,9 +248,11 @@ SIP_SUBMITTER_OR_ID="OR-a1b2c3d"
 
 **Format characterization** (optional, input — not configuration)
 
-Format info comes from a pre-computed Siegfried report placed next to your input, not
-from an installed tool: generate it **from the input root** and the build picks it up
-by name:
+Format info comes from a pre-computed
+[Siegfried](https://github.com/richardlehane/siegfried) report placed next to your
+input; the tool itself never runs Siegfried. Install Siegfried if you want format info
+in your packages, generate the report **from the input root**, and the build picks it
+up by name:
 
 ```sh
 cd ./your-input && sf -hash md5 -json . > siegfried.json
@@ -63,50 +265,16 @@ without `-hash md5`, or a file changed since the report was generated aborts the
 a stale format claim is worse than none. Regenerate the sidecar whenever the input
 changes.
 
-Migration note: the former `SIP_FILE_FORMAT_*` environment variables are gone and
-silently ignored if they linger in your `.env` — the tool no longer executes Siegfried
-(see [ADR-0009](docs/decisions/0009-characterization-as-sidecar-input.md)).
+## Development
 
-## How to use
+This section is for developing SIP Creator itself; as a user you don't need any of it.
 
-Assuming you have data in a `./tmp/basic` directory which you want to convert into a SIP package
-stored in a `basic-uuid` directory:
+`go test ./...` runs the Go test suite; it needs no Docker, no Siegfried, and no `.env`.
 
-```
-go build -o bin/sip-creator .
-./bin/sip-creator create --profile basic ./tmp/basic basic-uuid
-```
-
-This writes the package directory `basic-uuid/uuid-<uuid>/` and zips it (uncompressed) to
-`basic-uuid/uuid-<uuid>.zip`. Pass `--no-zip` to skip the zip when the package directory
-itself is what you need next.
-
-Further flags:
-
-* `--content-category` sets the package's content category (`mets/@TYPE`,
-  CSIP vocabulary), overriding `SIP_CONTENT_CATEGORY` and the profile default.
-* `--status` sets the record status (SIP3 vocabulary: `new`, `supplement`,
-  `replacement`, `test`, `version`, `delete`; omitted means `new`). A status
-  that updates an earlier package requires `--updates <identifier>`: the
-  original package's identifier is reused as this package's identifier
-  (`mets/@OBJID`) — how a conformant archive matches the update to its
-  holdings.
-
-**Delivering to meemoo (basic profile):** meemoo's transfer format wraps the SIP in a
-BagIt bag — an envelope this tool deliberately does not produce
-([ADR-0008](docs/decisions/0008-bag-layer-out-of-scope.md)). Bag the package *directory*
-(not our zip) with a reference BagIt implementation, then follow meemoo's transfer
-instructions:
-
-```
-./bin/sip-creator create --profile basic --no-zip ./tmp/basic basic-uuid
-bagit.py --md5 basic-uuid/uuid-<uuid>/
-```
-
-**Delivering to a RODA-class repository (eark profile):** the zip is the deliverable;
-ingest it directly.
-
-## Validation
+The scripts below require [Docker](https://www.docker.com/) (runs the commons-ip
+validator and the report server) and `jq`; `build.sh` also needs `sf`
+([Siegfried](https://github.com/richardlehane/siegfried)) on your `PATH`, because it
+regenerates the input fixture's `siegfried.json` sidecar before building.
 
 `./build.sh [profile]` (default `basic`) is the local CI loop: it rebuilds, regenerates
 the sample SIP from `tmp/<profile>`, validates the zip with
@@ -124,38 +292,7 @@ open http://localhost:8080
 ```
 
 `./scripts/validate.sh <sip.zip|sip-dir>...` validates any package standalone — including
-an unzipped package directory when debugging structure. See
-[ADR-0005](docs/decisions/0005-dockerized-validation-and-html-reporting.md) for the design.
-
-## Input
-
-One folder is one package, prepared per the
-[input specification](docs/input-spec.md) — the authoritative statement of
-every rule. In short:
-
-* **`metadata.csv`** (required): the descriptive metadata as two-column
-  `key,value` rows — a closed vocabulary of Dublin Core terms (see the
-  spec's key table). `identifier` and `title` are always required; meemoo
-  profiles also require `description` and `created`, and a Dutch entry
-  wherever a language-tagged key is used (`title[nl]`).
-* **Content**: either flat in the folder (one representation), or one folder
-  per version under `representations/<your-name>/` — names are free-form
-  labels (letters, digits, `._-`); the tool decides the package-side naming
-  and keeps your label as the human-readable name.
-* **Optional**: `documentation/` (context material; also per representation —
-  recommended: validators flag its absence as a SHOULD-level warning),
-  `premis/` (preservation XML received from a vendor, passed through as-is;
-  also per representation), a per-representation `metadata.csv` (e.g. a
-  license that differs between master and access copy), and the
-  `siegfried.json` characterization sidecar (see Format characterization).
-
-Validate a folder without building anything (no configuration needed):
-
-```
-./bin/sip-creator check ./your-input
-```
-
-It reports every violation at once, in plain language.
+an unzipped package directory when debugging structure.
 
 ## Documentation
 
@@ -163,3 +300,7 @@ It reports every violation at once, in plain language.
 describes the system as it is today, [docs/decisions/](docs/decisions/) records why key
 choices were made, and [docs/TODO.md](docs/TODO.md) is the live backlog. Start with
 [docs/README.md](docs/README.md) for how it all fits together.
+
+## License
+
+[Apache 2.0](LICENSE).
