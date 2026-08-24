@@ -30,7 +30,7 @@ func (e *Entity) AddAdditionalIdentifier(idType, id string) {
 	e.AdditionalIdentifiers[idType] = id
 }
 
-func (e *Entity) AddDescriptionFile(f *File) {
+func (e *Entity) SetDescriptionFile(f *File) {
 	e.DescriptionFile = f
 }
 

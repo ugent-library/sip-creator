@@ -31,18 +31,18 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 	b.Logger.Info("created an intellectual entity", slog.String("id", e.Identifier))
 
 	b.assembleDescriptive(e, def, in)
-	pkg.AddSchemaFiles(schemaFileNodes())
+	pkg.SetSchemaFiles(schemaFileNodes())
 
 	docs, err := b.assembleDocumentationNodes(in.Documentation, in.Characterization)
 	if err != nil {
 		return nil, err
 	}
-	pkg.AddDocumentationFiles(docs)
+	pkg.SetDocumentationFiles(docs)
 	received, err := b.assembleReceivedPremis("package", in.Premis)
 	if err != nil {
 		return nil, err
 	}
-	pkg.AddReceivedPremisFiles(received)
+	pkg.SetReceivedPremisFiles(received)
 	if err := b.assembleRepresentations(e, def, in); err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 		pf.Name = "premis.xml"
 		pf.Path = "metadata/preservation/premis.xml"
 		pf.Mime = "text/xml" // generated XML
-		pkg.AddPremisFile(pf)
+		pkg.SetPremisFile(pf)
 		b.Logger.Info("created a package PREMIS file", slog.String("id", pf.Identifier))
 	}
 
@@ -62,10 +62,10 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 	// Set for the no-empty-Mime invariant even though no template reads it:
 	// nothing references the package METS from inside the package.
 	mf.Mime = "text/xml"
-	pkg.AddMetsFile(mf)
+	pkg.SetMetsFile(mf)
 	b.Logger.Info("created a package METS file", slog.String("id", mf.Identifier))
 
-	pkg.AddRootEntity(e)
+	pkg.SetRoot(e)
 	return pkg, nil
 }
 
@@ -85,7 +85,7 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 	df.Name = def.DescriptiveName
 	df.Path = "metadata/descriptive/" + df.Name
 	df.Mime = "text/xml" // generated XML
-	e.AddDescriptionFile(df)
+	e.SetDescriptionFile(df)
 	b.Logger.Info("created a descriptive file", slog.String("id", df.Identifier))
 }
 
@@ -160,7 +160,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			df.Name = def.DescriptiveName
 			df.Path = "metadata/descriptive/" + df.Name // rep-relative, per File.Path
 			df.Mime = "text/xml"                        // generated XML
-			r.AddDescriptionFile(df)
+			r.SetDescriptionFile(df)
 			b.Logger.Info("created a representation descriptive file", slog.String("id", df.Identifier))
 		}
 
@@ -193,20 +193,20 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 		if err != nil {
 			return err
 		}
-		r.AddReceivedPremisFiles(received)
+		r.SetReceivedPremisFiles(received)
 
 		docs, err := b.assembleDocumentationNodes(sr.Documentation, in.Characterization)
 		if err != nil {
 			return err
 		}
-		r.AddDocumentationFiles(docs)
+		r.SetDocumentationFiles(docs)
 
 		if def.EmitRepresentationPremis {
 			pf := sip.NewFile()
 			pf.Name = "premis.xml"
 			pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
 			pf.Mime = "text/xml"                         // generated XML
-			r.AddPremisFile(pf)
+			r.SetPremisFile(pf)
 			b.Logger.Info("created a representation PREMIS file", slog.String("id", pf.Identifier))
 		}
 
@@ -214,7 +214,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 		mf.Name = "METS.xml"
 		mf.Path = "representations/" + r.Name + "/METS.xml" // package-relative: referenced from package METS
 		mf.Mime = "text/xml"                                // generated XML
-		r.AddMetsFile(mf)
+		r.SetMetsFile(mf)
 		b.Logger.Info("created a representation METS file", slog.String("id", mf.Identifier))
 
 		r.SetEntity(e)

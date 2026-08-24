@@ -33,15 +33,15 @@ type Package struct {
 	DocumentationFiles []*File
 }
 
-func (p *Package) AddRootEntity(e *Entity) {
+func (p *Package) SetRoot(e *Entity) {
 	p.Root = e
 }
 
-func (p *Package) AddPremisFile(f *File) {
+func (p *Package) SetPremisFile(f *File) {
 	p.PremisFile = f
 }
 
-func (p *Package) AddReceivedPremisFiles(files []*File) {
+func (p *Package) SetReceivedPremisFiles(files []*File) {
 	p.ReceivedPremisFiles = files
 }
 
@@ -56,15 +56,15 @@ func (p *Package) PremisFiles() []*File {
 	return append(files, p.ReceivedPremisFiles...)
 }
 
-func (p *Package) AddMetsFile(f *File) {
+func (p *Package) SetMetsFile(f *File) {
 	p.MetsFile = f
 }
 
-func (p *Package) AddSchemaFiles(files []*File) {
+func (p *Package) SetSchemaFiles(files []*File) {
 	p.SchemaFiles = files
 }
 
-func (p *Package) AddDocumentationFiles(files []*File) {
+func (p *Package) SetDocumentationFiles(files []*File) {
 	p.DocumentationFiles = files
 }
 

@@ -48,19 +48,19 @@ func (r *Representation) AddFile(f *File) {
 	r.Files = append(r.Files, f)
 }
 
-func (r *Representation) AddDescriptionFile(f *File) {
+func (r *Representation) SetDescriptionFile(f *File) {
 	r.DescriptionFile = f
 }
 
-func (r *Representation) AddPremisFile(f *File) {
+func (r *Representation) SetPremisFile(f *File) {
 	r.PremisFile = f
 }
 
-func (r *Representation) AddReceivedPremisFiles(files []*File) {
+func (r *Representation) SetReceivedPremisFiles(files []*File) {
 	r.ReceivedPremisFiles = files
 }
 
-func (r *Representation) AddDocumentationFiles(files []*File) {
+func (r *Representation) SetDocumentationFiles(files []*File) {
 	r.DocumentationFiles = files
 }
 
@@ -75,7 +75,7 @@ func (r *Representation) PremisFiles() []*File {
 	return append(files, r.ReceivedPremisFiles...)
 }
 
-func (r *Representation) AddMetsFile(f *File) {
+func (r *Representation) SetMetsFile(f *File) {
 	r.MetsFile = f
 }
 
