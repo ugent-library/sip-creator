@@ -15,8 +15,8 @@ type Package struct {
 	// Identifier is the package identifier (uuid-<uuid>): the mets/@OBJID,
 	// the directory name, and the zip name.
 	Identifier string
-	// Spec carries the profile-level METS values; set by the assembler.
-	Spec *Spec
+	// Declaration carries the profile-level METS values; set by the assembler.
+	Declaration *MetsDeclaration
 	// Root is the intellectual entity the package describes.
 	Root *Entity
 	// PremisFile is the generated preservation document; nil when the

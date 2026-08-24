@@ -58,8 +58,8 @@ type Definition struct {
 	// EmitRepresentationPremis emits a generated PREMIS document per
 	// representation.
 	EmitRepresentationPremis bool
-	// Mets carries the METS values the profile's documents declare.
-	Mets sip.Spec
+	// Declaration carries the METS values the profile's documents declare.
+	Declaration sip.MetsDeclaration
 
 	// RequiredElements are the descriptive elements the profile's spec makes
 	// required at package level: meemoo's basic profile requires four,
@@ -121,9 +121,9 @@ func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 		agent.Note = orID
 		agent.NoteType = "IDENTIFICATIONCODE"
 	}
-	// Clone before appending: d.Mets.Agents shares its backing array with
-	// the registry entry, and append must never write into it.
-	d.Mets.Agents = append(slices.Clone(d.Mets.Agents), agent)
+	// Clone before appending: d.Declaration.Agents shares its backing array
+	// with the registry entry, and append must never write into it.
+	d.Declaration.Agents = append(slices.Clone(d.Declaration.Agents), agent)
 	return d, nil
 }
 
@@ -143,7 +143,7 @@ var registry = map[string]Definition{
 		RequiredElements:   metadata.RequiredElements(),
 		RequiredLang:       "nl",
 		EnforceCardinality: true,
-		Mets: sip.Spec{
+		Declaration: sip.MetsDeclaration{
 			// meemoo SIP 1.2, the stable spec (docs/archive/meemoo-12.md):
 			// 1.2 requires the unversioned E-ARK SIP profile URL and the
 			// 1.2 profile URI as OTHERCONTENTINFORMATIONTYPE.
@@ -173,7 +173,7 @@ var registry = map[string]Definition{
 		// Only the input convention's identity MUSTs; no required language,
 		// and meemoo's cardinality limits don't apply to a plain E-ARK package.
 		RequiredElements: []string{"dcterms:identifier", "dcterms:title"},
-		Mets: sip.Spec{
+		Declaration: sip.MetsDeclaration{
 			// The version-pinned profile URL: commons-ip's SIP2 check for
 			// spec 2.2.0 compares against this exact value (its error
 			// message misleadingly prints the unversioned URL).

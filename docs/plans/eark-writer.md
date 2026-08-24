@@ -56,7 +56,7 @@ Each level owns specific data:
 | **leaf/profile** | the content shape | name, content-information type, emission flags, descriptive source |
 | *(neither)* | the agents — organization config, not profile data | "Universiteitsbibliotheek Gent" |
 
-The agents row is a known mis-homing: they live on `Definition.Mets` today (the
+The agents row is a known mis-homing: they live on `Definition.Declaration` today (the
 right move when Phase 2 lifted them out of templates) but belong to a future
 organization-config axis — already tracked by the library-embeddability item in
 [TODO.md](../TODO.md).

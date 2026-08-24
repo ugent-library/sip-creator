@@ -162,7 +162,7 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 
 		mf := r.MetsFile
 		info, err := st.WriteMetadata(mf.Path, func(w io.Writer) error {
-			return mets.EncodeRepresentation(w, r, pkg.Spec)
+			return mets.EncodeRepresentation(w, r, pkg.Declaration)
 		})
 		if err != nil {
 			return err

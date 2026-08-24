@@ -45,18 +45,18 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	xmlns:xlink="http://www.w3.org/1999/xlink" 
 	OBJID="{{ .Name }}"
-	TYPE="{{ .Spec.Type }}"
+	TYPE="{{ .Declaration.Type }}"
 	LABEL="{{ .Label }}"
-	PROFILE="{{ .Spec.ProfileURL }}"
-	csip:CONTENTINFORMATIONTYPE="{{ .Spec.ContentInformationType }}"
-	{{ with .Spec.OtherContentInformationType }}csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"{{ end }}
+	PROFILE="{{ .Declaration.ProfileURL }}"
+	csip:CONTENTINFORMATIONTYPE="{{ .Declaration.ContentInformationType }}"
+	{{ with .Declaration.OtherContentInformationType }}csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"{{ end }}
 	xsi:schemaLocation="http://www.loc.gov/METS/ ../../schemas/mets1_12.xsd http://www.w3.org/1999/xlink ../../schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS ../../schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS ../../schemas/DILCISExtensionSIPMETS.xsd">
 
 	<metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP" />
 
 	{{ with .DescriptionFile -}}
     <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
-        <mdRef LOCTYPE="URL" MDTYPE="{{ $.Spec.DescriptiveMDType }}"{{ with $.Spec.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
+        <mdRef LOCTYPE="URL" MDTYPE="{{ $.Declaration.DescriptiveMDType }}"{{ with $.Declaration.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
     </dmdSec>
 	{{- end }}
 
@@ -119,14 +119,14 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
 	xmlns:xlink="http://www.w3.org/1999/xlink" 
 	OBJID="{{ $OBJID }}"
 	LABEL=""
-	TYPE="{{ .Spec.Type }}"
-	PROFILE="{{ .Spec.ProfileURL }}"
-	csip:CONTENTINFORMATIONTYPE="{{ .Spec.ContentInformationType }}"
-	{{ with .Spec.OtherContentInformationType }}csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"{{ end }}
+	TYPE="{{ .Declaration.Type }}"
+	PROFILE="{{ .Declaration.ProfileURL }}"
+	csip:CONTENTINFORMATIONTYPE="{{ .Declaration.ContentInformationType }}"
+	{{ with .Declaration.OtherContentInformationType }}csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"{{ end }}
  	xsi:schemaLocation="http://www.loc.gov/METS/ schemas/mets1_12.xsd http://www.w3.org/1999/xlink schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS schemas/DILCISExtensionSIPMETS.xsd">
 
-	<metsHdr CREATEDATE="{{ now }}"{{ with .Spec.RecordStatus }} RECORDSTATUS="{{ . }}"{{ end }} csip:OAISPACKAGETYPE="SIP">
-	{{- range .Spec.Agents }}
+	<metsHdr CREATEDATE="{{ now }}"{{ with .Declaration.RecordStatus }} RECORDSTATUS="{{ . }}"{{ end }} csip:OAISPACKAGETYPE="SIP">
+	{{- range .Declaration.Agents }}
 		<agent ROLE="{{ .Role }}"{{ if .OtherRole }} OTHERROLE="{{ .OtherRole }}"{{ end }} TYPE="{{ .Type }}"{{ if .OtherType }} OTHERTYPE="{{ .OtherType }}"{{ end }}>
 			<name>{{ .Name }}</name>
 			{{- if .Note }}
@@ -139,7 +139,7 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
 	<!-- ref to descriptive metadata about IE -->
 	{{ range .DescriptiveFiles -}}
     <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
-        <mdRef LOCTYPE="URL" MDTYPE="{{ $.Spec.DescriptiveMDType }}"{{ with $.Spec.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
+        <mdRef LOCTYPE="URL" MDTYPE="{{ $.Declaration.DescriptiveMDType }}"{{ with $.Declaration.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
     </dmdSec>
 	{{- end }}
 
@@ -203,17 +203,17 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ end }}
 `))
 
-// repView pairs a representation with the package-level spec its METS
+// repView pairs a representation with the package-level METS declaration its
 // template needs; the embedded Representation keeps .Name/.Label/.Files/etc.
 // resolving unchanged.
 type repView struct {
 	*sip.Representation
-	Spec *sip.Spec
+	Declaration *sip.MetsDeclaration
 }
 
 // EncodeRepresentation writes a representation's METS document.
-func EncodeRepresentation(w io.Writer, r *sip.Representation, spec *sip.Spec) error {
-	return templates.ExecuteTemplate(w, "representation", repView{r, spec})
+func EncodeRepresentation(w io.Writer, r *sip.Representation, decl *sip.MetsDeclaration) error {
+	return templates.ExecuteTemplate(w, "representation", repView{r, decl})
 }
 
 // EncodePackage writes the package METS document.

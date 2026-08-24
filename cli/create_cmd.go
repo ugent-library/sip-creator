@@ -59,14 +59,14 @@ var createCmd = &cobra.Command{
 		case updates == "" && sip.IsUpdateRecordStatus(status):
 			return fmt.Errorf("--status %s updates an earlier package; pass its identifier with --updates", strings.ToLower(status))
 		}
-		def.Mets.RecordStatus = status
+		def.Declaration.RecordStatus = status
 
 		// Content category precedence: flag, then configured default, then
 		// the profile's registry value.
 		if cc, _ := cmd.Flags().GetString("content-category"); cc != "" {
-			def.Mets.Type = cc
+			def.Declaration.Type = cc
 		} else if cfg.ContentCategory != "" {
-			def.Mets.Type = cfg.ContentCategory
+			def.Declaration.Type = cfg.ContentCategory
 		}
 
 		pkg, err := input.Read(args[0])

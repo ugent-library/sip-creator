@@ -119,9 +119,9 @@ func TestWithSubmitterMeemoo(t *testing.T) {
 		t.Fatalf("WithSubmitter() error = %v", err)
 	}
 
-	agents := got.Mets.Agents
-	if len(agents) != len(def.Mets.Agents)+1 {
-		t.Fatalf("agents = %d, want %d", len(agents), len(def.Mets.Agents)+1)
+	agents := got.Declaration.Agents
+	if len(agents) != len(def.Declaration.Agents)+1 {
+		t.Fatalf("agents = %d, want %d", len(agents), len(def.Declaration.Agents)+1)
 	}
 	sub := agents[len(agents)-1]
 	if sub.Role != "CREATOR" || sub.Type != "ORGANIZATION" {
@@ -159,7 +159,7 @@ func TestWithSubmitterEARK(t *testing.T) {
 		t.Fatalf("WithSubmitter() error = %v", err)
 	}
 
-	sub := got.Mets.Agents[len(got.Mets.Agents)-1]
+	sub := got.Declaration.Agents[len(got.Declaration.Agents)-1]
 	if sub.Name != "Universiteitsbibliotheek Gent" {
 		t.Errorf("submitter name = %q", sub.Name)
 	}
@@ -169,17 +169,17 @@ func TestWithSubmitterEARK(t *testing.T) {
 }
 
 func TestWithSubmitterLeavesRegistryUntouched(t *testing.T) {
-	before := len(basicDef(t).Mets.Agents)
+	before := len(basicDef(t).Declaration.Agents)
 
 	if _, err := basicDef(t).WithSubmitter("Universiteitsbibliotheek Gent", "OR-a1b2c3d"); err != nil {
 		t.Fatalf("WithSubmitter() error = %v", err)
 	}
 
 	after := basicDef(t)
-	if len(after.Mets.Agents) != before {
-		t.Fatalf("registry agents = %d after WithSubmitter, want %d", len(after.Mets.Agents), before)
+	if len(after.Declaration.Agents) != before {
+		t.Fatalf("registry agents = %d after WithSubmitter, want %d", len(after.Declaration.Agents), before)
 	}
-	for _, a := range after.Mets.Agents {
+	for _, a := range after.Declaration.Agents {
 		if a.Type == "ORGANIZATION" {
 			t.Errorf("registry gained an ORGANIZATION agent: %+v", a)
 		}

@@ -25,7 +25,7 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 	pkg := sip.NewPackage(b.Destination, in.PackageIdentifier)
 	b.Logger.Info("created a new package", slog.String("id", pkg.Identifier))
 
-	pkg.Spec = &def.Mets
+	pkg.Declaration = &def.Declaration
 
 	e := sip.NewEntity()
 	b.Logger.Info("created an intellectual entity", slog.String("id", e.Identifier))

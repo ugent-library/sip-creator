@@ -4,11 +4,12 @@ import (
 	"fmt"
 )
 
-// Spec holds the profile-level values a METS document declares: the
-// profile URL, the content typing, and the agents responsible for the
-// package. Profiles differ in these values, not in build logic: Spec is
-// data the templates read, set once on the Package at assembly.
-type Spec struct {
+// MetsDeclaration holds the profile-level values a METS document declares:
+// the profile URL, the content typing, and the agents responsible for the
+// package. Profiles differ in these values, not in build logic:
+// MetsDeclaration is data the templates read, set once on the Package at
+// assembly.
+type MetsDeclaration struct {
 	// ProfileURL is mets/@PROFILE.
 	ProfileURL string
 	// Type is mets/@TYPE, the content category; overridable per run.
