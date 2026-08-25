@@ -4,7 +4,7 @@
 # SIP Creator
 
 A command-line tool and Go library for building Submission Information Packages (SIPs):
-your content files plus descriptive metadata in rolled into a standards-conformant
+your content files plus descriptive metadata, rolled into a standards-conformant
 [E-ARK SIP](https://earksip.dilcis.eu/), ready for ingest into any E-ARK compliant archival repositories. 
 
 E-ARK Profiles specialize the output for a particular archive. This project implements the 
@@ -16,10 +16,11 @@ ingest into the Flemish heritage archive.
 
 ## Features
 
-* Implements plain [E-ARK SIP](https://earksip.dilcis.eu/) 2.2.0, with the
-  [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/)
-  as a specialization on top. Select with `--profile`: `eark` for E-ARK-conformant
-  repositories, `basic` for ingest into the Flemish heritage archive.
+* Implements two profiles, selected with `--profile`: `eark` builds a plain
+  [E-ARK SIP](https://earksip.dilcis.eu/) 2.2.0 for E-ARK-conformant repositories;
+  `basic` builds a SIP conforming to the
+  [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
+  built on E-ARK SIP 2.0.4, for ingest into the Flemish heritage archive.
 * Builds a complete package from a plain input folder: your content files plus a simple
   `metadata.csv`, out comes a SIP with generated METS and PREMIS metadata and natively
   computed checksums.
@@ -79,7 +80,7 @@ Further flags:
 deliverable; ingest it directly.
 
 **Delivering to Meemoo (basic profile):** meemoo's transfer format wraps the SIP in a
-BagIt bag — an envelope this tool deliberately does not produce. Use `--no-zip`to 
+BagIt bag — an envelope this tool deliberately does not produce. Use `--no-zip` to
 create a package directory. Then, bag the package *directory* with a reference BagIt implementation.
 Finally, follow meemoo's transfer instructions:
 
