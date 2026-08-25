@@ -100,9 +100,11 @@ On exported types, document every field, stdlib style: the rendered doc page is 
 
 ## Tone and Style guidelines
 
+Write all prose in plain, direct language. This covers every text a human reads: README.md and all other markdown, code comments, and chat responses. Prefer the common word over the specialized one, name concrete things (files, scripts, spec versions) instead of vague qualifiers, and cut filler. Domain vocabulary from the meemoo SIP spec and OAIS (SIP, essence, fixity, representation) is the field's real language and stays. The lists below name known offenders; this principle also covers what they miss.
+
 ### Banned Vocabulary & Phrases
 
-Under no circumstances use the following overused AI tells, buzzwords, or structural clichés in chat responses, documents in the docs directory or code comments. One exemption: `docs/archive/` and `docs/decisions/` are historical records, so leave their existing text as-is rather than rewriting it to comply. The rules apply to new and edited prose. Refer to the project's checks by what they do, never by nickname: "the commons-ip validation in build.sh", "the structural comparison in scripts/reference-diff.sh", "both validations pass" rather than "the gate is green".
+Under no circumstances use the following overused AI tells, buzzwords, or structural clichés in any prose: chat responses, markdown files (README.md included), or code comments. One exemption: `docs/archive/` and `docs/decisions/` are historical records, so leave their existing text as-is rather than rewriting it to comply. The rules apply to new and edited prose. Refer to the project's checks by what they do, never by nickname: "the commons-ip validation in build.sh", "the structural comparison in scripts/reference-diff.sh", "both validations pass" rather than "the gate is green".
 
 - **The Structural Group:** "load-bearing" (and "load-bearing seams"), "gate", "seams", "spine", "substrate", "blast radius", "friction", "birth", "bucket", "headline", "honestly", "land mine", "blessed", "bind", "baseline", "mark", "bare"
 - **The Proverbial Group:** "footgun", "yak shaving", "belt-and-suspenders", "smoking gun", "classic trap", "carve-out"
