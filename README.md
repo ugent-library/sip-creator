@@ -4,31 +4,32 @@
 # SIP Creator
 
 A command-line tool and Go library for building Submission Information Packages (SIPs):
-your content files plus descriptive metadata in, a standards-conformant
-[E-ARK SIP](https://earksip.dilcis.eu/) out, ready for ingest into any repository that
-accepts the E-ARK specification. Profiles specialize the output for a particular
-archive: the meemoo profile builds SIPs conforming to
-[meemoo's SIP Specification](https://developer.meemoo.be/docs/diginstroom/sip/) for
-ingest into the Flemish heritage archive (hetarchief.be).
+your content files plus descriptive metadata in rolled into a standards-conformant
+[E-ARK SIP](https://earksip.dilcis.eu/), ready for ingest into any E-ARK compliant archival repositories. 
+
+E-ARK Profiles specialize the output for a particular archive. This project implements the 
+Meemoo profiles building SIPs conforming to
+[Meemoo's SIP Specification](https://developer.meemoo.be/docs/diginstroom/sip/) for
+ingest into the Flemish heritage archive.
 
 :warning: **This is an experimental package** :warning:
 
 ## Features
 
 * Implements plain [E-ARK SIP](https://earksip.dilcis.eu/) 2.2.0, with the
-  [meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/)
+  [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/)
   as a specialization on top. Select with `--profile`: `eark` for E-ARK-conformant
-  repositories, `basic` for ingest into the Flemish heritage archive (hetarchief.be).
+  repositories, `basic` for ingest into the Flemish heritage archive.
 * Builds a complete package from a plain input folder: your content files plus a simple
   `metadata.csv`, out comes a SIP with generated METS and PREMIS metadata and natively
   computed checksums.
 * Validates an input folder before building (`check`), reporting every violation at once.
-* Optional PRONOM format identification from a pre-computed
+* Optional PRONOM format identification based on a pre-computed
   [Siegfried](https://github.com/richardlehane/siegfried) report (see Format characterization).
 
 ## Installation
 
-Both paths require [Go](https://go.dev/dl/) 1.27 or later; there are no prebuilt
+This project requires [Go](https://go.dev/dl/) 1.27 or later; there are no prebuilt
 binaries while the tool is experimental.
 
 Install the CLI directly from the module (the binary lands in
@@ -61,8 +62,7 @@ Configuration below):
 ```
 
 This writes the package directory `sip-out/uuid-<uuid>/` and zips it (uncompressed) to
-`sip-out/uuid-<uuid>.zip`. Pass `--no-zip` to skip the zip when the package directory
-itself is what you need next.
+`sip-out/uuid-<uuid>.zip`.
 
 Further flags:
 
@@ -72,16 +72,16 @@ Further flags:
   `replacement`, `test`, `version`, `delete`; omitted means `new`). A status
   that updates an earlier package requires `--updates <identifier>`: the
   original package's identifier is reused as this package's identifier
-  (`mets/@OBJID`) — how a conformant archive matches the update to its
-  holdings.
+  (`mets/@OBJID`).
+* `--no-zip` to skip zipping when the package directory itself is what you need.
 
 **Delivering to an E-ARK-conformant repository (eark profile):** the zip is the
 deliverable; ingest it directly.
 
-**Delivering to meemoo (basic profile):** meemoo's transfer format wraps the SIP in a
-BagIt bag — an envelope this tool deliberately does not produce. Bag the package *directory*
-(not our zip) with a reference BagIt implementation, then follow meemoo's transfer
-instructions:
+**Delivering to Meemoo (basic profile):** meemoo's transfer format wraps the SIP in a
+BagIt bag — an envelope this tool deliberately does not produce. Use `--no-zip`to 
+create a package directory. Then, bag the package *directory* with a reference BagIt implementation.
+Finally, follow meemoo's transfer instructions:
 
 ```
 ./bin/sip-creator create --profile basic --no-zip ./your-input sip-out
@@ -151,8 +151,8 @@ your-input/
 └── scan-002.tif
 ```
 
-When the content comes in multiple versions (a preservation master and an
-access copy, say), each version gets its own folder under `representations/`,
+When the content comes in multiple versions (for instance, a preservation master and an
+access copy), each version gets its own folder under `representations/`,
 and the optional extras slot in per package or per representation:
 
 ```
@@ -177,8 +177,8 @@ your-input/
         └── scan-002.jpg
 ```
 
-`metadata.csv` is a two-column `key,value` file with a header row, and the only file you
-write by hand. Keys come from a closed vocabulary of Dublin Core terms (the full key
+`metadata.csv` is a two-column `key,value` file with a header row. Keys come from a 
+closed vocabulary of Dublin Core terms (the full key
 table is in the [input specification](docs/input-spec.md)). Repeat a key for multiple
 values, and tag a value's language in square brackets where it matters:
 
@@ -234,9 +234,9 @@ from `.env.example`). All environment variables are documented in
 
 Every package's METS names the organization submitting it, so `SIP_SUBMITTER_NAME` is
 required for **every** profile — including `eark`, which builds with the name alone.
-meemoo profiles (`basic`) additionally require `SIP_SUBMITTER_OR_ID` — the organization's
-identifier in [meemoo's organization register](https://developer.meemoo.be/) — which is
-emitted as the agent's `IDENTIFICATIONCODE` note (meemoo SIP 1.2); other profiles ignore
+Meemoo profiles (`basic`) additionally require `SIP_SUBMITTER_OR_ID` — the organization's
+identifier in [Meemoo's organization register](https://developer.meemoo.be/) — which is
+emitted as the agent's `IDENTIFICATIONCODE` note (Meemoo SIP 1.2); other profiles ignore
 it. A build refuses to run when a value its profile requires is missing, rather than
 emitting a package that would be rejected at ingest:
 
@@ -260,15 +260,13 @@ cd ./your-input && sf -hash md5 -json . > siegfried.json
 Without a `siegfried.json` the build succeeds with no format info (`premis:format` is a
 SHOULD; checksums and sizes are always computed natively). When the sidecar is present it
 is strictly verified: a malformed report, an essence file missing from it, a report made
-without `-hash md5`, or a file changed since the report was generated aborts the build —
-a stale format claim is worse than none. Regenerate the sidecar whenever the input
-changes.
+without `-hash md5`, or a file changed since the report was generated aborts the build.
 
 ## Development
 
-This section is for developing SIP Creator itself; as a user you don't need any of it.
+This section is for developing SIP Creator itself.
 
-`go test ./...` runs the Go test suite; it needs no Docker, no Siegfried, and no `.env`.
+`go test ./...` runs the Go test suite.
 
 The scripts below require [Docker](https://www.docker.com/) (runs the commons-ip
 validator and the report server) and `jq`; `build.sh` also needs `sf`
@@ -279,7 +277,7 @@ regenerates the input fixture's `siegfried.json` sidecar before building.
 the sample SIP from `tmp/<profile>`, validates the zip with
 [commons-ip](https://github.com/keeps/commons-ip) (dockerized, release jar pinned),
 prints every FAILED check with its messages, and exits non-zero if the package is not
-`VALID`. Each profile validates against the E-ARK spec version of its era: `basic`
+`VALID`. Each profile validates against the supported E-ARK spec version: `basic`
 (meemoo 1.2) against 2.0.4, `eark` against 2.2.0. Both are expected to report `VALID`.
 
 Each run's validation reports are published to `reports/runs/<timestamp>/`. To browse them
