@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$(jq -r '.stop_hook_active // false')\" = \"true\" ] && exit 0; out=$(go test ./... 2>&1) || { echo \"go test ./... failed:\" >&2; echo \"$out\" >&2; exit 2; }",
+            "timeout": 120,
+            "statusMessage": "go test ./..."
+          }
+        ]
+      }
+    ]
+  }
+}
