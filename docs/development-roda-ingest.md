@@ -48,7 +48,7 @@ code does with what our package contains:
 | our package | RODA mapping | verify in the UI |
 |---|---|---|
 | `csip:CONTENTINFORMATIONTYPE="MIXED"` | becomes the **AIP type** | AIP shows type MIXED |
-| rep METS `OBJID="representation_1"` | becomes the **representation id**, status ORIGINAL | one original representation named `representation_1` |
+| rep METS `OBJID` (the representation's folder name) | becomes the **representation id**, status ORIGINAL | one original representation with that name |
 | essence in `data/` with METS checksums | files created; fixity verified at parse | files present, sizes right, no checksum complaints in the job report |
 | `dc+schema.xml`, `MDTYPE="DC"` + `MDTYPEVERSION="SimpleDC20021212"`, simple-DC shape | recognized descriptive metadata (`dc_SimpleDC20021212`) | title/description **rendered and indexed** (searchable), form-editable; if RODA shows raw XML instead, the typing didn't match |
 | `documentation/` files | mapped into AIP documentation | visible under the AIP's documentation |

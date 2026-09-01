@@ -139,15 +139,15 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 }
 
 // assembleRepresentations turns each supplied representation into a graph
-// node. The package-side name (representation_N, in supplied order) is
-// this project's stable convention, taken from the meemoo spec's
-// illustrated layout. No spec dictates the name: CSIP requires only
-// uniqueness, and meemoo 2.x only that the dir name equal the rep METS
-// OBJID (which setting both from Name satisfies for free). The producer's
-// label rides along as the human-readable name (rep METS mets/@LABEL).
+// node. The package-side name (the directory under representations/ and the
+// rep METS OBJID) is the producer's label, used verbatim: no spec dictates a
+// naming scheme (CSIP requires only uniqueness, and meemoo 2.x only that the
+// dir name equal the rep METS OBJID, which setting both from Name satisfies
+// for free), and Input.Validate has already checked every label for
+// uniqueness and the portable character set.
 func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Input) error {
-	for i, sr := range in.Representations {
-		r := sip.NewRepresentation(fmt.Sprintf("representation_%d", i+1))
+	for _, sr := range in.Representations {
+		r := sip.NewRepresentation(sr.Label)
 		r.Label = sr.Label
 		b.Logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("label", sr.Label))
 

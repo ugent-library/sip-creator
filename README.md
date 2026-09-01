@@ -205,11 +205,12 @@ In short:
 
 * **`metadata.csv`** (required): the descriptive metadata, see the example
   above.
-* **Content**: either flat in the folder (one representation), or one folder
-  per version under `representations/<your-name>/` — names are free-form
-  labels (letters, digits, `._-`); inside the generated SIP the tool
-  chooses its own folder names, and your folder name is kept in the metadata
-  as the version's human-readable name.
+* **Content**: either flat in the folder (one representation, named after the
+  input folder itself), or one folder per version under
+  `representations/<your-name>/`. Names are free-form (letters, digits,
+  `._-`) and are used as-is: your folder name becomes the representation's
+  folder name inside the generated SIP and its human-readable name in the
+  metadata.
 * **Optional**: `documentation/` (context material; also per representation —
   recommended: validators flag its absence as a SHOULD-level warning),
   `premis/` (preservation XML received from a vendor, passed through as-is;

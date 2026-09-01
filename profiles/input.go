@@ -27,8 +27,9 @@ type SourceFile struct {
 // SourceRepresentation is one version of the content, as the caller
 // supplies it.
 type SourceRepresentation struct {
-	// Label is the producer's label; the profile decides package-side
-	// naming.
+	// Label is the producer's name for this version. It becomes the
+	// package-side directory name under representations/ and must satisfy
+	// ValidateRepresentationLabel; labels must be unique within a package.
 	Label string
 	// Files are the content files, in packaging order.
 	Files []SourceFile

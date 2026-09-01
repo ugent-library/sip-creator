@@ -76,7 +76,14 @@ func (r *reader) readRepresentation(dir, label string) Representation {
 // representations/ folder, so every non-reserved entry is the content of a
 // single representation, labeled after the input folder itself.
 func (r *reader) readFlatRepresentation(entries []os.DirEntry) Representation {
-	rep := Representation{Label: filepath.Base(r.root)}
+	label := filepath.Base(r.root)
+	// The input folder's name becomes the representation's package-side
+	// name, so it must satisfy the same rule as a folder under
+	// representations/.
+	if err := profiles.ValidateRepresentationLabel(label); err != nil {
+		r.violate("the folder name names the single representation: %v", err)
+	}
+	rep := Representation{Label: label}
 	for _, e := range entries {
 		src := filepath.Join(r.root, e.Name())
 		if e.IsDir() {

@@ -14,7 +14,7 @@ type Representation struct {
 	Entity *Entity
 	// Name is the package-side name: the directory under representations/,
 	// the representation METS's OBJID, and the fileSec/structMap paths.
-	// The profile decides it (meemoo: representation_N).
+	// The assembler sets it from the producer's label.
 	Name string
 	// Label is the producer's human-readable name for this version,
 	// emitted as the representation METS's mets/@LABEL.

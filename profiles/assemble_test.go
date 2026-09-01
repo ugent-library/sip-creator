@@ -172,14 +172,14 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("schema nodes not sorted: %v", names)
 	}
 
-	// One representation: the package-side name is the meemoo convention,
-	// the producer's label rides along for the METS @LABEL.
+	// One representation: the package-side name is the producer's label,
+	// used verbatim.
 	if len(e.Representations) != 1 {
 		t.Fatalf("representations = %d, want 1", len(e.Representations))
 	}
 	r := e.Representations[0]
-	if r.Name != "representation_1" {
-		t.Errorf("Name = %q, want %q", r.Name, "representation_1")
+	if r.Name != "master" {
+		t.Errorf("Name = %q, want the producer label %q", r.Name, "master")
 	}
 	if r.Label != "master" {
 		t.Errorf("Label = %q, want the producer label %q", r.Label, "master")
@@ -222,8 +222,8 @@ func TestAssemble(t *testing.T) {
 	if got := pkg.PremisFile.Path; got != "metadata/preservation/premis.xml" {
 		t.Errorf("package PREMIS Path = %q, want %q", got, "metadata/preservation/premis.xml")
 	}
-	if got := r.MetsFile.Path; got != "representations/representation_1/METS.xml" {
-		t.Errorf("representation METS Path = %q, want %q", got, "representations/representation_1/METS.xml")
+	if got := r.MetsFile.Path; got != "representations/master/METS.xml" {
+		t.Errorf("representation METS Path = %q, want %q", got, "representations/master/METS.xml")
 	}
 	if got := r.PremisFile.Path; got != "metadata/preservation/premis.xml" {
 		t.Errorf("representation PREMIS Path = %q, want %q", got, "metadata/preservation/premis.xml")
@@ -258,8 +258,8 @@ func TestAssembleRepresentations(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 	inDir := t.TempDir()
 
-	// A second representation with a nested file: supplied order decides
-	// the package-side numbering, nesting is preserved under data/.
+	// A second representation with a nested file: each package-side name is
+	// the producer's label, nesting is preserved under data/.
 	a := writeEssence(t, inDir, "a.jpg", "essence bytes")
 	deep := writeEssence(t, inDir, "sub/deep.tif", "essence bytes")
 	in.Representations = append(in.Representations,
@@ -274,14 +274,14 @@ func TestAssembleRepresentations(t *testing.T) {
 	for _, r := range pkg.Root.Representations {
 		names = append(names, r.Name)
 	}
-	want := []string{"representation_1", "representation_2"}
+	want := []string{"master", "access"}
 	if !slices.Equal(names, want) {
 		t.Fatalf("representation names = %v, want %v", names, want)
 	}
 
 	rep2 := pkg.Root.Representations[1]
 	if len(rep2.Files) != 2 {
-		t.Fatalf("representation_2 files = %d, want 2", len(rep2.Files))
+		t.Fatalf("representation %q files = %d, want 2", rep2.Name, len(rep2.Files))
 	}
 	if got := rep2.Files[1].Path; got != "data/sub/deep.tif" {
 		t.Errorf("nested file Path = %q, want %q (nesting preserved)", got, "data/sub/deep.tif")
