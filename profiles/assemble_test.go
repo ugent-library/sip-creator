@@ -564,6 +564,31 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	}
 }
 
+// The eark profile keeps the producer's identifier in the descriptive
+// terms, at both levels, and lifts no MEEMOO-LOCAL-ID onto the entity
+// (ADR-0012).
+func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
+	b, in, _ := newTestBuilder(t)
+	in.Representations[0].Descriptive = metadata.Terms{
+		{Element: "dcterms:identifier", Value: "rep-local-1"},
+	}
+
+	pkg, err := b.assemble(earkDef(t), in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	e := pkg.Root
+	if got := e.Description.LocalIdentifier(); got != "local-id-001" {
+		t.Errorf("description identifier = %q, want the producer's %q", got, "local-id-001")
+	}
+	if _, ok := e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; ok {
+		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; it is a meemoo concept")
+	}
+	if got := e.Representations[0].Description.LocalIdentifier(); got != "rep-local-1" {
+		t.Errorf("rep descriptive identifier = %q, want the producer's %q", got, "rep-local-1")
+	}
+}
+
 const validPremis = `<?xml version="1.0"?><premis:premis xmlns:premis="http://www.loc.gov/premis/v3" version="3.0"><premis:event/></premis:premis>`
 
 // Received preservation files become graph nodes at both levels (copied,

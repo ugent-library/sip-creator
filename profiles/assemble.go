@@ -74,11 +74,14 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 	// Read the local identifier before swapping in the entity identifier:
 	// the terms hold one identifier slot, and the swap overwrites it. Per
 	// the meemoo spec the emitted document carries the entity identifier;
-	// the producer's own identifier travels as MEEMOO-LOCAL-ID.
+	// the producer's own identifier travels as MEEMOO-LOCAL-ID. A profile
+	// without the swap emits the producer's identifier as-is (ADR-0012).
 	if def.EmitLocalIdentifier {
 		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", d.LocalIdentifier())
 	}
-	d.SetObjectIdentifier(e.Identifier)
+	if def.SwapObjectIdentifier {
+		d.SetObjectIdentifier(e.Identifier)
+	}
 	e.Description = d
 
 	df := sip.NewFile()
@@ -149,11 +152,13 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 		b.Logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("label", sr.Label))
 
 		if sr.Descriptive != nil {
-			// Mirror the package-level swap: when the terms carry an
-			// identifier, the emitted document carries the representation
-			// identifier instead (a no-op when they carry none; rep-level
-			// identity is optional).
-			sr.Descriptive.SetObjectIdentifier(r.Identifier)
+			// Mirror the package-level swap: when the profile swaps and the
+			// terms carry an identifier, the emitted document carries the
+			// representation identifier instead (a no-op when they carry
+			// none; rep-level identity is optional).
+			if def.SwapObjectIdentifier {
+				sr.Descriptive.SetObjectIdentifier(r.Identifier)
+			}
 			r.Description = sr.Descriptive
 
 			df := sip.NewFile()

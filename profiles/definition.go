@@ -53,6 +53,11 @@ type Definition struct {
 	// EmitLocalIdentifier lifts the producer's identifier onto the entity
 	// as MEEMOO-LOCAL-ID.
 	EmitLocalIdentifier bool
+	// SwapObjectIdentifier replaces the descriptive dcterms:identifier with
+	// the entity (or representation) identifier in the emitted document.
+	// When false the document keeps the producer's own identifier
+	// (ADR-0012).
+	SwapObjectIdentifier bool
 	// EmitPackagePremis emits the generated package PREMIS document.
 	EmitPackagePremis bool
 	// EmitRepresentationPremis emits a generated PREMIS document per
@@ -133,8 +138,13 @@ var registry = map[string]Definition{
 		Family: FamilyMeemoo,
 		// The filename meemoo's basic profile expects for the descriptive
 		// document.
-		DescriptiveName:          "dc+schema.xml",
+		DescriptiveName: "dc+schema.xml",
+		// meemoo links descriptive to preservation metadata by a shared
+		// UUID: dc+schema.xml carries the entity identifier, and the
+		// producer's own identifier travels as a MEEMOO-LOCAL-ID PREMIS
+		// object identifier.
 		EmitLocalIdentifier:      true,
+		SwapObjectIdentifier:     true,
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
 		// meemoo's basic content profile: the vocabulary table's required
@@ -166,6 +176,11 @@ var registry = map[string]Definition{
 		// convention doesn't apply to the eark family.
 		DescriptiveName:     "dc.xml",
 		EmitLocalIdentifier: false, // MEEMOO-LOCAL-ID is a meemoo concept
+		// dc.xml keeps the producer's identifier: CSIP has no rule tying it
+		// to the package identifier (mets/@OBJID carries that), and the
+		// ingesting catalogue indexes dc.xml, so operators find the package
+		// by the identifier they know (ADR-0012).
+		SwapObjectIdentifier: false,
 		// The eark family emits no PREMIS: RODA drops package PREMIS that
 		// does not describe agents or events.
 		EmitPackagePremis:        false,

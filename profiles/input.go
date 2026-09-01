@@ -50,8 +50,9 @@ type SourceRepresentation struct {
 // (cli/input) is one transport producing these values; embedding systems
 // construct them directly.
 //
-// Build takes ownership of the data: the descriptive terms are mutated
-// (the entity identifier is swapped in) during assembly.
+// Build takes ownership of the data: the descriptive terms may be mutated
+// (profiles with SwapObjectIdentifier swap the entity identifier in)
+// during assembly.
 type Input struct {
 	// PackageIdentifier optionally supplies the package identifier instead
 	// of minting one; this is how an update reuses the original package's
@@ -104,10 +105,11 @@ func (in *Input) Validate() error {
 	if err := in.Descriptive.Validate(); err != nil {
 		return err
 	}
-	// The identifier is checked here mechanically: assembly swaps it for
-	// the object identifier, so the graph cannot build without one. All
-	// other requiredness is profile policy: Definition.RequiredElements,
-	// checked by Build.
+	// The identifier is the package's one required identity in the
+	// descriptive document: profiles that swap (SwapObjectIdentifier) need
+	// a slot to overwrite, the others emit it as the identifier consumers
+	// find the package by (ADR-0012). All other requiredness is profile
+	// policy: Definition.RequiredElements, checked by Build.
 	if in.Descriptive.LocalIdentifier() == "" {
 		return fmt.Errorf("descriptive metadata carries no dcterms:identifier; the local identifier is required")
 	}
