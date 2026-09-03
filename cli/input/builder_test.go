@@ -62,7 +62,7 @@ func TestBuilderInputEquivalence(t *testing.T) {
 			{Element: "dcterms:created", Value: "2026"},
 		},
 		Representations: []profiles.SourceRepresentation{
-			{Label: "master", Files: []profiles.SourceFile{
+			{Name: "master", Files: []profiles.SourceFile{
 				{Source: src, Key: "irrelevant-without-report", Path: "scan.tiff"},
 			}},
 		},
@@ -78,7 +78,7 @@ func TestBuilderInputEquivalence(t *testing.T) {
 		t.Errorf("MEEMOO-LOCAL-ID differs: folder %q, hand %q", a, b)
 	}
 	fr, hr := folderPkg.Root.Representations, handPkg.Root.Representations
-	if len(fr) != 1 || len(hr) != 1 || fr[0].Label != hr[0].Label {
+	if len(fr) != 1 || len(hr) != 1 || fr[0].Name != hr[0].Name {
 		t.Fatalf("representations differ: folder %v, hand %v", fr, hr)
 	}
 	ff, hf := fr[0].Files[0], hr[0].Files[0]

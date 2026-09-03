@@ -35,9 +35,17 @@ type File struct {
 
 // Representation is one version of the content.
 type Representation struct {
-	// Label is the representation folder's name (the input folder's name
-	// in the flat case).
+	// Name is the representation folder's name (the input folder's name
+	// in the flat case): the package-side directory name.
+	Name string
+	// Label is the display name from representations.csv; empty when the
+	// file is absent or leaves the cell empty (the library defaults it to
+	// the name).
 	Label string
+	// Type is the representation type from representations.csv; empty when
+	// the file is absent or leaves the cell empty (the library defaults it
+	// to the label).
+	Type string
 	// Descriptive is nil unless the representation has its own
 	// metadata.csv.
 	Descriptive metadata.Terms
@@ -82,7 +90,9 @@ func (p *Package) BuilderInput() *profiles.Input {
 	}
 	for _, rep := range p.Representations {
 		in.Representations = append(in.Representations, profiles.SourceRepresentation{
+			Name:          rep.Name,
 			Label:         rep.Label,
+			Type:          rep.Type,
 			Files:         sourceFiles(rep.Files),
 			Descriptive:   rep.Descriptive,
 			Premis:        sourceFiles(rep.Premis),
@@ -137,18 +147,19 @@ type reader struct {
 // Reserved top-level names. Reserved names inside a representation are
 // a subset.
 const (
-	metadataName        = "metadata.csv"
-	representationsName = "representations"
-	documentationName   = "documentation"
-	premisName          = "premis"
-	sidecarName         = "siegfried.json"
+	metadataName           = "metadata.csv"
+	representationsName    = "representations"
+	representationsCSVName = "representations.csv"
+	documentationName      = "documentation"
+	premisName             = "premis"
+	sidecarName            = "siegfried.json"
 )
 
 func (r *reader) read() *Package {
 	pkg := &Package{Root: r.root}
 
 	var content []os.DirEntry
-	var repsDir string
+	var repsDir, repsCSV string
 	sawMetadata := false
 
 	for _, e := range r.readDir(r.root) {
@@ -163,13 +174,19 @@ func (r *reader) read() *Package {
 				continue
 			}
 			sawMetadata = true
-			pkg.Descriptive = r.decodeMetadataCSV(src, true)
+			pkg.Descriptive = r.decodeMetadata(src, true)
 		case representationsName:
 			if !e.IsDir() {
 				r.violate("representations is a file; the reserved name is for the folder of representations")
 				continue
 			}
 			repsDir = src
+		case representationsCSVName:
+			if e.IsDir() {
+				r.violate("representations.csv is a folder; the reserved name is for the representations file")
+				continue
+			}
+			repsCSV = src
 		case documentationName:
 			if !e.IsDir() {
 				r.violate("documentation is a file; the reserved name is for a folder")
@@ -204,7 +221,13 @@ func (r *reader) read() *Package {
 			r.violate("%s: content must live inside representations/ when that folder exists (only documentation/ and premis/ may sit beside it)", e.Name())
 		}
 		pkg.Representations = r.readRepresentations(repsDir)
+		if repsCSV != "" {
+			pkg.Representations = r.applyRepresentations(repsCSV, pkg.Representations)
+		}
 	} else {
+		if repsCSV != "" {
+			r.violate("representations.csv requires a representations/ folder; a flat folder is one representation named after the folder itself")
+		}
 		pkg.Representations = []Representation{r.readFlatRepresentation(content)}
 	}
 

@@ -25,6 +25,7 @@ With multiple versions of the content and extras:
 ```
 fotoalbum-gent-1913/
 ├── metadata.csv
+├── representations.csv   ← optional: a label and type per representation
 ├── representations/
 │   ├── master/           ← the archival scans, any structure you like
 │   └── access/           ← e.g. a PDF version
@@ -38,7 +39,7 @@ Institution details (who submits, who archives, contact person, agreement number
 ## 1. General rules
 
 - One input folder MUST correspond to one package.
-- Five names at the top level are reserved: `metadata.csv` (required), `representations/`, `documentation/`, `premis/`, and `siegfried.json` (each optional; `siegfried.json` is the pre-computed characterization report, see §2). All other folder and file names are free, with any nesting.
+- Six names at the top level are reserved: `metadata.csv` (required), `representations/`, `representations.csv`, `documentation/`, `premis/`, and `siegfried.json` (each optional; `representations.csv` names representations, see §2; `siegfried.json` is the pre-computed characterization report, see §2). All other folder and file names are free, with any nesting.
 - Operating-system artifacts (`.DS_Store`, `Thumbs.db`, `desktop.ini`, `._*`) MUST be ignored by the tool: never packaged, never warned about.
 - Symbolic links anywhere in the input MUST be an error.
 - The tool MUST compare paths after Unicode canonical normalization (NFC), because macOS file names and typed CSV values often differ only in normalization form.
@@ -51,10 +52,28 @@ A *representation* is one version of the content: the archival master scans are 
 
 - **Simple case:** if there is no `representations/` folder, everything in the package folder (apart from the reserved names) is the content of a single representation, named after the input folder itself.
 - **Multiple versions:** if `representations/` exists, each folder directly inside it is one representation, named by its folder name. All content MUST then live inside `representations/`; content files elsewhere at the top level are an error (except inside `documentation/` and `premis/`).
-- Representation names (the folder names, or the input folder's own name in the simple case) MUST match `A–Z a–z 0–9 . _ -`. The name is used as-is inside the final package: it becomes the representation's directory name under `representations/` and its human-readable name in the generated metadata. Neither E-ARK CSIP nor the meemoo specification dictates a naming scheme; CSIP requires only that the names be unique, which folder names are by construction.
+- Representation names (the folder names, or the input folder's own name in the simple case) MUST match `A–Z a–z 0–9 . _ -`. The name is used as-is inside the final package: it becomes the representation's directory name under `representations/` and, unless `representations.csv` says otherwise, its human-readable name and type in the generated metadata. Neither E-ARK CSIP nor the meemoo specification dictates a naming scheme; CSIP requires only that the names be unique, which folder names are by construction.
 - Inside a representation folder, three names are reserved: `metadata.csv`, `documentation/` and `premis/` (all optional, see §3–5). Everything else is content, with free naming and nesting.
 - Files are packaged in a stable, tool-determined order (alphabetical by path). This order carries no meaning: neither E-ARK CSIP nor the meemoo specification assigns semantics to file order. If a human-readable sequence matters to you, zero-pad your numbering (`0001.tiff`, `0002.tiff`, …); explicit ordering is a deferred feature (see §8, the manifest).
 - The tool computes checksums and sizes itself; you never supply those. File formats come from an optional pre-computed characterization report (`siegfried.json` at the top level, generated from the input root with `sf -hash md5 -json`) that the tool verifies against the files before trusting; you never hand-author format info ([ADR-0009](decisions/0009-characterization-as-sidecar-input.md)).
+
+### `representations.csv`: labels and types (optional)
+
+A folder name makes a good machine name but not always a good display name or type. An optional `representations.csv` at the top level, next to `metadata.csv`, gives each representation a label (its human-readable name in the generated metadata) and a type (what an ingest system such as RODA shows as the representation's kind):
+
+```csv
+directory,label,type
+master,Master scan (TIFF),archival
+access,Access copy (PDF),access
+```
+
+- MUST be UTF-8 with a header row naming its columns. The accepted columns, in any order, are `directory` (required), `label`, and `type` (each optional; header matching is case-insensitive, so a spreadsheet's `Directory` works too). An unknown or repeated column name MUST be an error: a typo must not silently drop a column. A UTF-8 BOM, CRLF line endings, and RFC 4180 quoting are accepted, as for `metadata.csv`.
+- `directory` names a folder directly under `representations/` by its bare name (`master`, not a path). Every row MUST match an existing folder, no two rows may name the same folder, and every folder MUST have a row. A folder without a row is an error, never an exclusion: silently dropping content from the package is the one thing this file must never cause. To leave material out, move it out of the input folder.
+- An empty `label` cell means the folder name; an empty `type` cell means the label. A file listing only folder names changes nothing about the output.
+- `label` and `type` values are emitted into the package's XML verbatim, so the characters `< > & "` MUST be an error.
+- The rows' order is the order the representations take in the package.
+- The file requires a `representations/` folder: in the simple flat case there is one representation named after the input folder, and a `representations.csv` MUST be an error.
+- The type reaches the output only in profiles that declare representation types (the `eark` profile; [ADR-0013](decisions/0013-representation-type-from-label.md)). Meemoo profiles fix their representation typing to the meemoo profile URI, so `type` has no effect there; `label` is emitted for every profile.
 
 ## 3. `metadata.csv`: describing the content
 
@@ -164,6 +183,7 @@ Deliberate trade-off: because organization details come from configuration, an i
 | input | E-ARK SIP location |
 |---|---|
 | representation folders (or the flat single-representation case) | `representations/<name>/data/`, METS fileSec + structMap |
+| `representations.csv` `label` / `type` | representation METS `mets/@LABEL`; in the eark profile the type lands in `TYPE="Other"`+`csip:OTHERTYPE` and `CONTENTINFORMATIONTYPE="OTHER"`+`csip:OTHERCONTENTINFORMATIONTYPE` ([ADR-0013](decisions/0013-representation-type-from-label.md)) |
 | file order (stable, no semantics) | document order within the representation structMap; METS `ORDER` attributes are the real sequencing mechanism, deferred with the manifest (§8) |
 | `documentation/` (package and representation level) | `documentation/` folders, conformant per CSIPSTR16; METS fileSec `USE="DOCUMENTATION"` |
 | `metadata.csv` keys | the vocabulary table's elements, mapped as `dcterms:*` (`identifier`→`dcterms:identifier`, `rightsholder`→`dcterms:rightsHolder`, `ispartof`→`dcterms:isPartOf`, the rest 1:1) and `schema:*` (`artmedium`→`schema:artMedium`, `artform`→`schema:artform`), in `metadata/descriptive/*.xml`, METS dmdSec |

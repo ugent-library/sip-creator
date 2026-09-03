@@ -74,7 +74,7 @@ func TestValidateDescriptiveCardinalityPerFamily(t *testing.T) {
 
 	in = &Input{
 		Descriptive:     testDescriptive(),
-		Representations: []SourceRepresentation{{Label: "master", Descriptive: repeated}},
+		Representations: []SourceRepresentation{{Name: "master", Descriptive: repeated}},
 	}
 	err = basicDef(t).validateDescriptive(in)
 	if err == nil || !strings.Contains(err.Error(), `representation "master"`) {
@@ -101,7 +101,7 @@ func TestValidateDescriptiveRequiredLangPerFamily(t *testing.T) {
 	in = &Input{
 		Descriptive: testDescriptive(),
 		Representations: []SourceRepresentation{{
-			Label:       "master",
+			Name:        "master",
 			Descriptive: metadata.Terms{{Element: "dcterms:title", Lang: "en", Value: "Cats"}},
 		}},
 	}

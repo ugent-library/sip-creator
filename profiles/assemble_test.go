@@ -84,7 +84,7 @@ func newTestBuilder(t *testing.T) (b *Builder, in *Input, outDir string) {
 	in = &Input{
 		Descriptive: testDescriptive(),
 		Representations: []SourceRepresentation{
-			{Label: "master", Files: []SourceFile{cat}},
+			{Name: "master", Files: []SourceFile{cat}},
 		},
 	}
 	b = New(&Config{
@@ -263,7 +263,7 @@ func TestAssembleRepresentations(t *testing.T) {
 	a := writeEssence(t, inDir, "a.jpg", "essence bytes")
 	deep := writeEssence(t, inDir, "sub/deep.tif", "essence bytes")
 	in.Representations = append(in.Representations,
-		SourceRepresentation{Label: "access", Files: []SourceFile{a, deep}})
+		SourceRepresentation{Name: "access", Files: []SourceFile{a, deep}})
 
 	pkg, err := b.assemble(basicDef(t), in)
 	if err != nil {
@@ -472,7 +472,9 @@ func TestInputValidate(t *testing.T) {
 			c.Descriptive = metadata.Terms{{Element: "dcterms:title", Value: "x"}}
 		}, "no dcterms:identifier"},
 		{"no representations", func(c *Input) { c.Representations = nil }, "at least one version"},
-		{"bad label", func(c *Input) { c.Representations[0].Label = "master copy" }, "may only contain"},
+		{"bad name", func(c *Input) { c.Representations[0].Name = "master copy" }, "may only contain"},
+		{"xml-unsafe label", func(c *Input) { c.Representations[0].Label = `Master "scan"` }, "cannot be emitted"},
+		{"xml-unsafe type", func(c *Input) { c.Representations[0].Type = "a<b" }, "cannot be emitted"},
 		{"duplicate label", func(c *Input) {
 			c.Representations = append(c.Representations, c.Representations[0])
 		}, "supplied twice"},
@@ -622,6 +624,44 @@ func TestAssembleRepresentationDeclaration(t *testing.T) {
 		decl2.ContentInformationType != pkgDecl.ContentInformationType ||
 		decl2.OtherContentInformationType != pkgDecl.OtherContentInformationType {
 		t.Errorf("basic rep content typing differs from the package declaration:\n%+v\n%+v", decl2, pkgDecl)
+	}
+}
+
+// Label and type resolve along the name → label → type cascade, and an
+// explicit type reaches the eark representation declaration.
+func TestAssembleRepresentationCascade(t *testing.T) {
+	b, in, _ := newTestBuilder(t)
+	inDir := t.TempDir()
+	in.Representations = []SourceRepresentation{
+		{Name: "master", Label: "Master scan", Type: "archival",
+			Files: []SourceFile{writeEssence(t, inDir, "a.tiff", "a")}},
+		{Name: "access", Label: "Access copy",
+			Files: []SourceFile{writeEssence(t, inDir, "b.pdf", "b")}},
+		{Name: "preservation",
+			Files: []SourceFile{writeEssence(t, inDir, "c.tiff", "c")}},
+	}
+
+	pkg, err := b.assemble(earkDef(t), in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	reps := pkg.Root.Representations
+	want := []struct{ name, label, typ string }{
+		{"master", "Master scan", "archival"},            // everything explicit
+		{"access", "Access copy", "Access copy"},         // type defaults to the label
+		{"preservation", "preservation", "preservation"}, // both default to the name
+	}
+	for i, w := range want {
+		r := reps[i]
+		if r.Name != w.name || r.Label != w.label {
+			t.Errorf("rep %d = %q/%q, want name %q label %q", i, r.Name, r.Label, w.name, w.label)
+		}
+		if got := r.Declaration.OtherType; got != w.typ {
+			t.Errorf("rep %q OTHERTYPE = %q, want %q", w.name, got, w.typ)
+		}
+		if got := r.Declaration.OtherContentInformationType; got != w.typ {
+			t.Errorf("rep %q OTHERCONTENTINFORMATIONTYPE = %q, want %q", w.name, got, w.typ)
+		}
 	}
 }
 

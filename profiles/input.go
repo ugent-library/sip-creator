@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"strings"
 
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/metadata"
@@ -27,10 +28,19 @@ type SourceFile struct {
 // SourceRepresentation is one version of the content, as the caller
 // supplies it.
 type SourceRepresentation struct {
-	// Label is the producer's name for this version. It becomes the
-	// package-side directory name under representations/ and must satisfy
-	// ValidateRepresentationLabel; labels must be unique within a package.
+	// Name is the package-side name: the directory under representations/
+	// and the representation METS OBJID. Required; must satisfy
+	// ValidateRepresentationName, and names must be unique within a package.
+	Name string
+	// Label is the display name, emitted as the representation METS
+	// mets/@LABEL. Optional: empty means the Name. Must satisfy
+	// ValidateAttributeText.
 	Label string
+	// Type is the representation's type, declared in the representation
+	// METS content typing by profiles with EmitRepresentationType set.
+	// Optional: empty means the resolved Label. Must satisfy
+	// ValidateAttributeText.
+	Type string
 	// Files are the content files, in packaging order.
 	Files []SourceFile
 	// Descriptive optionally describes this version only: identity
@@ -43,6 +53,25 @@ type SourceRepresentation struct {
 	Premis []SourceFile
 	// Documentation optionally documents this representation only.
 	Documentation []SourceFile
+}
+
+// label resolves the display label: Label, or Name when empty. The cascade
+// lives here, in the library, so the CLI's representations.csv and an
+// embedding caller's direct Input get identical defaulting.
+func (sr SourceRepresentation) label() string {
+	if sr.Label != "" {
+		return sr.Label
+	}
+	return sr.Name
+}
+
+// resolvedType resolves the representation's type: Type, or the resolved
+// label when empty.
+func (sr SourceRepresentation) resolvedType() string {
+	if sr.Type != "" {
+		return sr.Type
+	}
+	return sr.label()
 }
 
 // Input is one package's source material, given as data, not files to parse:
@@ -76,16 +105,27 @@ type Input struct {
 	Characterization characterization.Report
 }
 
-// labelRx is the POSIX portable filename character set: a label satisfying
+// nameRx is the POSIX portable filename character set: a name satisfying
 // it is usable verbatim as a directory name, zip entry, METS href, and
 // OBJID on any filesystem, with no percent-encoding machinery.
-var labelRx = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+var nameRx = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 
-// ValidateRepresentationLabel returns why a representation label cannot be
+// ValidateRepresentationName returns why a representation name cannot be
 // used: empty, or characters outside the portable set.
-func ValidateRepresentationLabel(label string) error {
-	if !labelRx.MatchString(label) {
-		return fmt.Errorf("representation label %q may only contain letters, digits, and . _ -", label)
+func ValidateRepresentationName(name string) error {
+	if !nameRx.MatchString(name) {
+		return fmt.Errorf("representation name %q may only contain letters, digits, and . _ -", name)
+	}
+	return nil
+}
+
+// ValidateAttributeText returns why a value cannot be emitted as a METS
+// attribute: the METS templates do no XML escaping, so the XML-active
+// characters are rejected rather than escaped. The empty string is fine
+// (an empty Label or Type falls back along the defaulting cascade).
+func ValidateAttributeText(value string) error {
+	if i := strings.IndexAny(value, `<>&"`); i >= 0 {
+		return fmt.Errorf("%q contains %q, which cannot be emitted into METS; the characters < > & \" are not allowed", value, value[i])
 	}
 	return nil
 }
@@ -118,30 +158,36 @@ func (in *Input) Validate() error {
 	if len(in.Representations) == 0 {
 		return fmt.Errorf("no representations supplied: a package needs at least one version of the content")
 	}
-	labels := make(map[string]bool, len(in.Representations))
+	names := make(map[string]bool, len(in.Representations))
 	for _, r := range in.Representations {
-		if err := ValidateRepresentationLabel(r.Label); err != nil {
+		if err := ValidateRepresentationName(r.Name); err != nil {
 			return err
 		}
-		if labels[r.Label] {
-			return fmt.Errorf("representation label %q supplied twice", r.Label)
+		if names[r.Name] {
+			return fmt.Errorf("representation name %q supplied twice", r.Name)
 		}
-		labels[r.Label] = true
+		names[r.Name] = true
+		if err := ValidateAttributeText(r.Label); err != nil {
+			return fmt.Errorf("representation %q label: %w", r.Name, err)
+		}
+		if err := ValidateAttributeText(r.Type); err != nil {
+			return fmt.Errorf("representation %q type: %w", r.Name, err)
+		}
 		if len(r.Files) == 0 {
-			return fmt.Errorf("representation %q has no content files", r.Label)
+			return fmt.Errorf("representation %q has no content files", r.Name)
 		}
-		if err := validateFiles(fmt.Sprintf("representation %q", r.Label), r.Files); err != nil {
+		if err := validateFiles(fmt.Sprintf("representation %q", r.Name), r.Files); err != nil {
 			return err
 		}
 		if r.Descriptive != nil {
 			if err := r.Descriptive.Validate(); err != nil {
-				return fmt.Errorf("representation %q descriptive: %w", r.Label, err)
+				return fmt.Errorf("representation %q descriptive: %w", r.Name, err)
 			}
 		}
-		if err := validatePremisNames(fmt.Sprintf("representation %q", r.Label), r.Premis); err != nil {
+		if err := validatePremisNames(fmt.Sprintf("representation %q", r.Name), r.Premis); err != nil {
 			return err
 		}
-		if err := validateFiles(fmt.Sprintf("representation %q documentation", r.Label), r.Documentation); err != nil {
+		if err := validateFiles(fmt.Sprintf("representation %q documentation", r.Name), r.Documentation); err != nil {
 			return err
 		}
 	}

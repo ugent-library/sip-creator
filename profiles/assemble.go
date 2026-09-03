@@ -140,17 +140,18 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 
 // assembleRepresentations turns each supplied representation into a graph
 // node. The package-side name (the directory under representations/ and the
-// rep METS OBJID) is the producer's label, used verbatim: no spec dictates a
+// rep METS OBJID) is the producer's name, used verbatim: no spec dictates a
 // naming scheme (CSIP requires only uniqueness, and meemoo 2.x only that the
 // dir name equal the rep METS OBJID, which setting both from Name satisfies
-// for free), and Input.Validate has already checked every label for
-// uniqueness and the portable character set.
+// for free), and Input.Validate has already checked every name for
+// uniqueness and the portable character set. Label and type resolve along
+// the defaulting cascade (name → label → type).
 func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Input) error {
 	for _, sr := range in.Representations {
-		r := sip.NewRepresentation(sr.Label)
-		r.Label = sr.Label
-		r.Declaration = def.representationDeclaration(sr.Label)
-		b.Logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("label", sr.Label))
+		r := sip.NewRepresentation(sr.Name)
+		r.Label = sr.label()
+		r.Declaration = def.representationDeclaration(sr.resolvedType())
+		b.Logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("name", sr.Name))
 
 		if sr.Descriptive != nil {
 			// Mirror the package-level swap: when the profile swaps and the
@@ -195,7 +196,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			b.Logger.Info("placed an essence file", slog.String("id", f.Identifier))
 		}
 
-		received, err := b.assembleReceivedPremis(fmt.Sprintf("representation %q", sr.Label), sr.Premis)
+		received, err := b.assembleReceivedPremis(fmt.Sprintf("representation %q", sr.Name), sr.Premis)
 		if err != nil {
 			return err
 		}

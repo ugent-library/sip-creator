@@ -76,8 +76,8 @@ func TestReadFlat(t *testing.T) {
 		t.Fatalf("want 1 representation, got %d", len(pkg.Representations))
 	}
 	rep := pkg.Representations[0]
-	if rep.Label != filepath.Base(root) {
-		t.Errorf("flat label = %q, want the folder name %q", rep.Label, filepath.Base(root))
+	if rep.Name != filepath.Base(root) {
+		t.Errorf("flat name = %q, want the folder name %q", rep.Name, filepath.Base(root))
 	}
 
 	// Deterministic traversal order (lexical per directory); the order
@@ -127,8 +127,8 @@ func TestReadRepresentations(t *testing.T) {
 
 	// os.ReadDir lists lexically, so access comes first.
 	access, master := pkg.Representations[0], pkg.Representations[1]
-	if access.Label != "access" || master.Label != "master" {
-		t.Fatalf("labels = %q, %q", access.Label, master.Label)
+	if access.Name != "access" || master.Name != "master" {
+		t.Fatalf("names = %q, %q", access.Name, master.Name)
 	}
 
 	if got := paths(master.Files); strings.Join(got, ",") != "scan_10.tiff,scan_2.tiff" {

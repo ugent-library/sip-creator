@@ -1,10 +1,24 @@
 # Plan: representations.csv, separating representation name, label, and type
 
-*Status: **agreed, not started** (design discussion 2026-09-03). Prerequisite:
-the representation-typing change ([ADR-0013](../decisions/0013-representation-type-from-label.md))
-must be committed first; this plan builds directly on it. When this plan ships,
-fold the durable parts into `sip-creator-design.md` and `input-spec.md`, record
-the strictness decision as an ADR, and retire this file to `archive/`.*
+*Status: **implemented** (2026-09-03, same day as agreed). All four steps
+landed as planned: the `Name`/`Label`/`Type` split with the library-side
+cascade, the strict `representations.csv` transport in `cli/input`, the docs
+(input-spec §2, README, design doc), and
+[ADR-0014](../decisions/0014-representations-csv-strict-when-present.md)
+recording the strictness and defaulting decisions. The flag rename settled on
+`EmitRepresentationType`, matching the Definition's existing `Emit*` family.
+One addition beyond the plan: a flat input folder (no `representations/`)
+with a `representations.csv` is a violation, since there is no directory to
+name. Acceptance, all passed: `go test ./...` green; both profiles VALID
+with 0 warnings (basic against 2.0.4, eark against 2.2.0); the structural
+comparison in scripts/reference-diff.sh clean against `tmp/reference/pkg`
+(the basic profile's output is unchanged); a Directory-only CSV on the
+tmp/eark fixture produced structurally identical output to no CSV (the no-op
+property, also pinned by `TestRepresentationsCSVDirectoryOnlyIsANoop`); and
+a CSV with `Label` and `Type` set put the label in `mets/@LABEL` and the
+type in both attribute pairs of the representation METS, still VALID. The
+tmp/eark fixture keeps a `representations.csv` with a label and type, ready
+for the next RODA ingest test.*
 
 ## Context
 
@@ -95,9 +109,9 @@ Header row required. Columns:
 
 | column | required | meaning |
 |---|---|---|
-| `Directory` | yes | bare directory name under `representations/` (e.g. `master`, not a path) |
-| `Label` | no | display name; empty means the directory name |
-| `Type` | no | representation type; empty means the label |
+| `directory` | yes | bare directory name under `representations/` (e.g. `master`, not a path) |
+| `label` | no | display name; empty means the directory name |
+| `type` | no | representation type; empty means the label |
 
 Rules, all MUST violations collected by `check` alongside the existing ones:
 

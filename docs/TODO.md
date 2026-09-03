@@ -5,16 +5,6 @@ sitting as loose unknowns; see [plans/](plans/) and [decisions/](decisions/).
 The system as it exists today is described in [sip-creator-design.md](sip-creator-design.md);
 its rough edges are collected under [Known gaps](sip-creator-design.md#known-gaps).
 
-## Planned work (owned by a plan)
-
-- **representations.csv: separate representation name, label, and type.**
-  Agreed 2026-09-03, not started. Splits `SourceRepresentation` into
-  `Name`/`Label`/`Type` with a defaulting cascade, and adds an optional
-  `representations.csv` at the input root as the CLI transport (strict when
-  present). Design, rules, and execution steps:
-  [plans/representations-csv.md](plans/representations-csv.md). Builds on
-  [ADR-0013](decisions/0013-representation-type-from-label.md).
-
 ## Open design questions (not yet owned)
 
 These need a decision before they become plan work.

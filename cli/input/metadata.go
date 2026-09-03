@@ -1,38 +1,24 @@
 package input
 
 import (
-	"bytes"
-	"encoding/csv"
 	"errors"
 	"io"
-	"os"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/ugent-library/sip-creator/encoders/metadata"
 )
 
-// decodeMetadataCSV decodes one metadata.csv into ordered descriptive
+// decodeMetadata decodes one metadata.csv into ordered descriptive
 // terms, collecting a violation per broken rule. The
 // package-level file requires identifier and title; a representation-level
 // one does not.
-func (r *reader) decodeMetadataCSV(src string, packageLevel bool) metadata.Terms {
+func (r *reader) decodeMetadata(src string, packageLevel bool) metadata.Terms {
 	rel := r.rel(src)
 
-	data, err := os.ReadFile(src)
-	if err != nil {
-		r.violate("%s: %v", rel, err)
+	cr, ok := r.openCSV(src)
+	if !ok {
 		return nil
 	}
-	// Spreadsheet tools produce a UTF-8 BOM; accept and drop it.
-	data = bytes.TrimPrefix(data, []byte("\ufeff"))
-	if !utf8.Valid(data) {
-		r.violate("%s: not valid UTF-8; re-export the file as UTF-8", rel)
-		return nil
-	}
-
-	cr := csv.NewReader(bytes.NewReader(data))
-	cr.FieldsPerRecord = -1 // row width is checked per row, for a better message
 
 	var terms metadata.Terms
 	headerSeen := false

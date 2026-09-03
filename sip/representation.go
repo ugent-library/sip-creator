@@ -14,10 +14,11 @@ type Representation struct {
 	Entity *Entity
 	// Name is the package-side name: the directory under representations/,
 	// the representation METS's OBJID, and the fileSec/structMap paths.
-	// The assembler sets it from the producer's label.
+	// The assembler sets it from the producer's name.
 	Name string
 	// Label is the producer's human-readable name for this version,
-	// emitted as the representation METS's mets/@LABEL.
+	// emitted as the representation METS's mets/@LABEL. The assembler
+	// resolves it (the name when the producer supplies no label).
 	Label string
 	// Identifier identifies the representation in METS and PREMIS
 	// (uuid-<uuid>).
