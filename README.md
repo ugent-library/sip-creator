@@ -125,7 +125,7 @@ pkg, err := builder.Build(def, &profiles.Input{
 		{Element: "dcterms:created", Value: "1914/1918"},
 	},
 	Representations: []profiles.SourceRepresentation{{
-		Label: "master",
+		Name: "master",
 		Files: []profiles.SourceFile{
 			{Source: "/data/scans/page-001.tif", Path: "page-001.tif"},
 		},
@@ -139,6 +139,29 @@ separate step (the `archive` package). The full API is on
 [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator); the domain model
 and build lifecycle are described in
 [docs/sip-creator-design.md](docs/sip-creator-design.md).
+
+#### Representation labels and types
+
+Besides the required `Name` (the directory under `representations/`), each
+representation takes two optional fields. `Label` is the display name, emitted
+as the representation METS `mets/@LABEL`; empty means the `Name`. `Type` is the
+representation's type; empty means the `Label`.
+
+What `Type` does depends on the profile:
+
+* The **eark profile** declares each representation's resolved type in that
+  representation's METS content typing (`TYPE="Other"` with `csip:OTHERTYPE`,
+  and `csip:CONTENTINFORMATIONTYPE="OTHER"` with
+  `csip:OTHERCONTENTINFORMATIONTYPE`). Ingest systems read one of those pairs
+  as the representation's type: RODA v5.7.0 and later shows the value in the
+  Type column of the AIP's representations.
+* The **meemoo profiles ignore `Type`**: meemoo SIP 1.2 fixes every METS
+  content typing to `OTHER` plus the profile URI
+  (`https://data.hetarchief.be/id/sip/1.2/basic`), so the spec leaves no
+  attribute for a producer-chosen type. `Label` still becomes `mets/@LABEL`.
+
+On the CLI the same fields come from the optional `representations.csv`
+(see [Input](#input) below).
 
 ## Input
 
@@ -159,6 +182,7 @@ and the optional extras slot in per package or per representation:
 ```
 your-input/
 ├── metadata.csv              required: descriptive metadata for the package
+├── representations.csv       optional: a label and type per representation
 ├── siegfried.json            optional: characterization sidecar (see Format characterization)
 ├── documentation/            optional: context material about the package
 │   └── README.txt
@@ -201,6 +225,24 @@ rights[nl],publiek domein
 and `created`, and a Dutch (`[nl]`) entry wherever a language-tagged key is used. An
 unknown key is an error: a typo must not silently drop metadata.
 
+The optional `representations.csv` gives each representation folder a display
+label and a type (what an ingest system such as RODA shows as the
+representation's kind) when the folder names alone don't say it. It is a
+table with a `directory,label,type` header row; `directory` names a folder
+under `representations/` and is required, the other two columns are optional
+(an empty `label` means the folder name, an empty `type` means the label):
+
+```csv
+directory,label,type
+master,Master scan (TIFF),archival
+access,Access copy (JPEG),access
+```
+
+When the file is present it must be complete: every row must match a folder
+and every folder must have a row, so nothing can silently drop out of the
+package. The full rules are in the
+[input specification](docs/input-spec.md).
+
 In short:
 
 * **`metadata.csv`** (required): the descriptive metadata, see the example
@@ -209,9 +251,11 @@ In short:
   input folder itself), or one folder per version under
   `representations/<your-name>/`. Names are free-form (letters, digits,
   `._-`) and are used as-is: your folder name becomes the representation's
-  folder name inside the generated SIP and its human-readable name in the
-  metadata.
-* **Optional**: `documentation/` (context material; also per representation —
+  folder name inside the generated SIP and, by default, its human-readable
+  name and type in the metadata.
+* **Optional**: `representations.csv` (a label and type per representation,
+  see the example above), `documentation/` (context
+  material; also per representation, and
   recommended: validators flag its absence as a SHOULD-level warning),
   `premis/` (preservation XML received from a vendor, passed through as-is;
   also per representation), a per-representation `metadata.csv` (e.g. a
