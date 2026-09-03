@@ -3,6 +3,7 @@ package archive
 import (
 	"archive/zip"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -78,10 +79,31 @@ func (a *Archive) Zip(pkg *sip.Package) error {
 		}
 		defer in.Close()
 
-		// Method zip.Store keeps the entry uncompressed.
-		f, err := w.CreateHeader(&zip.FileHeader{
-			Name:   name,
-			Method: zip.Store,
+		// Method zip.Store keeps the entry uncompressed. The entry is
+		// written with CreateRaw rather than CreateHeader so the size
+		// and CRC land in the local file header: CreateHeader streams,
+		// leaves them zero and sets general-purpose flag bit 3 ("sizes
+		// follow the data in a descriptor"), and Java's ZipInputStream
+		// throws "only DEFLATED entries can have EXT descriptor" on a
+		// stored entry with that flag. RODA reads the SIP through
+		// ZipInputStream, so it rejected such zips with "Error
+		// unzipping file". Filling the header costs one extra streamed
+		// pass over the file to checksum it.
+		crc := crc32.NewIEEE()
+		size, err := io.Copy(crc, in)
+		if err != nil {
+			return err
+		}
+		if _, err := in.Seek(0, io.SeekStart); err != nil {
+			return err
+		}
+		// For a stored entry the raw bytes are the file bytes.
+		f, err := w.CreateRaw(&zip.FileHeader{
+			Name:               name,
+			Method:             zip.Store,
+			CRC32:              crc.Sum32(),
+			CompressedSize64:   uint64(size),
+			UncompressedSize64: uint64(size),
 		})
 		if err != nil {
 			return err

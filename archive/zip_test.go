@@ -60,6 +60,44 @@ func TestZip(t *testing.T) {
 	}
 }
 
+// dataDescriptorFlag is general-purpose flag bit 3: the sizes and CRC
+// follow the entry data in a trailing descriptor. Java's ZipInputStream
+// rejects stored entries carrying it, so no file entry may set it.
+const dataDescriptorFlag = 0x8
+
+func TestZipFillsLocalFileHeaders(t *testing.T) {
+	baseDir := t.TempDir()
+	pkg := writePackage(t, baseDir)
+
+	if err := testArchive(baseDir).Zip(pkg); err != nil {
+		t.Fatalf("Zip() = %v, want nil", err)
+	}
+
+	r, err := zip.OpenReader(filepath.Join(baseDir, "uuid-test.zip"))
+	if err != nil {
+		t.Fatalf("opening produced zip: %v", err)
+	}
+	defer r.Close()
+
+	for _, f := range r.File {
+		if f.Method != zip.Store {
+			t.Errorf("%s: method = %d, want Store (%d)", f.Name, f.Method, zip.Store)
+		}
+		if f.FileInfo().IsDir() {
+			continue
+		}
+		if f.Flags&dataDescriptorFlag != 0 {
+			t.Errorf("%s: data descriptor flag set; ZipInputStream cannot read a stored entry with it", f.Name)
+		}
+		if f.CRC32 == 0 {
+			t.Errorf("%s: CRC32 is zero, header was not filled", f.Name)
+		}
+		if want := uint64(len("<mets/>")); f.UncompressedSize64 != want {
+			t.Errorf("%s: size = %d, want %d", f.Name, f.UncompressedSize64, want)
+		}
+	}
+}
+
 func TestZipUnreadableFileReturnsError(t *testing.T) {
 	if os.Getuid() == 0 {
 		t.Skip("running as root: file permissions are not enforced")
