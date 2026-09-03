@@ -63,6 +63,14 @@ type Definition struct {
 	// EmitRepresentationPremis emits a generated PREMIS document per
 	// representation.
 	EmitRepresentationPremis bool
+	// RepresentationTypeFromLabel types each representation METS by the
+	// producer's label instead of the profile's fixed content typing:
+	// TYPE="Other" with the label as csip:OTHERTYPE, and
+	// CONTENTINFORMATIONTYPE="OTHER" with the label as
+	// csip:OTHERCONTENTINFORMATIONTYPE. Ingest systems read one of those
+	// pairs as the representation's type (ADR-0013). The package METS keeps
+	// the profile declaration unchanged.
+	RepresentationTypeFromLabel bool
 	// Declaration carries the METS values the profile's documents declare.
 	Declaration sip.MetsDeclaration
 
@@ -106,6 +114,23 @@ func (d Definition) validateDescriptive(in *Input) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// representationDeclaration returns the declaration a representation's METS
+// document carries: the profile declaration as-is, or, when the profile types
+// representations by label, a copy whose content typing names the label.
+// The label lands in both the TYPE and the CONTENTINFORMATIONTYPE pair
+// because ingest systems disagree on which pair they read as the
+// representation's type (ADR-0013).
+func (d Definition) representationDeclaration(label string) *sip.MetsDeclaration {
+	decl := d.Declaration
+	if d.RepresentationTypeFromLabel {
+		decl.Type = "Other"
+		decl.OtherType = label
+		decl.ContentInformationType = "OTHER"
+		decl.OtherContentInformationType = label
+	}
+	return &decl
 }
 
 // WithSubmitter returns a copy of the definition whose METS agents include
@@ -188,13 +213,17 @@ var registry = map[string]Definition{
 		// Only the input convention's identity MUSTs; no required language,
 		// and meemoo's cardinality limits don't apply to a plain E-ARK package.
 		RequiredElements: []string{"dcterms:identifier", "dcterms:title"},
+		// RODA shows each representation's type from the representation
+		// METS's content typing; the label is the only per-representation
+		// name we carry (ADR-0013).
+		RepresentationTypeFromLabel: true,
 		Declaration: sip.MetsDeclaration{
 			// The version-pinned profile URL: commons-ip's SIP2 check for
 			// spec 2.2.0 compares against this exact value (its error
 			// message misleadingly prints the unversioned URL).
 			ProfileURL:               "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
 			Type:                     "Mixed", // CSIP content-category vocabulary
-			ContentInformationType:   "MIXED", // becomes the AIP type in RODA
+			ContentInformationType:   "MIXED", // package METS value; RODA reads it as the AIP type
 			DescriptiveMDType:        "DC",
 			DescriptiveMDTypeVersion: "SimpleDC20021212", // the shape RODA renders natively
 			// Only the software agent; WithSubmitter appends the

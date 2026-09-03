@@ -48,6 +48,9 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
   xmlns:xlink="http://www.w3.org/1999/xlink"
   OBJID="{{ .Name }}"
   TYPE="{{ .Declaration.Type }}"
+  {{- with .Declaration.OtherType }}
+  csip:OTHERTYPE="{{ . }}"
+  {{- end }}
   LABEL="{{ .Label }}"
   PROFILE="{{ .Declaration.ProfileURL }}"
   csip:CONTENTINFORMATIONTYPE="{{ .Declaration.ContentInformationType }}"
@@ -121,6 +124,9 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
   OBJID="{{ $OBJID }}"
   LABEL=""
   TYPE="{{ .Declaration.Type }}"
+  {{- with .Declaration.OtherType }}
+  csip:OTHERTYPE="{{ . }}"
+  {{- end }}
   PROFILE="{{ .Declaration.ProfileURL }}"
   csip:CONTENTINFORMATIONTYPE="{{ .Declaration.ContentInformationType }}"
   {{- with .Declaration.OtherContentInformationType }}
@@ -206,17 +212,10 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ end }}
 `))
 
-// repView pairs a representation with the package-level METS declaration its
-// template needs; the embedded Representation keeps .Name/.Label/.Files/etc.
-// resolving unchanged.
-type repView struct {
-	*sip.Representation
-	Declaration *sip.MetsDeclaration
-}
-
-// EncodeRepresentation writes a representation's METS document.
-func EncodeRepresentation(w io.Writer, r *sip.Representation, decl *sip.MetsDeclaration) error {
-	return templates.ExecuteTemplate(w, "representation", repView{r, decl})
+// EncodeRepresentation writes a representation's METS document; the
+// representation carries its own Declaration, set by the assembler.
+func EncodeRepresentation(w io.Writer, r *sip.Representation) error {
+	return templates.ExecuteTemplate(w, "representation", r)
 }
 
 // EncodePackage writes the package METS document.

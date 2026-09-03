@@ -149,6 +149,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 	for _, sr := range in.Representations {
 		r := sip.NewRepresentation(sr.Label)
 		r.Label = sr.Label
+		r.Declaration = def.representationDeclaration(sr.Label)
 		b.Logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("label", sr.Label))
 
 		if sr.Descriptive != nil {

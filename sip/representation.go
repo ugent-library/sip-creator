@@ -42,6 +42,9 @@ type Representation struct {
 	DocumentationFiles []*File
 	// MetsFile is the node for the generated representation METS.
 	MetsFile *File
+	// Declaration carries the METS values the representation METS declares;
+	// set by the assembler.
+	Declaration *MetsDeclaration
 }
 
 func (r *Representation) AddFile(f *File) {

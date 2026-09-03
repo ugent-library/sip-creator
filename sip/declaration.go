@@ -7,13 +7,16 @@ import (
 // MetsDeclaration holds the profile-level values a METS document declares:
 // the profile URL, the content typing, and the agents responsible for the
 // package. Profiles differ in these values, not in build logic:
-// MetsDeclaration is data the templates read, set once on the Package at
-// assembly.
+// MetsDeclaration is data the templates read, set at assembly on the Package
+// and on each Representation.
 type MetsDeclaration struct {
 	// ProfileURL is mets/@PROFILE.
 	ProfileURL string
 	// Type is mets/@TYPE, the content category; overridable per run.
 	Type string
+	// OtherType is mets/@csip:OTHERTYPE, rendered only when set; CSIP
+	// requires it when Type is "Other".
+	OtherType string
 	// ContentInformationType is mets/@csip:CONTENTINFORMATIONTYPE.
 	ContentInformationType string
 	// OtherContentInformationType is mets/@csip:OTHERCONTENTINFORMATIONTYPE,

@@ -589,6 +589,42 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	}
 }
 
+// The eark profile types each representation METS by its label, in both the
+// TYPE and the CONTENTINFORMATIONTYPE pair; the basic profile keeps the
+// profile declaration unchanged; the package declaration never changes
+// (ADR-0013).
+func TestAssembleRepresentationDeclaration(t *testing.T) {
+	b, in, _ := newTestBuilder(t)
+	pkg, err := b.assemble(earkDef(t), in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	decl := pkg.Root.Representations[0].Declaration
+	if decl.Type != "Other" || decl.OtherType != "master" {
+		t.Errorf("rep TYPE = %q/%q, want Other/master", decl.Type, decl.OtherType)
+	}
+	if decl.ContentInformationType != "OTHER" || decl.OtherContentInformationType != "master" {
+		t.Errorf("rep CONTENTINFORMATIONTYPE = %q/%q, want OTHER/master",
+			decl.ContentInformationType, decl.OtherContentInformationType)
+	}
+	if pkg.Declaration.Type != "Mixed" || pkg.Declaration.OtherType != "" {
+		t.Errorf("package TYPE = %q/%q, want Mixed with no OTHERTYPE",
+			pkg.Declaration.Type, pkg.Declaration.OtherType)
+	}
+
+	b2, in2, _ := newTestBuilder(t)
+	pkg2, err := b2.assemble(basicDef(t), in2)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	decl2, pkgDecl := pkg2.Root.Representations[0].Declaration, pkg2.Declaration
+	if decl2.Type != pkgDecl.Type || decl2.OtherType != pkgDecl.OtherType ||
+		decl2.ContentInformationType != pkgDecl.ContentInformationType ||
+		decl2.OtherContentInformationType != pkgDecl.OtherContentInformationType {
+		t.Errorf("basic rep content typing differs from the package declaration:\n%+v\n%+v", decl2, pkgDecl)
+	}
+}
+
 const validPremis = `<?xml version="1.0"?><premis:premis xmlns:premis="http://www.loc.gov/premis/v3" version="3.0"><premis:event/></premis:premis>`
 
 // Received preservation files become graph nodes at both levels (copied,
