@@ -466,7 +466,7 @@ func TestInputValidate(t *testing.T) {
 	}{
 		{"no descriptive", func(c *Input) { c.Descriptive = nil }, "no descriptive metadata"},
 		{"invalid term", func(c *Input) {
-			c.Descriptive = append(c.Descriptive, dc.Term{Element: "dcterms:titel", Value: "x"})
+			c.Descriptive = append(c.Descriptive.(dc.Terms), dc.Term{Element: "dcterms:titel", Value: "x"})
 		}, "not in the descriptive vocabulary"},
 		{"no identifier", func(c *Input) {
 			c.Descriptive = dc.Terms{{Element: "dcterms:title", Value: "x"}}

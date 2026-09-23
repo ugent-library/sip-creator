@@ -83,21 +83,29 @@ type Package struct {
 // BuilderInput maps the validated folder onto the library's build input.
 func (p *Package) BuilderInput() *profiles.Input {
 	in := &profiles.Input{
-		Descriptive:      p.Descriptive,
 		Characterization: p.Characterization,
 		Documentation:    sourceFiles(p.Documentation),
 		Premis:           sourceFiles(p.Premis),
 	}
+	// Assign a description only when the folder had one: a nil dc.Terms
+	// stored in the interface field would read as a present, empty
+	// description.
+	if p.Descriptive != nil {
+		in.Descriptive = p.Descriptive
+	}
 	for _, rep := range p.Representations {
-		in.Representations = append(in.Representations, profiles.SourceRepresentation{
+		sr := profiles.SourceRepresentation{
 			Name:          rep.Name,
 			Label:         rep.Label,
 			Type:          rep.Type,
 			Files:         sourceFiles(rep.Files),
-			Descriptive:   rep.Descriptive,
 			Premis:        sourceFiles(rep.Premis),
 			Documentation: sourceFiles(rep.Documentation),
-		})
+		}
+		if rep.Descriptive != nil {
+			sr.Descriptive = rep.Descriptive
+		}
+		in.Representations = append(in.Representations, sr)
 	}
 	return in
 }

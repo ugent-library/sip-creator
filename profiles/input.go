@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/ugent-library/sip-creator/characterization"
-	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -45,8 +44,10 @@ type SourceRepresentation struct {
 	Files []SourceFile
 	// Descriptive optionally describes this version only: identity
 	// (identifier, title) is not required here; the package-level
-	// descriptive carries the work's identity.
-	Descriptive dc.Terms
+	// descriptive carries the work's identity. Its concrete type must be
+	// the profile family's descriptive standard (dc.Terms for the
+	// registered families).
+	Descriptive sip.Description
 	// Premis optionally supplies received preservation documents about
 	// this representation: copied, never parsed. Each must be a
 	// well-formed premis:premis document.
@@ -75,12 +76,12 @@ func (sr SourceRepresentation) resolvedType() string {
 }
 
 // Input is one package's source material, given as data, not files to parse:
-// descriptive metadata as terms, characterization as a decoded report,
-// essence and documentation as source paths. The CLI's folder convention
-// (cli/input) is one transport producing these values; embedding systems
-// construct them directly.
+// descriptive metadata as a decoded Description, characterization as a
+// decoded report, essence and documentation as source paths. The CLI's
+// folder convention (cli/input) is one transport producing these values;
+// embedding systems construct them directly.
 //
-// Build takes ownership of the data: the descriptive terms may be mutated
+// Build takes ownership of the data: the description may be mutated
 // (profiles with SwapObjectIdentifier swap the entity identifier in)
 // during assembly.
 type Input struct {
@@ -88,8 +89,10 @@ type Input struct {
 	// of minting one; this is how an update reuses the original package's
 	// mets/@OBJID. Must take the uuid-<uuid> form when set.
 	PackageIdentifier string
-	// Descriptive is the package-level descriptive metadata.
-	Descriptive dc.Terms
+	// Descriptive is the package-level descriptive metadata. Its concrete
+	// type must be the profile family's descriptive standard (dc.Terms for
+	// the registered families).
+	Descriptive sip.Description
 	// Representations is the content, at least one.
 	Representations []SourceRepresentation
 	// Documentation optionally documents the whole package.
@@ -140,7 +143,7 @@ func (in *Input) Validate() error {
 			return err
 		}
 	}
-	if len(in.Descriptive) == 0 {
+	if in.Descriptive == nil {
 		return fmt.Errorf("no descriptive metadata supplied")
 	}
 	if err := in.Descriptive.Validate(); err != nil {

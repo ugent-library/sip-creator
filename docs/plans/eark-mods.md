@@ -224,7 +224,7 @@ never written breaks the package METS.
       `CLAUDE.md`. Commit `Changed: encoders/metadata renamed to
       encoders/dc`; the message records the import break for library
       callers.
-- [ ] **The `Description` interface in `sip/`.** New `sip/description.go`
+- [x] **The `Description` interface in `sip/`.** New `sip/description.go`
       with `LocalIdentifier() string` and `Validate() error`.
       `Entity.Description`, `Representation.Description`,
       `Input.Descriptive` and `SourceRepresentation.Descriptive` take the

@@ -25,17 +25,42 @@ const FamilyEARK Family = "eark"
 // It grows into a struct of choices when families make more (ADR-0007).
 // schemas is the relative path from the document being written to the
 // package's schemas/ dir; only the writer knows where a document lands.
-type descriptiveEncoder func(w io.Writer, t dc.Terms, schemas string) error
+type descriptiveEncoder func(w io.Writer, d sip.Description, schemas string) error
 
 func (f Family) descriptiveEncoder() (descriptiveEncoder, error) {
 	switch f {
 	case FamilyMeemoo:
-		return dc.EncodeTerms, nil
+		return encodeDC(dc.EncodeTerms), nil
 	case FamilyEARK:
-		return dc.EncodeDCTerms, nil
+		return encodeDC(dc.EncodeDCTerms), nil
 	default:
 		return nil, fmt.Errorf("unknown output family %q", f)
 	}
+}
+
+// encodeDC adapts a Dublin Core encoder to the Description interface both
+// registered families take their input through.
+func encodeDC(encode func(io.Writer, dc.Terms, string) error) descriptiveEncoder {
+	return func(w io.Writer, d sip.Description, schemas string) error {
+		terms, err := dcTerms(d)
+		if err != nil {
+			return err
+		}
+		return encode(w, terms, schemas)
+	}
+}
+
+// dcTerms returns the description as Dublin Core terms, or why it is not.
+// Both registered families speak Dublin Core, so a description of another
+// kind can neither be encoded nor checked against the profile's rules nor
+// have its identifier swapped. Each of those sites asserts here, as an
+// error rather than a panic, until the family checks the type once up front.
+func dcTerms(d sip.Description) (dc.Terms, error) {
+	terms, ok := d.(dc.Terms)
+	if !ok {
+		return nil, fmt.Errorf("descriptive metadata is %T, not Dublin Core terms (dc.Terms)", d)
+	}
+	return terms, nil
 }
 
 // Definition declares a profile as data: what descriptive source it reads,
@@ -96,17 +121,28 @@ type Definition struct {
 // emitted document may say, so they cover representation descriptive too.
 // Findings are joined so one failed build names every gap at once.
 func (d Definition) validateDescriptive(in *Input) error {
+	terms, err := dcTerms(in.Descriptive)
+	if err != nil {
+		return err
+	}
 	errs := []error{
-		in.Descriptive.ValidateRequired(d.RequiredElements...),
-		in.Descriptive.ValidateRequiredLang(d.RequiredLang),
+		terms.ValidateRequired(d.RequiredElements...),
+		terms.ValidateRequiredLang(d.RequiredLang),
 	}
 	if d.EnforceCardinality {
-		errs = append(errs, in.Descriptive.ValidateCardinality())
+		errs = append(errs, terms.ValidateCardinality())
 	}
 	for _, r := range in.Representations {
-		repErrs := []error{r.Descriptive.ValidateRequiredLang(d.RequiredLang)}
+		if r.Descriptive == nil {
+			continue
+		}
+		repTerms, err := dcTerms(r.Descriptive)
+		if err != nil {
+			return fmt.Errorf("representation %q: %w", r.Name, err)
+		}
+		repErrs := []error{repTerms.ValidateRequiredLang(d.RequiredLang)}
 		if d.EnforceCardinality {
-			repErrs = append(repErrs, r.Descriptive.ValidateCardinality())
+			repErrs = append(repErrs, repTerms.ValidateCardinality())
 		}
 		for _, err := range repErrs {
 			if err != nil {

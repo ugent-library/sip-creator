@@ -93,3 +93,36 @@ func TestBuilderInputEquivalence(t *testing.T) {
 func localID(p *sip.Package) string {
 	return p.Root.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]
 }
+
+// A representation without its own metadata.csv must map onto a nil
+// Descriptive. A nil dc.Terms stored in the interface field would read as
+// a present, empty description and earn the representation a descriptive
+// document it never had.
+func TestBuilderInputRepresentationWithoutDescriptive(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"metadata.csv":                        "key,value\nidentifier,ID-1\ntitle,Test\n",
+		"representations/access/metadata.csv": "key,value\ntitle,Access copy\n",
+		"representations/access/scan.jpg":     "access bytes",
+		"representations/master/scan.tiff":    "master bytes",
+	})
+	pkg, err := Read(root)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	in := pkg.BuilderInput()
+	if len(in.Representations) != 2 {
+		t.Fatalf("got %d representations, want 2", len(in.Representations))
+	}
+	for _, r := range in.Representations {
+		switch r.Name {
+		case "access":
+			if r.Descriptive == nil {
+				t.Error("access: Descriptive is nil, want its title term")
+			}
+		case "master":
+			if r.Descriptive != nil {
+				t.Errorf("master: Descriptive = %#v, want nil (no metadata.csv)", r.Descriptive)
+			}
+		}
+	}
+}
