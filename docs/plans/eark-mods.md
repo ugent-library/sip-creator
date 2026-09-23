@@ -280,7 +280,7 @@ declared file that is never written breaks the package METS.
       a standard, each fail the build before any write. ADR-0007's status
       notes the partial supersession. Commit `Changed: each profile names
       its descriptive standard directly`.
-- [ ] **Input files named by standard, first part.** (Added 2026-09-23:
+- [x] **Input files named by standard, first part.** (Added 2026-09-23:
       once the two DC worlds have different tables, the CLI cannot decode
       one `metadata.csv` for both profiles, because the folder does not
       know the profile; ADR-0010.) `cli/input` reads `dcschema.csv`
@@ -289,8 +289,10 @@ declared file that is never written breaks the package METS.
       decode through the one current table in this step. `metadata.csv`
       becomes a violation telling the operator to rename it to
       `dcschema.csv` or `dc.csv`; `dcschema.csv` next to `dc.csv` anywhere
-      in one folder is a violation (the one-standard rule). `Package`
-      records the folder's standard for the next step. Fixtures:
+      in one folder is a violation (the one-standard rule). The reader
+      tracks the folder's vocabulary for that rule; it lands on `Package`
+      in the next step, where the decoder choice first reads it.
+      `metadata.go` and its test are renamed `rows.go`. Fixtures:
       `tmp/basic/metadata.csv` becomes `dcschema.csv`;
       `tmp/eark/metadata.csv` and `tmp/eark/representations/master/metadata.csv`
       become `dc.csv`; the `cli/input` test fixtures follow. Input spec §1

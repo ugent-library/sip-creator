@@ -19,7 +19,7 @@ const (
 // Required and Repeat rules, the xsi:type the element carries, and the
 // Simple DC parent the element dumbs down to.
 type vocabularyRow struct {
-	Key      string      // plain metadata.csv key
+	Key      string      // plain key in the CSV rows file
 	Element  string      // emitted element name
 	Required bool        // required by meemoo's basic profile (enforced per profile)
 	Repeat   cardinality // meemoo basic profile cardinality (enforced per profile)
@@ -75,7 +75,7 @@ func init() {
 	}
 }
 
-// ResolveKey maps a plain metadata.csv key onto the element
+// ResolveKey maps a plain key from the CSV rows file onto the element
 // it generates. Keys are case-insensitive per the convention.
 func ResolveKey(key string) (element string, ok bool) {
 	row, ok := vocabularyByKey[strings.ToLower(key)]

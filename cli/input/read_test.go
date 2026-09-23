@@ -61,7 +61,7 @@ func paths(files []File) []string {
 
 func TestReadFlat(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv":  minimalCSV,
+		"dcschema.csv":  minimalCSV,
 		"0002.tiff":     "b",
 		"0010.tiff":     "c",
 		"0001.tiff":     "a",
@@ -105,14 +105,14 @@ func TestReadFlat(t *testing.T) {
 
 func TestReadRepresentations(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv":                              minimalCSV,
+		"dcschema.csv":                              minimalCSV,
 		"siegfried.json":                            `{"siegfried":"1.11.0","files":[]}`,
 		"documentation/report.pdf":                  "r",
 		"premis/vendor.xml":                         validPremis,
 		"representations/master/scan_2.tiff":        "b",
 		"representations/master/scan_10.tiff":       "c",
 		"representations/access/book.pdf":           "p",
-		"representations/access/metadata.csv":       "key,value\ntitle,PDF-versie\n",
+		"representations/access/dcschema.csv":       "key,value\ntitle,PDF-versie\n",
 		"representations/access/documentation/n.md": "n",
 		"representations/access/premis/ocr.xml":     validPremis,
 	})
@@ -135,7 +135,7 @@ func TestReadRepresentations(t *testing.T) {
 		t.Errorf("master file order = %v, want lexical traversal order", got)
 	}
 	if master.Descriptive != nil {
-		t.Error("master has no metadata.csv but carries descriptive terms")
+		t.Error("master has no dcschema.csv but carries descriptive terms")
 	}
 	if len(access.Descriptive) != 1 || access.Descriptive[0].Element != "dcterms:title" {
 		t.Errorf("access descriptive = %v, want its title term", access.Descriptive)
@@ -160,7 +160,7 @@ func TestReadRepresentations(t *testing.T) {
 
 func TestReadCollectsAllViolations(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		// no metadata.csv
+		// no dcschema.csv
 		"stray.tiff":                         "x", // content beside representations/
 		"representations/loose.txt":          "x", // file directly inside representations/
 		"representations/bad name/scan.tiff": "x", // rep-name character rule
@@ -171,7 +171,7 @@ func TestReadCollectsAllViolations(t *testing.T) {
 	if err == nil {
 		t.Fatal("want violations, got none")
 	}
-	assertViolation(t, err, "metadata.csv is missing")
+	assertViolation(t, err, "descriptive rows are missing")
 	assertViolation(t, err, "stray.tiff")
 	assertViolation(t, err, "loose.txt")
 	assertViolation(t, err, "bad name")
@@ -186,7 +186,7 @@ func TestReadCollectsAllViolations(t *testing.T) {
 
 func TestReadSymlink(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv": minimalCSV,
+		"dcschema.csv": minimalCSV,
 		"scan.tiff":    "x",
 	})
 	if err := os.Symlink(filepath.Join(root, "scan.tiff"), filepath.Join(root, "link.tiff")); err != nil {
@@ -199,7 +199,7 @@ func TestReadSymlink(t *testing.T) {
 
 func TestReadIgnoresOSArtifacts(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv":    minimalCSV,
+		"dcschema.csv":    minimalCSV,
 		"scan.tiff":       "x",
 		".DS_Store":       "junk",
 		"._scan.tiff":     "junk",
@@ -221,7 +221,7 @@ func TestReadIgnoresOSArtifacts(t *testing.T) {
 
 func TestReadArtifactsAreNotContent(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv":                     minimalCSV,
+		"dcschema.csv":                     minimalCSV,
 		"representations/master/.DS_Store": "junk",
 	})
 
@@ -231,7 +231,7 @@ func TestReadArtifactsAreNotContent(t *testing.T) {
 
 func TestReadEmptyRepresentationsDir(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv":     minimalCSV,
+		"dcschema.csv":     minimalCSV,
 		"representations/": "",
 	})
 
@@ -241,7 +241,7 @@ func TestReadEmptyRepresentationsDir(t *testing.T) {
 
 func TestReadNoContent(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv": minimalCSV,
+		"dcschema.csv": minimalCSV,
 	})
 
 	_, err := Read(root)
@@ -250,13 +250,13 @@ func TestReadNoContent(t *testing.T) {
 
 func TestReadReservedNameWrongKind(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv/oops.txt": "x", // reserved file name used as a folder
+		"dcschema.csv/oops.txt": "x", // reserved file name used as a folder
 		"documentation":         "x", // reserved folder name used as a file
 		"scan.tiff":             "x",
 	})
 
 	_, err := Read(root)
-	assertViolation(t, err, "metadata.csv is a folder")
+	assertViolation(t, err, "dcschema.csv is a folder")
 	assertViolation(t, err, "documentation is a file")
 }
 
@@ -267,7 +267,7 @@ func TestReadReservedNameWrongKind(t *testing.T) {
 // fails at build.
 func TestReadPremisNamingRule(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv":       minimalCSV,
+		"dcschema.csv":       minimalCSV,
 		"scan.tiff":          "x",
 		"premis/premis.xml":  validPremis,
 		"premis/garbage.xml": "not xml; read does not judge content",
@@ -285,7 +285,7 @@ func TestReadPremisNamingRule(t *testing.T) {
 
 func TestReadBadSidecar(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv":   minimalCSV,
+		"dcschema.csv":   minimalCSV,
 		"scan.tiff":      "x",
 		"siegfried.json": `{"not":"a report"}`,
 	})
@@ -296,7 +296,7 @@ func TestReadBadSidecar(t *testing.T) {
 
 func TestReadNFCCollision(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv": minimalCSV,
+		"dcschema.csv": minimalCSV,
 	})
 	// The same name in NFC and NFD form; they can coexist only on a
 	// filesystem that does not normalize names (e.g. ext4).

@@ -22,8 +22,8 @@ ingest into the Flemish heritage archive.
   [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
   built on E-ARK SIP 2.0.4, for ingest into the Flemish heritage archive.
 * Builds a complete package from a plain input folder: your content files plus a simple
-  `metadata.csv`, out comes a SIP with generated METS and PREMIS metadata and natively
-  computed checksums.
+  descriptive rows file (`dcschema.csv` for meemoo, `dc.csv` for plain E-ARK), out comes
+  a SIP with generated METS and PREMIS metadata and natively computed checksums.
 * Validates an input folder before building (`check`), reporting every violation at once.
 * Optional PRONOM format identification based on a pre-computed
   [Siegfried](https://github.com/richardlehane/siegfried) report (see Format characterization).
@@ -165,12 +165,13 @@ On the CLI the same fields come from the optional `representations.csv`
 
 ## Input
 
-One folder is one package. The smallest valid input is a `metadata.csv` plus your content
+One folder is one package. The smallest valid input is a descriptive rows file,
+`dcschema.csv` (meemoo profiles) or `dc.csv` (the `eark` profile), plus your content
 files, flat in one folder (they become the package's single representation):
 
 ```
 your-input/
-├── metadata.csv
+├── dcschema.csv
 ├── scan-001.tif
 └── scan-002.tif
 ```
@@ -181,7 +182,7 @@ and the optional extras slot in per package or per representation:
 
 ```
 your-input/
-├── metadata.csv              required: descriptive metadata for the package
+├── dcschema.csv              required: descriptive metadata (dc.csv for the eark profile)
 ├── representations.csv       optional: a label and type per representation
 ├── siegfried.json            optional: characterization sidecar (see Format characterization)
 ├── documentation/            optional: context material about the package
@@ -192,7 +193,7 @@ your-input/
     ├── master/
     │   ├── scan-001.tif
     │   ├── scan-002.tif
-    │   ├── metadata.csv      optional: terms that apply to this version only
+    │   ├── dcschema.csv      optional: terms that apply to this version only
     │   ├── documentation/    optional
     │   │   └── notes.txt
     │   └── premis/           optional
@@ -202,10 +203,13 @@ your-input/
         └── scan-002.jpg
 ```
 
-`metadata.csv` is a two-column `key,value` file with a header row. Keys come from a 
-closed vocabulary of Dublin Core terms (the full key
-table is in the [input specification](docs/input-spec.md)). Repeat a key for multiple
-values, and tag a value's language in square brackets where it matters:
+The rows file is a two-column `key,value` file with a header row. Its name says which
+vocabulary the rows are in: `dcschema.csv` holds meemoo's dc+schema vocabulary (the
+`basic` profile), `dc.csv` Simple Dublin Core (the `eark` profile), and a folder uses
+one name throughout. Until the two vocabularies are separated inside the tool, both
+accept the same keys, from a closed vocabulary of Dublin Core terms (the full key table
+is in the [input specification](docs/input-spec.md)). Repeat a key for multiple values,
+and tag a value's language in square brackets where it matters:
 
 ```csv
 key,value
@@ -245,8 +249,8 @@ package. The full rules are in the
 
 In short:
 
-* **`metadata.csv`** (required): the descriptive metadata, see the example
-  above.
+* **`dcschema.csv` or `dc.csv`** (required, exactly one): the descriptive
+  metadata, see the example above.
 * **Content**: either flat in the folder (one representation, named after the
   input folder itself), or one folder per version under
   `representations/<your-name>/`. Names are free-form (letters, digits,
@@ -258,8 +262,8 @@ In short:
   material; also per representation, and
   recommended: validators flag its absence as a SHOULD-level warning),
   `premis/` (preservation XML received from a vendor, passed through as-is;
-  also per representation), a per-representation `metadata.csv` (e.g. a
-  license that differs between master and access copy), and the
+  also per representation), a per-representation rows file of the same name
+  (e.g. a license that differs between master and access copy), and the
   `siegfried.json` characterization sidecar (see Format characterization).
 
 Validate a folder without building anything (no configuration needed):

@@ -36,18 +36,21 @@ func (r *reader) readRepresentations(dir string) []Representation {
 
 func (r *reader) readRepresentation(dir, name string) Representation {
 	rep := Representation{Name: name}
+	var rows []rowsFile
 	for _, e := range r.readDir(dir) {
 		// Reserved names are ASCII, which NFC normalization never alters,
 		// so comparing unnormalized names is exact.
 		name := e.Name()
 		src := filepath.Join(dir, e.Name())
 		switch {
-		case name == metadataName:
+		case name == dcschemaName || name == dcName:
 			if e.IsDir() {
-				r.violate("%s is a folder; the reserved name is for the metadata file", r.rel(src))
+				r.violate("%s is a folder; the reserved name is for the descriptive rows file", r.rel(src))
 				continue
 			}
-			rep.Descriptive = r.decodeMetadata(src, false)
+			rows = append(rows, newRowsFile(src, name))
+		case name == withdrawnRowsName:
+			r.violate("%s is no longer read; rename it to dcschema.csv (meemoo profiles) or dc.csv (plain E-ARK), input specification §3", r.rel(src))
 		case name == documentationName:
 			if !e.IsDir() {
 				r.violate("%s is a file; the reserved name is for a folder", r.rel(src))
@@ -66,6 +69,7 @@ func (r *reader) readRepresentation(dir, name string) Representation {
 			rep.Files = append(rep.Files, r.newFile(dir, src))
 		}
 	}
+	rep.Descriptive = r.decodeDescriptive(dir, rows, false)
 	if len(rep.Files) == 0 {
 		r.violate("%s: the representation contains no content files", r.rel(dir))
 	}

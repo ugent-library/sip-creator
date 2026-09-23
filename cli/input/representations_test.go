@@ -8,7 +8,7 @@ import (
 // tests add their representations.csv on top.
 func twoRepTree() map[string]string {
 	return map[string]string{
-		"metadata.csv":                     minimalCSV,
+		"dcschema.csv":                     minimalCSV,
 		"representations/master/scan.tiff": "a",
 		"representations/access/book.pdf":  "b",
 	}
@@ -99,7 +99,7 @@ func TestRepresentationsCSVUncoveredDirectory(t *testing.T) {
 
 func TestRepresentationsCSVRequiresRepresentationsFolder(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv":        minimalCSV,
+		"dcschema.csv":        minimalCSV,
 		"scan.tiff":           "a",
 		"representations.csv": "directory\nx\n",
 	})

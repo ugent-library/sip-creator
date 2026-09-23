@@ -16,7 +16,7 @@ One folder = one package. In the simplest case:
 
 ```
 fotoalbum-gent-1913/
-├── metadata.csv          ← describes the content (the only file you write)
+├── dcschema.csv          ← describes the content (the only file you write; dc.csv for the eark profile)
 └── ... your files ...
 ```
 
@@ -24,12 +24,12 @@ With multiple versions of the content and extras:
 
 ```
 fotoalbum-gent-1913/
-├── metadata.csv
+├── dcschema.csv
 ├── representations.csv   ← optional: a label and type per representation
 ├── representations/
 │   ├── master/           ← the archival scans, any structure you like
 │   └── access/           ← e.g. a PDF version
-│       └── metadata.csv  ← optional: describes just this version (e.g. its license)
+│       └── dcschema.csv  ← optional: describes just this version (e.g. its license)
 ├── documentation/        ← optional: scan reports, context material
 └── premis/               ← optional: preservation XML received from a vendor
 ```
@@ -39,7 +39,7 @@ Institution details (who submits, who archives, contact person, agreement number
 ## 1. General rules
 
 - One input folder MUST correspond to one package.
-- Six names at the top level are reserved: `metadata.csv` (required), `representations/`, `representations.csv`, `documentation/`, `premis/`, and `siegfried.json` (each optional; `representations.csv` names representations, see §2; `siegfried.json` is the pre-computed characterization report, see §2). All other folder and file names are free, with any nesting.
+- Seven names at the top level are reserved: `dcschema.csv` and `dc.csv` (the descriptive rows, exactly one of the two, see §3), `representations/`, `representations.csv`, `documentation/`, `premis/`, and `siegfried.json` (each optional; `representations.csv` names representations, see §2; `siegfried.json` is the pre-computed characterization report, see §2). The former name `metadata.csv` is withdrawn (2026-09-23): a folder containing it MUST be an error that names the two files to rename it to. All other folder and file names are free, with any nesting.
 - Operating-system artifacts (`.DS_Store`, `Thumbs.db`, `desktop.ini`, `._*`) MUST be ignored by the tool: never packaged, never warned about.
 - Symbolic links anywhere in the input MUST be an error.
 - The tool MUST compare paths after Unicode canonical normalization (NFC), because macOS file names and typed CSV values often differ only in normalization form.
@@ -53,7 +53,7 @@ A *representation* is one version of the content: the archival master scans are 
 - **Simple case:** if there is no `representations/` folder, everything in the package folder (apart from the reserved names) is the content of a single representation, named after the input folder itself.
 - **Multiple versions:** if `representations/` exists, each folder directly inside it is one representation, named by its folder name. All content MUST then live inside `representations/`; content files elsewhere at the top level are an error (except inside `documentation/` and `premis/`).
 - Representation names (the folder names, or the input folder's own name in the simple case) MUST match `A–Z a–z 0–9 . _ -`. The name is used as-is inside the final package: it becomes the representation's directory name under `representations/` and, unless `representations.csv` says otherwise, its human-readable name and type in the generated metadata. Neither E-ARK CSIP nor the meemoo specification dictates a naming scheme; CSIP requires only that the names be unique, which folder names are by construction.
-- Inside a representation folder, three names are reserved: `metadata.csv`, `documentation/` and `premis/` (all optional, see §3–5). Everything else is content, with free naming and nesting.
+- Inside a representation folder, four names are reserved: `dcschema.csv`, `dc.csv`, `documentation/` and `premis/` (all optional, see §3–5). Everything else is content, with free naming and nesting.
 - Files are packaged in a stable, tool-determined order (alphabetical by path). This order carries no meaning: neither E-ARK CSIP nor the meemoo specification assigns semantics to file order. If a human-readable sequence matters to you, zero-pad your numbering (`0001.tiff`, `0002.tiff`, …); explicit ordering is a deferred feature (see §8, the manifest).
 - The tool computes checksums and sizes itself; you never supply those. File formats come from an optional pre-computed characterization report (`siegfried.json` at the top level, generated from the input root with `sf -hash md5 -json`) that the tool verifies against the files before trusting; you never hand-author format info ([ADR-0009](decisions/0009-characterization-as-sidecar-input.md)).
 
@@ -75,10 +75,18 @@ access,Access copy (PDF),access
 - The file requires a `representations/` folder: in the simple flat case there is one representation named after the input folder, and a `representations.csv` MUST be an error.
 - The type reaches the output only in profiles that declare representation types (the `eark` profile; [ADR-0013](decisions/0013-representation-type-from-label.md)). Meemoo profiles fix their representation typing to the meemoo profile URI, so `type` has no effect there; `label` is emitted for every profile.
 
-## 3. `metadata.csv`: describing the content
+## 3. Descriptive rows: `dcschema.csv` or `dc.csv`
 
-A two-column CSV (`key,value`) describing what the package contains. This is the only file an operator writes.
+A two-column CSV (`key,value`) describing what the package contains. This is the only file an operator writes. Its name says which vocabulary the rows are in, and so which profile can build the folder:
 
+| file | vocabulary | profile |
+|---|---|---|
+| `dcschema.csv` | meemoo's dc+schema vocabulary: the key table below | `basic` |
+| `dc.csv` | Simple Dublin Core | `eark` |
+
+Until the two vocabularies are separated inside the tool (in progress, [ADR-0015](decisions/0015-descriptive-worlds-dc-and-mods.md)), both files accept the key table below, and `dc.csv` rows are reduced to Simple Dublin Core in the output as before.
+
+- Exactly one of the two files MUST be present at the top level; both at once MUST be an error. Every descriptive rows file in one input folder MUST be in the same vocabulary: a `dc.csv` inside a representation of a `dcschema.csv` package is an error.
 - MUST be UTF-8 with a `key,value` header row. The tool MUST accept a UTF-8 BOM and CRLF line endings (spreadsheet tools produce both) and RFC 4180 quoting.
 - `identifier` and `title` MUST be present and non-empty. The identifier is your local catalog or inventory number; it travels with the package as its local identifier. Meemoo profiles additionally require `description` and `created` (their basic content profile requires all four); the tool refuses to build a meemoo package without them.
 - Repeat a key for multiple values (two `creator` lines for two creators), but only for keys the table lists as repeatable. Keys listed as *per-language* may repeat only with distinct language tags (`title[nl]` plus `title[en]` is fine; two `title[nl]` rows are not). A second row for a single-valued key, or a repeated language on a per-language key, MUST be an error.
@@ -131,7 +139,7 @@ rights[nl],publiek domein
 
 ### Describing one representation
 
-A representation MAY carry its own `metadata.csv` (at `representations/<name>/metadata.csv`) when something is true of that version only, typically a license or rights statement that differs between the master and an access copy. Same format and rules as the package-level file, with two differences:
+A representation MAY carry its own rows file (at `representations/<name>/dcschema.csv` or `representations/<name>/dc.csv`, the same name as the package-level file) when something is true of that version only, typically a license or rights statement that differs between the master and an access copy. Same format and rules as the package-level file, with two differences:
 
 - `identifier` and `title` are NOT required: the package-level description covers the work's identity. A `title` MAY still be given as a human-readable name for the version (e.g. "PDF-versie").
 - It describes the representation, not the work: keys like `created` or `creator` here refer to the making of this version.
@@ -186,8 +194,8 @@ Deliberate trade-off: because organization details come from configuration, an i
 | `representations.csv` `label` / `type` | representation METS `mets/@LABEL`; in the eark profile the type lands in `TYPE="Other"`+`csip:OTHERTYPE` and `CONTENTINFORMATIONTYPE="OTHER"`+`csip:OTHERCONTENTINFORMATIONTYPE` ([ADR-0013](decisions/0013-representation-type-from-label.md)) |
 | file order (stable, no semantics) | document order within the representation structMap; METS `ORDER` attributes are the real sequencing mechanism, deferred with the manifest (§8) |
 | `documentation/` (package and representation level) | `documentation/` folders, conformant per CSIPSTR16; METS fileSec `USE="DOCUMENTATION"` |
-| `metadata.csv` keys | the vocabulary table's elements, mapped as `dcterms:*` (`identifier`→`dcterms:identifier`, `rightsholder`→`dcterms:rightsHolder`, `ispartof`→`dcterms:isPartOf`, the rest 1:1) and `schema:*` (`artmedium`→`schema:artMedium`, `artform`→`schema:artform`), in `metadata/descriptive/*.xml`, METS dmdSec |
-| `representations/<name>/metadata.csv` | `representations/<name>/metadata/descriptive/*.xml`, dmdSec of that representation's METS (CSIPSTR12/13) |
+| `dcschema.csv` / `dc.csv` keys | the vocabulary table's elements, mapped as `dcterms:*` (`identifier`→`dcterms:identifier`, `rightsholder`→`dcterms:rightsHolder`, `ispartof`→`dcterms:isPartOf`, the rest 1:1) and `schema:*` (`artmedium`→`schema:artMedium`, `artform`→`schema:artform`), in `metadata/descriptive/*.xml`, METS dmdSec |
+| `representations/<name>/dcschema.csv` or `dc.csv` | `representations/<name>/metadata/descriptive/*.xml`, dmdSec of that representation's METS (CSIPSTR12/13) |
 | `[lang]` suffixes | `xml:lang` attributes |
 | configuration: organizations, contacts | METS `metsHdr/agent` (`ROLE=CREATOR TYPE=ORGANIZATION` submitter; `ROLE=ARCHIVIST TYPE=ORGANIZATION` archival creator; individuals as contact agents) |
 | configuration: submission agreement | METS `altRecordID TYPE="SUBMISSIONAGREEMENT"` (SIP5) |

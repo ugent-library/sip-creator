@@ -13,7 +13,7 @@ type Term struct {
 
 // Terms is an ordered list of descriptive statements; the order the
 // producer stated them in is preserved through to the emitted XML.
-// Any producer constructs it directly (the CLI's metadata.csv decoder is
+// Any producer constructs it directly (the CLI's rows-file decoder is
 // one); Validate holds the rules on what a term may say, and Encode
 // refuses invalid terms.
 type Terms []Term

@@ -8,17 +8,17 @@ import (
 )
 
 // readCSV runs Read over a minimal flat tree carrying the given
-// metadata.csv, so the decoder is exercised through the real entry point.
+// dcschema.csv, so the decoder is exercised through the real entry point.
 func readCSV(t *testing.T, csv string) (*Package, error) {
 	t.Helper()
 	root := writeTree(t, map[string]string{
-		"metadata.csv": csv,
+		"dcschema.csv": csv,
 		"scan.tiff":    "x",
 	})
 	return Read(root)
 }
 
-func TestMetadataCSVHappy(t *testing.T) {
+func TestRowsHappy(t *testing.T) {
 	// BOM, CRLF, RFC 4180 quoting, repeated keys, [lang] tags, the
 	// plain-key mappings, and the schema.org keys, all in one file.
 	csv := "\ufeffkey,value\r\n" +
@@ -58,7 +58,7 @@ func TestMetadataCSVHappy(t *testing.T) {
 	}
 }
 
-func TestMetadataCSVViolations(t *testing.T) {
+func TestRowsViolations(t *testing.T) {
 	tests := []struct {
 		name string
 		csv  string
@@ -90,28 +90,28 @@ func TestMetadataCSVViolations(t *testing.T) {
 	}
 }
 
-func TestMetadataCSVMissingHeaderStillDecodes(t *testing.T) {
+func TestRowsMissingHeaderStillDecodes(t *testing.T) {
 	// Collect-all: the header violation must not hide findings in the rows.
 	_, err := readCSV(t, "identifier,ID-1\ntitel,Oeps\n")
 	assertViolation(t, err, `header "key,value"`)
 	assertViolation(t, err, `unknown key "titel"`)
 }
 
-func TestMetadataCSVLineNumbers(t *testing.T) {
+func TestRowsLineNumbers(t *testing.T) {
 	_, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle,T\ntitel,Oeps\n")
 	assertViolation(t, err, "line 4")
 }
 
 // A cardinality violation is a cross-row finding: no line number, but the
 // element and language it names locate the rows in a keyed file.
-func TestMetadataCSVRepeatNamesElementAndLanguage(t *testing.T) {
+func TestRowsRepeatNamesElementAndLanguage(t *testing.T) {
 	_, err := readCSV(t, minimalCSV+"abstract[nl],a\nabstract[nl],b\n")
 	assertViolation(t, err, `dcterms:abstract appears more than once in language "nl"`)
 }
 
 // Per-language keys repeat freely across languages (title[nl] + title[en]);
 // only a same-language repeat is a violation.
-func TestMetadataCSVPerLanguageRepeat(t *testing.T) {
+func TestRowsPerLanguageRepeat(t *testing.T) {
 	if _, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle[nl],Kat\ntitle[en],Cat\n"); err != nil {
 		t.Fatalf("distinct languages must be accepted: %v", err)
 	}
@@ -121,13 +121,13 @@ func TestMetadataCSVPerLanguageRepeat(t *testing.T) {
 
 func TestRepresentationCSVNeedsNoIdentity(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"metadata.csv":                        minimalCSV,
+		"dcschema.csv":                        minimalCSV,
 		"representations/master/scan.tiff":    "x",
-		"representations/master/metadata.csv": "key,value\nlicense,publiek domein\n",
+		"representations/master/dcschema.csv": "key,value\nlicense,publiek domein\n",
 	})
 	pkg, err := Read(root)
 	if err != nil {
-		t.Fatalf("rep-level metadata.csv must not require identifier/title: %v", err)
+		t.Fatalf("rep-level dcschema.csv must not require identifier/title: %v", err)
 	}
 	got := pkg.Representations[0].Descriptive
 	if len(got) != 1 || got[0].Element != "dcterms:license" {
@@ -138,15 +138,15 @@ func TestRepresentationCSVNeedsNoIdentity(t *testing.T) {
 func TestRepresentationCSVDuplicateIdentifier(t *testing.T) {
 	// Identity is optional at rep level, but two identifiers stay ambiguous.
 	root := writeTree(t, map[string]string{
-		"metadata.csv":                        minimalCSV,
+		"dcschema.csv":                        minimalCSV,
 		"representations/master/scan.tiff":    "x",
-		"representations/master/metadata.csv": "key,value\nidentifier,A\nidentifier,B\n",
+		"representations/master/dcschema.csv": "key,value\nidentifier,A\nidentifier,B\n",
 	})
 	_, err := Read(root)
 	assertViolation(t, err, "exactly one")
 }
 
-func TestMetadataCSVQuotedNewline(t *testing.T) {
+func TestRowsQuotedNewline(t *testing.T) {
 	// A quoted value may span lines (RFC 4180); line numbers must survive.
 	csv := "key,value\nidentifier,ID-1\ndescription,\"two\nlines\"\ntitel,Oeps\n"
 	_, err := readCSV(t, csv)
@@ -154,4 +154,56 @@ func TestMetadataCSVQuotedNewline(t *testing.T) {
 	if !strings.Contains(err.Error(), `unknown key "titel"`) {
 		t.Errorf("multiline value swallowed the following row: %v", err)
 	}
+}
+
+// The withdrawn name is refused with the rename hint, and the folder still
+// counts as having no descriptive rows.
+func TestRowsWithdrawnMetadataCSV(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"metadata.csv": minimalCSV,
+		"scan.tiff":    "x",
+	})
+	_, err := Read(root)
+	assertViolation(t, err, "metadata.csv is no longer read")
+	assertViolation(t, err, "descriptive rows are missing")
+}
+
+// dc.csv is read like dcschema.csv: same rows, same rules.
+func TestRowsDCCSV(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"dc.csv":    minimalCSV,
+		"scan.tiff": "x",
+	})
+	pkg, err := Read(root)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if len(pkg.Descriptive) != 2 {
+		t.Errorf("descriptive = %v, want the two minimal terms", pkg.Descriptive)
+	}
+}
+
+// One rows file per level: both names at the root is a violation naming
+// both files.
+func TestRowsTwoFilesAtOneLevel(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"dcschema.csv": minimalCSV,
+		"dc.csv":       minimalCSV,
+		"scan.tiff":    "x",
+	})
+	_, err := Read(root)
+	assertViolation(t, err, "dc.csv and dcschema.csv are both present")
+}
+
+// One vocabulary per folder: a dc.csv inside a representation of a
+// dcschema.csv package is a violation naming both files.
+func TestRowsMixedVocabularies(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"dcschema.csv":                     minimalCSV,
+		"representations/master/scan.tiff": "x",
+		"representations/master/dc.csv":    "key,value\ntitle,Master\n",
+	})
+	_, err := Read(root)
+	assertViolation(t, err, "same vocabulary")
+	assertViolation(t, err, "representations/master/dc.csv is Simple Dublin Core but dcschema.csv is meemoo dc+schema")
 }

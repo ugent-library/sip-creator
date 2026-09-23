@@ -46,8 +46,8 @@ type Representation struct {
 	// the file is absent or leaves the cell empty (the library defaults it
 	// to the label).
 	Type string
-	// Descriptive is nil unless the representation has its own
-	// metadata.csv.
+	// Descriptive is nil unless the representation has its own descriptive
+	// rows file (dcschema.csv or dc.csv).
 	Descriptive dc.Terms
 	// Files are the content files, in deterministic traversal order
 	// (lexical per directory).
@@ -63,8 +63,8 @@ type Representation struct {
 type Package struct {
 	// Root is the absolute path of the input folder.
 	Root string
-	// Descriptive is the package-level terms from the top-level
-	// metadata.csv.
+	// Descriptive is the package-level terms from the top-level descriptive
+	// rows file (dcschema.csv or dc.csv).
 	Descriptive dc.Terms
 	// Representations holds at least one representation; a flat folder
 	// reads as a single one.
@@ -145,17 +145,23 @@ func Read(root string) (*Package, error) {
 }
 
 // reader carries the walk's state: the input root all messages and report
-// keys are relative to, and the findings collected so far.
+// keys are relative to, the findings collected so far, and the vocabulary
+// of the first descriptive rows file met (with its path), which every later
+// rows file in the folder must share.
 type reader struct {
-	root       string
-	violations Violations
-	warnings   []string
+	root         string
+	violations   Violations
+	warnings     []string
+	standard     descriptiveStandard
+	standardFile string
 }
 
 // Reserved top-level names. Reserved names inside a representation are
 // a subset.
 const (
-	metadataName           = "metadata.csv"
+	dcschemaName           = "dcschema.csv"
+	dcName                 = "dc.csv"
+	withdrawnRowsName      = "metadata.csv" // the rows file's name until 2026-09-23
 	representationsName    = "representations"
 	representationsCSVName = "representations.csv"
 	documentationName      = "documentation"
@@ -163,12 +169,37 @@ const (
 	sidecarName            = "siegfried.json"
 )
 
+// descriptiveStandard is the vocabulary a descriptive rows file is in, told
+// by its name (input specification §3): dcschema.csv holds meemoo's
+// dc+schema vocabulary, dc.csv Simple Dublin Core. Both decode through the
+// one vocabulary table until the encoders are split per standard.
+type descriptiveStandard string
+
+const (
+	dcschemaStandard descriptiveStandard = "meemoo dc+schema"
+	dcStandard       descriptiveStandard = "Simple Dublin Core"
+)
+
+// rowsFile is one descriptive rows file found at one level of the input
+// folder, with the vocabulary its name announces.
+type rowsFile struct {
+	src      string
+	standard descriptiveStandard
+}
+
+func newRowsFile(src, name string) rowsFile {
+	if name == dcName {
+		return rowsFile{src, dcStandard}
+	}
+	return rowsFile{src, dcschemaStandard}
+}
+
 func (r *reader) read() *Package {
 	pkg := &Package{Root: r.root}
 
 	var content []os.DirEntry
 	var repsDir, repsCSV string
-	sawMetadata := false
+	var rows []rowsFile
 
 	for _, e := range r.readDir(r.root) {
 		// Reserved names are ASCII, which NFC normalization never alters,
@@ -176,13 +207,14 @@ func (r *reader) read() *Package {
 		name := e.Name()
 		src := filepath.Join(r.root, e.Name())
 		switch name {
-		case metadataName:
+		case dcschemaName, dcName:
 			if e.IsDir() {
-				r.violate("metadata.csv is a folder; the reserved name is for the metadata file")
+				r.violate("%s is a folder; the reserved name is for the descriptive rows file", name)
 				continue
 			}
-			sawMetadata = true
-			pkg.Descriptive = r.decodeMetadata(src, true)
+			rows = append(rows, newRowsFile(src, name))
+		case withdrawnRowsName:
+			r.violate("metadata.csv is no longer read; rename it to dcschema.csv (meemoo profiles) or dc.csv (plain E-ARK), input specification §3")
 		case representationsName:
 			if !e.IsDir() {
 				r.violate("representations is a file; the reserved name is for the folder of representations")
@@ -218,9 +250,7 @@ func (r *reader) read() *Package {
 		}
 	}
 
-	if !sawMetadata {
-		r.violate("metadata.csv is missing: every package folder needs one describing the content (input specification §3)")
-	}
+	pkg.Descriptive = r.decodeDescriptive(r.root, rows, true)
 
 	if repsDir != "" {
 		// With a representations/ folder, all content lives inside it;

@@ -3,16 +3,49 @@ package input
 import (
 	"errors"
 	"io"
+	"path/filepath"
 	"strings"
 
 	"github.com/ugent-library/sip-creator/encoders/dc"
 )
 
-// decodeMetadata decodes one metadata.csv into ordered descriptive
-// terms, collecting a violation per broken rule. The
+// decodeDescriptive decodes the one descriptive rows file at a level of the
+// input folder. The package level needs one, a representation may have
+// none, two at one level is a violation, and so is a second vocabulary
+// anywhere in the folder: the profile chosen at create reads one.
+func (r *reader) decodeDescriptive(dir string, files []rowsFile, packageLevel bool) dc.Terms {
+	switch {
+	case len(files) == 0:
+		if packageLevel {
+			r.violate("descriptive rows are missing: every package folder needs a dcschema.csv (meemoo profiles) or a dc.csv (plain E-ARK) describing the content (input specification §3)")
+		}
+		return nil
+	case len(files) > 1:
+		r.violate("%s: %s and %s are both present; a folder holds one descriptive rows file per level (input specification §3)", r.rel(dir), filepath.Base(files[0].src), filepath.Base(files[1].src))
+		return nil
+	}
+	f := files[0]
+	r.noteStandard(f)
+	return r.decodeRows(f.src, packageLevel)
+}
+
+// noteStandard records the vocabulary of the first rows file met and
+// reports any later file in another one.
+func (r *reader) noteStandard(f rowsFile) {
+	if r.standard == "" {
+		r.standard, r.standardFile = f.standard, r.rel(f.src)
+		return
+	}
+	if r.standard != f.standard {
+		r.violate("%s is %s but %s is %s; every descriptive rows file in one input folder must be in the same vocabulary (input specification §3)", r.rel(f.src), f.standard, r.standardFile, r.standard)
+	}
+}
+
+// decodeRows decodes one descriptive rows file (dcschema.csv or dc.csv)
+// into ordered terms, collecting a violation per broken rule. The
 // package-level file requires identifier and title; a representation-level
 // one does not.
-func (r *reader) decodeMetadata(src string, packageLevel bool) dc.Terms {
+func (r *reader) decodeRows(src string, packageLevel bool) dc.Terms {
 	rel := r.rel(src)
 
 	cr, ok := r.openCSV(src)
@@ -68,7 +101,7 @@ func (r *reader) decodeMetadata(src string, packageLevel bool) dc.Terms {
 
 	// The convention's own cardinality rule: single-valued and
 	// per-language keys must not repeat, whatever the profile. The rule is
-	// the same for every metadata.csv, so check needs no configuration. It
+	// the same for every rows file, so check needs no configuration. It
 	// is a cross-row rule checked on the finished list: each finding names
 	// the element and language, which locates the rows in a keyed file.
 	if err := terms.ValidateCardinality(); err != nil {
