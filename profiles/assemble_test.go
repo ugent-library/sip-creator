@@ -778,9 +778,49 @@ func TestBuildInvalidConfigWritesNothing(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
+// otherDescription stands in for a description of a standard no registered
+// profile writes.
+type otherDescription struct{}
+
+func (otherDescription) LocalIdentifier() string { return "other-1" }
+func (otherDescription) Validate() error         { return nil }
+
+// A description of another standard is refused by the profile's
+// descriptive-standard check before validation and before any side effect,
+// at package and representation level alike.
+func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
+	b, in, outDir := newTestBuilder(t)
+	in.Descriptive = otherDescription{}
+	_, err := b.Build(earkDef(t), in)
+	if err == nil || !strings.Contains(err.Error(), "dc.Terms") {
+		t.Fatalf("Build error = %v, want the mismatch naming dc.Terms", err)
+	}
+	requireEmpty(t, outDir)
+
+	b, in, outDir = newTestBuilder(t)
+	in.Representations[0].Descriptive = otherDescription{}
+	_, err = b.Build(earkDef(t), in)
+	if err == nil || !strings.Contains(err.Error(), `representation "master"`) {
+		t.Fatalf("Build error = %v, want the mismatch naming the representation", err)
+	}
+	requireEmpty(t, outDir)
+}
+
+// A definition built outside the registry names no descriptive standard
+// and is refused before any side effect, as an error rather than a panic.
+func TestBuildDefinitionWithoutDescriptiveStandardWritesNothing(t *testing.T) {
+	b, in, outDir := newTestBuilder(t)
+	def := basicDef(t)
+	def.descriptive = descriptive{}
+	if _, err := b.Build(def, in); err == nil {
+		t.Fatal("Build accepted a definition without a descriptive standard")
+	}
+	requireEmpty(t, outDir)
+}
+
 // Build enforces the required sets: identity-only terms build a complete
 // eark package and are refused under basic before any side effect.
-func TestBuildRequiredElementsPerFamily(t *testing.T) {
+func TestBuildRequiredElementsPerProfile(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 	in.Descriptive = identityTerms()
 	if _, err := b.Build(earkDef(t), in); err != nil {

@@ -12,6 +12,7 @@ import (
 	"slices"
 
 	"github.com/ugent-library/sip-creator/characterization"
+	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/encoders/premis"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
@@ -30,9 +31,7 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 	e := sip.NewEntity()
 	b.Logger.Info("created an intellectual entity", slog.String("id", e.Identifier))
 
-	if err := b.assembleDescriptive(e, def, in); err != nil {
-		return nil, err
-	}
+	b.assembleDescriptive(e, def, in)
 	pkg.SetSchemaFiles(schemaFileNodes())
 
 	docs, err := b.assembleDocumentationNodes(in.Documentation, in.Characterization)
@@ -71,7 +70,7 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 	return pkg, nil
 }
 
-func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) error {
+func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) {
 	d := in.Descriptive
 	// Read the local identifier before swapping in the entity identifier:
 	// the terms hold one identifier slot, and the swap overwrites it. Per
@@ -82,12 +81,9 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", d.LocalIdentifier())
 	}
 	if def.SwapObjectIdentifier {
-		// The swap is a Dublin Core operation: only dc.Terms has the slot.
-		terms, err := dcTerms(d)
-		if err != nil {
-			return err
-		}
-		terms.SetObjectIdentifier(e.Identifier)
+		// The swap is a Dublin Core operation, only dc.Terms has the slot;
+		// the descriptive-standard check in Build guarantees the type.
+		d.(dc.Terms).SetObjectIdentifier(e.Identifier)
 	}
 	e.Description = d
 
@@ -97,7 +93,6 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 	df.Mime = "text/xml" // generated XML
 	e.SetDescriptionFile(df)
 	b.Logger.Info("created a descriptive file", slog.String("id", df.Identifier))
-	return nil
 }
 
 // schemaFileNodes declares one graph node per bundled XSD, sorted so METS
@@ -167,11 +162,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			// representation identifier instead (a no-op when they carry
 			// none; rep-level identity is optional).
 			if def.SwapObjectIdentifier {
-				terms, err := dcTerms(sr.Descriptive)
-				if err != nil {
-					return fmt.Errorf("representation %q: %w", sr.Name, err)
-				}
-				terms.SetObjectIdentifier(r.Identifier)
+				sr.Descriptive.(dc.Terms).SetObjectIdentifier(r.Identifier)
 			}
 			r.Description = sr.Descriptive
 

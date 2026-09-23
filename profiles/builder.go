@@ -38,10 +38,14 @@ func New(config *Config) *Builder {
 // (no disk writes), then emits it in the canonical order. Failures before
 // the write phase leave no partial package dir behind.
 func (b *Builder) Build(def Definition, in *Input) (*sip.Package, error) {
-	// Resolve the family's encodings before anything else: a bogus family
-	// is an input error and must fail before any side effect.
-	encodeDescriptive, err := def.Family.descriptiveEncoder()
-	if err != nil {
+	// A definition built outside the registry names no descriptive
+	// standard; refuse it before any side effect. The standard's check of
+	// the input's descriptions then guarantees every later type assertion
+	// on them.
+	if def.descriptive.check == nil {
+		return nil, fmt.Errorf("profile %q names no descriptive standard; use a registered definition", def.Name)
+	}
+	if err := def.descriptive.checkInput(in); err != nil {
 		return nil, fmt.Errorf("profile %q: %w", def.Name, err)
 	}
 
@@ -60,7 +64,7 @@ func (b *Builder) Build(def Definition, in *Input) (*sip.Package, error) {
 	}
 
 	st := store.New(pkg.Location)
-	if err := b.write(st, pkg, encodeDescriptive); err != nil {
+	if err := b.write(st, pkg, def.descriptive.encode); err != nil {
 		return nil, err
 	}
 

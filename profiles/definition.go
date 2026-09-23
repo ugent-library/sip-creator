@@ -3,7 +3,6 @@ package profiles
 import (
 	"errors"
 	"fmt"
-	"io"
 	"maps"
 	"slices"
 
@@ -11,67 +10,22 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Family selects which output family a profile emits: the same assembled
-// graph and the same canonical writer, different encodings (ADR-0007).
-type Family string
-
-// FamilyMeemoo emits E-ARK CSIP with the meemoo SIP specialization.
-const FamilyMeemoo Family = "meemoo"
-
-// FamilyEARK emits a plain E-ARK SIP.
-const FamilyEARK Family = "eark"
-
-// descriptiveEncoder is the one behavioral choice a family makes today.
-// It grows into a struct of choices when families make more (ADR-0007).
-// schemas is the relative path from the document being written to the
-// package's schemas/ dir; only the writer knows where a document lands.
-type descriptiveEncoder func(w io.Writer, d sip.Description, schemas string) error
-
-func (f Family) descriptiveEncoder() (descriptiveEncoder, error) {
-	switch f {
-	case FamilyMeemoo:
-		return encodeDC(dc.EncodeTerms), nil
-	case FamilyEARK:
-		return encodeDC(dc.EncodeDCTerms), nil
-	default:
-		return nil, fmt.Errorf("unknown output family %q", f)
-	}
-}
-
-// encodeDC adapts a Dublin Core encoder to the Description interface both
-// registered families take their input through.
-func encodeDC(encode func(io.Writer, dc.Terms, string) error) descriptiveEncoder {
-	return func(w io.Writer, d sip.Description, schemas string) error {
-		terms, err := dcTerms(d)
-		if err != nil {
-			return err
-		}
-		return encode(w, terms, schemas)
-	}
-}
-
-// dcTerms returns the description as Dublin Core terms, or why it is not.
-// Both registered families speak Dublin Core, so a description of another
-// kind can neither be encoded nor checked against the profile's rules nor
-// have its identifier swapped. Each of those sites asserts here, as an
-// error rather than a panic, until the family checks the type once up front.
-func dcTerms(d sip.Description) (dc.Terms, error) {
-	terms, ok := d.(dc.Terms)
-	if !ok {
-		return nil, fmt.Errorf("descriptive metadata is %T, not Dublin Core terms (dc.Terms)", d)
-	}
-	return terms, nil
-}
-
 // Definition declares a profile as data: what descriptive source it reads,
 // which metadata it emits, and the values its METS documents carry.
 // Profiles differ in these values, not in build logic: one engine
 // (Builder.Build) reads them; a name looks up values in the registry.
+// Definitions come from the registry (Get): the descriptive standard a
+// profile writes is a closed set and cannot be set from outside the package.
 type Definition struct {
 	// Name is the registry key: what --profile selects.
 	Name string
-	// Family selects which encodings the package uses.
-	Family Family
+	// descriptive is the descriptive standard the profile accepts and the
+	// document it writes: one of the values in descriptive.go.
+	descriptive descriptive
+	// RequireSubmitterORID requires the submitting organization's meemoo
+	// OR-id, emitted as the agent's IDENTIFICATIONCODE note (meemoo SIP
+	// 1.2, metsHdr); WithSubmitter needs the OR-id when set.
+	RequireSubmitterORID bool
 	// DescriptiveName is the emitted filename of the descriptive document
 	// under metadata/descriptive/.
 	DescriptiveName string
@@ -121,10 +75,10 @@ type Definition struct {
 // emitted document may say, so they cover representation descriptive too.
 // Findings are joined so one failed build names every gap at once.
 func (d Definition) validateDescriptive(in *Input) error {
-	terms, err := dcTerms(in.Descriptive)
-	if err != nil {
-		return err
-	}
+	// These rules are Dublin Core rules (both registered profiles write
+	// it); the descriptive-standard check in Build guarantees the type here
+	// and in the representation loop below.
+	terms := in.Descriptive.(dc.Terms)
 	errs := []error{
 		terms.ValidateRequired(d.RequiredElements...),
 		terms.ValidateRequiredLang(d.RequiredLang),
@@ -136,10 +90,7 @@ func (d Definition) validateDescriptive(in *Input) error {
 		if r.Descriptive == nil {
 			continue
 		}
-		repTerms, err := dcTerms(r.Descriptive)
-		if err != nil {
-			return fmt.Errorf("representation %q: %w", r.Name, err)
-		}
+		repTerms := r.Descriptive.(dc.Terms)
 		repErrs := []error{repTerms.ValidateRequiredLang(d.RequiredLang)}
 		if d.EnforceCardinality {
 			repErrs = append(repErrs, repTerms.ValidateCardinality())
@@ -173,15 +124,15 @@ func (d Definition) representationDeclaration(typ string) *sip.MetsDeclaration {
 // WithSubmitter returns a copy of the definition whose METS agents include
 // the submitting organization. The submitter is operator identity, not
 // profile data, so the registry entries omit it and the caller supplies it.
-// The family decides its shape: meemoo requires the organization's OR-id
-// as an IDENTIFICATIONCODE note (meemoo SIP 1.2, metsHdr); plain E-ARK
-// carries the name alone.
+// RequireSubmitterORID decides its shape: meemoo requires the
+// organization's OR-id as an IDENTIFICATIONCODE note (meemoo SIP 1.2,
+// metsHdr); plain E-ARK carries the name alone.
 func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 	if name == "" {
 		return Definition{}, fmt.Errorf("profile %q requires the submitting organization's name", d.Name)
 	}
 	agent := sip.Agent{Role: "CREATOR", Type: "ORGANIZATION", Name: name}
-	if d.Family == FamilyMeemoo {
+	if d.RequireSubmitterORID {
 		if orID == "" {
 			return Definition{}, fmt.Errorf("profile %q requires the submitting organization's meemoo OR-id", d.Name)
 		}
@@ -196,8 +147,11 @@ func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 
 var registry = map[string]Definition{
 	"basic": {
-		Name:   "basic",
-		Family: FamilyMeemoo,
+		Name:        "basic",
+		descriptive: meemooDC,
+		// meemoo identifies the submitting organization by its OR-id
+		// (meemoo SIP 1.2, metsHdr agent note).
+		RequireSubmitterORID: true,
 		// The filename meemoo's basic profile expects for the descriptive
 		// document.
 		DescriptiveName: "dc+schema.xml",
@@ -232,10 +186,10 @@ var registry = map[string]Definition{
 		},
 	},
 	"eark": {
-		Name:   "eark",
-		Family: FamilyEARK,
+		Name:        "eark",
+		descriptive: simpleDC,
 		// Named after the simple-DC document it holds; meemoo's naming
-		// convention doesn't apply to the eark family.
+		// convention doesn't apply to the eark profile.
 		DescriptiveName:     "dc.xml",
 		EmitLocalIdentifier: false, // MEEMOO-LOCAL-ID is a meemoo concept
 		// dc.xml keeps the producer's identifier: CSIP has no rule tying it
@@ -243,7 +197,7 @@ var registry = map[string]Definition{
 		// ingesting catalogue indexes dc.xml, so operators find the package
 		// by the identifier they know (ADR-0012).
 		SwapObjectIdentifier: false,
-		// The eark family emits no PREMIS: RODA drops package PREMIS that
+		// The eark profile emits no PREMIS: RODA drops package PREMIS that
 		// does not describe agents or events.
 		EmitPackagePremis:        false,
 		EmitRepresentationPremis: false,

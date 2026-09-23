@@ -8,7 +8,7 @@ land.*
 
 ## Context
 
-The tool emits one descriptive document per profile family: meemoo's
+The tool emits one descriptive document per profile: meemoo's
 `dc+schema` document for the `basic` profile, a simple Dublin Core document
 for the `eark` profile. Bibliographic material at UGent Library needs the
 plain E-ARK output to carry [MODS 3.7](https://www.loc.gov/standards/mods/)
@@ -43,14 +43,22 @@ the DC table while walking the folder, before any profile is known.
 
 ## Design decisions (agreed 2026-09-15)
 
-1. **Two separate descriptive worlds, no shared term type.** `encoders/dc`
-   and `encoders/mods` each own their terms type, closed vocabulary table,
-   validation and templates. `encoders/metadata` is renamed to `encoders/dc`
-   and keeps both existing templates (meemoo `dc+schema`, simple DC).
-   Rejected: one neutral term type keyed by plain vocabulary key, shared by
-   both worlds. It would have unified the CSV and the library on one key
-   language, but a MODS term produces a subtree while a DC term produces an
-   element, and forcing both through one type hides that difference.
+1. **Separate descriptive worlds, no shared term type.** Each world owns
+   its terms type, closed vocabulary table, validation and templates.
+   There are three (revised 2026-09-23; the review of 2026-09-15 had one
+   DC world with two templates): `encoders/dcschema` for meemoo's
+   `dc+schema` document (Dublin Core terms plus schema.org, EDTF typing,
+   cardinality and language rules), `encoders/dc` for Simple Dublin Core
+   (fifteen elements), and `encoders/mods`. Meemoo's document and Simple
+   DC share only the Go shape of a term; the DCMI dumb-down that derived
+   the eark document from meemoo's vocabulary is removed with the split,
+   because it silently dropped keys with no Simple DC parent
+   (`artmedium`, `artform`, `rightsholder`), the lossy mapping ADR-0011
+   rejects. Rejected: one neutral term type keyed by plain vocabulary key,
+   shared by all worlds. It would have unified the CSV and the library on
+   one key language, but a MODS term produces a subtree while a DC term
+   produces an element, and forcing both through one type hides that
+   difference.
 2. **One key emits one complete MODS element with fixed attributes.** The
    MODS table maps a plain key to a template fragment plus the attribute
    values it needs (`identifier` becomes `mods:identifier` with a `type`
@@ -72,20 +80,28 @@ the DC table while walking the folder, before any profile is known.
    profile follow. It would make one profile emit two different documents
    depending on what it was given, and `MDTYPE` would stop being profile
    data.
-4. **Families and profiles.** Families become `meemoo` (dc world, dc+schema),
-   `eark-dc` (dc world, simple DC) and `eark-mods` (mods world). Profiles
-   stay what operators type: `basic` (meemoo), `eark` (eark-dc, name kept)
-   and the new `eark-mods`. The `eark-mods` entry copies `eark` with
-   `MDTYPE="MODS"`, `MDTYPEVERSION="3.7"`, `mods.xml` as the document name,
-   identifier and title required, no cardinality or language rule, no
-   PREMIS. ADR-0007's promotion trigger fires: the `Family` constant resolves
-   to an internal struct of choices (which world, which encoder, whether
-   supplied documents are accepted).
+4. **Each profile names its descriptive standard directly** (revised
+   2026-09-23; the review of 2026-09-15 had three families behind a
+   `Family` constant). `profiles/descriptive.go` holds the closed set of
+   standards: `meemooDC` (the `dcschema` world), `simpleDC` (the `dc`
+   world) and `mods` once it exists, each a type check on the input's
+   descriptions plus the encoder, built from its own package with no
+   shared constructor. A registry entry names one in an
+   unexported field. Profiles stay what operators type: `basic`, `eark`
+   (name kept) and the new `eark-mods`, whose entry copies `eark` with
+   `descriptive: mods`, `MDTYPE="MODS"`, `MDTYPEVERSION="3.7"`, `mods.xml`
+   as the document name, identifier and title required, no cardinality or
+   language rule, no PREMIS. The `Family` constant is retired: with one
+   profile per standard it named the same thing twice, and nothing
+   consumed the data-only `Definition` it protected (ADR-0007 superseded
+   in that one respect). Meemoo's OR-id rule becomes the data flag
+   `RequireSubmitterORID`.
 5. **A small interface in the domain model.** `sip/` declares
    `Description` with `LocalIdentifier() string` and `Validate() error`;
    both terms types implement it, and `sip/` stops importing an encoder
-   package. The family asserts the concrete world at build time (decision
-   3). The dc-only identifier swap stays a method on the dc terms type.
+   package. The profile's descriptive standard asserts the concrete type at
+   build time (decision 3). The dc-only identifier swap stays a method on
+   the dc terms type.
    Required elements on a `Definition` become plain vocabulary keys
    (`identifier`, `title`), valid in both worlds.
 6. **Supplied documents reuse the essence path.** A descriptive `*sip.File`
@@ -107,15 +123,21 @@ the DC table while walking the folder, before any profile is known.
    identifier and title at package level; a supplied document is trusted
    for its content. Enforcing identity would mean parsing two XML shapes
    for one check the repository performs anyway.
-9. **CLI file names by standard.** `dc.csv` and `mods.csv` hold rows,
-   `dc.xml` and `mods.xml` hold supplied documents, at the package root and
-   inside each representation directory. `items.csv` (MODS only, package
-   root only, next to `mods.csv`) holds one row per physical copy, see
-   decision 12. One source per level, one standard per folder. The folder stays self-describing, so `check` keeps taking no
-   configuration ([ADR-0010](../decisions/0010-config-over-self-describing-input.md));
+9. **CLI file names by standard.** `dcschema.csv` (meemoo's dc+schema
+   vocabulary), `dc.csv` (Simple DC) and `mods.csv` hold rows; `dc.xml` and
+   `mods.xml` hold supplied documents (meemoo profiles take rows only, so
+   there is no `dcschema.xml`); all at the package root and inside each
+   representation directory. `items.csv` (MODS only, package root only,
+   next to `mods.csv`) holds one row per physical copy, see decision 12.
+   One source per level, one standard per folder. The folder stays
+   self-describing, so `check` keeps taking no configuration
+   ([ADR-0010](../decisions/0010-config-over-self-describing-input.md));
    a mismatch with the chosen profile surfaces at `create`. `metadata.csv`
    is withdrawn: its presence is a violation telling the operator to rename
-   it to `dc.csv`. Rejected: keeping `metadata.csv` and letting the profile
+   it to `dcschema.csv` (meemoo) or `dc.csv` (plain E-ARK). The name
+   `dcschema.csv` was chosen 2026-09-23 over `meemoo.csv` because it names
+   what the rows are, mirroring the emitted `dc+schema.xml`. Rejected:
+   keeping `metadata.csv` and letting the profile
    decide its meaning, which forces a profile flag onto `check`. Rejected:
    one merged key space serving both standards, which reintroduces the
    silent lossy mapping ADR-0011 removed.
@@ -154,9 +176,10 @@ where the file is optional:
 
 | file | contents | standard |
 |---|---|---|
-| `dc.csv` | rows, `key[lang],value`, keys from the Dublin Core table | DC |
+| `dcschema.csv` | rows, `key[lang],value`, keys from meemoo's dc+schema table | meemoo dc+schema |
+| `dc.csv` | rows, `key[lang],value`, keys from the Simple Dublin Core table | Simple DC |
 | `mods.csv` | rows, `key[lang],value`, keys from the MODS table | MODS |
-| `dc.xml` | a finished simple Dublin Core document (`simpledc` root) | DC |
+| `dc.xml` | a finished Simple Dublin Core document (`simpledc` root) | Simple DC |
 | `mods.xml` | a finished MODS 3.7 document (`mods` root, `version="3.7"`) | MODS |
 
 `items.csv` MAY accompany `mods.csv` at the input root, one row per physical
@@ -164,10 +187,11 @@ copy, with the columns `callnumber`, `barcode` and `enumeration`.
 
 Rules, all MUST violations collected by `check`:
 
-- More than one of the four files at one level is a violation.
-- All descriptive files in one input folder speak the same standard; a DC
-  file next to a MODS file anywhere in the folder is a violation.
-- `metadata.csv` is a violation; rename it to `dc.csv`.
+- More than one of the five files at one level is a violation.
+- All descriptive files in one input folder speak the same standard; files
+  of two different standards anywhere in the folder are a violation.
+- `metadata.csv` is a violation; rename it to `dcschema.csv` (meemoo) or
+  `dc.csv` (plain E-ARK).
 - Row files follow today's `metadata.csv` rules: `key,value` header, UTF-8,
   unknown keys are violations, repeat a key for multiple values, `[lang]`
   suffix for the language. At package level `identifier` and `title` are
@@ -182,7 +206,8 @@ Rules, all MUST violations collected by `check`:
   rows. Next to `dc.csv`, `dc.xml` or `mods.xml`, or inside a
   representation directory, it is a violation.
 - The profile chosen at `create` must match the folder's standard: `basic`
-  and `eark` take DC, `eark-mods` takes MODS. `basic` takes rows only.
+  takes meemoo dc+schema, `eark` takes Simple DC, `eark-mods` takes MODS.
+  `basic` takes rows only.
 
 ## Execution steps
 
@@ -207,9 +232,12 @@ copy captured in S2.
 ### S2: pure refactor, output unchanged
 
 Steps 2 and 3 go back to back: step 2 leaves a type assertion in the
-assembler that step 3 turns into a guaranteed one. Step 6 lands the
-assembler and writer halves in one commit, because a declared file that is
-never written breaks the package METS.
+assembler that step 3 turns into a guaranteed one. The two steps added on
+2026-09-23 (input files named by standard, then the split of the DC
+package) change the input folder's file names, so S2 is no longer purely
+internal, but the emitted packages stay unchanged. The supplied-document
+step lands the assembler and writer halves in one commit, because a
+declared file that is never written breaks the package METS.
 
 - [x] **Capture the `eark` reference.** `./build.sh eark` VALID, then copy
       the package directory to `tmp/reference/eark/pkg` next to the `basic`
@@ -230,26 +258,72 @@ never written breaks the package METS.
       `Input.Descriptive` and `SourceRepresentation.Descriptive` take the
       interface; `sip/` drops its encoder import. `Input.Validate` checks
       nil instead of length. The swap branch in `assembleDescriptive`
-      asserts `dc.Terms`, with a comment naming the family check of the
-      next step as the guarantee. Pitfall: a nil `dc.Terms` stored in the
+      asserts `dc.Terms`, with a comment naming the descriptive-standard
+      check of the next step as the guarantee. Pitfall: a nil `dc.Terms` stored in the
       interface is a non-nil interface, so the mapping onto
       `profiles.Input` in `cli/input` assigns a representation's terms only
       when a file was read. Commit `Changed: the domain model describes
       entities through a Description interface`.
-- [ ] **`Family` resolves to a struct.** Lift the family code out of
-      `profiles/definition.go` into `profiles/family.go`: a `family` struct
-      holding the descriptive encoder (taking a `sip.Description`), a world
-      check asserting every description is `dc.Terms`, and an
-      `acceptsDocument` flag (false for meemoo). Rename `FamilyEARK` to
-      `FamilyEARKDC` (`"eark-dc"`) per decision 4. `Builder.Build` resolves
-      the family first, runs the world check, then validates and
-      assembles. Test: a fake `Description` type fails the build before any
-      write, next to `TestBuildInvalidConfigWritesNothing`. Commit
-      `Changed: Family resolves to an internal struct of choices`.
+- [x] **Each profile names its descriptive standard.** (Revised
+      2026-09-23 from "`Family` resolves to a struct": with one profile per
+      standard the constant added a name without fan-in, see decision 4.)
+      `profiles/descriptive.go` holds the `descriptive` struct (a check
+      that the input's descriptions have the standard's type, plus the
+      encoder taking a `sip.Description`) and the values `meemooDC` and
+      `simpleDC`; the `acceptsDocument` flag joins the struct in the
+      supplied-document step, where it is first read. `Definition` gains
+      the unexported `descriptive` field and `RequireSubmitterORID`, which
+      replaces the meemoo family test in `WithSubmitter`; `Family` and its
+      constants are removed. `Builder.Build` refuses a definition without a
+      standard, runs the standard's check on the input, then validates and
+      assembles. Tests: a fake `Description` type, and a definition without
+      a standard, each fail the build before any write. ADR-0007's status
+      notes the partial supersession. Commit `Changed: each profile names
+      its descriptive standard directly`.
+- [ ] **Input files named by standard, first part.** (Added 2026-09-23:
+      once the two DC worlds have different tables, the CLI cannot decode
+      one `metadata.csv` for both profiles, because the folder does not
+      know the profile; ADR-0010.) `cli/input` reads `dcschema.csv`
+      (meemoo rows) and `dc.csv` (Simple DC rows) at the root and inside
+      each representation directory, exactly one per level; both still
+      decode through the one current table in this step. `metadata.csv`
+      becomes a violation telling the operator to rename it to
+      `dcschema.csv` or `dc.csv`; `dcschema.csv` next to `dc.csv` anywhere
+      in one folder is a violation (the one-standard rule). `Package`
+      records the folder's standard for the next step. Fixtures:
+      `tmp/basic/metadata.csv` becomes `dcschema.csv`;
+      `tmp/eark/metadata.csv` and `tmp/eark/representations/master/metadata.csv`
+      become `dc.csv`; the `cli/input` test fixtures follow. Input spec §1
+      and §3, README Input section. Output unchanged for both profiles.
+      Commit `Changed: metadata.csv becomes dcschema.csv or dc.csv`.
+- [ ] **Split the DC package into the meemoo and simple DC worlds.** (Added
+      2026-09-23, decision 1.) `encoders/dcschema` takes the current table
+      minus its `SimpleDC` column, the cardinality and required-language
+      validation, the `dc+schema` template and the identifier swap.
+      `encoders/dc` keeps only Simple Dublin Core: a fifteen-element table,
+      a small terms type with `Validate` and `LocalIdentifier`, the
+      `simpledc` template, still without `xml:lang` so the output stays
+      unchanged (the bundled schema allows it; emitting it is a later,
+      deliberate output change). `dumbDown` and the `SimpleDC` column are
+      deleted. `Definition` loses `RequiredLang` and `EnforceCardinality`:
+      those rules are the meemoo world's own and run in its validation;
+      `RequiredKeys` stays profile data. `profiles/descriptive.go` builds
+      `meemooDC` from `dcschema` and `simpleDC` from `dc`, no shared
+      constructor (`fromDCTerms` goes): one struct literal per world, or
+      one helper keyed by the terms type. `cli/input` decodes
+      `dcschema.csv` into `dcschema.Terms` and `dc.csv` into `dc.Terms`;
+      `Package.Descriptive` becomes a `sip.Description`. Fixture:
+      `tmp/eark` rows become Simple DC keys (`abstract` → `description`,
+      `license` → `rights`); the emitted `dc.xml` is byte-identical, so
+      the comparison stays clean. Tests split with the packages;
+      `TestBuildRejectsDescriptionOfAnotherStandard` gains meemoo terms
+      handed to `eark`. Design doc and `CLAUDE.md` follow (three encoder
+      packages; the meemoo rules inside their world). Commit `Changed:
+      meemoo dc+schema and Simple DC are separate descriptive worlds`.
 - [ ] **Required elements become keys.** `Definition.RequiredElements`
-      becomes `RequiredKeys`: `identifier` and `title` for `eark`, the dc
-      table's required keys for `basic`. `dc.Terms.ValidateRequired`
-      resolves keys through the table. Adjust the messages and the three
+      becomes `RequiredKeys`: `identifier` and `title` for `eark`, the
+      meemoo table's required keys for `basic`. Each world's
+      `ValidateRequired` resolves keys through its own table. Adjust the messages and the three
       tests that name elements. Commit `Changed: required descriptive
       elements are named by vocabulary key`.
 - [ ] **Schema list on `Definition`.** A `Schemas` field listing file
@@ -266,8 +340,9 @@ never written breaks the package METS.
       well-formed XML, `simpledc` root without namespace. The assembler
       validates the document as it does received PREMIS, declares the file
       node with `Source` set and no description, and skips the identifier
-      lift and swap; the meemoo family refuses a document before
-      validation. In `profiles/write.go` a description file with `Source`
+      lift and swap; the meemoo profile refuses a document before
+      validation (an `acceptsDocument` flag on the descriptive standard,
+      false for `meemooDC`). In `profiles/write.go` a description file with `Source`
       set is copied with `CopyFile`, one without is generated; the
       representation branch guards on the file node, not the description.
       Tests: both-or-neither in `TestInputValidate`; a supplied document
@@ -276,8 +351,8 @@ never written breaks the package METS.
       root. Commit `Added: a supplied descriptive document travels the
       essence path`.
 - [ ] **Docs sweep.** Design doc: domain model, profile section, build
-      lifecycle for the interface, the family struct, the schema list and
-      the document route. This plan's status line. Commit `Changed: design
+      lifecycle for the interface, the descriptive standard on the profile,
+      the schema list and the document route. This plan's status line. Commit `Changed: design
       doc follows the S2 refactor`.
 - [ ] **Acceptance.** `go test ./...`; `./build.sh basic` and `./build.sh
       eark` VALID with 0 warnings; both comparisons clean.
@@ -319,10 +394,11 @@ The library route is complete after this step.
       writing; `ValidateDocument` accepts a 3.7 document and rejects a
       `modsCollection` root, another version, and non-XML. Commit `Added:
       encoders/mods with the two-row key table and the items table`.
-- [ ] **The `eark-mods` family and profile.** `FamilyEARKMODS`
-      (`"eark-mods"`) in `profiles/family.go`: world check asserts the mods
-      `Description`, encoder `mods.Encode`, `mods.ValidateDocument`,
-      accepts documents. Registry entry copying `eark`: `DescriptiveName
+- [ ] **The `eark-mods` profile.** A `mods` value in
+      `profiles/descriptive.go`: the check asserts the mods `Description`,
+      the encoder is `mods.Encode`, the document validator
+      `mods.ValidateDocument`, documents accepted. Registry entry copying
+      `eark` with `descriptive: mods`: `DescriptiveName
       "mods.xml"`, `RequiredKeys` identifier and title, no cardinality or
       language rule, no PREMIS, `EmitRepresentationType` true, `Schemas` =
       `mets1_12.xsd`, `DILCISExtensionMETS.xsd`,
@@ -335,12 +411,12 @@ The library route is complete after this step.
       full `eark-mods` build has `metadata/descriptive/mods.xml`, exactly
       the six schema files, and a package METS `dmdSec` reading
       `MDTYPE="MODS" MDTYPEVERSION="3.7"`; a supplied `mods.xml` builds
-      under `eark-mods`. Commit `Added: eark-mods family and profile`.
+      under `eark-mods`. Commit `Added: eark-mods profile`.
 - [ ] **First `encoders/mets` test.** The `dmdSec` carries `MDTYPE` and
       `MDTYPEVERSION` from the declaration, and omits `MDTYPEVERSION` when
       the declaration leaves it empty. Commit `Added: mets encoder test for
       the dmdSec typing`.
-- [ ] **Docs.** Design doc: encoders list, families, profile table; the
+- [ ] **Docs.** Design doc: encoders list, descriptive standards, profile table; the
       README's library example gets a MODS variant; `CLAUDE.md` system
       shape names `encoders/mods`. Commit `Changed: docs for the mods
       encoder and the eark-mods profile`.
@@ -350,21 +426,21 @@ The library route is complete after this step.
 
 ### S4: CLI rows
 
-- [ ] **Split row reading from world building.** In `cli/input`, one
-      generic reader for `key[lang],value` rows (header check, key
-      parsing, line numbers for violations) and one small builder per
-      world: dc rows through `dc.ResolveKey` into `dc.Terms`, mods rows
-      through `mods.ResolveKey` into a mods `Description`. Rename
-      `metadata.go` and its test after the file it now reads.
-- [ ] **Reserved names.** `dc.csv`, `mods.csv`, `dc.xml`, `mods.xml`,
-      `items.csv` join the reserved names at the root and inside
-      representation directories (`items.csv` root only). `metadata.csv`
-      becomes a violation telling the operator to rename it to `dc.csv`.
-- [ ] **One source per level, one standard per folder.** More than one
-      descriptive file at one level is a violation; none at the root is a
-      violation; the folder's standard is the standard of its first
-      descriptive file, and any file of the other standard anywhere is a
-      violation naming both files.
+`dcschema.csv`, `dc.csv`, the `metadata.csv` violation and the one-standard
+rule between those two arrived in S2; this step adds the MODS files.
+
+- [ ] **The mods row builder.** In `cli/input`, the generic reader for
+      `key[lang],value` rows (header check, key parsing, line numbers for
+      violations) gains a third builder: mods rows through
+      `mods.ResolveKey` into a mods `Description`.
+- [ ] **Reserved names.** `mods.csv`, `mods.xml`, `dc.xml` and `items.csv`
+      join the reserved names at the root and inside representation
+      directories (`items.csv` root only).
+- [ ] **One source per level, one standard per folder, three standards.**
+      More than one descriptive file at one level is a violation; none at
+      the root is a violation; the folder's standard is the standard of
+      its first descriptive file, and any file of another standard
+      anywhere is a violation naming both files.
 - [ ] **`items.csv`.** Decoded like `representations.csv`: closed header
       in any order, case-insensitive, unknown or repeated column a
       violation; `callnumber` non-empty on every row; `barcode` unique;
@@ -372,20 +448,15 @@ The library route is complete after this step.
 - [ ] **Mapping onto `profiles.Input`.** `Package` carries the decoded
       `sip.Description` per level; `BuilderInput` assigns it only when a
       file was read (the typed-nil pitfall from S2).
-- [ ] **Tests.** dc rows, mods rows, items rows and each items violation,
-      the `metadata.csv` violation, two files at one level, mixed
-      standards, `items.csv` next to `dc.csv`; `read_test.go`,
-      `builder_test.go` and `representations_test.go` fixtures renamed.
-- [ ] **Fixtures.** `tmp/basic/metadata.csv`, `tmp/eark/metadata.csv` and
-      `tmp/eark/representations/master/metadata.csv` renamed to `dc.csv`.
-- [ ] **Docs.** Input spec §1 (reserved names), §3 (the four row and
+- [ ] **Tests.** mods rows, items rows and each items violation, two files
+      at one level, mixed standards across all three, `items.csv` next to
+      `dc.csv` or `dcschema.csv`.
+- [ ] **Docs.** Input spec §1 (reserved names), §3 (the five row and
       document files, the MODS key table, `items.csv`), §7 (mapping
-      table); README Input section; design doc CLI paragraph. Commits
-      `Changed: metadata.csv becomes dc.csv` and `Added: mods.csv and
-      items.csv rows in the input folder`.
+      table); README Input section; design doc CLI paragraph. Commit
+      `Added: mods.csv and items.csv rows in the input folder`.
 - [ ] **Acceptance.** `go test ./...`; `./build.sh basic` and `./build.sh
-      eark` VALID with 0 warnings from the renamed fixtures; both
-      comparisons clean.
+      eark` VALID with 0 warnings; both comparisons clean.
 
 ### S5: CLI supplied documents
 

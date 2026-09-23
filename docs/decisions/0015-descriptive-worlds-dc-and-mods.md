@@ -1,4 +1,4 @@
-# 0015 — Two descriptive worlds, DC and MODS, each with its own terms type
+# 0015 — Descriptive worlds, each with its own terms type: meemoo dc+schema, Simple DC, MODS
 
 Status: **Proposed** (drafted 2026-09-22; the decisions were agreed in
 review on 2026-09-15 with the [eark-mods plan](../plans/eark-mods.md).
@@ -6,12 +6,15 @@ Becomes Accepted when that plan's S3 ships.)
 
 ## Context
 
-The tool emits one descriptive document per profile family: meemoo's
+The tool emits one descriptive document per profile: meemoo's
 `dc+schema` document for `basic`, a simple Dublin Core document for `eark`.
 Both come from one model in `encoders/metadata`: a flat list of terms, each
 naming the one Dublin Core element it emits (`dcterms:title`), read from one
 closed vocabulary table ([ADR-0011](0011-closed-descriptive-vocabulary.md)).
-That model reaches into the rest of the code. `sip.Entity.Description`,
+That table is meemoo's vocabulary, and the simple DC document is derived
+from it by the DCMI dumb-down, so an eark operator's `artmedium`,
+`artform` or `rightsholder` row vanishes from the output without a word.
+That model also reaches into the rest of the code. `sip.Entity.Description`,
 `sip.Representation.Description` and `profiles.Input.Descriptive` are all
 typed `metadata.Terms`, so the domain model imports an encoder package, and
 the identity rules (`LocalIdentifier`, the identifier swap, the required
@@ -23,7 +26,7 @@ that ingests it can index title, creator and dates from a bibliographic
 record. MODS does not fit the flat model: a title is `titleInfo/title`, a
 name carries parts and a role, a date may have a start and an end point. A
 term that names one element cannot say that. ADR-0011 already noted that a
-MODS family would bring its own table; the open question was how much of the
+MODS profile would bring its own table; the open question was how much of the
 existing model the two standards share.
 
 The first consumers are systems that automate ingest workflows. They hold
@@ -42,9 +45,15 @@ belongs to which call number.
 **Each descriptive standard is its own world, and the worlds share no term
 type.** A world is everything the tool knows about one standard: a terms
 type, a closed vocabulary table, the validation of those terms, and the
-templates that render them. `encoders/metadata` is renamed to `encoders/dc`
-and keeps both existing templates (meemoo `dc+schema`, simple DC).
-`encoders/mods` is the second world. Neither imports the other.
+templates that render them. There are three, none importing another:
+`encoders/dcschema` for meemoo's `dc+schema` document (Dublin Core terms
+plus schema.org properties, EDTF typing, meemoo's cardinality and language
+rules), `encoders/dc` for Simple Dublin Core (the fifteen elements, no
+rules beyond validity), and `encoders/mods`. Meemoo's document and Simple
+DC share only the Go shape of a term, so the dumb-down that derived one
+from the other goes: an eark operator's unknown key is refused, not
+dropped. (Revised 2026-09-23; the 2026-09-15 review had one DC world
+carrying both templates.)
 
 **In the MODS world, one key emits one complete element with fixed
 attributes.** The MODS table maps a plain key to a template fragment plus the
@@ -75,38 +84,50 @@ CSIP says it is, a version of the same content such as a master next to an
 access copy; a copy or a volume is never a representation, and no item
 information goes into a representation's descriptive document.
 
-**Families name a world plus an encoding; profiles stay what operators
-type.** The families are `meemoo` (DC world, `dc+schema` document), `eark-dc`
-(DC world, simple DC document) and `eark-mods` (MODS world). The profiles are
-`basic` (meemoo), `eark` (eark-dc, name kept) and the new `eark-mods`, whose
-registry entry copies `eark` with `MDTYPE="MODS"`, `MDTYPEVERSION="3.7"`,
-`mods.xml` as the document name, and identifier and title required. This is
-the promotion trigger recorded in
-[ADR-0007](0007-profile-families-share-one-writer.md): the `Family` constant
-stays the data on `Definition` and resolves at build time to an internal
-struct of the family's choices (which world's terms type, which encoder,
-whether a supplied document is accepted). There is still one writer.
+**Each profile names its descriptive standard directly; profiles stay what
+operators type.** A profile's registry entry carries, next to its values,
+the one behavioral choice it makes: an unexported `descriptive` value from
+the closed set in `profiles/descriptive.go` (meemoo's `dc+schema` document,
+simple DC, and MODS once it exists), each a check that the input's
+descriptions have the standard's type plus the encoder that writes the
+document. The profiles are `basic` (dc+schema), `eark` (simple DC, name
+kept) and the new `eark-mods` (MODS), whose registry entry copies `eark`
+with `MDTYPE="MODS"`, `MDTYPEVERSION="3.7"`, `mods.xml` as the document
+name, and identifier and title required. The `Family` constant of
+[ADR-0007](0007-profile-families-share-one-writer.md) is retired (decided
+2026-09-23, revising the 2026-09-15 review): with one profile per standard
+it named the same thing twice, and nothing consumed the data-only
+`Definition` it protected. What ADR-0007 anticipated as an internal struct
+of choices exists, but the profile holds it directly instead of resolving
+it from a constant. There is still one writer, and what meemoo alone needs
+(the submitter's OR-id) is a plain data flag on the profile.
 
 **The domain model speaks to descriptive metadata through a small
 interface.** `sip/` declares `Description` with `LocalIdentifier() string`
-and `Validate() error`. Both terms types implement it; `Entity.Description`,
+and `Validate() error`. All three terms types implement it; `Entity.Description`,
 `Representation.Description` and `Input.Descriptive` take the interface, and
 `sip/` imports no encoder package. At the start of a build, before validation
-and before any disk write, the family asserts that the input's concrete type
-is its own world's; a mismatch is a build error (the rule itself is recorded
+and before any disk write, the profile's descriptive standard asserts that
+the input's concrete type is its own; a mismatch is a build error (the rule itself is recorded
 in [ADR-0016](0016-descriptive-input-rows-or-supplied-document.md)). The
-identifier swap the meemoo document needs stays a method on the DC terms
-type, because only that world has it. Required elements on a `Definition`
-become plain vocabulary keys (`identifier`, `title`), which both tables
-resolve.
+identifier swap the meemoo document needs stays a method on the meemoo
+terms type, because only that world has it. Required elements on a
+`Definition` become plain vocabulary keys (`identifier`, `title`), which
+every table resolves.
 
 ## Alternatives rejected
 
-- **One neutral term type, keyed by the plain vocabulary key, shared by both
+- **One Dublin Core world carrying both the meemoo and the Simple DC
+  template** (the first draft of this ADR). The two documents differ in
+  table, rules and template and share only the Go shape of a term, and
+  the dumb-down between them is a lossy mapping of the kind this ADR
+  rejects for MODS. Keeping them together also made the eark profile's
+  input vocabulary meemoo's, which no eark consumer asked for.
+- **One neutral term type, keyed by the plain vocabulary key, shared by all
   worlds.** It would have put the CSV and the library on one key language.
   But a DC term produces one element and a MODS term produces a subtree; one
   type for both hides that difference, and every method on it (validate,
-  resolve, render) would need the family passed in to find the right table.
+  resolve, render) would need the profile passed in to find the right table.
 - **A key grammar: qualifiers or paths parsed out of the key string.**
   Qualifiers (`name[role=aut]`, `title[type=alternative]`) checked against a
   closed list are a closed vocabulary spelled differently. They emit exactly
@@ -134,10 +155,16 @@ resolve.
   would say "rendition" where the truth is "copy". Neither specification
   mentions bibliographic items, call numbers or barcodes: pairing them is
   a MODS concern, and MODS has `copyInformation` for it.
-- **One `eark` family with the descriptive encoder as a `Definition`
-  field.** The encoder is behavior, and ADR-0007 keeps behavior on the
-  family and values on the profile. A profile field naming a function also
-  stops `Definition` from being plain, comparable data.
+- **A family constant between the profile and its behavior** (ADR-0007's
+  `Family`, resolved at build time to a struct of choices). It kept
+  `Definition` a struct of plain values, but nothing serializes or compares
+  a definition, and embedding systems take definitions from the registry
+  rather than building them. With `basic`, `eark` and `eark-mods` each in a
+  standard of their own, the constant mapped one to one onto the profile,
+  and a reader of a registry entry had to open a second file to learn what
+  the profile writes. The behavior field on the profile is unexported, so
+  the set of standards stays closed and no caller can hand `Definition` an
+  encoder of its own.
 
 ## Consequences
 
@@ -152,20 +179,26 @@ resolve.
   relator code per role) are decided by the owner of the repository side and
   live in the table only.
 - Library callers change their import from `encoders/metadata` to
-  `encoders/dc`; the commit that renames it records the break. A caller who
-  hands terms of one world to a profile of the other gets an error before
-  any write.
+  `encoders/dcschema` (meemoo profiles) or `encoders/dc` (plain E-ARK);
+  the commits that split it record the break. A caller who hands terms of
+  one world to a profile of another gets an error before any write.
+- The eark input vocabulary is Simple DC's fifteen elements, no longer
+  meemoo's keys: `abstract` becomes `description`, `license` becomes
+  `rights`, and `artmedium` is an unknown key rather than a silently
+  dropped one.
 - `sip/` depends on no encoder. Adding a descriptive standard no longer
-  touches the domain model; the family resolution is the one place that
-  lists what each family does.
+  touches the domain model; `profiles/descriptive.go` is the one place that
+  lists the standards a profile can pick from.
 - The output of `basic` and `eark` does not change. The rename, the
-  interface and the family struct are a refactor, checked with
-  scripts/reference-diff.sh against the reference copies.
+  interface and the descriptive standard on the profile are a refactor,
+  checked with scripts/reference-diff.sh against the reference copies.
 - The MODS description type is a struct holding terms and items, not a
   slice of terms. It still implements the `Description` interface, so the
   difference stays inside the MODS package; the CLI transports the items as
   `items.csv` (ADR-0016). A new column on the items table costs what a new
   key costs: a table entry, a template line, an input-specification line.
-- Three families and three profiles today. Another profile in an existing
-  family is still one registry entry; another world is a new encoder
-  package, a family constant and one resolution case.
+- Three profiles today. Another profile writing an existing standard is one
+  registry entry naming an existing `descriptive` value; another standard is
+  a new encoder package and one value in `profiles/descriptive.go`.
+  ADR-0007 is superseded in the one respect of the `Family` constant; its
+  one-writer rule and fork triggers stand.

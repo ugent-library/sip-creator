@@ -56,17 +56,22 @@ schema as the acceptance check.
 
 **No identity checks on a supplied document.** Rows must carry `identifier`
 and `title` at package level; a supplied document is trusted for its
-content. Nothing in the plain E-ARK families reads the identifier back out
+content. Nothing in the plain E-ARK profiles reads the identifier back out
 of the descriptive metadata: they emit no PREMIS, lift no local identifier
 and swap none, so nothing later in the build depends on it.
 
-**The CLI names files by standard.** `dc.csv` and `mods.csv` hold rows,
-`dc.xml` and `mods.xml` hold supplied documents, at the input root and
-inside each representation directory. `items.csv` holds a MODS record's
-physical copies, at the root only and next to `mods.csv` only. One source
-per level, one standard per folder: a Dublin Core file anywhere next to a
-MODS file anywhere is a violation. `metadata.csv` is withdrawn; its
-presence is a violation that tells the operator to rename it to `dc.csv`.
+**The CLI names files by standard.** `dcschema.csv` (meemoo's dc+schema
+vocabulary), `dc.csv` (Simple Dublin Core) and `mods.csv` hold rows;
+`dc.xml` and `mods.xml` hold supplied documents, and there is no
+`dcschema.xml` because meemoo profiles take rows only; all at the input
+root and inside each representation directory. `items.csv` holds a MODS
+record's physical copies, at the root only and next to `mods.csv` only.
+One source per level, one standard per folder: files of two different
+standards anywhere in one folder are a violation. `metadata.csv` is
+withdrawn; its presence is a violation that tells the operator to rename
+it to `dcschema.csv` or `dc.csv`. The meemoo file is named after what its
+rows are, mirroring the emitted `dc+schema.xml`, rather than after the
+organisation.
 The folder stays self-describing, so `check` keeps taking no configuration.
 A mismatch between the folder's standard and the chosen profile surfaces at
 `create`.
@@ -106,9 +111,10 @@ A mismatch between the folder's standard and the chosen profile surfaces at
   build.sh, not by the tool. A supplied `mods.xml` that is well-formed with
   the right root but invalid MODS is packaged, and the repository's own
   validation catches it, as for received PREMIS.
-- Every existing input folder must rename `metadata.csv` to `dc.csv`. The
-  violation message says so; fixtures and the input specification change in
-  the same step.
+- Every existing input folder must rename `metadata.csv` to `dcschema.csv`
+  (meemoo) or `dc.csv` (plain E-ARK), and an eark folder's rows move to
+  Simple DC keys. The violation message says so; fixtures and the input
+  specification change in the same steps.
 - `check` tells an operator that a folder mixes standards or lacks a
   descriptive source, but not that it mismatches a profile; that is the
   first thing `create` reports.

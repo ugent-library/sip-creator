@@ -26,9 +26,9 @@ func identityTerms() dc.Terms {
 	}
 }
 
-// The per-family required sets: identity-only terms satisfy eark and are
+// The per-profile required sets: identity-only terms satisfy eark and are
 // refused under basic, which names every missing element at once.
-func TestValidateDescriptiveRequiredPerFamily(t *testing.T) {
+func TestValidateDescriptiveRequiredPerProfile(t *testing.T) {
 	in := &Input{Descriptive: identityTerms()}
 
 	if err := earkDef(t).validateDescriptive(in); err != nil {
@@ -44,7 +44,7 @@ func TestValidateDescriptiveRequiredPerFamily(t *testing.T) {
 		}
 	}
 
-	// A title is required by both families' sets; Input.Validate doesn't
+	// A title is required by both profiles' sets; Input.Validate doesn't
 	// check it, so the Definition is the only guard.
 	in = &Input{Descriptive: dc.Terms{{Element: "dcterms:identifier", Value: "x"}}}
 	for _, def := range []Definition{basicDef(t), earkDef(t)} {
@@ -54,10 +54,10 @@ func TestValidateDescriptiveRequiredPerFamily(t *testing.T) {
 	}
 }
 
-// Only the meemoo family enforces cardinality: a repeated abstract
+// Only the meemoo profile enforces cardinality: a repeated abstract
 // (same language) fails basic, at package and representation level, and
 // passes eark.
-func TestValidateDescriptiveCardinalityPerFamily(t *testing.T) {
+func TestValidateDescriptiveCardinalityPerProfile(t *testing.T) {
 	repeated := dc.Terms{
 		{Element: "dcterms:abstract", Lang: "nl", Value: "een"},
 		{Element: "dcterms:abstract", Lang: "nl", Value: "twee"},
@@ -82,10 +82,10 @@ func TestValidateDescriptiveCardinalityPerFamily(t *testing.T) {
 	}
 }
 
-// The required language is meemoo family data: lang-tagged elements
+// The required language is meemoo profile data: lang-tagged elements
 // without a Dutch entry fail basic and pass eark, at package and
 // representation level.
-func TestValidateDescriptiveRequiredLangPerFamily(t *testing.T) {
+func TestValidateDescriptiveRequiredLangPerProfile(t *testing.T) {
 	terms := testDescriptive()
 	terms = append(terms, dc.Term{Element: "dcterms:subject", Lang: "en", Value: "cats"})
 	in := &Input{Descriptive: terms}

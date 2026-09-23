@@ -31,7 +31,7 @@ func (t Term) Validate() error {
 // dcterms:identifier. The local identifier is an identity, and two of
 // them is an ambiguity no consumer can resolve. The vocabulary also lists
 // identifier as `once`, so ValidateCardinality states this rule again. That
-// overlap is deliberate: only the meemoo family enforces cardinality,
+// overlap is deliberate: only the meemoo profile enforces cardinality,
 // while the identifier rule holds for every profile, eark included.
 func (t Terms) Validate() error {
 	identifiers := 0
@@ -51,8 +51,8 @@ func (t Terms) Validate() error {
 
 // ValidateCardinality reports every term that exceeds its element's
 // cardinality (meemoo's 0..1/1..1 restrictions, counted per language
-// for lang-tagged elements). Enforcement is the profile family's call:
-// the meemoo family enforces these limits, plain E-ARK does not. Findings
+// for lang-tagged elements). Enforcement is each profile's call: the
+// meemoo profile enforces these limits, plain E-ARK does not. Findings
 // name the element (and language), which locates the offending rows in a
 // keyed file; one joined error carries them all.
 func (t Terms) ValidateCardinality() error {

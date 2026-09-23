@@ -21,8 +21,8 @@ const (
 type vocabularyRow struct {
 	Key      string      // plain metadata.csv key
 	Element  string      // emitted element name
-	Required bool        // required by meemoo's basic profile (enforced per family)
-	Repeat   cardinality // meemoo basic profile cardinality (enforced per family)
+	Required bool        // required by meemoo's basic profile (enforced per profile)
+	Repeat   cardinality // meemoo basic profile cardinality (enforced per profile)
 	XSIType  string      // xsi:type on the emitted element; "" for none
 	SimpleDC string      // Simple DC parent for dumb-down; "" for no home
 }
@@ -32,8 +32,8 @@ type vocabularyRow struct {
 // key,value row, in the input specification's table order. This table is
 // the metadata model: the CSV decoder, validation, and the templates all
 // read from it (ADR-0011). The Required and Repeat columns come from
-// meemoo's profile; whether they are enforced is the profile family's
-// call. The SimpleDC column follows the "Subproperty Of" relations in the
+// meemoo's profile; whether they are enforced is each profile's call. The
+// SimpleDC column follows the "Subproperty Of" relations in the
 // DCMI Metadata Terms spec; elements without a parent among the fifteen
 // Simple DC elements (rightsHolder, schema:*) carry "", because inventing
 // a mapping would assert semantics DCMI doesn't.
@@ -83,8 +83,8 @@ func ResolveKey(key string) (element string, ok bool) {
 }
 
 // RequiredElements lists the elements the vocabulary flags as required, in
-// table order. Whether they are enforced is the profile family's call:
-// the meemoo family reads this list; a family with its own requiredness
+// table order. Whether they are enforced is each profile's call: the
+// meemoo profile reads this list; a profile with its own requiredness
 // rules (eark) declares its own.
 func RequiredElements() []string {
 	var out []string
