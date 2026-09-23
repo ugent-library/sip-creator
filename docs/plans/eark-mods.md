@@ -189,47 +189,255 @@ Rules, all MUST violations collected by `check`:
 Library first. Every step ends with `go test ./...` green and
 `./build.sh basic` and `./build.sh eark` VALID with 0 warnings.
 
-- **S1: docs first.** This plan; ADR drafts
-  `0015-descriptive-worlds-dc-and-mods.md` (decisions 1, 2, 4, 5, 12) and
-  `0016-descriptive-input-rows-or-supplied-document.md` (decisions 3, 6, 7,
-  8, 9, and the `items.csv` file rules of 12).
-- **S2: pure refactor, output unchanged.** Capture the current `eark`
-  output outside the repo first, since `tmp/reference/pkg` covers `basic`
-  only. Rename `encoders/metadata` to `encoders/dc`; add the `Description`
-  interface to `sip/`; resolve `Family` to the internal struct with the
-  world check running before validation; required elements become plain
-  keys; schema list on `Definition`; `Input` and `SourceRepresentation`
-  gain the document field and the one-of check; the writer copies a
-  descriptive file with `Source` set. Design doc and CLAUDE.md system shape
-  follow the rename. Acceptance: the structural comparison in
-  scripts/reference-diff.sh clean for `basic` against `tmp/reference/pkg`
-  and for `eark` against the captured copy.
-- **S3: the mods world and the eark-mods profile.** `schemas/mods-3-7.xsd`;
-  `encoders/mods` with terms and items, the two-row key table and the
-  three-column items table, validation (required call number, unique
-  barcodes), the template and `ValidateDocument`; the `eark-mods` family
-  and registry entry. Go tests: table invariants, template output (root,
-  namespaces, version, escaping, `xml:lang`, one `copyInformation` per
-  item, refuses invalid terms or items without writing), world
-  mismatch at build writes nothing, meemoo refuses a supplied document,
-  schema set per profile, and a first test for `encoders/mets` asserting
-  the dmdSec carries `MDTYPE` and `MDTYPEVERSION` from the declaration.
-  The library route is complete after this step.
-- **S4: CLI rows.** `cli/input` learns `dc.csv`, `mods.csv` and
-  `items.csv`: shared row reading and key parsing, one small builder per
-  world, the items table decoded like `representations.csv`, the
-  one-source and one-standard rules, the `metadata.csv` violation. Fixtures rename their
-  `metadata.csv` to `dc.csv`. Input spec §3 and §7, README.
-- **S5: CLI supplied documents.** `dc.xml` and `mods.xml` through the
-  world's `ValidateDocument`, violations naming the file. Input spec §3 and
-  §8 (the deferred operator-supplied XML item is now this), README.
-- **S6: acceptance and closing docs.** `tmp/eark-mods/` fixture (a copy of
-  `tmp/eark` with `mods.csv` and an `items.csv` of two copies); build.sh gains the `eark-mods` case against
-  E-ARK 2.2.0 and an xmllint pass over every emitted `mods.xml` against the
-  bundled XSD, with xmllint added to the documented requirements. Check
-  that the package METS dmdSec reads `MDTYPE="MODS" MDTYPEVERSION="3.7"`.
-  README profile list, design doc, TODO (the MODS question is answered),
-  this plan's status line, then archive the plan per the docs lifecycle.
+Each step is a checkbox list. A box is ticked when its commit is on the
+branch; the acceptance line at the end of each step is run before the
+step counts as done. Every code step keeps the two existing profiles
+unchanged: the structural comparison in scripts/reference-diff.sh must be
+clean for `basic` against `tmp/reference/pkg` and for `eark` against the
+copy captured in S2.
+
+### S1: docs first
+
+- [x] This plan.
+- [x] ADR draft `0015-descriptive-worlds-dc-and-mods.md` (decisions 1, 2,
+      4, 5, 12).
+- [x] ADR draft `0016-descriptive-input-rows-or-supplied-document.md`
+      (decisions 3, 6, 7, 8, 9, and the `items.csv` file rules of 12).
+
+### S2: pure refactor, output unchanged
+
+Steps 2 and 3 go back to back: step 2 leaves a type assertion in the
+assembler that step 3 turns into a guaranteed one. Step 6 lands the
+assembler and writer halves in one commit, because a declared file that is
+never written breaks the package METS.
+
+- [ ] **Capture the `eark` reference.** `./build.sh eark` VALID, then copy
+      the package directory to `tmp/reference/eark/pkg` next to the `basic`
+      copy and note it in `tmp/reference/README.md`. Run `./build.sh` for
+      `basic` and check both comparisons are clean before any code moves.
+      Nothing to commit; `tmp/` is untracked.
+- [ ] **Rename `encoders/metadata` to `encoders/dc`.** `git mv` the
+      directory, change the package clause in its files, fix the importers
+      (`cli/input/input.go`, `cli/input/metadata.go` and their tests,
+      `sip/entity.go`, `sip/representation.go`, the `profiles/` files and
+      tests). Update the package name in `docs/sip-creator-design.md` and
+      `CLAUDE.md`. Commit `Changed: encoders/metadata renamed to
+      encoders/dc`; the message records the import break for library
+      callers.
+- [ ] **The `Description` interface in `sip/`.** New `sip/description.go`
+      with `LocalIdentifier() string` and `Validate() error`.
+      `Entity.Description`, `Representation.Description`,
+      `Input.Descriptive` and `SourceRepresentation.Descriptive` take the
+      interface; `sip/` drops its encoder import. `Input.Validate` checks
+      nil instead of length. The swap branch in `assembleDescriptive`
+      asserts `dc.Terms`, with a comment naming the family check of the
+      next step as the guarantee. Pitfall: a nil `dc.Terms` stored in the
+      interface is a non-nil interface, so the mapping onto
+      `profiles.Input` in `cli/input` assigns a representation's terms only
+      when a file was read. Commit `Changed: the domain model describes
+      entities through a Description interface`.
+- [ ] **`Family` resolves to a struct.** Lift the family code out of
+      `profiles/definition.go` into `profiles/family.go`: a `family` struct
+      holding the descriptive encoder (taking a `sip.Description`), a world
+      check asserting every description is `dc.Terms`, and an
+      `acceptsDocument` flag (false for meemoo). Rename `FamilyEARK` to
+      `FamilyEARKDC` (`"eark-dc"`) per decision 4. `Builder.Build` resolves
+      the family first, runs the world check, then validates and
+      assembles. Test: a fake `Description` type fails the build before any
+      write, next to `TestBuildInvalidConfigWritesNothing`. Commit
+      `Changed: Family resolves to an internal struct of choices`.
+- [ ] **Required elements become keys.** `Definition.RequiredElements`
+      becomes `RequiredKeys`: `identifier` and `title` for `eark`, the dc
+      table's required keys for `basic`. `dc.Terms.ValidateRequired`
+      resolves keys through the table. Adjust the messages and the three
+      tests that name elements. Commit `Changed: required descriptive
+      elements are named by vocabulary key`.
+- [ ] **Schema list on `Definition`.** A `Schemas` field listing file
+      names; both profiles list the eleven files in `schemas/` today. The
+      assembler builds the schema nodes from the list, sorted as now; the
+      writer looks each up in the bundle. A test asserts every listed name
+      exists in the bundle. Commit `Added: profile definitions list the
+      XSDs their packages ship`.
+- [ ] **A supplied document travels the essence path.**
+      `DescriptiveDocument` on `Input` and `SourceRepresentation`; the
+      one-of check in `Validate` (exactly one at package level, at most one
+      per representation; the identifier check is skipped for a document).
+      `dc.ValidateDocument`, modelled on `premis.ValidateReceived`:
+      well-formed XML, `simpledc` root without namespace. The assembler
+      validates the document as it does received PREMIS, declares the file
+      node with `Source` set and no description, and skips the identifier
+      lift and swap; the meemoo family refuses a document before
+      validation. In `profiles/write.go` a description file with `Source`
+      set is copied with `CopyFile`, one without is generated; the
+      representation branch guards on the file node, not the description.
+      Tests: both-or-neither in `TestInputValidate`; a supplied document
+      copied byte for byte with its fixity in the METS; meemoo refusing
+      with nothing written; `ValidateDocument` rejecting an `oai_dc:dc`
+      root. Commit `Added: a supplied descriptive document travels the
+      essence path`.
+- [ ] **Docs sweep.** Design doc: domain model, profile section, build
+      lifecycle for the interface, the family struct, the schema list and
+      the document route. This plan's status line. Commit `Changed: design
+      doc follows the S2 refactor`.
+- [ ] **Acceptance.** `go test ./...`; `./build.sh basic` and `./build.sh
+      eark` VALID with 0 warnings; both comparisons clean.
+
+### S3: the mods world and the eark-mods profile
+
+The library route is complete after this step.
+
+- [ ] **`mods-3-7.xsd` in the bundle.** Fetch the schema (loc.gov refuses
+      scripted downloads; the Internet Archive serves the raw file), check
+      the header says MODS 3.7 and the size is about 53 KB, add it to
+      `schemas/`. It imports `xml.xsd` and `xlink.xsd` by absolute loc.gov
+      URLs; both are bundled already, and S6 resolves the URLs with an XML
+      catalog. Commit `Added: MODS 3.7 XSD in the schema bundle`.
+- [ ] **`encoders/mods` model.** `description.go`: `Description` holding
+      `Terms []Term` (`Key`, `Lang`, `Value`) and `Items []Item`
+      (`CallNumber`, `Barcode`, `Enumeration`), implementing
+      `sip.Description`; `LocalIdentifier` returns the `identifier` term.
+      `vocabulary.go`: the key table with `identifier` and `title`, each
+      row naming its template fragment and fixed attribute values; the MMS
+      ID `type` value is one constant here (open question). `ResolveKey`.
+- [ ] **`encoders/mods` validation.** Known key, language tag shape,
+      non-empty value; per item a non-empty call number and a barcode
+      unique across items; `ValidateRequired(keys...)`.
+- [ ] **`encoders/mods` template.** Root `mods:mods` with the MODS
+      namespace, `version="3.7"` and an `xsi:schemaLocation` onto
+      `{{.Schemas}}/mods-3-7.xsd`; one fragment per key (`identifier` with
+      its `type`, `titleInfo/title` with `xml:lang`); the items as one
+      `location/holdingSimple` with one `copyInformation` per item
+      (`shelfLocator`, `enumerationAndChronology` when set, `itemIdentifier
+      type="barcode"` when set), omitted when there are no items; every
+      value escaped. `Encode(w, d, schemas)` validates first.
+- [ ] **`mods.ValidateDocument`.** Well-formed XML, root `mods` in the MODS
+      namespace, `version="3.7"`; modelled on `premis.ValidateReceived`.
+- [ ] **`encoders/mods` tests.** Table invariants (unique keys, fragment
+      per row); encoder output (root, namespaces, version, escaping,
+      `xml:lang`, one `copyInformation` per item with the right children,
+      no `location` without items); refuses invalid terms or items without
+      writing; `ValidateDocument` accepts a 3.7 document and rejects a
+      `modsCollection` root, another version, and non-XML. Commit `Added:
+      encoders/mods with the two-row key table and the items table`.
+- [ ] **The `eark-mods` family and profile.** `FamilyEARKMODS`
+      (`"eark-mods"`) in `profiles/family.go`: world check asserts the mods
+      `Description`, encoder `mods.Encode`, `mods.ValidateDocument`,
+      accepts documents. Registry entry copying `eark`: `DescriptiveName
+      "mods.xml"`, `RequiredKeys` identifier and title, no cardinality or
+      language rule, no PREMIS, `EmitRepresentationType` true, `Schemas` =
+      `mets1_12.xsd`, `DILCISExtensionMETS.xsd`,
+      `DILCISExtensionSIPMETS.xsd`, `xlink.xsd`, `xml.xsd`, `mods-3-7.xsd`;
+      declaration `DescriptiveMDType "MODS"`, `DescriptiveMDTypeVersion
+      "3.7"`, the eark profile URL. `profiles.Names()` lists it, so the
+      CLI's unknown-profile message does too.
+- [ ] **`profiles/` tests.** dc terms handed to `eark-mods`, and a mods
+      description handed to `eark` or `basic`, fail before any write; a
+      full `eark-mods` build has `metadata/descriptive/mods.xml`, exactly
+      the six schema files, and a package METS `dmdSec` reading
+      `MDTYPE="MODS" MDTYPEVERSION="3.7"`; a supplied `mods.xml` builds
+      under `eark-mods`. Commit `Added: eark-mods family and profile`.
+- [ ] **First `encoders/mets` test.** The `dmdSec` carries `MDTYPE` and
+      `MDTYPEVERSION` from the declaration, and omits `MDTYPEVERSION` when
+      the declaration leaves it empty. Commit `Added: mets encoder test for
+      the dmdSec typing`.
+- [ ] **Docs.** Design doc: encoders list, families, profile table; the
+      README's library example gets a MODS variant; `CLAUDE.md` system
+      shape names `encoders/mods`. Commit `Changed: docs for the mods
+      encoder and the eark-mods profile`.
+- [ ] **Acceptance.** `go test ./...`; `./build.sh basic` and `./build.sh
+      eark` VALID with 0 warnings; both comparisons clean. `eark-mods` has
+      no fixture yet; the Go build test stands in until S6.
+
+### S4: CLI rows
+
+- [ ] **Split row reading from world building.** In `cli/input`, one
+      generic reader for `key[lang],value` rows (header check, key
+      parsing, line numbers for violations) and one small builder per
+      world: dc rows through `dc.ResolveKey` into `dc.Terms`, mods rows
+      through `mods.ResolveKey` into a mods `Description`. Rename
+      `metadata.go` and its test after the file it now reads.
+- [ ] **Reserved names.** `dc.csv`, `mods.csv`, `dc.xml`, `mods.xml`,
+      `items.csv` join the reserved names at the root and inside
+      representation directories (`items.csv` root only). `metadata.csv`
+      becomes a violation telling the operator to rename it to `dc.csv`.
+- [ ] **One source per level, one standard per folder.** More than one
+      descriptive file at one level is a violation; none at the root is a
+      violation; the folder's standard is the standard of its first
+      descriptive file, and any file of the other standard anywhere is a
+      violation naming both files.
+- [ ] **`items.csv`.** Decoded like `representations.csv`: closed header
+      in any order, case-insensitive, unknown or repeated column a
+      violation; `callnumber` non-empty on every row; `barcode` unique;
+      allowed only at the root and only next to `mods.csv`.
+- [ ] **Mapping onto `profiles.Input`.** `Package` carries the decoded
+      `sip.Description` per level; `BuilderInput` assigns it only when a
+      file was read (the typed-nil pitfall from S2).
+- [ ] **Tests.** dc rows, mods rows, items rows and each items violation,
+      the `metadata.csv` violation, two files at one level, mixed
+      standards, `items.csv` next to `dc.csv`; `read_test.go`,
+      `builder_test.go` and `representations_test.go` fixtures renamed.
+- [ ] **Fixtures.** `tmp/basic/metadata.csv`, `tmp/eark/metadata.csv` and
+      `tmp/eark/representations/master/metadata.csv` renamed to `dc.csv`.
+- [ ] **Docs.** Input spec §1 (reserved names), §3 (the four row and
+      document files, the MODS key table, `items.csv`), §7 (mapping
+      table); README Input section; design doc CLI paragraph. Commits
+      `Changed: metadata.csv becomes dc.csv` and `Added: mods.csv and
+      items.csv rows in the input folder`.
+- [ ] **Acceptance.** `go test ./...`; `./build.sh basic` and `./build.sh
+      eark` VALID with 0 warnings from the renamed fixtures; both
+      comparisons clean.
+
+### S5: CLI supplied documents
+
+- [ ] **Detection and validation.** `dc.xml` and `mods.xml` take part in
+      the one-source rule; `cli/input` opens each and runs the world's
+      `ValidateDocument`, turning an error into a violation naming the file
+      and the reason. `Package` carries the document path per level;
+      `BuilderInput` sets `DescriptiveDocument`.
+- [ ] **Items rule.** `items.csv` next to `mods.xml` is a violation: the
+      document carries its own holdings.
+- [ ] **Tests.** A valid `dc.xml` accepted; `mods.xml` with another
+      version, and a non-XML file, each a violation; `dc.xml` next to
+      `dc.csv` a violation; a representation-level `mods.xml` accepted;
+      `items.csv` next to `mods.xml` a violation.
+- [ ] **Docs.** Input spec §3 (supplied documents and their checks) and §8
+      (the deferred operator-supplied XML item is enacted for DC and MODS;
+      other standards stay deferred); README Input section. Commit `Added:
+      dc.xml and mods.xml as supplied descriptive documents`.
+- [ ] **Acceptance.** `go test ./...`; both profiles VALID; both
+      comparisons clean; `check` run by hand on a folder holding a
+      `dc.xml`.
+
+### S6: acceptance and closing docs
+
+- [ ] **Fixture.** `tmp/eark-mods/`: a copy of `tmp/eark` with `dc.csv`
+      replaced by `mods.csv` (`identifier`, `title[nl]`) and an `items.csv`
+      of two copies, one carrying an enumeration.
+- [ ] **XML catalog.** `scripts/schema-catalog.xml` rewriting the loc.gov
+      URLs the MODS schema imports (`http://www.loc.gov/mods/xml.xsd`,
+      `http://www.loc.gov/standards/xlink/xlink.xsd`) onto the package's
+      `schemas/` copies, so xmllint runs with `--nonet`.
+- [ ] **build.sh.** An `eark-mods` case (E-ARK 2.2.0, the default branch
+      already does this; make it explicit); after `create`, `xmllint
+      --noout --nonet --schema <pkg>/schemas/mods-3-7.xsd` over every
+      `mods.xml` in the package, with `XML_CATALOG_FILES` pointing at the
+      catalog; a failure exits non-zero like an INVALID package. xmllint
+      joins the documented requirements in the script header, README and
+      `CLAUDE.md`.
+- [ ] **Run it.** `./build.sh eark-mods` VALID with 0 warnings and the
+      xmllint pass clean; read the package METS `dmdSec` by hand:
+      `MDTYPE="MODS" MDTYPEVERSION="3.7"`. Capture the package as
+      `tmp/reference/eark-mods/pkg` and note it in `tmp/reference/README.md`.
+      Commit `Added: eark-mods fixture, XML catalog and xmllint pass in
+      build.sh`.
+- [ ] **Closing docs.** README profile list (three profiles); design doc
+      (profile table, package layout with `mods.xml`, validation section
+      naming the xmllint pass); `CLAUDE.md` development commands ("all
+      three profiles validate VALID"); `docs/TODO.md` drops the MODS
+      question; ADR-0015 and ADR-0016 status to Accepted with the date;
+      this plan's status line to shipped, then the plan moves to
+      `docs/archive/` per `docs/README.md`. Commit `Changed: docs for the
+      eark-mods profile; plan archived`.
 
 ## Open questions
 
