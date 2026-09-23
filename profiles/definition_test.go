@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/encoders/dc"
 )
 
 // earkDef returns the registered "eark" definition the tests build with.
@@ -19,8 +19,8 @@ func earkDef(t *testing.T) Definition {
 
 // identityTerms is the input convention's own MUSTs and nothing more:
 // enough for eark, short of meemoo's four.
-func identityTerms() metadata.Terms {
-	return metadata.Terms{
+func identityTerms() dc.Terms {
+	return dc.Terms{
 		{Element: "dcterms:identifier", Value: "local-id-001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
 	}
@@ -46,7 +46,7 @@ func TestValidateDescriptiveRequiredPerFamily(t *testing.T) {
 
 	// A title is required by both families' sets; Input.Validate doesn't
 	// check it, so the Definition is the only guard.
-	in = &Input{Descriptive: metadata.Terms{{Element: "dcterms:identifier", Value: "x"}}}
+	in = &Input{Descriptive: dc.Terms{{Element: "dcterms:identifier", Value: "x"}}}
 	for _, def := range []Definition{basicDef(t), earkDef(t)} {
 		if err := def.validateDescriptive(in); err == nil || !strings.Contains(err.Error(), "dcterms:title") {
 			t.Errorf("%s accepted terms without a title: %v", def.Name, err)
@@ -58,7 +58,7 @@ func TestValidateDescriptiveRequiredPerFamily(t *testing.T) {
 // (same language) fails basic, at package and representation level, and
 // passes eark.
 func TestValidateDescriptiveCardinalityPerFamily(t *testing.T) {
-	repeated := metadata.Terms{
+	repeated := dc.Terms{
 		{Element: "dcterms:abstract", Lang: "nl", Value: "een"},
 		{Element: "dcterms:abstract", Lang: "nl", Value: "twee"},
 	}
@@ -87,7 +87,7 @@ func TestValidateDescriptiveCardinalityPerFamily(t *testing.T) {
 // representation level.
 func TestValidateDescriptiveRequiredLangPerFamily(t *testing.T) {
 	terms := testDescriptive()
-	terms = append(terms, metadata.Term{Element: "dcterms:subject", Lang: "en", Value: "cats"})
+	terms = append(terms, dc.Term{Element: "dcterms:subject", Lang: "en", Value: "cats"})
 	in := &Input{Descriptive: terms}
 
 	if err := earkDef(t).validateDescriptive(in); err != nil {
@@ -102,7 +102,7 @@ func TestValidateDescriptiveRequiredLangPerFamily(t *testing.T) {
 		Descriptive: testDescriptive(),
 		Representations: []SourceRepresentation{{
 			Name:        "master",
-			Descriptive: metadata.Terms{{Element: "dcterms:title", Lang: "en", Value: "Cats"}},
+			Descriptive: dc.Terms{{Element: "dcterms:title", Lang: "en", Value: "Cats"}},
 		}},
 	}
 	err = basicDef(t).validateDescriptive(in)

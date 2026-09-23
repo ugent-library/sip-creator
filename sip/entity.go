@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"uuid"
 
-	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/encoders/dc"
 )
 
 // Entity is one intellectual entity: the work the package describes.
@@ -21,7 +21,7 @@ type Entity struct {
 	Entities []*Entity
 	// Description carries the decoded descriptive terms until the writer
 	// serializes them.
-	Description metadata.Terms
+	Description dc.Terms
 	// DescriptionFile is the node for the generated descriptive document.
 	DescriptionFile *File
 }

@@ -1,4 +1,4 @@
-package metadata
+package dc
 
 // Term is one descriptive statement: an element name from the descriptive
 // vocabulary, an optional language tag, and the value.

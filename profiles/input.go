@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/ugent-library/sip-creator/characterization"
-	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -46,7 +46,7 @@ type SourceRepresentation struct {
 	// Descriptive optionally describes this version only: identity
 	// (identifier, title) is not required here; the package-level
 	// descriptive carries the work's identity.
-	Descriptive metadata.Terms
+	Descriptive dc.Terms
 	// Premis optionally supplies received preservation documents about
 	// this representation: copied, never parsed. Each must be a
 	// well-formed premis:premis document.
@@ -89,7 +89,7 @@ type Input struct {
 	// mets/@OBJID. Must take the uuid-<uuid> form when set.
 	PackageIdentifier string
 	// Descriptive is the package-level descriptive metadata.
-	Descriptive metadata.Terms
+	Descriptive dc.Terms
 	// Representations is the content, at least one.
 	Representations []SourceRepresentation
 	// Documentation optionally documents the whole package.

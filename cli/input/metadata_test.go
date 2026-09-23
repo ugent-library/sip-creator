@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/encoders/dc"
 )
 
 // readCSV runs Read over a minimal flat tree carrying the given
@@ -37,7 +37,7 @@ func TestMetadataCSVHappy(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 
-	want := metadata.Terms{
+	want := dc.Terms{
 		{Element: "dcterms:identifier", Value: "BIB.FA.2026.001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
 		{Element: "dcterms:description", Lang: "nl", Value: "Album met 48 foto's, zwart-wit"},

@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/ugent-library/sip-creator/characterization"
-	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -29,8 +29,8 @@ func fileMD5(t *testing.T, path string) string {
 
 // testDescriptive satisfies the strictest registered profile: meemoo's
 // four required elements, Dutch entries on the lang-tagged ones.
-func testDescriptive() metadata.Terms {
-	return metadata.Terms{
+func testDescriptive() dc.Terms {
+	return dc.Terms{
 		{Element: "dcterms:identifier", Value: "local-id-001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
 		{Element: "dcterms:description", Lang: "nl", Value: "Een testkat"},
@@ -466,10 +466,10 @@ func TestInputValidate(t *testing.T) {
 	}{
 		{"no descriptive", func(c *Input) { c.Descriptive = nil }, "no descriptive metadata"},
 		{"invalid term", func(c *Input) {
-			c.Descriptive = append(c.Descriptive, metadata.Term{Element: "dcterms:titel", Value: "x"})
+			c.Descriptive = append(c.Descriptive, dc.Term{Element: "dcterms:titel", Value: "x"})
 		}, "not in the descriptive vocabulary"},
 		{"no identifier", func(c *Input) {
-			c.Descriptive = metadata.Terms{{Element: "dcterms:title", Value: "x"}}
+			c.Descriptive = dc.Terms{{Element: "dcterms:title", Value: "x"}}
 		}, "no dcterms:identifier"},
 		{"no representations", func(c *Input) { c.Representations = nil }, "at least one version"},
 		{"bad name", func(c *Input) { c.Representations[0].Name = "master copy" }, "may only contain"},
@@ -489,7 +489,7 @@ func TestInputValidate(t *testing.T) {
 			c.PackageIdentifier = "not-a-uuid"
 		}, "uuid-<uuid> form"},
 		{"invalid representation descriptive", func(c *Input) {
-			c.Representations[0].Descriptive = metadata.Terms{{Element: "dcterms:titel", Value: "x"}}
+			c.Representations[0].Descriptive = dc.Terms{{Element: "dcterms:titel", Value: "x"}}
 		}, "not in the descriptive vocabulary"},
 		{"received premis claims the generated name", func(c *Input) {
 			c.Premis = []SourceFile{{Source: "/x/premis.xml", Path: "premis.xml"}}
@@ -520,7 +520,7 @@ func TestInputValidate(t *testing.T) {
 // required.
 func TestAssembleRepresentationDescriptive(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
-	in.Representations[0].Descriptive = metadata.Terms{
+	in.Representations[0].Descriptive = dc.Terms{
 		{Element: "dcterms:license", Value: "publiek domein"},
 	}
 
@@ -543,7 +543,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	// With an identifier term present, the representation identifier is
 	// swapped in, mirroring the package-level behavior.
 	b2, in2, _ := newTestBuilder(t)
-	in2.Representations[0].Descriptive = metadata.Terms{
+	in2.Representations[0].Descriptive = dc.Terms{
 		{Element: "dcterms:identifier", Value: "rep-local-1"},
 	}
 	pkg2, err := b2.assemble(basicDef(t), in2)
@@ -571,7 +571,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 // (ADR-0012).
 func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
-	in.Representations[0].Descriptive = metadata.Terms{
+	in.Representations[0].Descriptive = dc.Terms{
 		{Element: "dcterms:identifier", Value: "rep-local-1"},
 	}
 

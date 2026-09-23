@@ -211,12 +211,12 @@ assembler that step 3 turns into a guaranteed one. Step 6 lands the
 assembler and writer halves in one commit, because a declared file that is
 never written breaks the package METS.
 
-- [ ] **Capture the `eark` reference.** `./build.sh eark` VALID, then copy
+- [x] **Capture the `eark` reference.** `./build.sh eark` VALID, then copy
       the package directory to `tmp/reference/eark/pkg` next to the `basic`
       copy and note it in `tmp/reference/README.md`. Run `./build.sh` for
       `basic` and check both comparisons are clean before any code moves.
       Nothing to commit; `tmp/` is untracked.
-- [ ] **Rename `encoders/metadata` to `encoders/dc`.** `git mv` the
+- [x] **Rename `encoders/metadata` to `encoders/dc`.** `git mv` the
       directory, change the package clause in its files, fix the importers
       (`cli/input/input.go`, `cli/input/metadata.go` and their tests,
       `sip/entity.go`, `sip/representation.go`, the `profiles/` files and

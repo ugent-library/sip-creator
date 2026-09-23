@@ -5,14 +5,14 @@ import (
 	"io"
 	"strings"
 
-	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/encoders/dc"
 )
 
 // decodeMetadata decodes one metadata.csv into ordered descriptive
 // terms, collecting a violation per broken rule. The
 // package-level file requires identifier and title; a representation-level
 // one does not.
-func (r *reader) decodeMetadata(src string, packageLevel bool) metadata.Terms {
+func (r *reader) decodeMetadata(src string, packageLevel bool) dc.Terms {
 	rel := r.rel(src)
 
 	cr, ok := r.openCSV(src)
@@ -20,7 +20,7 @@ func (r *reader) decodeMetadata(src string, packageLevel bool) metadata.Terms {
 		return nil
 	}
 
-	var terms metadata.Terms
+	var terms dc.Terms
 	headerSeen := false
 	for {
 		row, err := cr.Read()
@@ -58,7 +58,7 @@ func (r *reader) decodeMetadata(src string, packageLevel bool) metadata.Terms {
 		// What a term may say (vocabulary, language tag, non-empty value)
 		// is the library's rule, the same one an embedding caller hits;
 		// the decoder only adds the file/line context.
-		term := metadata.Term{Element: element, Lang: lang, Value: value}
+		term := dc.Term{Element: element, Lang: lang, Value: value}
 		if err := term.Validate(); err != nil {
 			r.violate("%s line %d: %v", rel, line, err)
 			continue
@@ -101,7 +101,7 @@ func isHeaderRow(row []string) bool {
 // parseKey handles the key *syntax* of the CSV convention (the optional
 // [lang] bracket and the plain-key spellings of the descriptive
 // vocabulary) and returns the element name the key maps onto. Whether the
-// language tag inside the brackets is *valid* is metadata.Term.Validate's
+// language tag inside the brackets is *valid* is dc.Term.Validate's
 // rule; the decoder only adds the file/line context.
 func (r *reader) parseKey(file string, line int, raw string) (element, lang string, ok bool) {
 	key := raw
@@ -125,7 +125,7 @@ func (r *reader) parseKey(file string, line int, raw string) (element, lang stri
 		r.violate("%s line %d: prefixed keys like %q are not supported: every element has a plain key; see the supported keys in the input specification", file, line, raw)
 		return "", "", false
 	}
-	element, known := metadata.ResolveKey(key)
+	element, known := dc.ResolveKey(key)
 	if !known {
 		r.violate("%s line %d: unknown key %q: a typo would silently drop metadata; see the supported keys in the input specification", file, line, raw)
 		return "", "", false

@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 
 	"github.com/ugent-library/sip-creator/characterization"
-	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
@@ -48,7 +48,7 @@ type Representation struct {
 	Type string
 	// Descriptive is nil unless the representation has its own
 	// metadata.csv.
-	Descriptive metadata.Terms
+	Descriptive dc.Terms
 	// Files are the content files, in deterministic traversal order
 	// (lexical per directory).
 	Files []File
@@ -65,7 +65,7 @@ type Package struct {
 	Root string
 	// Descriptive is the package-level terms from the top-level
 	// metadata.csv.
-	Descriptive metadata.Terms
+	Descriptive dc.Terms
 	// Representations holds at least one representation; a flat folder
 	// reads as a single one.
 	Representations []Representation

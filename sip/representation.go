@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"uuid"
 
-	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/encoders/dc"
 )
 
 // Representation is one version of the content, e.g. a master or an
@@ -28,7 +28,7 @@ type Representation struct {
 	// Description optionally describes this version of the content only
 	// (e.g. a license that differs between master and access copy);
 	// the work's identity stays on the Entity.
-	Description metadata.Terms
+	Description dc.Terms
 	// DescriptionFile is the node for the generated descriptive document;
 	// nil when Description is nil.
 	DescriptionFile *File

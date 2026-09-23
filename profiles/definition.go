@@ -7,7 +7,7 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -25,14 +25,14 @@ const FamilyEARK Family = "eark"
 // It grows into a struct of choices when families make more (ADR-0007).
 // schemas is the relative path from the document being written to the
 // package's schemas/ dir; only the writer knows where a document lands.
-type descriptiveEncoder func(w io.Writer, t metadata.Terms, schemas string) error
+type descriptiveEncoder func(w io.Writer, t dc.Terms, schemas string) error
 
 func (f Family) descriptiveEncoder() (descriptiveEncoder, error) {
 	switch f {
 	case FamilyMeemoo:
-		return metadata.EncodeTerms, nil
+		return dc.EncodeTerms, nil
 	case FamilyEARK:
-		return metadata.EncodeDCTerms, nil
+		return dc.EncodeDCTerms, nil
 	default:
 		return nil, fmt.Errorf("unknown output family %q", f)
 	}
@@ -176,7 +176,7 @@ var registry = map[string]Definition{
 		// meemoo's basic content profile: the vocabulary table's required
 		// elements, a Dutch value for every lang-tagged element, and the
 		// table's cardinality limits.
-		RequiredElements:   metadata.RequiredElements(),
+		RequiredElements:   dc.RequiredElements(),
 		RequiredLang:       "nl",
 		EnforceCardinality: true,
 		Declaration: sip.MetsDeclaration{

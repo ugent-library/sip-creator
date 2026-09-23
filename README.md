@@ -100,7 +100,7 @@ and hand `Build` your descriptive terms and content files:
 import (
 	"log/slog"
 
-	"github.com/ugent-library/sip-creator/encoders/metadata"
+	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
@@ -118,7 +118,7 @@ builder := profiles.New(&profiles.Config{
 })
 
 pkg, err := builder.Build(def, &profiles.Input{
-	Descriptive: metadata.Terms{
+	Descriptive: dc.Terms{
 		{Element: "dcterms:identifier", Value: "inv.2024.001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Correspondentie 1914-1918"},
 		{Element: "dcterms:description", Lang: "nl", Value: "Brieven uit de collectie."},
