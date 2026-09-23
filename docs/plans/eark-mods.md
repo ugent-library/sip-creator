@@ -1,8 +1,10 @@
 # Plan: MODS 3.7 descriptive metadata for the plain E-ARK output
 
-*Status: **agreed, not started** (2026-09-15). Design decisions settled in
-review; the MODS element list beyond identifier and title is still open and
-does not block the first steps. Update this line as steps land.*
+*Status: **S1 done, S2 next** (2026-09-23): ADR-0015 and ADR-0016
+drafted, including the items table (decision 12). Design decisions settled
+in review on 2026-09-15; the MODS element list beyond identifier and title
+is still open and does not block the first steps. Update this line as steps
+land.*
 
 ## Context
 
@@ -53,11 +55,14 @@ the DC table while walking the folder, before any profile is known.
    MODS table maps a plain key to a template fragment plus the attribute
    values it needs (`identifier` becomes `mods:identifier` with a `type`
    attribute; `title` becomes `mods:titleInfo/mods:title`). Operators and
-   library callers never set attributes, as today (ADR-0011). Consequence:
-   the flat model cannot express given and family name parts, corporate
-   versus personal names, date ranges with start and end points, or a
-   subject with several sub-terms. That is acceptable because the source
-   data is flat columns; richer records arrive as supplied documents.
+   library callers never set attributes, as today (ADR-0011). Roles, title
+   types and identifier types are rows (`author`, `promotor`, `alternative`,
+   `isbn`), names come in personal and corporate rows, and dates are single
+   EDTF values (revised 2026-09-22, recorded in ADR-0015). Consequence: the
+   flat model cannot express several parts under one parent: given and
+   family name parts, a name with two roles, or a subject with several
+   sub-terms. That is acceptable because the source data is flat columns;
+   richer records arrive as supplied documents.
 3. **The profile fixes the descriptive standard.** The input supplies either
    terms to encode in that standard or a ready document of that standard.
    MODS terms or a `mods.xml` given to a DC profile is a build error before
@@ -104,8 +109,9 @@ the DC table while walking the folder, before any profile is known.
    for one check the repository performs anyway.
 9. **CLI file names by standard.** `dc.csv` and `mods.csv` hold rows,
    `dc.xml` and `mods.xml` hold supplied documents, at the package root and
-   inside each representation directory. One source per level, one standard
-   per folder. The folder stays self-describing, so `check` keeps taking no
+   inside each representation directory. `items.csv` (MODS only, package
+   root only, next to `mods.csv`) holds one row per physical copy, see
+   decision 12. One source per level, one standard per folder. The folder stays self-describing, so `check` keeps taking no
    configuration ([ADR-0010](../decisions/0010-config-over-self-describing-input.md));
    a mismatch with the chosen profile surfaces at `create`. `metadata.csv`
    is withdrawn: its presence is a violation telling the operator to rename
@@ -123,6 +129,22 @@ the DC table while walking the folder, before any profile is known.
     a table row, a template fragment when the shape is new, and a line in
     the input specification. The owner of the repository side supplies the
     list together with the fields the repository must index.
+12. **A record's physical copies are a second flat table** (agreed
+    2026-09-23, recorded in ADR-0015). One package is one bibliographic
+    record, and a record has several copies: each a call number, usually a
+    barcode, and for journals, periodicals and newspapers a volume or issue
+    designation. A `key,value` file cannot pair those; `items.csv` with the
+    columns `callnumber` (required), `barcode` (optional, unique across
+    rows) and `enumeration` (optional) can, one row per copy, rendered as
+    one `location/holdingSimple/copyInformation` each. In the library the
+    MODS description type is a struct of terms plus items. `items.csv`
+    accompanies `mods.csv` only: a supplied `mods.xml` carries its own
+    holdings, and the DC world has no place to pair them. Descriptive
+    metadata stays at package level; a representation is a CSIP rendition
+    of the same content, never a copy or a volume. Rejected: one
+    representation per copy (misuses the CSIP concept; neither E-ARK
+    specification models items); pairing inside `mods.csv` by order, index
+    or delimiter.
 
 ## File specification (to fold into input-spec.md when shipped)
 
@@ -137,6 +159,9 @@ where the file is optional:
 | `dc.xml` | a finished simple Dublin Core document (`simpledc` root) | DC |
 | `mods.xml` | a finished MODS 3.7 document (`mods` root, `version="3.7"`) | MODS |
 
+`items.csv` MAY accompany `mods.csv` at the input root, one row per physical
+copy, with the columns `callnumber`, `barcode` and `enumeration`.
+
 Rules, all MUST violations collected by `check`:
 
 - More than one of the four files at one level is a violation.
@@ -150,6 +175,12 @@ Rules, all MUST violations collected by `check`:
 - Supplied documents must be well-formed XML with the expected root element
   and namespace; a MODS document must declare version 3.7. Nothing else is
   checked; the repository validates content.
+- `items.csv` follows the `representations.csv` rules: UTF-8, a header
+  naming `callnumber` and optionally `barcode` and `enumeration` in any
+  order (case-insensitive; an unknown or repeated column is a violation),
+  `callnumber` non-empty on every row, a `barcode` value unique across
+  rows. Next to `dc.csv`, `dc.xml` or `mods.xml`, or inside a
+  representation directory, it is a violation.
 - The profile chosen at `create` must match the folder's standard: `basic`
   and `eark` take DC, `eark-mods` takes MODS. `basic` takes rows only.
 
@@ -159,9 +190,9 @@ Library first. Every step ends with `go test ./...` green and
 `./build.sh basic` and `./build.sh eark` VALID with 0 warnings.
 
 - **S1: docs first.** This plan; ADR drafts
-  `0015-descriptive-worlds-dc-and-mods.md` (decisions 1, 2, 4, 5) and
+  `0015-descriptive-worlds-dc-and-mods.md` (decisions 1, 2, 4, 5, 12) and
   `0016-descriptive-input-rows-or-supplied-document.md` (decisions 3, 6, 7,
-  8, 9).
+  8, 9, and the `items.csv` file rules of 12).
 - **S2: pure refactor, output unchanged.** Capture the current `eark`
   output outside the repo first, since `tmp/reference/pkg` covers `basic`
   only. Rename `encoders/metadata` to `encoders/dc`; add the `Description`
@@ -174,23 +205,26 @@ Library first. Every step ends with `go test ./...` green and
   scripts/reference-diff.sh clean for `basic` against `tmp/reference/pkg`
   and for `eark` against the captured copy.
 - **S3: the mods world and the eark-mods profile.** `schemas/mods-3-7.xsd`;
-  `encoders/mods` with terms, the two-row table, validation, the template
-  and `ValidateDocument`; the `eark-mods` family and registry entry. Go
-  tests: table invariants, template output (root, namespaces, version,
-  escaping, `xml:lang`, refuses invalid terms without writing), world
+  `encoders/mods` with terms and items, the two-row key table and the
+  three-column items table, validation (required call number, unique
+  barcodes), the template and `ValidateDocument`; the `eark-mods` family
+  and registry entry. Go tests: table invariants, template output (root,
+  namespaces, version, escaping, `xml:lang`, one `copyInformation` per
+  item, refuses invalid terms or items without writing), world
   mismatch at build writes nothing, meemoo refuses a supplied document,
   schema set per profile, and a first test for `encoders/mets` asserting
   the dmdSec carries `MDTYPE` and `MDTYPEVERSION` from the declaration.
   The library route is complete after this step.
-- **S4: CLI rows.** `cli/input` learns `dc.csv` and `mods.csv`: shared row
-  reading and key parsing, one small builder per world, the one-source and
-  one-standard rules, the `metadata.csv` violation. Fixtures rename their
+- **S4: CLI rows.** `cli/input` learns `dc.csv`, `mods.csv` and
+  `items.csv`: shared row reading and key parsing, one small builder per
+  world, the items table decoded like `representations.csv`, the
+  one-source and one-standard rules, the `metadata.csv` violation. Fixtures rename their
   `metadata.csv` to `dc.csv`. Input spec §3 and §7, README.
 - **S5: CLI supplied documents.** `dc.xml` and `mods.xml` through the
   world's `ValidateDocument`, violations naming the file. Input spec §3 and
   §8 (the deferred operator-supplied XML item is now this), README.
 - **S6: acceptance and closing docs.** `tmp/eark-mods/` fixture (a copy of
-  `tmp/eark` with `mods.csv`); build.sh gains the `eark-mods` case against
+  `tmp/eark` with `mods.csv` and an `items.csv` of two copies); build.sh gains the `eark-mods` case against
   E-ARK 2.2.0 and an xmllint pass over every emitted `mods.xml` against the
   bundled XSD, with xmllint added to the documented requirements. Check
   that the package METS dmdSec reads `MDTYPE="MODS" MDTYPEVERSION="3.7"`.
@@ -202,9 +236,10 @@ Library first. Every step ends with `go test ./...` green and
 - **The `type` attribute on `mods:identifier`** for the MMS ID: one constant,
   decided by the owner of the repository side before S3 ships or changed
   afterwards in one place.
-- **Further MODS rows** and their fixed attribute values (name type, role
-  vocabulary, date encoding): supplied with the repository's index fields,
-  each a table row.
+- **Further MODS rows** and the relator code per role: supplied with the
+  repository's index fields, each a table row. Settled 2026-09-22: names
+  need personal and corporate rows (faculties, research departments and
+  competence centres appear as agents), dates carry `encoding="edtf"`.
 - **`eark` still ships `descriptive_basic.xsd`**, which it never references.
   Dropping it is a deliberate output change and stays out of this plan.
 - **Library callers** change their import from `encoders/metadata` to
