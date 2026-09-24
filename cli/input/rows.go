@@ -2,18 +2,21 @@ package input
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
 
 	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/encoders/dcschema"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 // decodeDescriptive decodes the one descriptive rows file at a level of the
 // input folder. The package level needs one, a representation may have
 // none, two at one level is a violation, and so is a second vocabulary
 // anywhere in the folder: the profile chosen at create reads one.
-func (r *reader) decodeDescriptive(dir string, files []rowsFile, packageLevel bool) dc.Terms {
+func (r *reader) decodeDescriptive(dir string, files []rowsFile, packageLevel bool) sip.Description {
 	switch {
 	case len(files) == 0:
 		if packageLevel {
@@ -26,7 +29,7 @@ func (r *reader) decodeDescriptive(dir string, files []rowsFile, packageLevel bo
 	}
 	f := files[0]
 	r.noteStandard(f)
-	return r.decodeRows(f.src, packageLevel)
+	return r.decodeRows(f, packageLevel)
 }
 
 // noteStandard records the vocabulary of the first rows file met and
@@ -41,19 +44,129 @@ func (r *reader) noteStandard(f rowsFile) {
 	}
 }
 
-// decodeRows decodes one descriptive rows file (dcschema.csv or dc.csv)
-// into ordered terms, collecting a violation per broken rule. The
+// rowsBuilder is the vocabulary side of decoding one rows file. Each
+// descriptive standard resolves keys and validates terms against its own
+// table; the row syntax (header, two columns, key[lang]) is shared.
+type rowsBuilder interface {
+	// add resolves one key and appends the term, or returns why the row is
+	// refused.
+	add(key, lang, value string) error
+	// finish validates the finished list against the standard's own rules
+	// and, at package level, the identity the input specification requires.
+	// It returns the description (nil when there are no terms) and every
+	// finding.
+	finish(packageLevel bool) (sip.Description, []error)
+}
+
+// dcschemaRows builds meemoo dc+schema terms from a dcschema.csv.
+type dcschemaRows struct{ terms dcschema.Terms }
+
+func (b *dcschemaRows) add(key, lang, value string) error {
+	element, ok := dcschema.ResolveKey(key)
+	if !ok {
+		return unknownKey(key)
+	}
+	// What a term may say (vocabulary, language tag, non-empty value) is
+	// the library's rule, the same one an embedding caller hits; the
+	// decoder only adds the file/line context.
+	term := dcschema.Term{Element: element, Lang: lang, Value: value}
+	if err := term.Validate(); err != nil {
+		return err
+	}
+	b.terms = append(b.terms, term)
+	return nil
+}
+
+func (b *dcschemaRows) finish(packageLevel bool) (sip.Description, []error) {
+	errs := findings(b.terms.Validate())
+	if packageLevel {
+		errs = append(errs, requireIdentity(b.terms, "dcterms:identifier", "dcterms:title")...)
+	}
+	if len(b.terms) == 0 {
+		return nil, errs
+	}
+	return b.terms, errs
+}
+
+// dcRows builds Simple Dublin Core terms from a dc.csv.
+type dcRows struct{ terms dc.Terms }
+
+func (b *dcRows) add(key, lang, value string) error {
+	element, ok := dc.ResolveKey(key)
+	if !ok {
+		return unknownKey(key)
+	}
+	term := dc.Term{Element: element, Lang: lang, Value: value}
+	if err := term.Validate(); err != nil {
+		return err
+	}
+	b.terms = append(b.terms, term)
+	return nil
+}
+
+func (b *dcRows) finish(packageLevel bool) (sip.Description, []error) {
+	errs := findings(b.terms.Validate())
+	if packageLevel {
+		errs = append(errs, requireIdentity(b.terms, "identifier", "title")...)
+	}
+	if len(b.terms) == 0 {
+		return nil, errs
+	}
+	return b.terms, errs
+}
+
+// unknownKey says why a key no table lists is refused: a typo must not
+// silently drop metadata.
+func unknownKey(key string) error {
+	return fmt.Errorf("unknown key %q: a typo would silently drop metadata; see the supported keys in the input specification", key)
+}
+
+// findings flattens a joined error into its parts, so each cross-row
+// finding (a cardinality limit, a missing Dutch entry) is reported as its
+// own violation.
+func findings(err error) []error {
+	if err == nil {
+		return nil
+	}
+	if joined, ok := err.(interface{ Unwrap() []error }); ok {
+		return joined.Unwrap()
+	}
+	return []error{err}
+}
+
+// requireIdentity reports the identity elements the input specification
+// requires at package level, named as the standard spells them.
+func requireIdentity(terms interface{ Has(string) bool }, identifier, title string) []error {
+	var errs []error
+	if !terms.Has(identifier) {
+		errs = append(errs, errors.New("identifier is missing; the local catalog or inventory number is required"))
+	}
+	if !terms.Has(title) {
+		errs = append(errs, errors.New("title is missing; a title is required"))
+	}
+	return errs
+}
+
+// decodeRows decodes one descriptive rows file into the description its
+// vocabulary produces, collecting a violation per broken rule. The
 // package-level file requires identifier and title; a representation-level
 // one does not.
-func (r *reader) decodeRows(src string, packageLevel bool) dc.Terms {
-	rel := r.rel(src)
+func (r *reader) decodeRows(f rowsFile, packageLevel bool) sip.Description {
+	rel := r.rel(f.src)
 
-	cr, ok := r.openCSV(src)
+	cr, ok := r.openCSV(f.src)
 	if !ok {
 		return nil
 	}
 
-	var terms dc.Terms
+	var b rowsBuilder
+	switch f.standard {
+	case dcStandard:
+		b = &dcRows{}
+	default:
+		b = &dcschemaRows{}
+	}
+
 	headerSeen := false
 	for {
 		row, err := cr.Read()
@@ -82,47 +195,25 @@ func (r *reader) decodeRows(src string, packageLevel bool) dc.Terms {
 			r.violate("%s line %d: expected exactly two columns (key,value), got %d", rel, line, len(row))
 			continue
 		}
-		key, value := row[0], row[1]
 
-		element, lang, ok := r.parseKey(rel, line, key)
+		key, lang, ok := r.parseKey(rel, line, row[0])
 		if !ok {
 			continue
 		}
-		// What a term may say (vocabulary, language tag, non-empty value)
-		// is the library's rule, the same one an embedding caller hits;
-		// the decoder only adds the file/line context.
-		term := dc.Term{Element: element, Lang: lang, Value: value}
-		if err := term.Validate(); err != nil {
+		if err := b.add(key, lang, row[1]); err != nil {
 			r.violate("%s line %d: %v", rel, line, err)
-			continue
-		}
-		terms = append(terms, term)
-	}
-
-	// The convention's own cardinality rule: single-valued and
-	// per-language keys must not repeat, whatever the profile. The rule is
-	// the same for every rows file, so check needs no configuration. It
-	// is a cross-row rule checked on the finished list: each finding names
-	// the element and language, which locates the rows in a keyed file.
-	if err := terms.ValidateCardinality(); err != nil {
-		if joined, ok := err.(interface{ Unwrap() []error }); ok {
-			for _, finding := range joined.Unwrap() {
-				r.violate("%s: %v", rel, finding)
-			}
-		} else {
-			r.violate("%s: %v", rel, err)
 		}
 	}
 
-	if packageLevel {
-		if !terms.Has("dcterms:identifier") {
-			r.violate("%s: identifier is missing; the local catalog or inventory number is required", rel)
-		}
-		if !terms.Has("dcterms:title") {
-			r.violate("%s: title is missing; a title is required", rel)
-		}
+	// The standard's cross-row rules (cardinality, required language, one
+	// identifier) and the convention's identity MUSTs are checked on the
+	// finished list: each finding names the element and language, which
+	// locates the rows in a keyed file.
+	d, errs := b.finish(packageLevel)
+	for _, err := range errs {
+		r.violate("%s: %v", rel, err)
 	}
-	return terms
+	return d
 }
 
 func isHeaderRow(row []string) bool {
@@ -132,12 +223,12 @@ func isHeaderRow(row []string) bool {
 }
 
 // parseKey handles the key *syntax* of the CSV convention (the optional
-// [lang] bracket and the plain-key spellings of the descriptive
-// vocabulary) and returns the element name the key maps onto. Whether the
-// language tag inside the brackets is *valid* is dc.Term.Validate's
-// rule; the decoder only adds the file/line context.
-func (r *reader) parseKey(file string, line int, raw string) (element, lang string, ok bool) {
-	key := raw
+// [lang] bracket, no prefixes) and returns the plain key for the
+// vocabulary to resolve. Whether the language tag inside the brackets is
+// *valid* is the term's own rule; the decoder only adds the file/line
+// context.
+func (r *reader) parseKey(file string, line int, raw string) (key, lang string, ok bool) {
+	key = raw
 	if i := strings.IndexByte(key, '['); i >= 0 {
 		if !strings.HasSuffix(key, "]") {
 			r.violate("%s line %d: malformed language tag in %q; write it like title[nl]", file, line, raw)
@@ -158,10 +249,5 @@ func (r *reader) parseKey(file string, line int, raw string) (element, lang stri
 		r.violate("%s line %d: prefixed keys like %q are not supported: every element has a plain key; see the supported keys in the input specification", file, line, raw)
 		return "", "", false
 	}
-	element, known := dc.ResolveKey(key)
-	if !known {
-		r.violate("%s line %d: unknown key %q: a typo would silently drop metadata; see the supported keys in the input specification", file, line, raw)
-		return "", "", false
-	}
-	return element, lang, true
+	return key, lang, true
 }

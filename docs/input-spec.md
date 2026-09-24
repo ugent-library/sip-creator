@@ -84,13 +84,13 @@ A two-column CSV (`key,value`) describing what the package contains. This is the
 | `dcschema.csv` | meemoo's dc+schema vocabulary: the key table below | `basic` |
 | `dc.csv` | Simple Dublin Core | `eark` |
 
-Until the two vocabularies are separated inside the tool (in progress, [ADR-0015](decisions/0015-descriptive-worlds-dc-and-mods.md)), both files accept the key table below, and `dc.csv` rows are reduced to Simple Dublin Core in the output as before.
+`dcschema.csv` takes the key table below. `dc.csv` takes the fifteen Simple Dublin Core elements as keys: `title`, `creator`, `subject`, `description`, `publisher`, `contributor`, `date`, `type`, `format`, `identifier`, `source`, `language`, `relation`, `coverage`, `rights`. Every one is optional and repeatable, `identifier` and `title` MUST be present at the top level, and a language tag is accepted but not written into the document. The two vocabularies are separate: a meemoo key in a `dc.csv` is an unknown key, not a silently dropped one ([ADR-0015](decisions/0015-descriptive-worlds-dc-and-mods.md)).
 
 - Exactly one of the two files MUST be present at the top level; both at once MUST be an error. Every descriptive rows file in one input folder MUST be in the same vocabulary: a `dc.csv` inside a representation of a `dcschema.csv` package is an error.
 - MUST be UTF-8 with a `key,value` header row. The tool MUST accept a UTF-8 BOM and CRLF line endings (spreadsheet tools produce both) and RFC 4180 quoting.
 - `identifier` and `title` MUST be present and non-empty. The identifier is your local catalog or inventory number; it travels with the package as its local identifier. Meemoo profiles additionally require `description` and `created` (their basic content profile requires all four); the tool refuses to build a meemoo package without them.
 - Repeat a key for multiple values (two `creator` lines for two creators), but only for keys the table lists as repeatable. Keys listed as *per-language* may repeat only with distinct language tags (`title[nl]` plus `title[en]` is fine; two `title[nl]` rows are not). A second row for a single-valued key, or a repeated language on a per-language key, MUST be an error.
-- Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`. Meemoo profiles require that wherever a language-tagged key is used, a Dutch entry (`[nl]`) is among the rows; other languages are welcome alongside, but Dutch must be present.
+- Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`. In `dcschema.csv`, wherever a language-tagged key is used, a Dutch entry (`[nl]`) MUST be among the rows (meemoo's rule); other languages are welcome alongside, but Dutch must be present. `check` reports a missing Dutch entry.
 - Unknown keys MUST be an error: a typo must not silently drop metadata. The table below is the entire vocabulary; it follows the flat-expressible elements of meemoo's basic content profile.
 
 Supported keys (plain names; the specialist mapping is in [§7](#7-mapping-to-the-sip-informative-for-specialists)):
@@ -194,7 +194,8 @@ Deliberate trade-off: because organization details come from configuration, an i
 | `representations.csv` `label` / `type` | representation METS `mets/@LABEL`; in the eark profile the type lands in `TYPE="Other"`+`csip:OTHERTYPE` and `CONTENTINFORMATIONTYPE="OTHER"`+`csip:OTHERCONTENTINFORMATIONTYPE` ([ADR-0013](decisions/0013-representation-type-from-label.md)) |
 | file order (stable, no semantics) | document order within the representation structMap; METS `ORDER` attributes are the real sequencing mechanism, deferred with the manifest (§8) |
 | `documentation/` (package and representation level) | `documentation/` folders, conformant per CSIPSTR16; METS fileSec `USE="DOCUMENTATION"` |
-| `dcschema.csv` / `dc.csv` keys | the vocabulary table's elements, mapped as `dcterms:*` (`identifier`→`dcterms:identifier`, `rightsholder`→`dcterms:rightsHolder`, `ispartof`→`dcterms:isPartOf`, the rest 1:1) and `schema:*` (`artmedium`→`schema:artMedium`, `artform`→`schema:artform`), in `metadata/descriptive/*.xml`, METS dmdSec |
+| `dcschema.csv` keys | the meemoo table's elements, mapped as `dcterms:*` (`identifier`→`dcterms:identifier`, `rightsholder`→`dcterms:rightsHolder`, `ispartof`→`dcterms:isPartOf`, the rest 1:1) and `schema:*` (`artmedium`→`schema:artMedium`, `artform`→`schema:artform`), in `metadata/descriptive/dc+schema.xml`, METS dmdSec |
+| `dc.csv` keys | the unqualified Simple Dublin Core element of the same name (`title`→`<title>`), in `metadata/descriptive/dc.xml`, METS dmdSec |
 | `representations/<name>/dcschema.csv` or `dc.csv` | `representations/<name>/metadata/descriptive/*.xml`, dmdSec of that representation's METS (CSIPSTR12/13) |
 | `[lang]` suffixes | `xml:lang` attributes |
 | configuration: organizations, contacts | METS `metsHdr/agent` (`ROLE=CREATOR TYPE=ORGANIZATION` submitter; `ROLE=ARCHIVIST TYPE=ORGANIZATION` archival creator; individuals as contact agents) |

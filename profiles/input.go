@@ -45,8 +45,8 @@ type SourceRepresentation struct {
 	// Descriptive optionally describes this version only: identity
 	// (identifier, title) is not required here; the package-level
 	// descriptive carries the work's identity. Its concrete type must be
-	// the profile's descriptive standard (dc.Terms for the registered
-	// profiles).
+	// the profile's descriptive standard (dcschema.Terms for meemoo
+	// profiles, dc.Terms for eark).
 	Descriptive sip.Description
 	// Premis optionally supplies received preservation documents about
 	// this representation: copied, never parsed. Each must be a
@@ -90,8 +90,8 @@ type Input struct {
 	// mets/@OBJID. Must take the uuid-<uuid> form when set.
 	PackageIdentifier string
 	// Descriptive is the package-level descriptive metadata. Its concrete
-	// type must be the profile's descriptive standard (dc.Terms for the
-	// registered profiles).
+	// type must be the profile's descriptive standard (dcschema.Terms for
+	// meemoo profiles, dc.Terms for eark).
 	Descriptive sip.Description
 	// Representations is the content, at least one.
 	Representations []SourceRepresentation
@@ -155,7 +155,7 @@ func (in *Input) Validate() error {
 	// find the package by (ADR-0012). All other requiredness is profile
 	// policy: Definition.RequiredElements, checked by Build.
 	if in.Descriptive.LocalIdentifier() == "" {
-		return fmt.Errorf("descriptive metadata carries no dcterms:identifier; the local identifier is required")
+		return fmt.Errorf("descriptive metadata carries no identifier; the local identifier is required")
 	}
 
 	if len(in.Representations) == 0 {

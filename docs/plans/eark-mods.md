@@ -97,9 +97,11 @@ the DC table while walking the folder, before any profile is known.
    in that one respect). Meemoo's OR-id rule becomes the data flag
    `RequireSubmitterORID`.
 5. **A small interface in the domain model.** `sip/` declares
-   `Description` with `LocalIdentifier() string` and `Validate() error`;
-   both terms types implement it, and `sip/` stops importing an encoder
-   package. The profile's descriptive standard asserts the concrete type at
+   `Description` with `LocalIdentifier() string`, `Validate() error` and
+   `ValidateRequired(elements ...string) error` (the third added
+   2026-09-23 so a profile checks its required elements without knowing
+   the terms type); every terms type implements it, and `sip/` stops
+   importing an encoder package. The profile's descriptive standard asserts the concrete type at
    build time (decision 3). The dc-only identifier swap stays a method on
    the dc terms type.
    Required elements on a `Definition` become plain vocabulary keys
@@ -298,8 +300,11 @@ declared file that is never written breaks the package METS.
       become `dc.csv`; the `cli/input` test fixtures follow. Input spec §1
       and §3, README Input section. Output unchanged for both profiles.
       Commit `Changed: metadata.csv becomes dcschema.csv or dc.csv`.
-- [ ] **Split the DC package into the meemoo and simple DC worlds.** (Added
-      2026-09-23, decision 1.) `encoders/dcschema` takes the current table
+- [x] **Split the DC package into the meemoo and simple DC worlds.** (Added
+      2026-09-23, decision 1. Done the same day; `Description` gained
+      `ValidateRequired` so the required-elements check needs no type
+      assertion, and `check` now reports a missing Dutch entry in a
+      `dcschema.csv`, since that rule is the meemoo world's own.) `encoders/dcschema` takes the current table
       minus its `SimpleDC` column, the cardinality and required-language
       validation, the `dc+schema` template and the identifier swap.
       `encoders/dc` keeps only Simple Dublin Core: a fifteen-element table,

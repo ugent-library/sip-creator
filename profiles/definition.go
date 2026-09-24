@@ -1,12 +1,11 @@
 package profiles
 
 import (
-	"errors"
 	"fmt"
 	"maps"
 	"slices"
 
-	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/encoders/dcschema"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -55,53 +54,21 @@ type Definition struct {
 	Declaration sip.MetsDeclaration
 
 	// RequiredElements are the descriptive elements the profile's spec makes
-	// required at package level: meemoo's basic profile requires four,
-	// plain E-ARK only the input convention's identity MUSTs.
+	// required at package level, spelled as the profile's descriptive
+	// standard spells them: meemoo's basic profile requires four, plain
+	// E-ARK only the input convention's identity MUSTs.
 	RequiredElements []string
-	// RequiredLang, when set, requires every language-tagged element in
-	// the descriptive terms to include a value in this language; meemoo
-	// requires a Dutch entry wherever a lang-tagged element appears.
-	RequiredLang string
-	// EnforceCardinality applies the vocabulary table's cardinality limits
-	// (meemoo's 0..1/1..1 restrictions); plain E-ARK has no such rule.
-	EnforceCardinality bool
 }
 
-// validateDescriptive checks the input's descriptive terms against the
-// profile's conformance rules (requiredness, required language, and the
-// vocabulary's cardinality limits), all Definition data. Requiredness applies
-// at package level only (identity lives there; representation descriptive
-// is optional), but the language and cardinality rules constrain what any
-// emitted document may say, so they cover representation descriptive too.
-// Findings are joined so one failed build names every gap at once.
+// validateDescriptive checks the package-level description against the
+// profile's required elements, Definition data. Requiredness applies at
+// package level only: identity lives there, and a representation's
+// description is optional. Every other rule of the descriptive standard
+// (term validity, meemoo's cardinality and language rules) is the
+// standard's own and runs in Input.Validate. Findings are joined so one
+// failed build names every gap at once.
 func (d Definition) validateDescriptive(in *Input) error {
-	// These rules are Dublin Core rules (both registered profiles write
-	// it); the descriptive-standard check in Build guarantees the type here
-	// and in the representation loop below.
-	terms := in.Descriptive.(dc.Terms)
-	errs := []error{
-		terms.ValidateRequired(d.RequiredElements...),
-		terms.ValidateRequiredLang(d.RequiredLang),
-	}
-	if d.EnforceCardinality {
-		errs = append(errs, terms.ValidateCardinality())
-	}
-	for _, r := range in.Representations {
-		if r.Descriptive == nil {
-			continue
-		}
-		repTerms := r.Descriptive.(dc.Terms)
-		repErrs := []error{repTerms.ValidateRequiredLang(d.RequiredLang)}
-		if d.EnforceCardinality {
-			repErrs = append(repErrs, repTerms.ValidateCardinality())
-		}
-		for _, err := range repErrs {
-			if err != nil {
-				errs = append(errs, fmt.Errorf("representation %q: %w", r.Name, err))
-			}
-		}
-	}
-	return errors.Join(errs...)
+	return in.Descriptive.ValidateRequired(d.RequiredElements...)
 }
 
 // representationDeclaration returns the declaration a representation's METS
@@ -164,11 +131,9 @@ var registry = map[string]Definition{
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
 		// meemoo's basic content profile: the vocabulary table's required
-		// elements, a Dutch value for every lang-tagged element, and the
-		// table's cardinality limits.
-		RequiredElements:   dc.RequiredElements(),
-		RequiredLang:       "nl",
-		EnforceCardinality: true,
+		// elements. Its cardinality limits and Dutch-language rule are the
+		// dcschema standard's own (dcschema.Terms.Validate).
+		RequiredElements: dcschema.RequiredElements(),
 		Declaration: sip.MetsDeclaration{
 			// meemoo SIP 1.2, the stable spec (docs/archive/meemoo-12.md):
 			// 1.2 requires the unversioned E-ARK SIP profile URL and the
@@ -201,9 +166,9 @@ var registry = map[string]Definition{
 		// does not describe agents or events.
 		EmitPackagePremis:        false,
 		EmitRepresentationPremis: false,
-		// Only the input convention's identity MUSTs; no required language,
-		// and meemoo's cardinality limits don't apply to a plain E-ARK package.
-		RequiredElements: []string{"dcterms:identifier", "dcterms:title"},
+		// Only the input convention's identity MUSTs, as Simple Dublin Core
+		// spells them.
+		RequiredElements: []string{"identifier", "title"},
 		// RODA shows each representation's type from the representation
 		// METS's content typing (ADR-0013).
 		EmitRepresentationType: true,

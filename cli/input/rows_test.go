@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/encoders/dcschema"
 )
 
 // readCSV runs Read over a minimal flat tree carrying the given
@@ -29,6 +30,7 @@ func TestRowsHappy(t *testing.T) {
 		"subject[nl],wereldtentoonstellingen\r\n" +
 		"ispartof,Collectie Sacré\r\n" +
 		"rightsholder,Universiteitsbibliotheek Gent\r\n" +
+		"abstract[nl],Een fotoalbum\r\n" +
 		"abstract[en],A photo album\r\n" +
 		"artmedium[nl],zilvergelatinedruk\r\n"
 
@@ -37,7 +39,7 @@ func TestRowsHappy(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 
-	want := dc.Terms{
+	want := dcschema.Terms{
 		{Element: "dcterms:identifier", Value: "BIB.FA.2026.001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
 		{Element: "dcterms:description", Lang: "nl", Value: "Album met 48 foto's, zwart-wit"},
@@ -45,17 +47,26 @@ func TestRowsHappy(t *testing.T) {
 		{Element: "dcterms:subject", Lang: "nl", Value: "wereldtentoonstellingen"},
 		{Element: "dcterms:isPartOf", Value: "Collectie Sacré"},
 		{Element: "dcterms:rightsHolder", Value: "Universiteitsbibliotheek Gent"},
+		{Element: "dcterms:abstract", Lang: "nl", Value: "Een fotoalbum"},
 		{Element: "dcterms:abstract", Lang: "en", Value: "A photo album"},
 		{Element: "schema:artMedium", Lang: "nl", Value: "zilvergelatinedruk"},
 	}
-	if len(pkg.Descriptive) != len(want) {
-		t.Fatalf("got %d terms, want %d:\n%v", len(pkg.Descriptive), len(want), pkg.Descriptive)
+	got, ok := pkg.Descriptive.(dcschema.Terms)
+	if !ok || len(got) != len(want) {
+		t.Fatalf("got %T with %d terms, want %d dcschema terms:\n%v", pkg.Descriptive, len(got), len(want), pkg.Descriptive)
 	}
 	for i, w := range want {
-		if pkg.Descriptive[i] != w {
-			t.Errorf("term %d = %+v, want %+v (order must be preserved)", i, pkg.Descriptive[i], w)
+		if got[i] != w {
+			t.Errorf("term %d = %+v, want %+v (order must be preserved)", i, got[i], w)
 		}
 	}
+}
+
+// A dcschema.csv is meemoo's: a language-tagged element without a Dutch
+// entry is a violation at check time, not only at build.
+func TestRowsCSVRequiresDutch(t *testing.T) {
+	_, err := readCSV(t, minimalCSV+"abstract[en],A photo album\n")
+	assertViolation(t, err, `none in "nl"`)
 }
 
 func TestRowsViolations(t *testing.T) {
@@ -129,9 +140,9 @@ func TestRepresentationCSVNeedsNoIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("rep-level dcschema.csv must not require identifier/title: %v", err)
 	}
-	got := pkg.Representations[0].Descriptive
-	if len(got) != 1 || got[0].Element != "dcterms:license" {
-		t.Errorf("rep descriptive = %v", got)
+	got, ok := pkg.Representations[0].Descriptive.(dcschema.Terms)
+	if !ok || len(got) != 1 || got[0].Element != "dcterms:license" {
+		t.Errorf("rep descriptive = %#v", pkg.Representations[0].Descriptive)
 	}
 }
 
@@ -168,19 +179,33 @@ func TestRowsWithdrawnMetadataCSV(t *testing.T) {
 	assertViolation(t, err, "descriptive rows are missing")
 }
 
-// dc.csv is read like dcschema.csv: same rows, same rules.
+// dc.csv decodes into Simple Dublin Core terms through the same row syntax.
 func TestRowsDCCSV(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dc.csv":    minimalCSV,
+		"dc.csv":    minimalCSV + "coverage,Gent\n",
 		"scan.tiff": "x",
 	})
 	pkg, err := Read(root)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	if len(pkg.Descriptive) != 2 {
-		t.Errorf("descriptive = %v, want the two minimal terms", pkg.Descriptive)
+	got, ok := pkg.Descriptive.(dc.Terms)
+	if !ok || len(got) != 3 || got[0].Element != "identifier" || got[2].Element != "coverage" {
+		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Descriptive)
 	}
+}
+
+// dc.csv knows only the fifteen Simple DC elements: meemoo's keys are
+// unknown there, at both levels.
+func TestRowsDCCSVRefusesMeemooKeys(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"dc.csv":                           minimalCSV + "abstract,x\n",
+		"representations/master/scan.tiff": "x",
+		"representations/master/dc.csv":    "key,value\nlicense,publiek domein\n",
+	})
+	_, err := Read(root)
+	assertViolation(t, err, `unknown key "abstract"`)
+	assertViolation(t, err, `unknown key "license"`)
 }
 
 // One rows file per level: both names at the root is a violation naming

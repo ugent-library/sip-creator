@@ -1,4 +1,4 @@
-package dc
+package dcschema
 
 import (
 	"errors"
@@ -27,12 +27,17 @@ func (t Term) Validate() error {
 	return nil
 }
 
-// Validate checks every term plus the one cross-term rule: at most one
-// dcterms:identifier. The local identifier is an identity, and two of
-// them is an ambiguity no consumer can resolve. The vocabulary also lists
-// identifier as `once`, so ValidateCardinality states this rule again. That
-// overlap is deliberate: only the meemoo profile enforces cardinality,
-// while the identifier rule holds for every profile, eark included.
+// RequiredLang is the language meemoo requires a value in wherever a
+// language-tagged element appears: Dutch (meemoo SIP 1.2, basic content
+// profile).
+const RequiredLang = "nl"
+
+// Validate checks every term, the one-identifier rule, and meemoo's own
+// rules: the vocabulary's cardinality limits and a Dutch entry wherever a
+// language-tagged element appears. The identifier rule stands on its own
+// because the local identifier is an identity, and two of them is an
+// ambiguity no consumer can resolve; the vocabulary also lists identifier
+// as `once`, and that overlap is deliberate.
 func (t Terms) Validate() error {
 	identifiers := 0
 	for i, term := range t {
@@ -46,15 +51,15 @@ func (t Terms) Validate() error {
 	if identifiers > 1 {
 		return fmt.Errorf("dcterms:identifier appears %d times; give exactly one", identifiers)
 	}
-	return nil
+	return errors.Join(t.ValidateCardinality(), t.ValidateRequiredLang(RequiredLang))
 }
 
 // ValidateCardinality reports every term that exceeds its element's
 // cardinality (meemoo's 0..1/1..1 restrictions, counted per language
-// for lang-tagged elements). Enforcement is each profile's call: the
-// meemoo profile enforces these limits, plain E-ARK does not. Findings
-// name the element (and language), which locates the offending rows in a
-// keyed file; one joined error carries them all.
+// for lang-tagged elements). Findings name the element (and language),
+// which locates the offending rows in a keyed file; one joined error
+// carries them all. Validate includes this check; it is exported so a
+// transport can report the findings one by one.
 func (t Terms) ValidateCardinality() error {
 	seen := map[string]int{}
 	var errs []error
@@ -98,9 +103,8 @@ func (t Terms) ValidateRequired(elements ...string) error {
 }
 
 // ValidateRequiredLang reports each element that carries language-tagged
-// values without one in the required language. meemoo requires an entry in
-// Dutch wherever a lang-tagged element appears; which language (if any) is
-// required is profile data, so it arrives as an argument ("" disables).
+// values without one in lang. Validate applies it with RequiredLang; it is
+// exported so a transport can report the findings one by one ("" disables).
 func (t Terms) ValidateRequiredLang(lang string) error {
 	if lang == "" {
 		return nil

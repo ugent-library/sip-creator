@@ -118,11 +118,14 @@ builder := profiles.New(&profiles.Config{
 })
 
 pkg, err := builder.Build(def, &profiles.Input{
+	// The eark profile writes Simple Dublin Core, so its terms come from
+	// encoders/dc; a meemoo profile takes dcschema.Terms from
+	// encoders/dcschema (dcterms:-prefixed elements plus schema.org).
 	Descriptive: dc.Terms{
-		{Element: "dcterms:identifier", Value: "inv.2024.001"},
-		{Element: "dcterms:title", Lang: "nl", Value: "Correspondentie 1914-1918"},
-		{Element: "dcterms:description", Lang: "nl", Value: "Brieven uit de collectie."},
-		{Element: "dcterms:created", Value: "1914/1918"},
+		{Element: "identifier", Value: "inv.2024.001"},
+		{Element: "title", Value: "Correspondentie 1914-1918"},
+		{Element: "description", Value: "Brieven uit de collectie."},
+		{Element: "date", Value: "1914/1918"},
 	},
 	Representations: []profiles.SourceRepresentation{{
 		Name: "master",
@@ -206,10 +209,11 @@ your-input/
 The rows file is a two-column `key,value` file with a header row. Its name says which
 vocabulary the rows are in: `dcschema.csv` holds meemoo's dc+schema vocabulary (the
 `basic` profile), `dc.csv` Simple Dublin Core (the `eark` profile), and a folder uses
-one name throughout. Until the two vocabularies are separated inside the tool, both
-accept the same keys, from a closed vocabulary of Dublin Core terms (the full key table
-is in the [input specification](docs/input-spec.md)). Repeat a key for multiple values,
-and tag a value's language in square brackets where it matters:
+one name throughout. `dcschema.csv` keys come from meemoo's closed vocabulary of Dublin
+Core terms plus two schema.org properties; `dc.csv` keys are the fifteen Simple Dublin
+Core elements (both tables are in the [input specification](docs/input-spec.md)). Repeat
+a key for multiple values, and tag a value's language in square brackets where it
+matters:
 
 ```csv
 key,value

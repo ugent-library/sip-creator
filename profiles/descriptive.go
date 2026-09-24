@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/encoders/dcschema"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -27,31 +28,34 @@ type descriptive struct {
 // dir; only the writer knows where a document lands.
 type descriptiveEncoder func(w io.Writer, d sip.Description, schemas string) error
 
-// The two documents the registered profiles write from dc.Terms: meemoo's
-// dc+schema shape (Dublin Core terms plus schema.org elements in the meemoo
-// namespace) and the simple DC shape RODA renders natively.
-var (
-	meemooDC = fromDCTerms(dc.EncodeTerms)
-	simpleDC = fromDCTerms(dc.EncodeDCTerms)
-)
+// meemooDC is meemoo's dc+schema document: Dublin Core terms plus schema.org
+// properties in the meemoo namespace, written from dcschema.Terms.
+var meemooDC = descriptive{
+	check: func(d sip.Description) error {
+		if _, ok := d.(dcschema.Terms); !ok {
+			return fmt.Errorf("descriptive metadata is %T, not meemoo dc+schema terms (dcschema.Terms)", d)
+		}
+		return nil
+	},
+	encode: func(w io.Writer, d sip.Description, schemas string) error {
+		// checkInput ran before anything else, so the assertion holds.
+		return dcschema.Encode(w, d.(dcschema.Terms), schemas)
+	},
+}
 
-// fromDCTerms is a standard whose descriptions must be the dc package's
-// terms model, written out by encode. The name says what the input must
-// be, not what the document holds: the two documents above differ in
-// exactly that.
-func fromDCTerms(encode func(io.Writer, dc.Terms, string) error) descriptive {
-	return descriptive{
-		check: func(d sip.Description) error {
-			if _, ok := d.(dc.Terms); !ok {
-				return fmt.Errorf("descriptive metadata is %T, not Dublin Core terms (dc.Terms)", d)
-			}
-			return nil
-		},
-		encode: func(w io.Writer, d sip.Description, schemas string) error {
-			// checkInput ran before anything else, so the assertion holds.
-			return encode(w, d.(dc.Terms), schemas)
-		},
-	}
+// simpleDC is the Simple Dublin Core document RODA renders natively, written
+// from dc.Terms.
+var simpleDC = descriptive{
+	check: func(d sip.Description) error {
+		if _, ok := d.(dc.Terms); !ok {
+			return fmt.Errorf("descriptive metadata is %T, not Simple Dublin Core terms (dc.Terms)", d)
+		}
+		return nil
+	},
+	encode: func(w io.Writer, d sip.Description, schemas string) error {
+		// checkInput ran before anything else, so the assertion holds.
+		return dc.Encode(w, d.(dc.Terms), schemas)
+	},
 }
 
 // checkInput returns why a description in the input is not of this

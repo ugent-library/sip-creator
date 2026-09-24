@@ -8,87 +8,18 @@ import (
 
 func testTerms() Terms {
 	return Terms{
-		{Element: "dcterms:identifier", Value: "BIB.FA.2026.001"},
-		{Element: "dcterms:title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
-		{Element: "dcterms:created", Value: "1913"},
-		{Element: "dcterms:subject", Lang: "nl", Value: "R&D <scans>"},
-		{Element: "schema:artMedium", Lang: "nl", Value: "zilvergelatinedruk"},
+		{Element: "identifier", Value: "uuid-x"},
+		{Element: "title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
+		{Element: "date", Value: "1913"},
+		{Element: "format", Value: "48 foto's"},
+		{Element: "subject", Value: "R&D <scans>"},
 	}
 }
 
-func TestEncodeTerms(t *testing.T) {
+func TestEncode(t *testing.T) {
 	var buf bytes.Buffer
-	if err := EncodeTerms(&buf, testTerms(), PackageSchemas); err != nil {
-		t.Fatalf("EncodeTerms: %v", err)
-	}
-	out := buf.String()
-
-	for _, want := range []string{
-		`<metadata xmlns="https://data.hetarchief.be/id/sip/1.2/basic"`,
-		"<dcterms:identifier>BIB.FA.2026.001</dcterms:identifier>",
-		`<dcterms:title xml:lang="nl">Fotoalbum Gent 1913</dcterms:title>`,
-		// the meemoo document types its dates as EDTF, as dc+schema does
-		`<dcterms:created xsi:type="edtf:EDTF-level1">1913</dcterms:created>`,
-		// operator values are arbitrary text and must be escaped
-		"<dcterms:subject xml:lang=\"nl\">R&amp;D &lt;scans&gt;</dcterms:subject>",
-		`<schema:artMedium xml:lang="nl">zilvergelatinedruk</schema:artMedium>`,
-	} {
-		if !strings.Contains(out, want) {
-			t.Errorf("output missing %s\n%s", want, out)
-		}
-	}
-
-	// Term order is the producer's order.
-	if strings.Index(out, "dcterms:title") > strings.Index(out, "dcterms:created") {
-		t.Error("term order not preserved")
-	}
-
-	// PackageSchemas resolves from metadata/descriptive/.
-	if !strings.Contains(out, "../../schemas/descriptive_basic.xsd") {
-		t.Error("package-level schema location hint missing")
-	}
-}
-
-// The schema-location hint follows the document: a representation-level
-// document (four levels deep) must point four levels up.
-func TestEncodeTermsSchemaLocation(t *testing.T) {
-	var buf bytes.Buffer
-	if err := EncodeTerms(&buf, testTerms(), "../../../../schemas"); err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(buf.String(), `xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic ../../../../schemas/descriptive_basic.xsd"`) {
-		t.Errorf("rep-level schema location hint wrong:\n%s", buf.String())
-	}
-}
-
-func TestEncodeTermsRefusesInvalid(t *testing.T) {
-	bad := Terms{{Element: "dcterms:titel", Value: "x"}}
-	var buf bytes.Buffer
-	if err := EncodeTerms(&buf, bad, PackageSchemas); err == nil {
-		t.Fatal("EncodeTerms accepted an invalid element")
-	}
-	if buf.Len() != 0 {
-		t.Errorf("EncodeTerms wrote %d bytes despite refusing", buf.Len())
-	}
-}
-
-func TestEncodeDCTerms(t *testing.T) {
-	terms := Terms{
-		{Element: "dcterms:identifier", Value: "uuid-x"},
-		{Element: "dcterms:alternative", Value: "Alt"},
-		{Element: "dcterms:created", Value: "1913"},
-		{Element: "dcterms:abstract", Lang: "en", Value: "About"},
-		{Element: "dcterms:isPartOf", Value: "Collectie Sacré"},
-		{Element: "dcterms:spatial", Value: "Gent"},
-		{Element: "dcterms:license", Value: "publiek domein"},
-		{Element: "dcterms:extent", Value: "48 foto's"},
-		{Element: "dcterms:rightsHolder", Value: "UGent"},      // no Simple DC home
-		{Element: "schema:artMedium", Value: "zilvergelatine"}, // no Simple DC home
-	}
-
-	var buf bytes.Buffer
-	if err := EncodeDCTerms(&buf, terms, PackageSchemas); err != nil {
-		t.Fatalf("EncodeDCTerms: %v", err)
+	if err := Encode(&buf, testTerms(), "../../schemas"); err != nil {
+		t.Fatalf("Encode: %v", err)
 	}
 	out := buf.String()
 
@@ -96,21 +27,71 @@ func TestEncodeDCTerms(t *testing.T) {
 		"<simpledc",
 		`xsi:noNamespaceSchemaLocation="../../schemas/dc.xsd"`,
 		"<identifier>uuid-x</identifier>",
-		"<title>Alt</title>",                   // alternative → title
-		"<date>1913</date>",                    // created → date
-		"<description>About</description>",     // abstract → description
-		"<relation>Collectie Sacré</relation>", // isPartOf → relation
-		"<coverage>Gent</coverage>",            // spatial → coverage
-		"<rights>publiek domein</rights>",      // license → rights
-		"<format>48 foto&#39;s</format>",       // extent → format, escaped
+		// language tags are accepted but not emitted
+		"<title>Fotoalbum Gent 1913</title>",
+		"<date>1913</date>",
+		// operator values are arbitrary text and must be escaped
+		"<format>48 foto&#39;s</format>",
+		"<subject>R&amp;D &lt;scans&gt;</subject>",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %s\n%s", want, out)
 		}
 	}
-	for _, banned := range []string{"UGent", "zilvergelatine", "dcterms:", "hetarchief"} {
-		if strings.Contains(out, banned) {
-			t.Errorf("output must not carry %s (no Simple DC home)\n%s", banned, out)
+	if strings.Contains(out, "xml:lang") {
+		t.Errorf("simpledc must not carry xml:lang\n%s", out)
+	}
+	// Term order is the producer's order.
+	if strings.Index(out, "<title>") > strings.Index(out, "<date>") {
+		t.Error("term order not preserved")
+	}
+}
+
+// The schema-location hint follows the document: a representation-level
+// document (four levels deep) must point four levels up.
+func TestEncodeSchemaLocation(t *testing.T) {
+	var buf bytes.Buffer
+	if err := Encode(&buf, testTerms(), "../../../../schemas"); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), `xsi:noNamespaceSchemaLocation="../../../../schemas/dc.xsd"`) {
+		t.Errorf("rep-level schema location hint wrong:\n%s", buf.String())
+	}
+}
+
+func TestEncodeRefusesInvalid(t *testing.T) {
+	bad := Terms{{Element: "abstract", Value: "x"}} // a qualified term, not Simple DC
+	var buf bytes.Buffer
+	if err := Encode(&buf, bad, "../../schemas"); err == nil {
+		t.Fatal("Encode accepted an element outside Simple Dublin Core")
+	}
+	if buf.Len() != 0 {
+		t.Errorf("Encode wrote %d bytes despite refusing", buf.Len())
+	}
+}
+
+func TestResolveKey(t *testing.T) {
+	tests := []struct {
+		key     string
+		element string // "" means the key must be unknown
+	}{
+		{"identifier", "identifier"},
+		{"Title", "title"}, // keys are case-insensitive
+		{"coverage", "coverage"},
+		{"abstract", ""},      // a qualified term meemoo's vocabulary has; not Simple DC
+		{"dcterms:title", ""}, // prefixed keys are not supported
+		{"titel", ""},         // typo
+	}
+	for _, tt := range tests {
+		element, ok := ResolveKey(tt.key)
+		if tt.element == "" {
+			if ok {
+				t.Errorf("ResolveKey(%q) resolved to %q, want unknown", tt.key, element)
+			}
+			continue
+		}
+		if !ok || element != tt.element {
+			t.Errorf("ResolveKey(%q) = %q, %v; want %q", tt.key, element, ok, tt.element)
 		}
 	}
 }
@@ -121,19 +102,12 @@ func TestTermValidate(t *testing.T) {
 		term Term
 		want string // "" means valid; else substring of the error
 	}{
-		{"valid plain", Term{Element: "dcterms:title", Value: "x"}, ""},
-		{"valid schema with lang", Term{Element: "schema:artform", Lang: "nl-BE", Value: "x"}, ""},
-		{"valid new key element", Term{Element: "dcterms:abstract", Value: "x"}, ""},
-		{"unprefixed", Term{Element: "title", Value: "x"}, "not in the descriptive vocabulary"},
-		{"misspelled dcterms", Term{Element: "dcterms:titel", Value: "x"}, "not in the descriptive vocabulary"},
-		// a real DCMI term meemoo's profile excludes; the old DCMI-55
-		// membership check accepted it
-		{"dcterms outside the profile", Term{Element: "dcterms:accrualPolicy", Value: "x"}, "not in the descriptive vocabulary"},
-		// schema.org is no longer an open passthrough
-		{"schema outside the profile", Term{Element: "schema:duration", Value: "x"}, "not in the descriptive vocabulary"},
-		{"unknown prefix", Term{Element: "foo:bar", Value: "x"}, "not in the descriptive vocabulary"},
-		{"bad lang", Term{Element: "dcterms:title", Lang: "nl!", Value: "x"}, "not a language tag"},
-		{"empty value", Term{Element: "dcterms:subject", Value: "  "}, "empty value"},
+		{"valid", Term{Element: "title", Value: "x"}, ""},
+		{"valid with lang", Term{Element: "description", Lang: "nl-BE", Value: "x"}, ""},
+		{"qualified term", Term{Element: "abstract", Value: "x"}, "not a Simple Dublin Core element"},
+		{"prefixed", Term{Element: "dcterms:title", Value: "x"}, "not a Simple Dublin Core element"},
+		{"bad lang", Term{Element: "title", Lang: "nl!", Value: "x"}, "not a language tag"},
+		{"empty value", Term{Element: "subject", Value: "  "}, "empty value"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -151,36 +125,44 @@ func TestTermValidate(t *testing.T) {
 	}
 }
 
-func TestTermsValidateDuplicateIdentifier(t *testing.T) {
-	terms := Terms{
-		{Element: "dcterms:identifier", Value: "A"},
-		{Element: "dcterms:identifier", Value: "B"},
+// Simple DC has no cardinality rules of its own, so a repeated element is
+// fine; only the identifier stays single.
+func TestTermsValidate(t *testing.T) {
+	repeated := Terms{
+		{Element: "identifier", Value: "A"},
+		{Element: "description", Value: "een"},
+		{Element: "description", Value: "twee"},
 	}
-	err := terms.Validate()
+	if err := repeated.Validate(); err != nil {
+		t.Fatalf("repeated description refused: %v", err)
+	}
+
+	twoIDs := Terms{
+		{Element: "identifier", Value: "A"},
+		{Element: "identifier", Value: "B"},
+	}
+	err := twoIDs.Validate()
 	if err == nil || !strings.Contains(err.Error(), "exactly one") {
 		t.Fatalf("want the exactly-one identifier rule, got %v", err)
 	}
 }
 
-// The identifier swap: read the local identifier first, then replace it
-// with the object identifier. Assemble must follow that order.
-func TestTermsIdentifierSeams(t *testing.T) {
-	terms := testTerms()
-
-	if got := terms.LocalIdentifier(); got != "BIB.FA.2026.001" {
-		t.Fatalf("LocalIdentifier = %q", got)
+func TestValidateRequired(t *testing.T) {
+	terms := Terms{{Element: "identifier", Value: "A"}}
+	err := terms.ValidateRequired("identifier", "title")
+	if err == nil || !strings.Contains(err.Error(), "title is required") {
+		t.Fatalf("want the missing title named, got %v", err)
 	}
-
-	terms.SetObjectIdentifier("uuid-entity-1")
-	if got := terms.LocalIdentifier(); got != "uuid-entity-1" {
-		t.Fatalf("identifier not swapped in place, got %q", got)
+	if err := testTerms().ValidateRequired("identifier", "title"); err != nil {
+		t.Fatalf("complete terms refused: %v", err)
 	}
+}
 
-	var buf bytes.Buffer
-	if err := EncodeTerms(&buf, terms, PackageSchemas); err != nil {
-		t.Fatal(err)
+func TestLocalIdentifier(t *testing.T) {
+	if got := testTerms().LocalIdentifier(); got != "uuid-x" {
+		t.Errorf("LocalIdentifier = %q, want uuid-x", got)
 	}
-	if !strings.Contains(buf.String(), "<dcterms:identifier>uuid-entity-1</dcterms:identifier>") {
-		t.Error("encoded document does not carry the object identifier")
+	if got := (Terms{{Element: "title", Value: "x"}}).LocalIdentifier(); got != "" {
+		t.Errorf("LocalIdentifier without identifier = %q, want empty", got)
 	}
 }

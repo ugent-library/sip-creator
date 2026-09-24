@@ -1,4 +1,4 @@
-package dc
+package dcschema
 
 import (
 	"strings"

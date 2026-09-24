@@ -1,4 +1,4 @@
-package dc
+package dcschema
 
 import (
 	"slices"
@@ -45,23 +45,11 @@ func TestResolveKey(t *testing.T) {
 	}
 }
 
-// The table's own invariants: unique keys and elements (the two lookup
-// indexes must not silently drop rows), and Simple DC parents drawn from
-// the fifteen Simple DC elements.
+// The table's own invariant: unique keys and elements, or the two lookup
+// indexes would silently drop rows.
 func TestVocabularyTable(t *testing.T) {
 	if len(vocabularyByKey) != len(vocabulary) || len(vocabularyByElement) != len(vocabulary) {
 		t.Fatalf("duplicate keys or elements in the vocabulary: %d rows, %d keys, %d elements",
 			len(vocabulary), len(vocabularyByKey), len(vocabularyByElement))
-	}
-	simpleDC := map[string]bool{
-		"contributor": true, "coverage": true, "creator": true, "date": true,
-		"description": true, "format": true, "identifier": true,
-		"language": true, "publisher": true, "relation": true, "rights": true,
-		"source": true, "subject": true, "title": true, "type": true,
-	}
-	for _, row := range vocabulary {
-		if row.SimpleDC != "" && !simpleDC[row.SimpleDC] {
-			t.Errorf("%s dumbs down to %q, which is not a Simple DC element", row.Element, row.SimpleDC)
-		}
 	}
 }

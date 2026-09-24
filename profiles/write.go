@@ -4,12 +4,21 @@ import (
 	"io"
 	"path"
 
-	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/premis"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
 	"github.com/ugent-library/sip-creator/store"
+)
+
+// The package's schemas/ dir as seen from a descriptive document, which the
+// encoders write into their schema-location hints: from a package-level
+// document (metadata/descriptive/*.xml) and from a representation-level one
+// (representations/<name>/metadata/descriptive/*.xml). Only the writer knows
+// where a document lands, so the paths live here.
+const (
+	packageSchemas        = "../../schemas"
+	representationSchemas = "../../../../schemas"
 )
 
 // write emits pkg to disk in dependency order, back-filling fixity on File
@@ -116,7 +125,7 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 func (b *Builder) writeDescriptive(st *store.Store, pkg *sip.Package, encode descriptiveEncoder) error {
 	df := pkg.Root.DescriptionFile
 	info, err := st.WriteMetadata(df.Path, func(w io.Writer) error {
-		return encode(w, pkg.Root.Description, dc.PackageSchemas)
+		return encode(w, pkg.Root.Description, packageSchemas)
 	})
 	if err != nil {
 		return err
@@ -135,7 +144,7 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 				return err
 			}
 			info, err := st.WriteMetadata(base+df.Path, func(w io.Writer) error {
-				return encodeDescriptive(w, r.Description, dc.RepresentationSchemas)
+				return encodeDescriptive(w, r.Description, representationSchemas)
 			})
 			if err != nil {
 				return err

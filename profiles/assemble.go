@@ -12,7 +12,7 @@ import (
 	"slices"
 
 	"github.com/ugent-library/sip-creator/characterization"
-	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/encoders/dcschema"
 	"github.com/ugent-library/sip-creator/encoders/premis"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
@@ -81,9 +81,9 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", d.LocalIdentifier())
 	}
 	if def.SwapObjectIdentifier {
-		// The swap is a Dublin Core operation, only dc.Terms has the slot;
-		// the descriptive-standard check in Build guarantees the type.
-		d.(dc.Terms).SetObjectIdentifier(e.Identifier)
+		// The swap is meemoo's: only dcschema.Terms has the slot, and the
+		// descriptive-standard check in Build guarantees the type.
+		d.(dcschema.Terms).SetObjectIdentifier(e.Identifier)
 	}
 	e.Description = d
 
@@ -162,7 +162,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			// representation identifier instead (a no-op when they carry
 			// none; rep-level identity is optional).
 			if def.SwapObjectIdentifier {
-				sr.Descriptive.(dc.Terms).SetObjectIdentifier(r.Identifier)
+				sr.Descriptive.(dcschema.Terms).SetObjectIdentifier(r.Identifier)
 			}
 			r.Description = sr.Descriptive
 

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ugent-library/sip-creator/encoders/dcschema"
 )
 
 const minimalCSV = "key,value\nidentifier,ID-1\ntitle,Test\n"
@@ -95,7 +97,7 @@ func TestReadFlat(t *testing.T) {
 	if f.Source != filepath.Join(root, "sub", "0003.tiff") {
 		t.Errorf("Source = %q, want the absolute disk path", f.Source)
 	}
-	if len(pkg.Descriptive) == 0 {
+	if pkg.Descriptive == nil {
 		t.Error("package descriptive terms missing")
 	}
 	if pkg.Characterization != nil {
@@ -137,8 +139,8 @@ func TestReadRepresentations(t *testing.T) {
 	if master.Descriptive != nil {
 		t.Error("master has no dcschema.csv but carries descriptive terms")
 	}
-	if len(access.Descriptive) != 1 || access.Descriptive[0].Element != "dcterms:title" {
-		t.Errorf("access descriptive = %v, want its title term", access.Descriptive)
+	if got, ok := access.Descriptive.(dcschema.Terms); !ok || len(got) != 1 || got[0].Element != "dcterms:title" {
+		t.Errorf("access descriptive = %#v, want its title term", access.Descriptive)
 	}
 	if got := paths(access.Files); strings.Join(got, ",") != "book.pdf" {
 		t.Errorf("access content = %v; reserved names must not count as content", got)

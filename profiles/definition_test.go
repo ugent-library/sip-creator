@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/encoders/dcschema"
 )
 
 // earkDef returns the registered "eark" definition the tests build with.
@@ -17,10 +18,19 @@ func earkDef(t *testing.T) Definition {
 	return def
 }
 
-// identityTerms is the input convention's own MUSTs and nothing more:
-// enough for eark, short of meemoo's four.
+// identityTerms is the input convention's own MUSTs and nothing more, in
+// the eark profile's standard, Simple Dublin Core.
 func identityTerms() dc.Terms {
 	return dc.Terms{
+		{Element: "identifier", Value: "local-id-001"},
+		{Element: "title", Value: "Catus Testus"},
+	}
+}
+
+// meemooIdentityTerms is the same identity in meemoo's standard: short of
+// the four elements the basic profile requires.
+func meemooIdentityTerms() dcschema.Terms {
+	return dcschema.Terms{
 		{Element: "dcterms:identifier", Value: "local-id-001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
 	}
@@ -29,12 +39,10 @@ func identityTerms() dc.Terms {
 // The per-profile required sets: identity-only terms satisfy eark and are
 // refused under basic, which names every missing element at once.
 func TestValidateDescriptiveRequiredPerProfile(t *testing.T) {
-	in := &Input{Descriptive: identityTerms()}
-
-	if err := earkDef(t).validateDescriptive(in); err != nil {
+	if err := earkDef(t).validateDescriptive(&Input{Descriptive: identityTerms()}); err != nil {
 		t.Fatalf("eark refused identity-only terms: %v", err)
 	}
-	err := basicDef(t).validateDescriptive(in)
+	err := basicDef(t).validateDescriptive(&Input{Descriptive: meemooIdentityTerms()})
 	if err == nil {
 		t.Fatal("basic accepted terms without description and created")
 	}
@@ -45,69 +53,48 @@ func TestValidateDescriptiveRequiredPerProfile(t *testing.T) {
 	}
 
 	// A title is required by both profiles' sets; Input.Validate doesn't
-	// check it, so the Definition is the only guard.
-	in = &Input{Descriptive: dc.Terms{{Element: "dcterms:identifier", Value: "x"}}}
-	for _, def := range []Definition{basicDef(t), earkDef(t)} {
-		if err := def.validateDescriptive(in); err == nil || !strings.Contains(err.Error(), "dcterms:title") {
-			t.Errorf("%s accepted terms without a title: %v", def.Name, err)
-		}
+	// check it, so the Definition is the only guard. Each profile names it
+	// as its standard spells it.
+	err = basicDef(t).validateDescriptive(&Input{Descriptive: dcschema.Terms{{Element: "dcterms:identifier", Value: "x"}}})
+	if err == nil || !strings.Contains(err.Error(), "dcterms:title") {
+		t.Errorf("basic accepted terms without a title: %v", err)
+	}
+	err = earkDef(t).validateDescriptive(&Input{Descriptive: dc.Terms{{Element: "identifier", Value: "x"}}})
+	if err == nil || !strings.Contains(err.Error(), "title is required") {
+		t.Errorf("eark accepted terms without a title: %v", err)
 	}
 }
 
-// Only the meemoo profile enforces cardinality: a repeated abstract
-// (same language) fails basic, at package and representation level, and
-// passes eark.
-func TestValidateDescriptiveCardinalityPerProfile(t *testing.T) {
-	repeated := dc.Terms{
-		{Element: "dcterms:abstract", Lang: "nl", Value: "een"},
-		{Element: "dcterms:abstract", Lang: "nl", Value: "twee"},
-	}
-	in := &Input{Descriptive: append(testDescriptive(), repeated...)}
-
-	if err := earkDef(t).validateDescriptive(in); err != nil {
-		t.Fatalf("eark enforced a meemoo cardinality mark: %v", err)
-	}
-	err := basicDef(t).validateDescriptive(in)
-	if err == nil || !strings.Contains(err.Error(), "more than once") {
-		t.Fatalf("basic did not refuse the repeated abstract: %v", err)
+// Cardinality and the Dutch-language rule are meemoo's standard's own, so
+// Input.Validate applies them to dcschema terms at both levels whatever
+// the profile, and never to Simple Dublin Core terms.
+func TestInputValidateAppliesStandardRules(t *testing.T) {
+	_, in, _ := newTestBuilder(t)
+	in.Descriptive = append(testDescriptive(),
+		dcschema.Term{Element: "dcterms:abstract", Lang: "nl", Value: "een"},
+		dcschema.Term{Element: "dcterms:abstract", Lang: "nl", Value: "twee"})
+	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), "more than once") {
+		t.Errorf("repeated abstract accepted: %v", err)
 	}
 
-	in = &Input{
-		Descriptive:     testDescriptive(),
-		Representations: []SourceRepresentation{{Name: "master", Descriptive: repeated}},
-	}
-	err = basicDef(t).validateDescriptive(in)
-	if err == nil || !strings.Contains(err.Error(), `representation "master"`) {
-		t.Fatalf("basic did not refuse the representation-level repeat: %v", err)
-	}
-}
-
-// The required language is meemoo profile data: lang-tagged elements
-// without a Dutch entry fail basic and pass eark, at package and
-// representation level.
-func TestValidateDescriptiveRequiredLangPerProfile(t *testing.T) {
-	terms := testDescriptive()
-	terms = append(terms, dc.Term{Element: "dcterms:subject", Lang: "en", Value: "cats"})
-	in := &Input{Descriptive: terms}
-
-	if err := earkDef(t).validateDescriptive(in); err != nil {
-		t.Fatalf("eark enforced a required language: %v", err)
-	}
-	err := basicDef(t).validateDescriptive(in)
-	if err == nil || !strings.Contains(err.Error(), `"nl"`) {
-		t.Fatalf("basic did not demand the Dutch entry: %v", err)
+	_, in, _ = newTestBuilder(t)
+	in.Descriptive = append(testDescriptive(), dcschema.Term{Element: "dcterms:subject", Lang: "en", Value: "cats"})
+	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `"nl"`) {
+		t.Errorf("subject without a Dutch entry accepted: %v", err)
 	}
 
-	in = &Input{
-		Descriptive: testDescriptive(),
-		Representations: []SourceRepresentation{{
-			Name:        "master",
-			Descriptive: dc.Terms{{Element: "dcterms:title", Lang: "en", Value: "Cats"}},
-		}},
+	_, in, _ = newTestBuilder(t)
+	in.Representations[0].Descriptive = dcschema.Terms{{Element: "dcterms:title", Lang: "en", Value: "Cats"}}
+	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `representation "master"`) {
+		t.Errorf("representation title without a Dutch entry accepted: %v", err)
 	}
-	err = basicDef(t).validateDescriptive(in)
-	if err == nil || !strings.Contains(err.Error(), `representation "master"`) || !strings.Contains(err.Error(), `"nl"`) {
-		t.Fatalf("basic did not demand the Dutch entry at representation level: %v", err)
+
+	_, in, _ = newTestBuilder(t)
+	in.Descriptive = append(identityTerms(),
+		dc.Term{Element: "description", Lang: "en", Value: "one"},
+		dc.Term{Element: "description", Lang: "en", Value: "two"})
+	if err := in.Validate(); err != nil {
+		t.Errorf("Simple DC has no such rules, yet Validate refused: %v", err)
 	}
 }
 

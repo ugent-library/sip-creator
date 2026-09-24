@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/encoders/dcschema"
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -55,7 +55,7 @@ func TestBuilderInputEquivalence(t *testing.T) {
 		t.Fatal(err)
 	}
 	handIn := &profiles.Input{
-		Descriptive: dc.Terms{
+		Descriptive: dcschema.Terms{
 			{Element: "dcterms:identifier", Value: "ID-1"},
 			{Element: "dcterms:title", Value: "Test"},
 			{Element: "dcterms:description", Lang: "nl", Value: "Testbeschrijving"},

@@ -13,8 +13,8 @@ import (
 	"path/filepath"
 
 	"github.com/ugent-library/sip-creator/characterization"
-	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/profiles"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 // File is one content, documentation, or received-PREMIS file found in the
@@ -47,8 +47,8 @@ type Representation struct {
 	// to the label).
 	Type string
 	// Descriptive is nil unless the representation has its own descriptive
-	// rows file (dcschema.csv or dc.csv).
-	Descriptive dc.Terms
+	// rows file: dcschema.Terms from a dcschema.csv, dc.Terms from a dc.csv.
+	Descriptive sip.Description
 	// Files are the content files, in deterministic traversal order
 	// (lexical per directory).
 	Files []File
@@ -63,9 +63,9 @@ type Representation struct {
 type Package struct {
 	// Root is the absolute path of the input folder.
 	Root string
-	// Descriptive is the package-level terms from the top-level descriptive
-	// rows file (dcschema.csv or dc.csv).
-	Descriptive dc.Terms
+	// Descriptive is the package-level description from the top-level rows
+	// file: dcschema.Terms from a dcschema.csv, dc.Terms from a dc.csv.
+	Descriptive sip.Description
 	// Representations holds at least one representation; a flat folder
 	// reads as a single one.
 	Representations []Representation
@@ -171,8 +171,7 @@ const (
 
 // descriptiveStandard is the vocabulary a descriptive rows file is in, told
 // by its name (input specification §3): dcschema.csv holds meemoo's
-// dc+schema vocabulary, dc.csv Simple Dublin Core. Both decode through the
-// one vocabulary table until the encoders are split per standard.
+// dc+schema vocabulary, dc.csv Simple Dublin Core.
 type descriptiveStandard string
 
 const (

@@ -13,6 +13,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/encoders/dcschema"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -28,9 +29,10 @@ func fileMD5(t *testing.T, path string) string {
 }
 
 // testDescriptive satisfies the strictest registered profile: meemoo's
-// four required elements, Dutch entries on the lang-tagged ones.
-func testDescriptive() dc.Terms {
-	return dc.Terms{
+// four required elements, Dutch entries on the lang-tagged ones. It is the
+// basic profile's input; eark tests swap in identityTerms.
+func testDescriptive() dcschema.Terms {
+	return dcschema.Terms{
 		{Element: "dcterms:identifier", Value: "local-id-001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
 		{Element: "dcterms:description", Lang: "nl", Value: "Een testkat"},
@@ -466,11 +468,11 @@ func TestInputValidate(t *testing.T) {
 	}{
 		{"no descriptive", func(c *Input) { c.Descriptive = nil }, "no descriptive metadata"},
 		{"invalid term", func(c *Input) {
-			c.Descriptive = append(c.Descriptive.(dc.Terms), dc.Term{Element: "dcterms:titel", Value: "x"})
+			c.Descriptive = append(c.Descriptive.(dcschema.Terms), dcschema.Term{Element: "dcterms:titel", Value: "x"})
 		}, "not in the descriptive vocabulary"},
 		{"no identifier", func(c *Input) {
-			c.Descriptive = dc.Terms{{Element: "dcterms:title", Value: "x"}}
-		}, "no dcterms:identifier"},
+			c.Descriptive = dcschema.Terms{{Element: "dcterms:title", Value: "x"}}
+		}, "no identifier"},
 		{"no representations", func(c *Input) { c.Representations = nil }, "at least one version"},
 		{"bad name", func(c *Input) { c.Representations[0].Name = "master copy" }, "may only contain"},
 		{"xml-unsafe label", func(c *Input) { c.Representations[0].Label = `Master "scan"` }, "cannot be emitted"},
@@ -489,7 +491,7 @@ func TestInputValidate(t *testing.T) {
 			c.PackageIdentifier = "not-a-uuid"
 		}, "uuid-<uuid> form"},
 		{"invalid representation descriptive", func(c *Input) {
-			c.Representations[0].Descriptive = dc.Terms{{Element: "dcterms:titel", Value: "x"}}
+			c.Representations[0].Descriptive = dcschema.Terms{{Element: "dcterms:titel", Value: "x"}}
 		}, "not in the descriptive vocabulary"},
 		{"received premis claims the generated name", func(c *Input) {
 			c.Premis = []SourceFile{{Source: "/x/premis.xml", Path: "premis.xml"}}
@@ -520,7 +522,7 @@ func TestInputValidate(t *testing.T) {
 // required.
 func TestAssembleRepresentationDescriptive(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
-	in.Representations[0].Descriptive = dc.Terms{
+	in.Representations[0].Descriptive = dcschema.Terms{
 		{Element: "dcterms:license", Value: "publiek domein"},
 	}
 
@@ -543,7 +545,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	// With an identifier term present, the representation identifier is
 	// swapped in, mirroring the package-level behavior.
 	b2, in2, _ := newTestBuilder(t)
-	in2.Representations[0].Descriptive = dc.Terms{
+	in2.Representations[0].Descriptive = dcschema.Terms{
 		{Element: "dcterms:identifier", Value: "rep-local-1"},
 	}
 	pkg2, err := b2.assemble(basicDef(t), in2)
@@ -571,8 +573,9 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 // (ADR-0012).
 func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
+	in.Descriptive = identityTerms()
 	in.Representations[0].Descriptive = dc.Terms{
-		{Element: "dcterms:identifier", Value: "rep-local-1"},
+		{Element: "identifier", Value: "rep-local-1"},
 	}
 
 	pkg, err := b.assemble(earkDef(t), in)
@@ -597,6 +600,7 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 // (ADR-0013).
 func TestAssembleRepresentationDeclaration(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
+	in.Descriptive = identityTerms()
 	pkg, err := b.assemble(earkDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
@@ -641,6 +645,7 @@ func TestAssembleRepresentationCascade(t *testing.T) {
 			Files: []SourceFile{writeEssence(t, inDir, "c.tiff", "c")}},
 	}
 
+	in.Descriptive = identityTerms()
 	pkg, err := b.assemble(earkDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
@@ -782,24 +787,41 @@ func TestBuildInvalidConfigWritesNothing(t *testing.T) {
 // profile writes.
 type otherDescription struct{}
 
-func (otherDescription) LocalIdentifier() string { return "other-1" }
-func (otherDescription) Validate() error         { return nil }
+func (otherDescription) LocalIdentifier() string          { return "other-1" }
+func (otherDescription) Validate() error                  { return nil }
+func (otherDescription) ValidateRequired(...string) error { return nil }
 
 // A description of another standard is refused by the profile's
 // descriptive-standard check before validation and before any side effect,
-// at package and representation level alike.
+// at package and representation level alike: a type no profile writes,
+// meemoo terms handed to eark, Simple DC terms handed to basic.
 func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
-	in.Descriptive = otherDescription{}
-	_, err := b.Build(earkDef(t), in)
-	if err == nil || !strings.Contains(err.Error(), "dc.Terms") {
-		t.Fatalf("Build error = %v, want the mismatch naming dc.Terms", err)
+	cases := []struct {
+		name string
+		def  Definition
+		desc sip.Description
+		want string
+	}{
+		{"unknown type to eark", earkDef(t), otherDescription{}, "dc.Terms"},
+		{"meemoo terms to eark", earkDef(t), testDescriptive(), "dcschema.Terms, not Simple Dublin Core"},
+		{"simple dc terms to basic", basicDef(t), identityTerms(), "dc.Terms, not meemoo dc+schema"},
 	}
-	requireEmpty(t, outDir)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			b, in, outDir := newTestBuilder(t)
+			in.Descriptive = c.desc
+			_, err := b.Build(c.def, in)
+			if err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Fatalf("Build error = %v, want the mismatch mentioning %q", err, c.want)
+			}
+			requireEmpty(t, outDir)
+		})
+	}
 
-	b, in, outDir = newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t)
+	in.Descriptive = identityTerms()
 	in.Representations[0].Descriptive = otherDescription{}
-	_, err = b.Build(earkDef(t), in)
+	_, err := b.Build(earkDef(t), in)
 	if err == nil || !strings.Contains(err.Error(), `representation "master"`) {
 		t.Fatalf("Build error = %v, want the mismatch naming the representation", err)
 	}
@@ -828,7 +850,7 @@ func TestBuildRequiredElementsPerProfile(t *testing.T) {
 	}
 
 	b, in, outDir := newTestBuilder(t)
-	in.Descriptive = identityTerms()
+	in.Descriptive = meemooIdentityTerms()
 	if _, err := b.Build(basicDef(t), in); err == nil {
 		t.Fatal("basic Build accepted terms without description and created")
 	}
