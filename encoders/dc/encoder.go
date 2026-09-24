@@ -8,6 +8,12 @@ import (
 	"text/template"
 )
 
+// Schemas are the bundled XSD file names the simpledc document points at:
+// dc.xsd alone. Its own import of xml.xsd is an absolute W3C URL, not a
+// file next to it, so nothing else needs to ship. A profile that writes
+// this document ships the list in its package's schemas/ dir.
+var Schemas = []string{"dc.xsd"}
+
 // The template interpolates element names from data, so encoding validates
 // first (element names come from the closed set) and every value is
 // escaped.

@@ -32,7 +32,11 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 	b.Logger.Info("created an intellectual entity", slog.String("id", e.Identifier))
 
 	b.assembleDescriptive(e, def, in)
-	pkg.SetSchemaFiles(schemaFileNodes())
+	schemaFiles, err := schemaFileNodes(def.Schemas)
+	if err != nil {
+		return nil, fmt.Errorf("profile %q: %w", def.Name, err)
+	}
+	pkg.SetSchemaFiles(schemaFiles)
 
 	docs, err := b.assembleDocumentationNodes(in.Documentation, in.Characterization)
 	if err != nil {
@@ -95,20 +99,27 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 	b.Logger.Info("created a descriptive file", slog.String("id", df.Identifier))
 }
 
-// schemaFileNodes declares one graph node per bundled XSD, sorted so METS
-// emission is deterministic (schemas.Get() is a map; iterating it directly
-// reorders the fileSec on every run).
-func schemaFileNodes() []*sip.File {
+// schemaFileNodes declares one graph node per XSD the profile ships, sorted
+// so METS emission is deterministic whatever order the definition lists
+// them in, and each name once: a profile concatenates the lists its
+// encoders export, and those overlap where two documents point at the same
+// schema. A name the bundle does not hold is a mistake in the definition
+// and is refused here, before any write, rather than landing in the package
+// as an empty file.
+func schemaFileNodes(names []string) ([]*sip.File, error) {
 	xsds := schemas.Get()
-	files := make([]*sip.File, 0, len(xsds))
-	for _, name := range slices.Sorted(maps.Keys(xsds)) {
+	files := make([]*sip.File, 0, len(names))
+	for _, name := range slices.Compact(slices.Sorted(slices.Values(names))) {
+		if _, ok := xsds[name]; !ok {
+			return nil, fmt.Errorf("the schema %q is not bundled", name)
+		}
 		f := sip.NewFile()
 		f.Name = name
 		f.Path = "schemas/" + name
 		f.Mime = "application/xml"
 		files = append(files, f)
 	}
-	return files
+	return files, nil
 }
 
 // assembleDocumentationNodes declares graph nodes for documentation files

@@ -12,6 +12,11 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
+// Schemas are the bundled XSD file names the METS documents point at with
+// xsi:schemaLocation: METS 1.12, xlink and the two E-ARK extension schemas.
+// A profile that writes METS ships them in its package's schemas/ dir.
+var Schemas = []string{"mets1_12.xsd", "xlink.xsd", "DILCISExtensionMETS.xsd", "DILCISExtensionSIPMETS.xsd"}
+
 // identifier mints a fresh uuid-<uuid> METS ID. The templates mint shared
 // IDs ($fileGrpID, $SCHEMAID, $DOCID) once, up front, so the fileSec and
 // the structMap that points at it carry the same value.

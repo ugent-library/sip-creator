@@ -14,7 +14,6 @@ import (
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/encoders/dcschema"
-	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -159,10 +158,8 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("description file Mime = %q, want %q", df.Mime, "text/xml")
 	}
 
-	// One schema node per bundled XSD, in sorted (deterministic) order.
-	if len(pkg.SchemaFiles) != len(schemas.Get()) {
-		t.Errorf("schema nodes = %d, want %d", len(pkg.SchemaFiles), len(schemas.Get()))
-	}
+	// One schema node per distinct XSD the profile lists, in sorted
+	// (deterministic) order.
 	names := make([]string, 0, len(pkg.SchemaFiles))
 	for _, sf := range pkg.SchemaFiles {
 		names = append(names, sf.Name)
@@ -170,8 +167,8 @@ func TestAssemble(t *testing.T) {
 			t.Errorf("schema Path = %q, want %q", sf.Path, "schemas/"+sf.Name)
 		}
 	}
-	if !slices.IsSorted(names) {
-		t.Errorf("schema nodes not sorted: %v", names)
+	if want := slices.Compact(slices.Sorted(slices.Values(basicDef(t).Schemas))); !slices.Equal(names, want) {
+		t.Errorf("schema nodes = %v, want the profile's list sorted and deduplicated: %v", names, want)
 	}
 
 	// One representation: the package-side name is the producer's label,
@@ -827,6 +824,20 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	_, err := b.Build(earkDef(t), in)
 	if err == nil || !strings.Contains(err.Error(), `representation "master"`) {
 		t.Fatalf("Build error = %v, want the mismatch naming the representation", err)
+	}
+	requireEmpty(t, outDir)
+}
+
+// A definition listing a schema the bundle does not hold is refused at
+// assembly, before any write: the alternative is an empty XSD in the
+// package.
+func TestBuildRefusesUnbundledSchema(t *testing.T) {
+	b, in, outDir := newTestBuilder(t)
+	def := basicDef(t)
+	def.Schemas = append(slices.Clone(def.Schemas), "nope.xsd")
+	_, err := b.Build(def, in)
+	if err == nil || !strings.Contains(err.Error(), `"nope.xsd"`) {
+		t.Fatalf("Build error = %v, want the unbundled schema named", err)
 	}
 	requireEmpty(t, outDir)
 }

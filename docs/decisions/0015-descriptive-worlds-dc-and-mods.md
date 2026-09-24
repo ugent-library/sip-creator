@@ -44,8 +44,9 @@ belongs to which call number.
 
 **Each descriptive standard is its own world, and the worlds share no term
 type.** A world is everything the tool knows about one standard: a terms
-type, a closed vocabulary table, the validation of those terms, and the
-templates that render them. There are three, none importing another:
+type, a closed vocabulary table, the validation of those terms, the
+templates that render them, and the list of bundled XSDs its document
+points at, which a profile concatenates into what its packages ship. There are three, none importing another:
 `encoders/dcschema` for meemoo's `dc+schema` document (Dublin Core terms
 plus schema.org properties, EDTF typing, meemoo's cardinality and language
 rules), `encoders/dc` for Simple Dublin Core (the fifteen elements, no

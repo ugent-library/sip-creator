@@ -8,6 +8,13 @@ import (
 	"text/template"
 )
 
+// Schemas are the bundled XSD file names the dc+schema document points at,
+// plus what those import by relative path: meemoo's descriptive_basic.xsd
+// imports the Dublin Core, DCMI type, EDTF and schema.org schemas and
+// xml.xsd. A profile that writes this document ships the list in its
+// package's schemas/ dir.
+var Schemas = []string{"descriptive_basic.xsd", "dc.xsd", "dcterms.xsd", "dcmitype.xsd", "edtf.xsd", "schema.xsd", "xml.xsd"}
+
 // The template interpolates element names from data, so encoding validates
 // first (element names come from the closed vocabulary) and every value is
 // escaped.

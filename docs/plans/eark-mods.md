@@ -148,9 +148,11 @@ the DC table while walking the folder, before any profile is known.
    silent lossy mapping ADR-0011 removed.
 10. **Schema set as profile data.** `mods-3-7.xsd` joins the bundle (it
     imports `xlink.xsd` and `xml.xsd`, already bundled). A `Definition`
-    lists the XSD files its packages ship. `basic` and `eark` list exactly
-    the eleven files they ship today, so their output is unchanged;
-    `eark-mods` lists the METS core set plus the MODS XSD.
+    lists the XSD files its packages ship, concatenated from the lists
+    the encoders export for the schemas their documents point at (revised
+    2026-09-24; the first cut kept the names on the profile). `basic` and
+    `eark` list exactly the eleven files they ship today, so their output
+    is unchanged; `eark-mods` lists the METS set plus the MODS list.
 11. **The MODS table starts with two rows.** `identifier` and `title`, the
     two columns known to be present in every record. Further rows are data:
     a table row, a template fragment when the shape is new, and a line in
@@ -355,12 +357,20 @@ declared file that is never written breaks the package METS.
       test asserts every profile's keys resolve in its own world and pins
       the two sets. Output unchanged. Commit `Changed: the identity rule
       is stated once; profiles list only what their spec adds`.
-- [ ] **Schema list on `Definition`.** A `Schemas` field listing file
+- [x] **Schema list on `Definition`.** A `Schemas` field listing file
       names; both profiles list the eleven files in `schemas/` today. The
       assembler builds the schema nodes from the list, sorted as now; the
       writer looks each up in the bundle. A test asserts every listed name
-      exists in the bundle. Commit `Added: profile definitions list the
-      XSDs their packages ship`.
+      exists in the bundle. (Done 2026-09-24. On review the names moved
+      to the encoders: each exports the schemas its document points at
+      plus their imports (`mets.Schemas`, `dcschema.Schemas`,
+      `dc.Schemas`), the profile concatenates them, and the assembler
+      ships each name once and refuses one the bundle does not hold
+      before any write. `eark` concatenates the dcschema list too, so its
+      output stays unchanged; see the open question. Each encoder tests
+      its list against the bundle, and the registry test pins that both
+      profiles ship the whole bundle.) Commit `Added: profile definitions
+      list the XSDs their packages ship`.
 - [ ] **A supplied document travels the essence path.**
       `DescriptiveDocument` on `Input` and `SourceRepresentation`; the
       one-of check in `Validate` (exactly one at package level, at most one
@@ -429,9 +439,11 @@ The library route is complete after this step.
       `mods.ValidateDocument`, documents accepted. Registry entry copying
       `eark` with `descriptive: mods`: `DescriptiveName
       "mods.xml"`, no `RequiredKeys` beyond the identity every package
-      states, no cardinality or language rule, no PREMIS, `EmitRepresentationType` true, `Schemas` =
-      `mets1_12.xsd`, `DILCISExtensionMETS.xsd`,
-      `DILCISExtensionSIPMETS.xsd`, `xlink.xsd`, `xml.xsd`, `mods-3-7.xsd`;
+      states, no cardinality or language rule, no PREMIS,
+      `EmitRepresentationType` true, `Schemas` = `mets.Schemas` plus
+      `mods.Schemas` (`mods-3-7.xsd` with `xlink.xsd` and `xml.xsd`, which
+      it imports by loc.gov URL and S6 maps onto the package copies), six
+      distinct files;
       declaration `DescriptiveMDType "MODS"`, `DescriptiveMDTypeVersion
       "3.7"`, the eark profile URL. `profiles.Names()` lists it, so the
       CLI's unknown-profile message does too.
@@ -579,8 +591,8 @@ rule between those two arrived in S2; this step adds the MODS files.
   gained `ValidateRequired`, and `check` now reports a missing Dutch entry
   in a `dcschema.csv`. Both profiles still compare identical to their
   references.
-- **Next:** the remaining S2 boxes (schema list on `Definition`, supplied
-  documents, docs sweep, acceptance), then S3 to S6. On 2026-09-24
-  required elements became vocabulary keys, and the identity rule
-  (identifier and title) moved into `Input.Validate`, so a profile lists
-  only what its spec adds.
+- **Next:** the remaining S2 boxes (supplied documents, docs sweep,
+  acceptance), then S3 to S6. On 2026-09-24 required elements became
+  vocabulary keys, the identity rule (identifier and title) moved into
+  `Input.Validate` so a profile lists only what its spec adds, and each
+  profile now lists the XSDs its packages ship.

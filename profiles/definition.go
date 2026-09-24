@@ -5,6 +5,9 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/encoders/dcschema"
+	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -51,6 +54,12 @@ type Definition struct {
 	EmitRepresentationType bool
 	// Declaration carries the METS values the profile's documents declare.
 	Declaration sip.MetsDeclaration
+	// Schemas are the XSD file names, from the bundle in schemas/, that the
+	// profile's packages ship under schemas/: the lists each encoder
+	// exports for the schemas its document points at (mets.Schemas,
+	// dcschema.Schemas, dc.Schemas), concatenated. A name may appear in
+	// more than one list; each ships once. Every name must be bundled.
+	Schemas []string
 
 	// RequiredKeys are the vocabulary keys the profile's own spec requires
 	// at package level on top of the identifier and title every package
@@ -151,6 +160,8 @@ var registry = map[string]Definition{
 				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1", NoteType: "SOFTWARE VERSION"},
 			},
 		},
+		// What the METS documents and dc+schema.xml point at.
+		Schemas: slices.Concat(mets.Schemas, dcschema.Schemas),
 	},
 	"eark": {
 		Name:        "eark",
@@ -188,6 +199,11 @@ var registry = map[string]Definition{
 				{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1", NoteType: "SOFTWARE VERSION"},
 			},
 		},
+		// What the METS documents and dc.xml point at, plus the dc+schema
+		// list, which no eark document references: it ships so the output
+		// stays as it was, and dropping it is a deliberate output change to
+		// make on its own.
+		Schemas: slices.Concat(mets.Schemas, dc.Schemas, dcschema.Schemas),
 	},
 }
 
