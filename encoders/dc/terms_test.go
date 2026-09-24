@@ -156,6 +156,11 @@ func TestValidateRequired(t *testing.T) {
 	if err := testTerms().ValidateRequired("identifier", "title"); err != nil {
 		t.Fatalf("complete terms refused: %v", err)
 	}
+	// A key outside the fifteen can only be a mistake in a profile
+	// definition and is reported, never silently satisfied.
+	if err := terms.ValidateRequired("abstract"); err == nil || !strings.Contains(err.Error(), `"abstract"`) {
+		t.Errorf("unknown required key not reported: %v", err)
+	}
 }
 
 func TestLocalIdentifier(t *testing.T) {

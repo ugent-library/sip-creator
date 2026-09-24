@@ -53,22 +53,23 @@ type Definition struct {
 	// Declaration carries the METS values the profile's documents declare.
 	Declaration sip.MetsDeclaration
 
-	// RequiredElements are the descriptive elements the profile's spec makes
-	// required at package level, spelled as the profile's descriptive
-	// standard spells them: meemoo's basic profile requires four, plain
-	// E-ARK only the input convention's identity MUSTs.
-	RequiredElements []string
+	// RequiredKeys are the vocabulary keys the profile's spec makes required
+	// at package level (identifier, title, ...), which the profile's
+	// descriptive standard resolves through its own table: meemoo's basic
+	// profile requires four, plain E-ARK only the input convention's
+	// identity MUSTs.
+	RequiredKeys []string
 }
 
 // validateDescriptive checks the package-level description against the
-// profile's required elements, Definition data. Requiredness applies at
+// profile's required keys, Definition data. Requiredness applies at
 // package level only: identity lives there, and a representation's
 // description is optional. Every other rule of the descriptive standard
 // (term validity, meemoo's cardinality and language rules) is the
 // standard's own and runs in Input.Validate. Findings are joined so one
 // failed build names every gap at once.
 func (d Definition) validateDescriptive(in *Input) error {
-	return in.Descriptive.ValidateRequired(d.RequiredElements...)
+	return in.Descriptive.ValidateRequired(d.RequiredKeys...)
 }
 
 // representationDeclaration returns the declaration a representation's METS
@@ -131,9 +132,9 @@ var registry = map[string]Definition{
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
 		// meemoo's basic content profile: the vocabulary table's required
-		// elements. Its cardinality limits and Dutch-language rule are the
+		// keys. Its cardinality limits and Dutch-language rule are the
 		// dcschema standard's own (dcschema.Terms.Validate).
-		RequiredElements: dcschema.RequiredElements(),
+		RequiredKeys: dcschema.RequiredKeys(),
 		Declaration: sip.MetsDeclaration{
 			// meemoo SIP 1.2, the stable spec (docs/archive/meemoo-12.md):
 			// 1.2 requires the unversioned E-ARK SIP profile URL and the
@@ -166,9 +167,8 @@ var registry = map[string]Definition{
 		// does not describe agents or events.
 		EmitPackagePremis:        false,
 		EmitRepresentationPremis: false,
-		// Only the input convention's identity MUSTs, as Simple Dublin Core
-		// spells them.
-		RequiredElements: []string{"identifier", "title"},
+		// Only the input convention's identity MUSTs.
+		RequiredKeys: []string{"identifier", "title"},
 		// RODA shows each representation's type from the representation
 		// METS's content typing (ADR-0013).
 		EmitRepresentationType: true,

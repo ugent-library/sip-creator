@@ -98,14 +98,14 @@ the DC table while walking the folder, before any profile is known.
    `RequireSubmitterORID`.
 5. **A small interface in the domain model.** `sip/` declares
    `Description` with `LocalIdentifier() string`, `Validate() error` and
-   `ValidateRequired(elements ...string) error` (the third added
-   2026-09-23 so a profile checks its required elements without knowing
+   `ValidateRequired(keys ...string) error` (the third added
+   2026-09-23 so a profile checks its required keys without knowing
    the terms type); every terms type implements it, and `sip/` stops
    importing an encoder package. The profile's descriptive standard asserts the concrete type at
-   build time (decision 3). The dc-only identifier swap stays a method on
-   the dc terms type.
+   build time (decision 3). The identifier swap stays a method on the
+   meemoo terms type in `encoders/dcschema`, the one world that has it.
    Required elements on a `Definition` become plain vocabulary keys
-   (`identifier`, `title`), valid in both worlds.
+   (`identifier`, `title`), which every world's table resolves.
 6. **Supplied documents reuse the essence path.** A descriptive `*sip.File`
    with `Source` set is copied by the writer with fixity computed by the
    store, one without is generated. `profiles.Input` and
@@ -327,12 +327,16 @@ declared file that is never written breaks the package METS.
       handed to `eark`. Design doc and `CLAUDE.md` follow (three encoder
       packages; the meemoo rules inside their world). Commit `Changed:
       meemoo dc+schema and Simple DC are separate descriptive worlds`.
-- [ ] **Required elements become keys.** `Definition.RequiredElements`
+- [x] **Required elements become keys.** `Definition.RequiredElements`
       becomes `RequiredKeys`: `identifier` and `title` for `eark`, the
       meemoo table's required keys for `basic`. Each world's
-      `ValidateRequired` resolves keys through its own table. Adjust the messages and the three
-      tests that name elements. Commit `Changed: required descriptive
-      elements are named by vocabulary key`.
+      `ValidateRequired` resolves keys through its own table; a key the
+      table does not know is reported, since it can only be a mistake in
+      a profile definition. A meemoo finding names the key and the element
+      it emits (`description (dcterms:description) is required but
+      missing`), a Simple DC finding the key alone. Adjust the messages
+      and the three tests that name elements. Commit `Changed: required
+      descriptive elements are named by vocabulary key`.
 - [ ] **Schema list on `Definition`.** A `Schemas` field listing file
       names; both profiles list the eleven files in `schemas/` today. The
       assembler builds the schema nodes from the list, sorted as now; the
@@ -529,4 +533,34 @@ rule between those two arrived in S2; this step adds the MODS files.
 - **`eark` still ships `descriptive_basic.xsd`**, which it never references.
   Dropping it is a deliberate output change and stays out of this plan.
 - **Library callers** change their import from `encoders/metadata` to
-  `encoders/dc` in S2; the commit message records the rename.
+  `encoders/dcschema` (meemoo) or `encoders/dc` (plain E-ARK) in S2; the
+  commit messages record the rename and the split.
+
+## Progress so far (2026-09-24)
+
+- **S1 shipped.** ADR-0015 and ADR-0016 drafted; in review the plan's
+  rejection of a key grammar was sharpened (roles, title types and
+  identifier types are table rows, personal and corporate names both, dates
+  as single EDTF values), and the items table was added: a record's copies
+  as `items.csv` (`callnumber` required, `barcode` and `enumeration`
+  optional), package level only, because a representation is a CSIP
+  rendition, never a copy or a volume.
+- **Work runs on the branch `eark-mods-support`** with this plan as the
+  checklist: one commit per box, proposed as a one-line message in chat
+  and committed only after approval.
+- **S2 so far:** the `eark` reference is captured under
+  `tmp/reference/eark/pkg`; `encoders/metadata` became `encoders/dc`;
+  `sip.Description` replaced the concrete terms type in the domain model;
+  the family struct was built and then folded into the profile, retiring
+  the `Family` constant (ADR-0007 superseded in that respect).
+- **The DC world was split in two** on review: meemoo's dc+schema
+  (`encoders/dcschema`, with meemoo's cardinality and Dutch-language rules
+  in its own `Validate`) and Simple Dublin Core (`encoders/dc`, fifteen
+  elements, no dumb-down). Input rows are named by standard
+  (`dcschema.csv`, `dc.csv`; `metadata.csv` withdrawn), `Description`
+  gained `ValidateRequired`, and `check` now reports a missing Dutch entry
+  in a `dcschema.csv`. Both profiles still compare identical to their
+  references.
+- **Next:** the remaining S2 boxes (schema list on `Definition`, supplied
+  documents, docs sweep, acceptance), then S3 to S6. Required elements
+  became vocabulary keys on 2026-09-24.

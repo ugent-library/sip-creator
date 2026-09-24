@@ -90,14 +90,21 @@ func (t Terms) Validate() error {
 	return nil
 }
 
-// ValidateRequired reports each required element the terms do not state.
-// Which elements are required is profile data (plain E-ARK asks for the
-// input convention's identity MUSTs), so the set arrives as an argument.
-func (t Terms) ValidateRequired(elements ...string) error {
+// ValidateRequired reports each required key the terms do not state. Which
+// keys are required is profile data (plain E-ARK asks for the input
+// convention's identity MUSTs), so the set arrives as plain vocabulary keys,
+// each resolved through the element table; in Simple Dublin Core the key is
+// the element name.
+func (t Terms) ValidateRequired(keys ...string) error {
 	var errs []error
-	for _, el := range elements {
-		if !t.Has(el) {
-			errs = append(errs, fmt.Errorf("%s is required but missing", el))
+	for _, key := range keys {
+		element, ok := ResolveKey(key)
+		if !ok {
+			errs = append(errs, fmt.Errorf("required key %q is not a Simple Dublin Core element", key))
+			continue
+		}
+		if !t.Has(element) {
+			errs = append(errs, fmt.Errorf("%s is required but missing", element))
 		}
 	}
 	return errors.Join(errs...)

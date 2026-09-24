@@ -72,17 +72,23 @@ func TestValidateRequired(t *testing.T) {
 		{Element: "dcterms:identifier", Value: "A"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Kat"},
 	}
-	if err := terms.ValidateRequired("dcterms:identifier", "dcterms:title"); err != nil {
+	if err := terms.ValidateRequired("identifier", "title"); err != nil {
 		t.Fatalf("want conformant, got %v", err)
 	}
-	err := terms.ValidateRequired("dcterms:identifier", "dcterms:title", "dcterms:description", "dcterms:created")
+	err := terms.ValidateRequired("identifier", "title", "description", "created")
 	if err == nil {
-		t.Fatal("want the missing elements reported, got none")
+		t.Fatal("want the missing keys reported, got none")
 	}
-	for _, want := range []string{"dcterms:description", "dcterms:created"} {
+	// A finding names the key and the element it emits.
+	for _, want := range []string{"description (dcterms:description)", "created (dcterms:created)"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("findings do not name %s: %v", want, err)
 		}
+	}
+	// A key outside the table can only be a mistake in a profile definition
+	// and is reported, never silently satisfied.
+	if err := terms.ValidateRequired("titel"); err == nil || !strings.Contains(err.Error(), `"titel"`) {
+		t.Errorf("unknown required key not reported: %v", err)
 	}
 }
 

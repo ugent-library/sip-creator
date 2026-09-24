@@ -840,9 +840,9 @@ func TestBuildDefinitionWithoutDescriptiveStandardWritesNothing(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// Build enforces the required sets: identity-only terms build a complete
-// eark package and are refused under basic before any side effect.
-func TestBuildRequiredElementsPerProfile(t *testing.T) {
+// Build enforces the required key sets: identity-only terms build a
+// complete eark package and are refused under basic before any side effect.
+func TestBuildRequiredKeysPerProfile(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 	in.Descriptive = identityTerms()
 	if _, err := b.Build(earkDef(t), in); err != nil {

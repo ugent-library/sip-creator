@@ -104,8 +104,8 @@ it from a constant. There is still one writer, and what meemoo alone needs
 
 **The domain model speaks to descriptive metadata through a small
 interface.** `sip/` declares `Description` with `LocalIdentifier() string`,
-`Validate() error` and `ValidateRequired(elements ...string) error`, the
-last so a profile's required elements are checked without the profile
+`Validate() error` and `ValidateRequired(keys ...string) error`, the
+last so a profile's required keys are checked without the profile
 knowing the terms type (added 2026-09-23 with the split of the DC
 worlds). All three terms types implement it; `Entity.Description`,
 `Representation.Description` and `Input.Descriptive` take the interface, and

@@ -13,9 +13,11 @@ type Description interface {
 	// standard: an unknown element, a malformed language tag, an empty
 	// value, or a rule of the standard itself such as a cardinality limit.
 	Validate() error
-	// ValidateRequired reports each of the named elements the description
-	// does not state. Which elements a package must state is profile data,
-	// so the set arrives as an argument, spelled as the standard spells
-	// its elements.
-	ValidateRequired(elements ...string) error
+	// ValidateRequired reports each of the named vocabulary keys the
+	// description does not state. Which keys a package must state is
+	// profile data, so the set arrives as an argument: plain keys such as
+	// identifier and title, which every standard resolves through its own
+	// table. A key the table does not know is reported too, because it can
+	// only be a mistake in a profile definition.
+	ValidateRequired(keys ...string) error
 }

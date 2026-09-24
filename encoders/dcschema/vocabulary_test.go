@@ -6,13 +6,13 @@ import (
 )
 
 // The Required column is a spec contract: meemoo's basic content profile
-// requires exactly these four elements. The basic profile derives its
-// required list from the table, so an accidental table edit would silently
-// change conformance; this pins it.
-func TestRequiredElements(t *testing.T) {
-	want := []string{"dcterms:identifier", "dcterms:title", "dcterms:description", "dcterms:created"}
-	if got := RequiredElements(); !slices.Equal(got, want) {
-		t.Errorf("RequiredElements() = %v, want %v", got, want)
+// requires exactly these four keys. The basic profile derives its required
+// list from the table, so an accidental table edit would silently change
+// conformance; this pins it.
+func TestRequiredKeys(t *testing.T) {
+	want := []string{"identifier", "title", "description", "created"}
+	if got := RequiredKeys(); !slices.Equal(got, want) {
+		t.Errorf("RequiredKeys() = %v, want %v", got, want)
 	}
 }
 

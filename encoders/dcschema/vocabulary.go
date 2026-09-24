@@ -77,14 +77,14 @@ func ResolveKey(key string) (element string, ok bool) {
 	return row.Element, ok
 }
 
-// RequiredElements lists the elements the vocabulary flags as required, in
-// table order: meemoo's basic content profile requires them at package
-// level, and the profile reads this list.
-func RequiredElements() []string {
+// RequiredKeys lists the keys the vocabulary flags as required, in table
+// order: meemoo's basic content profile requires them at package level, and
+// the profile reads this list.
+func RequiredKeys() []string {
 	var out []string
 	for _, row := range vocabulary {
 		if row.Required {
-			out = append(out, row.Element)
+			out = append(out, row.Key)
 		}
 	}
 	return out

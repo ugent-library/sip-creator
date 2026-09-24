@@ -153,7 +153,7 @@ func (in *Input) Validate() error {
 	// descriptive document: profiles that swap (SwapObjectIdentifier) need
 	// a slot to overwrite, the others emit it as the identifier consumers
 	// find the package by (ADR-0012). All other requiredness is profile
-	// policy: Definition.RequiredElements, checked by Build.
+	// policy: Definition.RequiredKeys, checked by Build.
 	if in.Descriptive.LocalIdentifier() == "" {
 		return fmt.Errorf("descriptive metadata carries no identifier; the local identifier is required")
 	}

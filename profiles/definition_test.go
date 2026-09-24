@@ -36,8 +36,9 @@ func meemooIdentityTerms() dcschema.Terms {
 	}
 }
 
-// The per-profile required sets: identity-only terms satisfy eark and are
-// refused under basic, which names every missing element at once.
+// The per-profile required key sets: identity-only terms satisfy eark and
+// are refused under basic, which names every missing key at once, each
+// with the element the meemoo table emits for it.
 func TestValidateDescriptiveRequiredPerProfile(t *testing.T) {
 	if err := earkDef(t).validateDescriptive(&Input{Descriptive: identityTerms()}); err != nil {
 		t.Fatalf("eark refused identity-only terms: %v", err)
@@ -46,17 +47,17 @@ func TestValidateDescriptiveRequiredPerProfile(t *testing.T) {
 	if err == nil {
 		t.Fatal("basic accepted terms without description and created")
 	}
-	for _, want := range []string{"dcterms:description", "dcterms:created"} {
+	for _, want := range []string{"description (dcterms:description)", "created (dcterms:created)"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("error does not name %s: %v", want, err)
 		}
 	}
 
 	// A title is required by both profiles' sets; Input.Validate doesn't
-	// check it, so the Definition is the only guard. Each profile names it
-	// as its standard spells it.
+	// check it, so the Definition is the only guard. Both name the key the
+	// profile required.
 	err = basicDef(t).validateDescriptive(&Input{Descriptive: dcschema.Terms{{Element: "dcterms:identifier", Value: "x"}}})
-	if err == nil || !strings.Contains(err.Error(), "dcterms:title") {
+	if err == nil || !strings.Contains(err.Error(), "title (dcterms:title) is required") {
 		t.Errorf("basic accepted terms without a title: %v", err)
 	}
 	err = earkDef(t).validateDescriptive(&Input{Descriptive: dc.Terms{{Element: "identifier", Value: "x"}}})
