@@ -472,7 +472,10 @@ func TestInputValidate(t *testing.T) {
 		}, "not in the descriptive vocabulary"},
 		{"no identifier", func(c *Input) {
 			c.Descriptive = dcschema.Terms{{Element: "dcterms:title", Value: "x"}}
-		}, "no identifier"},
+		}, "identifier (dcterms:identifier) is required"},
+		{"no title", func(c *Input) {
+			c.Descriptive = dcschema.Terms{{Element: "dcterms:identifier", Value: "x"}}
+		}, "title (dcterms:title) is required"},
 		{"no representations", func(c *Input) { c.Representations = nil }, "at least one version"},
 		{"bad name", func(c *Input) { c.Representations[0].Name = "master copy" }, "may only contain"},
 		{"xml-unsafe label", func(c *Input) { c.Representations[0].Label = `Master "scan"` }, "cannot be emitted"},

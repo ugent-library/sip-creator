@@ -104,8 +104,11 @@ the DC table while walking the folder, before any profile is known.
    importing an encoder package. The profile's descriptive standard asserts the concrete type at
    build time (decision 3). The identifier swap stays a method on the
    meemoo terms type in `encoders/dcschema`, the one world that has it.
-   Required elements on a `Definition` become plain vocabulary keys
-   (`identifier`, `title`), which every world's table resolves.
+   Required elements become plain vocabulary keys every world's table
+   resolves: identifier and title, the identity every package states,
+   are checked once in `Input.Validate` (`profiles.ValidateIdentity`,
+   reused by `check`); a `Definition` lists only what its own spec adds
+   (revised 2026-09-24).
 6. **Supplied documents reuse the essence path.** A descriptive `*sip.File`
    with `Source` set is copied by the writer with fixity computed by the
    store, one without is generated. `profiles.Input` and
@@ -337,6 +340,21 @@ declared file that is never written breaks the package METS.
       missing`), a Simple DC finding the key alone. Adjust the messages
       and the three tests that name elements. Commit `Changed: required
       descriptive elements are named by vocabulary key`.
+- [x] **The identity rule is stated once.** (Added 2026-09-24 after
+      review of the box above: requiredness was spelled three times, as
+      a `Required` column in the meemoo table that only `basic` read, as
+      a key literal on `eark`, and as element names in the CLI's identity
+      check.) `profiles.ValidateIdentity(d sip.Description)` requires the
+      keys `identifier` and `title`; `Input.Validate` applies it in place
+      of the identifier-only check, and `cli/input` calls it in place of
+      its own `requireIdentity`, so `check` and `create` use the same
+      words and the CLI knows no element names. `Definition.RequiredKeys`
+      lists only what the profile's spec adds: `description` and
+      `created` for `basic`, nothing for `eark` (and later `eark-mods`).
+      The `Required` column and `dcschema.RequiredKeys()` go. A registry
+      test asserts every profile's keys resolve in its own world and pins
+      the two sets. Output unchanged. Commit `Changed: the identity rule
+      is stated once; profiles list only what their spec adds`.
 - [ ] **Schema list on `Definition`.** A `Schemas` field listing file
       names; both profiles list the eleven files in `schemas/` today. The
       assembler builds the schema nodes from the list, sorted as now; the
@@ -410,8 +428,8 @@ The library route is complete after this step.
       the encoder is `mods.Encode`, the document validator
       `mods.ValidateDocument`, documents accepted. Registry entry copying
       `eark` with `descriptive: mods`: `DescriptiveName
-      "mods.xml"`, `RequiredKeys` identifier and title, no cardinality or
-      language rule, no PREMIS, `EmitRepresentationType` true, `Schemas` =
+      "mods.xml"`, no `RequiredKeys` beyond the identity every package
+      states, no cardinality or language rule, no PREMIS, `EmitRepresentationType` true, `Schemas` =
       `mets1_12.xsd`, `DILCISExtensionMETS.xsd`,
       `DILCISExtensionSIPMETS.xsd`, `xlink.xsd`, `xml.xsd`, `mods-3-7.xsd`;
       declaration `DescriptiveMDType "MODS"`, `DescriptiveMDTypeVersion
@@ -562,5 +580,7 @@ rule between those two arrived in S2; this step adds the MODS files.
   in a `dcschema.csv`. Both profiles still compare identical to their
   references.
 - **Next:** the remaining S2 boxes (schema list on `Definition`, supplied
-  documents, docs sweep, acceptance), then S3 to S6. Required elements
-  became vocabulary keys on 2026-09-24.
+  documents, docs sweep, acceptance), then S3 to S6. On 2026-09-24
+  required elements became vocabulary keys, and the identity rule
+  (identifier and title) moved into `Input.Validate`, so a profile lists
+  only what its spec adds.

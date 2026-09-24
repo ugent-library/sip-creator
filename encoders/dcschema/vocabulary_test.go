@@ -1,20 +1,6 @@
 package dcschema
 
-import (
-	"slices"
-	"testing"
-)
-
-// The Required column is a spec contract: meemoo's basic content profile
-// requires exactly these four keys. The basic profile derives its required
-// list from the table, so an accidental table edit would silently change
-// conformance; this pins it.
-func TestRequiredKeys(t *testing.T) {
-	want := []string{"identifier", "title", "description", "created"}
-	if got := RequiredKeys(); !slices.Equal(got, want) {
-		t.Errorf("RequiredKeys() = %v, want %v", got, want)
-	}
-}
+import "testing"
 
 func TestResolveKey(t *testing.T) {
 	tests := []struct {

@@ -149,13 +149,8 @@ func (in *Input) Validate() error {
 	if err := in.Descriptive.Validate(); err != nil {
 		return err
 	}
-	// The identifier is the package's one required identity in the
-	// descriptive document: profiles that swap (SwapObjectIdentifier) need
-	// a slot to overwrite, the others emit it as the identifier consumers
-	// find the package by (ADR-0012). All other requiredness is profile
-	// policy: Definition.RequiredKeys, checked by Build.
-	if in.Descriptive.LocalIdentifier() == "" {
-		return fmt.Errorf("descriptive metadata carries no identifier; the local identifier is required")
+	if err := ValidateIdentity(in.Descriptive); err != nil {
+		return fmt.Errorf("descriptive metadata: %w", err)
 	}
 
 	if len(in.Representations) == 0 {
@@ -199,6 +194,20 @@ func (in *Input) Validate() error {
 		return err
 	}
 	return validatePremisNames("package", in.Premis)
+}
+
+// ValidateIdentity reports the identity a package-level description must
+// state whatever the profile: an identifier and a title (input
+// specification §3, ADR-0016). Profiles that swap identifiers need the
+// identifier as the slot to overwrite, the others emit it as the identifier
+// consumers find the package by (ADR-0012); the title is the one
+// human-readable name every consumer shows. Both are plain vocabulary keys
+// every descriptive standard resolves; what a profile's own spec requires
+// on top is Definition.RequiredKeys. Exported because the CLI's check
+// command applies the same rule to a rows file before any profile is
+// known.
+func ValidateIdentity(d sip.Description) error {
+	return d.ValidateRequired("identifier", "title")
 }
 
 // validatePremisNames guards the received-premis file list with the usual

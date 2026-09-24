@@ -9,6 +9,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/encoders/dcschema"
+	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -80,7 +81,7 @@ func (b *dcschemaRows) add(key, lang, value string) error {
 func (b *dcschemaRows) finish(packageLevel bool) (sip.Description, []error) {
 	errs := findings(b.terms.Validate())
 	if packageLevel {
-		errs = append(errs, requireIdentity(b.terms, "dcterms:identifier", "dcterms:title")...)
+		errs = append(errs, findings(profiles.ValidateIdentity(b.terms))...)
 	}
 	if len(b.terms) == 0 {
 		return nil, errs
@@ -107,7 +108,7 @@ func (b *dcRows) add(key, lang, value string) error {
 func (b *dcRows) finish(packageLevel bool) (sip.Description, []error) {
 	errs := findings(b.terms.Validate())
 	if packageLevel {
-		errs = append(errs, requireIdentity(b.terms, "identifier", "title")...)
+		errs = append(errs, findings(profiles.ValidateIdentity(b.terms))...)
 	}
 	if len(b.terms) == 0 {
 		return nil, errs
@@ -122,8 +123,8 @@ func unknownKey(key string) error {
 }
 
 // findings flattens a joined error into its parts, so each cross-row
-// finding (a cardinality limit, a missing Dutch entry) is reported as its
-// own violation.
+// finding (a cardinality limit, a missing Dutch entry, a missing identity
+// key) is reported as its own violation.
 func findings(err error) []error {
 	if err == nil {
 		return nil
@@ -132,19 +133,6 @@ func findings(err error) []error {
 		return joined.Unwrap()
 	}
 	return []error{err}
-}
-
-// requireIdentity reports the identity elements the input specification
-// requires at package level, named as the standard spells them.
-func requireIdentity(terms interface{ Has(string) bool }, identifier, title string) []error {
-	var errs []error
-	if !terms.Has(identifier) {
-		errs = append(errs, errors.New("identifier is missing; the local catalog or inventory number is required"))
-	}
-	if !terms.Has(title) {
-		errs = append(errs, errors.New("title is missing; a title is required"))
-	}
-	return errs
 }
 
 // decodeRows decodes one descriptive rows file into the description its
@@ -206,9 +194,10 @@ func (r *reader) decodeRows(f rowsFile, packageLevel bool) sip.Description {
 	}
 
 	// The standard's cross-row rules (cardinality, required language, one
-	// identifier) and the convention's identity MUSTs are checked on the
-	// finished list: each finding names the element and language, which
-	// locates the rows in a keyed file.
+	// identifier) and the identity every package states are checked on the
+	// finished list: each finding names the key or element and language,
+	// which locates the rows in a keyed file. The identity rule is the
+	// library's (profiles.ValidateIdentity), so check and create agree.
 	d, errs := b.finish(packageLevel)
 	for _, err := range errs {
 		r.violate("%s: %v", rel, err)

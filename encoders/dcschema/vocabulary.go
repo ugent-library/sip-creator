@@ -16,46 +16,48 @@ const (
 
 // vocabularyRow is one entry of the descriptive vocabulary. It holds
 // everything the tool knows about one key: the element it emits, meemoo's
-// Required and Repeat rules, and the xsi:type the element carries.
+// cardinality limit, and the xsi:type the element carries.
 type vocabularyRow struct {
-	Key      string      // plain key in the CSV rows file
-	Element  string      // emitted element name
-	Required bool        // required by meemoo's basic profile
-	Repeat   cardinality // meemoo basic profile cardinality
-	XSIType  string      // xsi:type on the emitted element; "" for none
+	Key     string      // plain key in the CSV rows file
+	Element string      // emitted element name
+	Repeat  cardinality // meemoo basic profile cardinality
+	XSIType string      // xsi:type on the emitted element; "" for none
 }
 
 // vocabulary is the closed set of supported descriptive elements: the
 // elements of meemoo's SIP 1.2 basic content profile that fit a single
 // key,value row, in the input specification's table order. This table is
 // the metadata model: the CSV decoder, validation, and the template all
-// read from it (ADR-0011). The Required and Repeat columns come from
-// meemoo's profile; the cardinality limits are enforced by Validate, the
-// required set by the profile through ValidateRequired.
+// read from it (ADR-0011). The Repeat column is meemoo's upper cardinality
+// limit, enforced by Validate. Which keys a package must state is not
+// table data: identifier and title are every package's identity, and what
+// meemoo's basic profile requires on top is that profile's own data
+// (profiles.Definition.RequiredKeys), both checked through
+// ValidateRequired.
 var vocabulary = []vocabularyRow{
-	{"identifier", "dcterms:identifier", true, once, ""},
-	{"title", "dcterms:title", true, oncePerLanguage, ""},
-	{"description", "dcterms:description", true, oncePerLanguage, ""},
-	{"created", "dcterms:created", true, once, "edtf:EDTF-level1"},
-	{"alternative", "dcterms:alternative", false, many, ""},
-	{"abstract", "dcterms:abstract", false, oncePerLanguage, ""},
-	{"creator", "dcterms:creator", false, many, ""},
-	{"contributor", "dcterms:contributor", false, many, ""},
-	{"publisher", "dcterms:publisher", false, many, ""},
-	{"issued", "dcterms:issued", false, once, "edtf:EDTF-level1"},
-	{"available", "dcterms:available", false, once, ""},
-	{"subject", "dcterms:subject", false, many, ""},
-	{"spatial", "dcterms:spatial", false, many, ""},
-	{"temporal", "dcterms:temporal", false, many, ""},
-	{"extent", "dcterms:extent", false, once, ""},
-	{"language", "dcterms:language", false, many, ""},
-	{"type", "dcterms:type", false, many, ""},
-	{"ispartof", "dcterms:isPartOf", false, many, ""},
-	{"license", "dcterms:license", false, many, ""},
-	{"rights", "dcterms:rights", false, oncePerLanguage, ""},
-	{"rightsholder", "dcterms:rightsHolder", false, once, ""},
-	{"artmedium", "schema:artMedium", false, many, ""},
-	{"artform", "schema:artform", false, many, ""},
+	{"identifier", "dcterms:identifier", once, ""},
+	{"title", "dcterms:title", oncePerLanguage, ""},
+	{"description", "dcterms:description", oncePerLanguage, ""},
+	{"created", "dcterms:created", once, "edtf:EDTF-level1"},
+	{"alternative", "dcterms:alternative", many, ""},
+	{"abstract", "dcterms:abstract", oncePerLanguage, ""},
+	{"creator", "dcterms:creator", many, ""},
+	{"contributor", "dcterms:contributor", many, ""},
+	{"publisher", "dcterms:publisher", many, ""},
+	{"issued", "dcterms:issued", once, "edtf:EDTF-level1"},
+	{"available", "dcterms:available", once, ""},
+	{"subject", "dcterms:subject", many, ""},
+	{"spatial", "dcterms:spatial", many, ""},
+	{"temporal", "dcterms:temporal", many, ""},
+	{"extent", "dcterms:extent", once, ""},
+	{"language", "dcterms:language", many, ""},
+	{"type", "dcterms:type", many, ""},
+	{"ispartof", "dcterms:isPartOf", many, ""},
+	{"license", "dcterms:license", many, ""},
+	{"rights", "dcterms:rights", oncePerLanguage, ""},
+	{"rightsholder", "dcterms:rightsHolder", once, ""},
+	{"artmedium", "schema:artMedium", many, ""},
+	{"artform", "schema:artform", many, ""},
 }
 
 var (
@@ -75,17 +77,4 @@ func init() {
 func ResolveKey(key string) (element string, ok bool) {
 	row, ok := vocabularyByKey[strings.ToLower(key)]
 	return row.Element, ok
-}
-
-// RequiredKeys lists the keys the vocabulary flags as required, in table
-// order: meemoo's basic content profile requires them at package level, and
-// the profile reads this list.
-func RequiredKeys() []string {
-	var out []string
-	for _, row := range vocabulary {
-		if row.Required {
-			out = append(out, row.Key)
-		}
-	}
-	return out
 }

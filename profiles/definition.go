@@ -5,7 +5,6 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/ugent-library/sip-creator/encoders/dcschema"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -53,21 +52,21 @@ type Definition struct {
 	// Declaration carries the METS values the profile's documents declare.
 	Declaration sip.MetsDeclaration
 
-	// RequiredKeys are the vocabulary keys the profile's spec makes required
-	// at package level (identifier, title, ...), which the profile's
-	// descriptive standard resolves through its own table: meemoo's basic
-	// profile requires four, plain E-ARK only the input convention's
-	// identity MUSTs.
+	// RequiredKeys are the vocabulary keys the profile's own spec requires
+	// at package level on top of the identifier and title every package
+	// states (ValidateIdentity): meemoo's basic content profile adds
+	// description and created, plain E-ARK adds nothing. Each is a plain
+	// key the profile's descriptive standard resolves through its table.
 	RequiredKeys []string
 }
 
 // validateDescriptive checks the package-level description against the
-// profile's required keys, Definition data. Requiredness applies at
-// package level only: identity lives there, and a representation's
-// description is optional. Every other rule of the descriptive standard
-// (term validity, meemoo's cardinality and language rules) is the
-// standard's own and runs in Input.Validate. Findings are joined so one
-// failed build names every gap at once.
+// keys the profile's spec requires beyond identity, Definition data.
+// Requiredness applies at package level only: identity lives there, and a
+// representation's description is optional. Every other rule (identity,
+// term validity, meemoo's cardinality and language rules) runs in
+// Input.Validate. Findings are joined so one failed build names every gap
+// at once.
 func (d Definition) validateDescriptive(in *Input) error {
 	return in.Descriptive.ValidateRequired(d.RequiredKeys...)
 }
@@ -131,10 +130,12 @@ var registry = map[string]Definition{
 		SwapObjectIdentifier:     true,
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
-		// meemoo's basic content profile: the vocabulary table's required
-		// keys. Its cardinality limits and Dutch-language rule are the
+		// meemoo's basic content profile requires title, identifier,
+		// description and created (meemoo SIP 1.2, basic profile). The first
+		// two are every package's identity, so only the other two are
+		// listed. Its cardinality limits and Dutch-language rule are the
 		// dcschema standard's own (dcschema.Terms.Validate).
-		RequiredKeys: dcschema.RequiredKeys(),
+		RequiredKeys: []string{"description", "created"},
 		Declaration: sip.MetsDeclaration{
 			// meemoo SIP 1.2, the stable spec (docs/archive/meemoo-12.md):
 			// 1.2 requires the unversioned E-ARK SIP profile URL and the
@@ -167,8 +168,8 @@ var registry = map[string]Definition{
 		// does not describe agents or events.
 		EmitPackagePremis:        false,
 		EmitRepresentationPremis: false,
-		// Only the input convention's identity MUSTs.
-		RequiredKeys: []string{"identifier", "title"},
+		// Plain E-ARK requires nothing beyond the identity every package
+		// states, so no RequiredKeys.
 		// RODA shows each representation's type from the representation
 		// METS's content typing (ADR-0013).
 		EmitRepresentationType: true,

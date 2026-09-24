@@ -114,9 +114,14 @@ and before any disk write, the profile's descriptive standard asserts that
 the input's concrete type is its own; a mismatch is a build error (the rule itself is recorded
 in [ADR-0016](0016-descriptive-input-rows-or-supplied-document.md)). The
 identifier swap the meemoo document needs stays a method on the meemoo
-terms type, because only that world has it. Required elements on a
-`Definition` become plain vocabulary keys (`identifier`, `title`), which
-every table resolves.
+terms type, because only that world has it. Required elements become
+plain vocabulary keys every table resolves: the identity every package
+states (`identifier`, `title`) is checked once in `Input.Validate`, and a
+`Definition` lists only what its own spec adds (`description` and
+`created` for meemoo's basic profile; nothing for plain E-ARK). Decided
+2026-09-24: the meemoo table had carried a required column that one
+profile read while the other spelled its keys in a literal, and the CLI
+spelled the identity rule a third time in element names.
 
 ## Alternatives rejected
 

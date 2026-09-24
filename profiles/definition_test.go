@@ -1,11 +1,13 @@
 package profiles
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/encoders/dcschema"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 // earkDef returns the registered "eark" definition the tests build with.
@@ -36,9 +38,10 @@ func meemooIdentityTerms() dcschema.Terms {
 	}
 }
 
-// The per-profile required key sets: identity-only terms satisfy eark and
-// are refused under basic, which names every missing key at once, each
-// with the element the meemoo table emits for it.
+// What each profile's spec requires on top of identity: identity-only
+// terms satisfy eark and are refused under basic, which names every
+// missing key at once, each with the element the meemoo table emits for
+// it.
 func TestValidateDescriptiveRequiredPerProfile(t *testing.T) {
 	if err := earkDef(t).validateDescriptive(&Input{Descriptive: identityTerms()}); err != nil {
 		t.Fatalf("eark refused identity-only terms: %v", err)
@@ -52,17 +55,55 @@ func TestValidateDescriptiveRequiredPerProfile(t *testing.T) {
 			t.Errorf("error does not name %s: %v", want, err)
 		}
 	}
+}
 
-	// A title is required by both profiles' sets; Input.Validate doesn't
-	// check it, so the Definition is the only guard. Both name the key the
-	// profile required.
-	err = basicDef(t).validateDescriptive(&Input{Descriptive: dcschema.Terms{{Element: "dcterms:identifier", Value: "x"}}})
-	if err == nil || !strings.Contains(err.Error(), "title (dcterms:title) is required") {
-		t.Errorf("basic accepted terms without a title: %v", err)
+// Identifier and title are every package's identity whatever the profile,
+// checked once through the keys both worlds resolve: the meemoo world
+// names the key and its element, Simple DC the key alone.
+func TestValidateIdentity(t *testing.T) {
+	for _, d := range []sip.Description{identityTerms(), meemooIdentityTerms()} {
+		if err := ValidateIdentity(d); err != nil {
+			t.Errorf("identity terms refused: %v", err)
+		}
 	}
-	err = earkDef(t).validateDescriptive(&Input{Descriptive: dc.Terms{{Element: "identifier", Value: "x"}}})
-	if err == nil || !strings.Contains(err.Error(), "title is required") {
-		t.Errorf("eark accepted terms without a title: %v", err)
+	err := ValidateIdentity(dcschema.Terms{{Element: "dcterms:identifier", Value: "x"}})
+	if err == nil || !strings.Contains(err.Error(), "title (dcterms:title) is required") {
+		t.Errorf("meemoo terms without a title accepted: %v", err)
+	}
+	err = ValidateIdentity(dc.Terms{{Element: "title", Value: "x"}})
+	if err == nil || !strings.Contains(err.Error(), "identifier is required") {
+		t.Errorf("Simple DC terms without an identifier accepted: %v", err)
+	}
+}
+
+// Every registry entry's required keys resolve in its own descriptive
+// standard, so a typo in a definition fails here rather than at the first
+// build. The sets themselves are pinned too: meemoo's basic content profile
+// requires description and created on top of identity (meemoo SIP 1.2),
+// plain E-ARK nothing. A new profile must be added to both maps.
+func TestRegistryRequiredKeys(t *testing.T) {
+	resolve := map[string]func(string) (string, bool){
+		"basic": dcschema.ResolveKey,
+		"eark":  dc.ResolveKey,
+	}
+	want := map[string][]string{
+		"basic": {"description", "created"},
+		"eark":  nil,
+	}
+	for _, name := range Names() {
+		def, _ := Get(name)
+		r, ok := resolve[name]
+		if !ok {
+			t.Fatalf("profile %q is not covered here; add its standard's ResolveKey and its required keys", name)
+		}
+		for _, key := range def.RequiredKeys {
+			if _, ok := r(key); !ok {
+				t.Errorf("profile %q requires key %q, which its descriptive standard does not know", name, key)
+			}
+		}
+		if !slices.Equal(def.RequiredKeys, want[name]) {
+			t.Errorf("profile %q RequiredKeys = %v, want %v", name, def.RequiredKeys, want[name])
+		}
 	}
 }
 
