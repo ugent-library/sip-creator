@@ -1,10 +1,15 @@
 # Plan: MODS 3.7 descriptive metadata for the plain E-ARK output
 
-*Status: **S1 done, S2 next** (2026-09-23): ADR-0015 and ADR-0016
-drafted, including the items table (decision 12). Design decisions settled
-in review on 2026-09-15; the MODS element list beyond identifier and title
-is still open and does not block the first steps. Update this line as steps
-land.*
+*Status: **S2 done, S3 next** (2026-09-28): the refactor is on the branch
+`eark-mods-support`. Go tests, the structural comparisons of both profiles
+against their reference copies, and the commons-ip runs of `./build.sh`
+for both profiles (VALID, 0 warnings) are clean. The supplied-document
+route (decisions 6, 7, 8 and S5) was withdrawn on 2026-09-28 before it was
+committed ([ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md));
+descriptive metadata arrives as terms only. ADR-0015 and ADR-0016 are
+drafted, including the items table (decision 12). The MODS element list
+beyond identifier and title is still open and does not block S3. Update
+this line as steps land.*
 
 ## Context
 
@@ -23,10 +28,10 @@ Two routes must work:
    MODS document back, the way they hand it DC terms today. This is the main
    route and ships first.
 2. **The CLI.** The input folder today takes one `metadata.csv` that always
-   becomes Dublin Core. It must also take rows that become MODS, and a
-   finished `dc.xml` or `mods.xml` prepared elsewhere (a catalogue export,
-   for instance) that the tool copies into the package after checking its
-   shape.
+   becomes Dublin Core. It must also take rows that become MODS. (A
+   finished `dc.xml` or `mods.xml` prepared elsewhere, copied into the
+   package after a check of its shape, was part of this route until
+   2026-09-28; it is deferred, see decision 6.)
 
 What already fits: a family exists to select the descriptive encoding and
 that is the only thing it does today ([ADR-0007](../decisions/0007-profile-families-share-one-writer.md));
@@ -69,15 +74,15 @@ the DC table while walking the folder, before any profile is known.
    EDTF values (revised 2026-09-22, recorded in ADR-0015). Consequence: the
    flat model cannot express several parts under one parent: given and
    family name parts, a name with two roles, or a subject with several
-   sub-terms. That is acceptable because the source data is flat columns;
-   richer records arrive as supplied documents.
-3. **The profile fixes the descriptive standard.** The input supplies either
-   terms to encode in that standard or a ready document of that standard.
-   MODS terms or a `mods.xml` given to a DC profile is a build error before
-   any disk write, and the reverse likewise. Meemoo profiles accept terms
-   only: their document needs the swapped identifier and the meemoo
-   namespace. Rejected: letting the input decide the standard and the
-   profile follow. It would make one profile emit two different documents
+   sub-terms. That is acceptable because the source data is flat columns.
+   A richer record has no route into the package until the table grows a
+   row for its shape or the supplied-document route returns (decision 6).
+3. **The profile fixes the descriptive standard.** The input supplies
+   terms to encode in that standard. MODS terms given to a DC profile are
+   a build error before any disk write, and the reverse likewise. (Until
+   2026-09-28 the input could also supply a ready document of the
+   standard; see decision 6.) Rejected: letting the input decide the
+   standard and the profile follow. It would make one profile emit two different documents
    depending on what it was given, and `MDTYPE` would stop being profile
    data.
 4. **Each profile names its descriptive standard directly** (revised
@@ -109,31 +114,27 @@ the DC table while walking the folder, before any profile is known.
    are checked once in `Input.Validate` (`profiles.ValidateIdentity`,
    reused by `check`); a `Definition` lists only what its own spec adds
    (revised 2026-09-24).
-6. **Supplied documents reuse the essence path.** A descriptive `*sip.File`
-   with `Source` set is copied by the writer with fixity computed by the
-   store, one without is generated. `profiles.Input` and
-   `SourceRepresentation` gain a `DescriptiveDocument` source next to
-   `Descriptive`; exactly one of the two per level (the package needs one,
-   a representation may have none).
-7. **Structural checks only on supplied documents.** In process, with the
-   standard library: well-formed XML, the expected root element and
-   namespace (`simpledc` without namespace for DC, matching what the eark
-   template emits; `mods` in `http://www.loc.gov/mods/v3` with
-   `version="3.7"` for MODS). No XSD validation in the tool
-   ([ADR-0003](../decisions/0003-validation-stays-external.md)); build.sh
-   runs xmllint over the emitted `mods.xml` as acceptance. Rejected: XSD
-   validation in process, which needs a cgo binding or executing an
-   external tool, both against the project's rules.
-8. **No identity enforcement on supplied documents.** Rows must carry
-   identifier and title at package level; a supplied document is trusted
-   for its content. Enforcing identity would mean parsing two XML shapes
-   for one check the repository performs anyway.
+6. **Supplied documents reuse the essence path.** Withdrawn 2026-09-28
+   ([ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md)).
+   The route (a `DescriptiveDocument` path next to `Descriptive` on the
+   input and on each representation, copied into the package like essence
+   after a check of its root element) was implemented in the working tree
+   and discarded before commit. The cost was not the check of the document
+   but the second input path it opened at every level. Descriptive
+   metadata arrives as terms only until the route returns; its design
+   stays recorded in ADR-0016.
+7. **Structural checks only on supplied documents.** Withdrawn with
+   decision 6. What stays: no XSD validation in the tool
+   ([ADR-0003](../decisions/0003-validation-stays-external.md)), and
+   build.sh runs xmllint over the emitted `mods.xml` as acceptance (S6).
+8. **No identity enforcement on supplied documents.** Withdrawn with
+   decision 6.
 9. **CLI file names by standard.** `dcschema.csv` (meemoo's dc+schema
-   vocabulary), `dc.csv` (Simple DC) and `mods.csv` hold rows; `dc.xml` and
-   `mods.xml` hold supplied documents (meemoo profiles take rows only, so
-   there is no `dcschema.xml`); all at the package root and inside each
-   representation directory. `items.csv` (MODS only, package root only,
-   next to `mods.csv`) holds one row per physical copy, see decision 12.
+   vocabulary), `dc.csv` (Simple DC) and `mods.csv` hold rows, at the
+   package root and inside each representation directory (`dc.xml` and
+   `mods.xml` as supplied documents went with decision 6). `items.csv`
+   (MODS only, package root only, next to `mods.csv`) holds one row per
+   physical copy, see decision 12.
    One source per level, one standard per folder. The folder stays
    self-describing, so `check` keeps taking no configuration
    ([ADR-0010](../decisions/0010-config-over-self-describing-input.md));
@@ -167,8 +168,8 @@ the DC table while walking the folder, before any profile is known.
     rows) and `enumeration` (optional) can, one row per copy, rendered as
     one `location/holdingSimple/copyInformation` each. In the library the
     MODS description type is a struct of terms plus items. `items.csv`
-    accompanies `mods.csv` only: a supplied `mods.xml` carries its own
-    holdings, and the DC world has no place to pair them. Descriptive
+    accompanies `mods.csv` only: the DC world has no place to pair them.
+    Descriptive
     metadata stays at package level; a representation is a CSIP rendition
     of the same content, never a copy or a volume. Rejected: one
     representation per copy (misuses the CSIP concept; neither E-ARK
@@ -186,15 +187,16 @@ where the file is optional:
 | `dcschema.csv` | rows, `key[lang],value`, keys from meemoo's dc+schema table | meemoo dc+schema |
 | `dc.csv` | rows, `key[lang],value`, keys from the Simple Dublin Core table | Simple DC |
 | `mods.csv` | rows, `key[lang],value`, keys from the MODS table | MODS |
-| `dc.xml` | a finished Simple Dublin Core document (`simpledc` root) | Simple DC |
-| `mods.xml` | a finished MODS 3.7 document (`mods` root, `version="3.7"`) | MODS |
+
+(`dc.xml` and `mods.xml`, finished documents, were two more rows of this
+table until 2026-09-28; deferred with decision 6.)
 
 `items.csv` MAY accompany `mods.csv` at the input root, one row per physical
 copy, with the columns `callnumber`, `barcode` and `enumeration`.
 
 Rules, all MUST violations collected by `check`:
 
-- More than one of the five files at one level is a violation.
+- More than one of the three files at one level is a violation.
 - All descriptive files in one input folder speak the same standard; files
   of two different standards anywhere in the folder are a violation.
 - `metadata.csv` is a violation; rename it to `dcschema.csv` (meemoo) or
@@ -203,18 +205,14 @@ Rules, all MUST violations collected by `check`:
   unknown keys are violations, repeat a key for multiple values, `[lang]`
   suffix for the language. At package level `identifier` and `title` are
   required.
-- Supplied documents must be well-formed XML with the expected root element
-  and namespace; a MODS document must declare version 3.7. Nothing else is
-  checked; the repository validates content.
 - `items.csv` follows the `representations.csv` rules: UTF-8, a header
   naming `callnumber` and optionally `barcode` and `enumeration` in any
   order (case-insensitive; an unknown or repeated column is a violation),
   `callnumber` non-empty on every row, a `barcode` value unique across
-  rows. Next to `dc.csv`, `dc.xml` or `mods.xml`, or inside a
-  representation directory, it is a violation.
+  rows. Next to `dc.csv` or `dcschema.csv`, or inside a representation
+  directory, it is a violation.
 - The profile chosen at `create` must match the folder's standard: `basic`
   takes meemoo dc+schema, `eark` takes Simple DC, `eark-mods` takes MODS.
-  `basic` takes rows only.
 
 ## Execution steps
 
@@ -242,9 +240,7 @@ Steps 2 and 3 go back to back: step 2 leaves a type assertion in the
 assembler that step 3 turns into a guaranteed one. The two steps added on
 2026-09-23 (input files named by standard, then the split of the DC
 package) change the input folder's file names, so S2 is no longer purely
-internal, but the emitted packages stay unchanged. The supplied-document
-step lands the assembler and writer halves in one commit, because a
-declared file that is never written breaks the package METS.
+internal, but the emitted packages stay unchanged.
 
 - [x] **Capture the `eark` reference.** `./build.sh eark` VALID, then copy
       the package directory to `tmp/reference/eark/pkg` next to the `basic`
@@ -277,8 +273,8 @@ declared file that is never written breaks the package METS.
       `profiles/descriptive.go` holds the `descriptive` struct (a check
       that the input's descriptions have the standard's type, plus the
       encoder taking a `sip.Description`) and the values `meemooDC` and
-      `simpleDC`; the `acceptsDocument` flag joins the struct in the
-      supplied-document step, where it is first read. `Definition` gains
+      `simpleDC` (an `acceptsDocument` flag was to join the struct in the
+      supplied-document step, since withdrawn). `Definition` gains
       the unexported `descriptive` field and `RequireSubmitterORID`, which
       replaces the meemoo family test in `WithSubmitter`; `Family` and its
       constants are removed. `Builder.Build` refuses a definition without a
@@ -371,30 +367,29 @@ declared file that is never written breaks the package METS.
       its list against the bundle, and the registry test pins that both
       profiles ship the whole bundle.) Commit `Added: profile definitions
       list the XSDs their packages ship`.
-- [ ] **A supplied document travels the essence path.**
-      `DescriptiveDocument` on `Input` and `SourceRepresentation`; the
-      one-of check in `Validate` (exactly one at package level, at most one
-      per representation; the identifier check is skipped for a document).
-      `dc.ValidateDocument`, modelled on `premis.ValidateReceived`:
-      well-formed XML, `simpledc` root without namespace. The assembler
-      validates the document as it does received PREMIS, declares the file
-      node with `Source` set and no description, and skips the identifier
-      lift and swap; the meemoo profile refuses a document before
-      validation (an `acceptsDocument` flag on the descriptive standard,
-      false for `meemooDC`). In `profiles/write.go` a description file with `Source`
-      set is copied with `CopyFile`, one without is generated; the
-      representation branch guards on the file node, not the description.
-      Tests: both-or-neither in `TestInputValidate`; a supplied document
-      copied byte for byte with its fixity in the METS; meemoo refusing
-      with nothing written; `ValidateDocument` rejecting an `oai_dc:dc`
-      root. Commit `Added: a supplied descriptive document travels the
-      essence path`.
+- **Withdrawn 2026-09-28: a supplied document travels the essence path.**
+      Implemented in the working tree on 2026-09-24 (`DescriptiveDocument`
+      on `Input` and `SourceRepresentation`, `dc.ValidateDocument`, an
+      `encoders/xmldoc` package shared with the received-PREMIS check, a
+      copy branch in the writer), reviewed, and discarded before commit:
+      decision 6,
+      [ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md).
+      The Go files are back at the schemas commit; nothing to commit.
 - [ ] **Docs sweep.** Design doc: domain model, profile section, build
-      lifecycle for the interface, the descriptive standard on the profile,
-      the schema list and the document route. This plan's status line. Commit `Changed: design
-      doc follows the S2 refactor`.
-- [ ] **Acceptance.** `go test ./...`; `./build.sh basic` and `./build.sh
-      eark` VALID with 0 warnings; both comparisons clean.
+      lifecycle for the interface, the descriptive standard on the profile
+      and the schema list. This plan's status line. (Drafted 2026-09-24
+      together with the document route, never committed; redone without
+      the route after the withdrawal of 2026-09-28. The representation's
+      description fields, the eark layout, the validation section and the
+      test inventory in `CLAUDE.md` stay in.) Commit `Changed: design doc
+      follows the S2 refactor`.
+- [x] **Acceptance.** `go test ./...`; `./build.sh basic` and `./build.sh
+      eark` VALID with 0 warnings; both comparisons clean. (Run 2026-09-24
+      with `CSIP_CMD` pointing at the pinned commons-ip 2.11.2 jar on a
+      host Java runtime, the Docker path being unsafe on the machine that
+      day because of its open-file limit; same jar, same spec versions.
+      After the withdrawal of 2026-09-28 the Go tree equals the schemas
+      commit, where `go test ./...` is green.)
 
 ### S3: the mods world and the eark-mods profile
 
@@ -424,19 +419,15 @@ The library route is complete after this step.
       (`shelfLocator`, `enumerationAndChronology` when set, `itemIdentifier
       type="barcode"` when set), omitted when there are no items; every
       value escaped. `Encode(w, d, schemas)` validates first.
-- [ ] **`mods.ValidateDocument`.** Well-formed XML, root `mods` in the MODS
-      namespace, `version="3.7"`; modelled on `premis.ValidateReceived`.
 - [ ] **`encoders/mods` tests.** Table invariants (unique keys, fragment
       per row); encoder output (root, namespaces, version, escaping,
       `xml:lang`, one `copyInformation` per item with the right children,
       no `location` without items); refuses invalid terms or items without
-      writing; `ValidateDocument` accepts a 3.7 document and rejects a
-      `modsCollection` root, another version, and non-XML. Commit `Added:
-      encoders/mods with the two-row key table and the items table`.
+      writing. Commit `Added: encoders/mods with the two-row key table and
+      the items table`.
 - [ ] **The `eark-mods` profile.** A `mods` value in
       `profiles/descriptive.go`: the check asserts the mods `Description`,
-      the encoder is `mods.Encode`, the document validator
-      `mods.ValidateDocument`, documents accepted. Registry entry copying
+      the encoder is `mods.Encode`. Registry entry copying
       `eark` with `descriptive: mods`: `DescriptiveName
       "mods.xml"`, no `RequiredKeys` beyond the identity every package
       states, no cardinality or language rule, no PREMIS,
@@ -451,8 +442,8 @@ The library route is complete after this step.
       description handed to `eark` or `basic`, fail before any write; a
       full `eark-mods` build has `metadata/descriptive/mods.xml`, exactly
       the six schema files, and a package METS `dmdSec` reading
-      `MDTYPE="MODS" MDTYPEVERSION="3.7"`; a supplied `mods.xml` builds
-      under `eark-mods`. Commit `Added: eark-mods profile`.
+      `MDTYPE="MODS" MDTYPEVERSION="3.7"`. Commit `Added: eark-mods
+      profile`.
 - [ ] **First `encoders/mets` test.** The `dmdSec` carries `MDTYPE` and
       `MDTYPEVERSION` from the declaration, and omits `MDTYPEVERSION` when
       the declaration leaves it empty. Commit `Added: mets encoder test for
@@ -474,9 +465,9 @@ rule between those two arrived in S2; this step adds the MODS files.
       `key[lang],value` rows (header check, key parsing, line numbers for
       violations) gains a third builder: mods rows through
       `mods.ResolveKey` into a mods `Description`.
-- [ ] **Reserved names.** `mods.csv`, `mods.xml`, `dc.xml` and `items.csv`
-      join the reserved names at the root and inside representation
-      directories (`items.csv` root only).
+- [ ] **Reserved names.** `mods.csv` and `items.csv` join the reserved
+      names at the root and inside representation directories (`items.csv`
+      root only).
 - [ ] **One source per level, one standard per folder, three standards.**
       More than one descriptive file at one level is a violation; none at
       the root is a violation; the folder's standard is the standard of
@@ -501,24 +492,11 @@ rule between those two arrived in S2; this step adds the MODS files.
 
 ### S5: CLI supplied documents
 
-- [ ] **Detection and validation.** `dc.xml` and `mods.xml` take part in
-      the one-source rule; `cli/input` opens each and runs the world's
-      `ValidateDocument`, turning an error into a violation naming the file
-      and the reason. `Package` carries the document path per level;
-      `BuilderInput` sets `DescriptiveDocument`.
-- [ ] **Items rule.** `items.csv` next to `mods.xml` is a violation: the
-      document carries its own holdings.
-- [ ] **Tests.** A valid `dc.xml` accepted; `mods.xml` with another
-      version, and a non-XML file, each a violation; `dc.xml` next to
-      `dc.csv` a violation; a representation-level `mods.xml` accepted;
-      `items.csv` next to `mods.xml` a violation.
-- [ ] **Docs.** Input spec §3 (supplied documents and their checks) and §8
-      (the deferred operator-supplied XML item is enacted for DC and MODS;
-      other standards stay deferred); README Input section. Commit `Added:
-      dc.xml and mods.xml as supplied descriptive documents`.
-- [ ] **Acceptance.** `go test ./...`; both profiles VALID; both
-      comparisons clean; `check` run by hand on a folder holding a
-      `dc.xml`.
+Withdrawn 2026-09-28 with decision 6
+([ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md)).
+`dc.xml` and `mods.xml` in the input folder return with the route, if it
+returns; the input specification keeps operator-supplied descriptive XML
+as a deferred item (§8).
 
 ### S6: acceptance and closing docs
 
@@ -546,8 +524,9 @@ rule between those two arrived in S2; this step adds the MODS files.
       (profile table, package layout with `mods.xml`, validation section
       naming the xmllint pass); `CLAUDE.md` development commands ("all
       three profiles validate VALID"); `docs/TODO.md` drops the MODS
-      question; ADR-0015 and ADR-0016 status to Accepted with the date;
-      this plan's status line to shipped, then the plan moves to
+      question; ADR-0015 status to Accepted with the date (ADR-0016's
+      status was settled on 2026-09-28); this plan's status line to
+      shipped, then the plan moves to
       `docs/archive/` per `docs/README.md`. Commit `Changed: docs for the
       eark-mods profile; plan archived`.
 
@@ -591,8 +570,19 @@ rule between those two arrived in S2; this step adds the MODS files.
   gained `ValidateRequired`, and `check` now reports a missing Dutch entry
   in a `dcschema.csv`. Both profiles still compare identical to their
   references.
-- **Next:** the remaining S2 boxes (supplied documents, docs sweep,
-  acceptance), then S3 to S6. On 2026-09-24 required elements became
+- **Next:** S3 to S6, starting with the MODS 3.7 XSD in the bundle. S2
+  closed on 2026-09-24 with both profiles VALID and their output unchanged.
+  That day required elements became
   vocabulary keys, the identity rule (identifier and title) moved into
-  `Input.Validate` so a profile lists only what its spec adds, and each
-  profile now lists the XSDs its packages ship.
+  `Input.Validate` so a profile lists only what its spec adds, each
+  encoder names the XSDs its document points at and the profile
+  concatenates them.
+- **The supplied-document route was withdrawn on 2026-09-28**, before its
+  commit. Review found the cost in the second input path at every level
+  (the fields, the rules that a level has terms or a document, the
+  assembler and writer branches, a shared XML reader), not in the check of
+  the root element. The Go files went back to the schemas commit and the
+  three new files were deleted;
+  [ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md)
+  records the deferral, and ADR-0015 and this plan no longer point richer
+  records at a supplied document.

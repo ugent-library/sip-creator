@@ -146,8 +146,10 @@ spelled the identity rule a third time in element names.
   would be needed for real structure, and a flat row list cannot group them:
   two name parts and two roles give no way to say which role belongs to
   which name. Both cost a parser and a grammar section in the input
-  specification for nothing a row cannot say. Records with structure travel
-  as supplied documents instead (ADR-0016).
+  specification for nothing a row cannot say. Records with structure were
+  to travel as supplied documents instead (ADR-0016); that route is
+  deferred ([ADR-0017](0017-supplied-descriptive-document-deferred.md)),
+  and the flat rows serve the flat columns the first consumers hold.
 - **Pairing a call number with its barcode inside `mods.csv`**, by row
   order, by indexed keys or by a delimiter inside one value. Order
   misaligns silently the moment one copy has no barcode. Indices are the
@@ -181,7 +183,10 @@ spelled the identity rule a third time in element names.
   element. It cannot express several parts under one parent: a given and a
   family name part on one name, a name with two roles, a subject heading
   combining a topic and a place, an affiliation next to a name. That matches the source data (flat
-  columns); anything richer arrives as a finished `mods.xml` (ADR-0016).
+  columns). Anything richer has no route into the package until the table
+  grows a row for its shape or the supplied-document route of ADR-0016
+  returns; that route is deferred
+  ([ADR-0017](0017-supplied-descriptive-document-deferred.md), 2026-09-28).
 - Adding a MODS element is a table row, a template fragment when the shape
   is new, and an input-specification line: the same rule as ADR-0011. The
   attribute values still open (the identifier `type` for the MMS ID, the

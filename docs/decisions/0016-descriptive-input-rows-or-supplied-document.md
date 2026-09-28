@@ -1,8 +1,16 @@
 # 0016 — Descriptive input is rows or a supplied document, and the profile fixes the standard
 
-Status: **Proposed** (drafted 2026-09-23; the decisions were agreed in
-review on 2026-09-15 with the [eark-mods plan](../plans/eark-mods.md), the
-items file on 2026-09-23. Becomes Accepted when that plan's S5 ships.)
+Status: **Accepted in part** (2026-09-28): the profile fixes the
+descriptive standard, and the CLI names its rows files by standard
+(`dcschema.csv` and `dc.csv` shipped in the
+[eark-mods plan](../plans/eark-mods.md)'s S2; `mods.csv` and `items.csv`
+follow in its S4). **Superseded in part by
+[ADR-0017](0017-supplied-descriptive-document-deferred.md)** (2026-09-28):
+the supplied-document route (`dc.xml`, `mods.xml`, the `DescriptiveDocument`
+input, its structural checks and the no-identity rule) is deferred; the
+paragraphs below that describe it record the design for when it returns.
+(Drafted 2026-09-23; agreed in review on 2026-09-15, the items file on
+2026-09-23.)
 
 ## Context
 
