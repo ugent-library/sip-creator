@@ -12,6 +12,7 @@ import (
 	"slices"
 
 	"github.com/ugent-library/sip-creator/characterization"
+	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/premis"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
@@ -31,7 +32,10 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 	b.Logger.Info("created an intellectual entity", slog.String("id", e.Identifier))
 
 	b.assembleDescriptive(e, def, in)
-	schemaFiles, err := schemaFileNodes(def.Schemas)
+	// The package ships the XSDs its documents point at and nothing else:
+	// what the METS documents reference, and what the descriptive document
+	// references. Each encoder knows its own list.
+	schemaFiles, err := schemaFileNodes(slices.Concat(mets.Schemas, def.Encoder.Schemas()))
 	if err != nil {
 		return nil, fmt.Errorf("profile %q: %w", def.Name, err)
 	}
@@ -80,7 +84,7 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 	// description, and the producer's identifier it replaces travels as
 	// MEEMOO-LOCAL-ID. Without a swap the document keeps the producer's
 	// identifier as-is (ADR-0012).
-	if s, ok := def.Descriptive.(IdentifierSwapper); ok {
+	if s, ok := def.Encoder.(IdentifierSwapper); ok {
 		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", s.Swap(d, e.Identifier))
 	}
 	e.Description = d
@@ -93,13 +97,12 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 	b.Logger.Info("created a descriptive file", slog.String("id", df.Identifier))
 }
 
-// schemaFileNodes declares one graph node per XSD the profile ships, sorted
-// so METS emission is deterministic whatever order the definition lists
-// them in, and each name once: a profile concatenates the lists its
-// encoders export, and those overlap where two documents point at the same
-// schema. A name the bundle does not hold is a mistake in the definition
-// and is refused here, before any write, rather than landing in the package
-// as an empty file.
+// schemaFileNodes declares one graph node per XSD the package ships, sorted
+// so METS emission is deterministic whatever order the encoders list them
+// in, and each name once: the METS list and the descriptive encoder's list
+// overlap where two documents point at the same schema. A name the bundle
+// does not hold is a mistake in an encoder's list and is refused here,
+// before any write, rather than landing in the package as an empty file.
 func schemaFileNodes(names []string) ([]*sip.File, error) {
 	xsds := schemas.Get()
 	files := make([]*sip.File, 0, len(names))
@@ -167,7 +170,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			// no-op when the terms carry none; rep-level identity is
 			// optional). The replaced value is not lifted: MEEMOO-LOCAL-ID
 			// is an identifier of the entity.
-			if s, ok := def.Descriptive.(IdentifierSwapper); ok {
+			if s, ok := def.Encoder.(IdentifierSwapper); ok {
 				s.Swap(sr.Descriptive, r.Identifier)
 			}
 			r.Description = sr.Descriptive

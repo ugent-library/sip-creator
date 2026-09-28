@@ -7,18 +7,19 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Definition declares a profile as data: the descriptive standard it
-// writes, which metadata it emits, and the values its METS documents carry.
+// Definition declares a profile as data: the encoder for its descriptive
+// document, which metadata it emits, and the values its METS documents
+// carry.
 // Profiles differ in these values, not in build logic: one engine
 // (Builder.Build) reads them. Each profile package under profiles/ builds
 // its own definition, and the registry in profiles/ hands them out by name.
 type Definition struct {
 	// Name is the registry key: what --profile selects.
 	Name string
-	// Descriptive is the descriptive standard the profile accepts and the
-	// document it writes. A definition without one is refused before any
-	// write.
-	Descriptive DescriptiveStandard
+	// Encoder writes the profile's descriptive document from the
+	// description it accepts. A definition without one is refused before
+	// any write.
+	Encoder DescriptionEncoder
 	// RequireSubmitterORID requires the submitting organization's meemoo
 	// OR-id, emitted as the agent's IDENTIFICATIONCODE note (meemoo SIP
 	// 1.2, metsHdr); WithSubmitter needs the OR-id when set.
@@ -42,12 +43,6 @@ type Definition struct {
 	EmitRepresentationType bool
 	// Declaration carries the METS values the profile's documents declare.
 	Declaration sip.MetsDeclaration
-	// Schemas are the XSD file names, from the bundle in schemas/, that the
-	// profile's packages ship under schemas/: the list the METS encoder
-	// exports for its documents plus the profile's own list for its
-	// descriptive document, concatenated. A name may appear in more than
-	// one list; each ships once. Every name must be bundled.
-	Schemas []string
 }
 
 // representationDeclaration returns the declaration a representation's METS

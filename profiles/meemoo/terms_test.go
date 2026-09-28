@@ -18,7 +18,7 @@ func testTerms() Terms {
 
 func TestEncode(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Encode(&buf, testTerms(), "../../schemas"); err != nil {
+	if err := (dcschema{}).Encode(&buf, testTerms(), "../../schemas"); err != nil {
 		t.Fatalf("Encode: %v", err)
 	}
 	out := buf.String()
@@ -53,7 +53,7 @@ func TestEncode(t *testing.T) {
 // document (four levels deep) must point four levels up.
 func TestEncodeSchemaLocation(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Encode(&buf, testTerms(), "../../../../schemas"); err != nil {
+	if err := (dcschema{}).Encode(&buf, testTerms(), "../../../../schemas"); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), `xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic ../../../../schemas/descriptive_basic.xsd"`) {
@@ -64,7 +64,7 @@ func TestEncodeSchemaLocation(t *testing.T) {
 func TestEncodeRefusesInvalid(t *testing.T) {
 	bad := Terms{{Element: "dcterms:titel", Value: "x"}}
 	var buf bytes.Buffer
-	if err := Encode(&buf, bad, "../../schemas"); err == nil {
+	if err := (dcschema{}).Encode(&buf, bad, "../../schemas"); err == nil {
 		t.Fatal("Encode accepted an invalid element")
 	}
 	if buf.Len() != 0 {
@@ -124,17 +124,17 @@ func TestTermsValidateDuplicateIdentifier(t *testing.T) {
 func TestTermsIdentifierSwap(t *testing.T) {
 	terms := testTerms()
 
-	if got := terms.LocalIdentifier(); got != "BIB.FA.2026.001" {
-		t.Fatalf("LocalIdentifier = %q", got)
+	if got := terms.localIdentifier(); got != "BIB.FA.2026.001" {
+		t.Fatalf("localIdentifier = %q", got)
 	}
 
-	terms.SetObjectIdentifier("uuid-entity-1")
-	if got := terms.LocalIdentifier(); got != "uuid-entity-1" {
+	terms.setObjectIdentifier("uuid-entity-1")
+	if got := terms.localIdentifier(); got != "uuid-entity-1" {
 		t.Fatalf("identifier not swapped in place, got %q", got)
 	}
 
 	var buf bytes.Buffer
-	if err := Encode(&buf, terms, "../../schemas"); err != nil {
+	if err := (dcschema{}).Encode(&buf, terms, "../../schemas"); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "<dcterms:identifier>uuid-entity-1</dcterms:identifier>") {

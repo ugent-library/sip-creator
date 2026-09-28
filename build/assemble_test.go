@@ -13,6 +13,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/characterization"
+	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
@@ -141,7 +142,7 @@ func TestAssemble(t *testing.T) {
 	if got := e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; got != "local-id-001" {
 		t.Errorf("MEEMOO-LOCAL-ID = %q, want %q", got, "local-id-001")
 	}
-	if got := e.Description.(meemoo.Terms).LocalIdentifier(); got != e.Identifier {
+	if got := meemooIdentifier(e.Description); got != e.Identifier {
 		t.Errorf("description identifier = %q, want entity identifier %q", got, e.Identifier)
 	}
 
@@ -160,7 +161,8 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("description file Mime = %q, want %q", df.Mime, "text/xml")
 	}
 
-	// One schema node per distinct XSD the profile lists, in sorted
+	// One schema node per distinct XSD the package's documents point at
+	// (the METS list plus the descriptive encoder's), in sorted
 	// (deterministic) order.
 	names := make([]string, 0, len(pkg.SchemaFiles))
 	for _, sf := range pkg.SchemaFiles {
@@ -169,8 +171,9 @@ func TestAssemble(t *testing.T) {
 			t.Errorf("schema Path = %q, want %q", sf.Path, "schemas/"+sf.Name)
 		}
 	}
-	if want := slices.Compact(slices.Sorted(slices.Values(basicDef(t).Schemas))); !slices.Equal(names, want) {
-		t.Errorf("schema nodes = %v, want the profile's list sorted and deduplicated: %v", names, want)
+	referenced := slices.Concat(mets.Schemas, basicDef(t).Encoder.Schemas())
+	if want := slices.Compact(slices.Sorted(slices.Values(referenced))); !slices.Equal(names, want) {
+		t.Errorf("schema nodes = %v, want the referenced XSDs sorted and deduplicated: %v", names, want)
 	}
 
 	// One representation: the package-side name is the producer's label,
@@ -555,7 +558,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 		t.Fatalf("assemble: %v", err)
 	}
 	r2 := pkg2.Root.Representations[0]
-	if got := r2.Description.(meemoo.Terms).LocalIdentifier(); got != r2.Identifier {
+	if got := meemooIdentifier(r2.Description); got != r2.Identifier {
 		t.Errorf("rep descriptive identifier = %q, want the representation identifier %q", got, r2.Identifier)
 	}
 
@@ -570,9 +573,21 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	}
 }
 
+// meemooIdentifier returns the dcterms:identifier term of meemoo terms (""
+// when absent): what the swap wrote. Neither profile package exports an
+// accessor for its identifier; the swap is the meemoo package's own
+// business, and the eark profile never swaps.
+func meemooIdentifier(d sip.Description) string {
+	for _, term := range d.(meemoo.Terms) {
+		if term.Element == "dcterms:identifier" {
+			return term.Value
+		}
+	}
+	return ""
+}
+
 // dcIdentifier returns the identifier element of Simple DC terms ("" when
-// absent). The dc world has no accessor for it because nothing in the
-// library reads it: the eark profile never swaps.
+// absent).
 func dcIdentifier(d sip.Description) string {
 	for _, term := range d.(eark.Terms) {
 		if term.Element == "identifier" {
@@ -841,13 +856,19 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// A definition listing a schema the bundle does not hold is refused at
+// unbundledSchemas wraps a real encoder and claims an XSD the bundle does
+// not hold.
+type unbundledSchemas struct{ build.DescriptionEncoder }
+
+func (unbundledSchemas) Schemas() []string { return []string{"nope.xsd"} }
+
+// An encoder listing a schema the bundle does not hold is refused at
 // assembly, before any write: the alternative is an empty XSD in the
 // package.
 func TestBuildRefusesUnbundledSchema(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	def := basicDef(t)
-	def.Schemas = append(slices.Clone(def.Schemas), "nope.xsd")
+	def.Encoder = unbundledSchemas{def.Encoder}
 	_, err := b.Build(def, in)
 	if err == nil || !strings.Contains(err.Error(), `"nope.xsd"`) {
 		t.Fatalf("Build error = %v, want the unbundled schema named", err)
@@ -855,12 +876,12 @@ func TestBuildRefusesUnbundledSchema(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// A definition built outside the registry names no descriptive standard
+// A definition built outside the registry names no descriptive encoder
 // and is refused before any side effect, as an error rather than a panic.
-func TestBuildDefinitionWithoutDescriptiveStandardWritesNothing(t *testing.T) {
+func TestBuildDefinitionWithoutEncoderWritesNothing(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	def := basicDef(t)
-	def.Descriptive = nil
+	def.Encoder = nil
 	if _, err := b.Build(def, in); err == nil {
 		t.Fatal("Build accepted a definition without a descriptive standard")
 	}

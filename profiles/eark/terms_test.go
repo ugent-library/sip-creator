@@ -18,7 +18,7 @@ func testTerms() Terms {
 
 func TestEncode(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Encode(&buf, testTerms(), "../../schemas"); err != nil {
+	if err := (simpledc{}).Encode(&buf, testTerms(), "../../schemas"); err != nil {
 		t.Fatalf("Encode: %v", err)
 	}
 	out := buf.String()
@@ -51,7 +51,7 @@ func TestEncode(t *testing.T) {
 // document (four levels deep) must point four levels up.
 func TestEncodeSchemaLocation(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Encode(&buf, testTerms(), "../../../../schemas"); err != nil {
+	if err := (simpledc{}).Encode(&buf, testTerms(), "../../../../schemas"); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), `xsi:noNamespaceSchemaLocation="../../../../schemas/dc.xsd"`) {
@@ -62,7 +62,7 @@ func TestEncodeSchemaLocation(t *testing.T) {
 func TestEncodeRefusesInvalid(t *testing.T) {
 	bad := Terms{{Element: "abstract", Value: "x"}} // a qualified term, not Simple DC
 	var buf bytes.Buffer
-	if err := Encode(&buf, bad, "../../schemas"); err == nil {
+	if err := (simpledc{}).Encode(&buf, bad, "../../schemas"); err == nil {
 		t.Fatal("Encode accepted an element outside Simple Dublin Core")
 	}
 	if buf.Len() != 0 {

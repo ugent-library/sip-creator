@@ -33,7 +33,7 @@ engine.
 
 **The engine is `build/`.** It holds `Builder`, `Config`, `Input` and its
 `Validate`, the assemble and write phases, `Definition`, and the interface
-a profile plugs in: `DescriptiveStandard` (`Check` and `Encode`) with the
+a profile plugs in: `DescriptionEncoder` (`Check` and `Encode`) with the
 optional `IdentifierSwapper` for a standard whose spec links descriptive
 and preservation metadata by a shared identifier. The engine imports no
 profile and speaks `sip.Description` only.
@@ -95,6 +95,9 @@ building with the real profiles.
   MODS world and a definition that copies the eark declaration values.
 - The engine still spells one meemoo constant, `MEEMOO-LOCAL-ID`, where it
   records what the swap returns. Moving it behind the profile is open.
-- The eark definition lists the meemoo schemas it does not reference by
-  name, in its own package, so that its output stays as it was; dropping
-  them stays a deliberate output change to make on its own.
+- `Definition` carries no schema list. Each encoder reports the XSDs its
+  document points at (`mets.Schemas`, `Schemas()` on the descriptive
+  encoder) and the assembler ships that set and nothing else. This
+  dropped the six meemoo XSDs the eark package used to ship without
+  referencing them, the output change the eark-mods plan had left open;
+  the eark reference copy was refreshed with it (2026-09-28).

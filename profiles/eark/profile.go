@@ -1,12 +1,7 @@
 package eark
 
 import (
-	"fmt"
-	"io"
-	"slices"
-
 	"github.com/ugent-library/sip-creator/build"
-	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -14,8 +9,8 @@ import (
 // RODA-class repositories, writing dc.xml from Terms and no PREMIS. The
 // registry in profiles/ hands it out under the name "eark".
 var Definition = build.Definition{
-	Name:        "eark",
-	Descriptive: standard{},
+	Name:    "eark",
+	Encoder: simpledc{},
 	// Named after the simple-DC document it holds; meemoo's naming
 	// convention doesn't apply to the eark profile.
 	DescriptiveName: "dc.xml",
@@ -41,28 +36,4 @@ var Definition = build.Definition{
 			{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1", NoteType: "SOFTWARE VERSION"},
 		},
 	},
-	// What the METS documents and dc.xml point at, plus the meemoo
-	// dc+schema schemas, which no eark document references: they ship so
-	// the output stays as it was, and dropping them is a deliberate output
-	// change to make on its own.
-	Schemas: slices.Concat(mets.Schemas, Schemas,
-		[]string{"descriptive_basic.xsd", "dcterms.xsd", "dcmitype.xsd", "edtf.xsd", "schema.xsd", "xml.xsd"}),
-}
-
-// standard is the simpledc document as the engine sees it: it accepts
-// Terms and writes them with Encode. It never swaps: dc.xml keeps the
-// producer's identifier, because CSIP has no rule tying it to the package
-// identifier and the ingesting catalogue indexes dc.xml, so operators find
-// the package by the identifier they know (ADR-0012).
-type standard struct{}
-
-func (standard) Check(d sip.Description) error {
-	if _, ok := d.(Terms); !ok {
-		return fmt.Errorf("descriptive metadata is %T, not Simple Dublin Core terms (eark.Terms)", d)
-	}
-	return nil
-}
-
-func (standard) Encode(w io.Writer, d sip.Description, schemas string) error {
-	return Encode(w, d.(Terms), schemas) // Check ran before anything else
 }

@@ -38,13 +38,13 @@ func New(config *Config) *Builder {
 // (no disk writes), then emits it in the canonical order. Failures before
 // the write phase leave no partial package dir behind.
 func (b *Builder) Build(def Definition, in *Input) (*sip.Package, error) {
-	// A definition without a descriptive standard is refused before any
-	// side effect. The standard's check of the input's descriptions then
-	// guarantees every type assertion the standard makes later.
-	if def.Descriptive == nil {
-		return nil, fmt.Errorf("profile %q names no descriptive standard; use a registered definition", def.Name)
+	// A definition without a descriptive encoder is refused before any
+	// side effect. The encoder's check of the input's descriptions then
+	// guarantees every type assertion the encoder makes later.
+	if def.Encoder == nil {
+		return nil, fmt.Errorf("profile %q names no descriptive encoder; use a registered definition", def.Name)
 	}
-	if err := checkDescriptions(def.Descriptive, in); err != nil {
+	if err := checkDescriptions(def.Encoder, in); err != nil {
 		return nil, fmt.Errorf("profile %q: %w", def.Name, err)
 	}
 
@@ -60,7 +60,7 @@ func (b *Builder) Build(def Definition, in *Input) (*sip.Package, error) {
 	}
 
 	st := store.New(pkg.Location)
-	if err := b.write(st, pkg, def.Descriptive.Encode); err != nil {
+	if err := b.write(st, pkg, def.Encoder); err != nil {
 		return nil, err
 	}
 

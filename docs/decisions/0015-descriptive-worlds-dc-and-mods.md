@@ -192,7 +192,7 @@ the meemoo standard's value in
   the profile writes. The behavior field on the profile is unexported, so
   the set of standards stays closed and no caller can hand `Definition` an
   encoder of its own. (Superseded 2026-09-28 by ADR-0018: the field is the
-  exported `build.DescriptiveStandard`, implemented by each profile
+  exported `build.DescriptionEncoder`, implemented by each profile
   package, and the registry closes the set.)
 
 ## Consequences

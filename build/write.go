@@ -27,7 +27,7 @@ const (
 // changed casually: representation METS embeds the fixity of its PREMIS
 // file, and package METS embeds the fixity of everything before it, so it
 // goes strictly last.
-func (b *Builder) write(st *store.Store, pkg *sip.Package, encodeDescriptive descriptiveEncoder) error {
+func (b *Builder) write(st *store.Store, pkg *sip.Package, enc DescriptionEncoder) error {
 	if err := b.writeSkeleton(st); err != nil {
 		return err
 	}
@@ -40,10 +40,10 @@ func (b *Builder) write(st *store.Store, pkg *sip.Package, encodeDescriptive des
 	if err := b.writeEssence(st, pkg); err != nil {
 		return err
 	}
-	if err := b.writeDescriptive(st, pkg, encodeDescriptive); err != nil {
+	if err := b.writeDescriptive(st, pkg, enc); err != nil {
 		return err
 	}
-	if err := b.writeRepresentationMetadata(st, pkg, encodeDescriptive); err != nil {
+	if err := b.writeRepresentationMetadata(st, pkg, enc); err != nil {
 		return err
 	}
 	if pkg.PremisFile != nil {
@@ -122,10 +122,10 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 	})
 }
 
-func (b *Builder) writeDescriptive(st *store.Store, pkg *sip.Package, encode descriptiveEncoder) error {
+func (b *Builder) writeDescriptive(st *store.Store, pkg *sip.Package, enc DescriptionEncoder) error {
 	df := pkg.Root.DescriptionFile
 	info, err := st.WriteMetadata(df.Path, func(w io.Writer) error {
-		return encode(w, pkg.Root.Description, packageSchemas)
+		return enc.Encode(w, pkg.Root.Description, packageSchemas)
 	})
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func (b *Builder) writeDescriptive(st *store.Store, pkg *sip.Package, encode des
 	return nil
 }
 
-func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package, encodeDescriptive descriptiveEncoder) error {
+func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package, enc DescriptionEncoder) error {
 	return pkg.Root.EachRepresentation(func(r *sip.Representation) error {
 		base := "representations/" + r.Name + "/"
 
@@ -144,7 +144,7 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 				return err
 			}
 			info, err := st.WriteMetadata(base+df.Path, func(w io.Writer) error {
-				return encodeDescriptive(w, r.Description, representationSchemas)
+				return enc.Encode(w, r.Description, representationSchemas)
 			})
 			if err != nil {
 				return err

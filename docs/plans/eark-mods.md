@@ -97,7 +97,7 @@ the DC table while walking the folder, before any profile is known.
    descriptions plus the encoder, built from its own package with no
    shared constructor. A registry entry names one in an
    unexported field. (Revised 2026-09-28, ADR-0018: the standard is the
-   exported interface `build.DescriptiveStandard`, implemented by an
+   exported interface `build.DescriptionEncoder`, implemented by an
    unexported type in each profile package next to its exported
    `Definition`; the registry in `profiles/` closes the set.) Profiles
    stay what operators type: `basic`, `eark`
@@ -388,7 +388,11 @@ internal, but the emitted packages stay unchanged.
       output stays unchanged; see the open question. Each encoder tests
       its list against the bundle, and the registry test pins that both
       profiles ship the whole bundle.) Commit `Added: profile definitions
-      list the XSDs their packages ship`.
+      list the XSDs their packages ship`. (Reversed 2026-09-28: the field
+      is gone; the assembler ships `mets.Schemas` plus what the profile's
+      descriptive encoder reports through `Schemas()`, and nothing else.
+      `eark` therefore dropped the six meemoo XSDs and its reference copy
+      was refreshed, the open question resolved.)
 - **Withdrawn 2026-09-28: a supplied document travels the essence path.**
       Implemented in the working tree on 2026-09-24 (`DescriptiveDocument`
       on `Input` and `SourceRepresentation`, `dc.ValidateDocument`, an
@@ -453,12 +457,12 @@ The library route is complete after this step.
       writing. Commit `Added: profiles/earkmods with the two-row key table
       and the items table`.
 - [ ] **The `eark-mods` profile.** In `profiles/earkmods`, an unexported
-      type implementing `build.DescriptiveStandard`: `Check` asserts the
+      type implementing `build.DescriptionEncoder`: `Check` asserts the
       package's `Description`, `Encode` calls its `Encode`; no swap. An
       exported `Definition` copying `eark`'s values: `DescriptiveName
       "mods.xml"`, no cardinality or language rule, no PREMIS,
-      `EmitRepresentationType` true, `Schemas` = `mets.Schemas` plus the
-      package's `Schemas` (`mods-3-7.xsd` with `xlink.xsd` and `xml.xsd`,
+      `EmitRepresentationType` true; the encoder's `Schemas()` returns
+      the package's own list (`mods-3-7.xsd` with `xlink.xsd` and `xml.xsd`,
       which it imports by loc.gov URL and S6 maps onto the package
       copies), six distinct files; declaration `DescriptiveMDType "MODS"`,
       `DescriptiveMDTypeVersion "3.7"`, the eark profile URL. One line in
@@ -567,6 +571,9 @@ as a deferred item (§8).
   competence centres appear as agents), dates carry `encoding="edtf"`.
 - **`eark` still ships `descriptive_basic.xsd`**, which it never references.
   Dropping it is a deliberate output change and stays out of this plan.
+  (Resolved 2026-09-28 with ADR-0018's follow-up: a package ships only
+  what its documents point at, so `eark` dropped the six meemoo XSDs and
+  its reference copy was refreshed.)
 - **Library callers** change their import from `encoders/metadata` to
   `encoders/dcschema` (meemoo) or `encoders/dc` (plain E-ARK) in S2, and
   on 2026-09-28 to `profiles/meemoo` and `profiles/eark`, with
@@ -631,8 +638,14 @@ as a deferred item (§8).
   engine moved from `profiles/` to `build/`, each world moved into its
   profile's own package (`profiles/meemoo`, `profiles/eark`) next to an
   exported `Definition` and an unexported standard implementing
-  `build.DescriptiveStandard`, `profiles/` itself became the registry
+  `build.DescriptionEncoder`, `profiles/` itself became the registry
   only, and `encoders/` kept the two renderers of the graph. Imports now
   run one way, from the CLI through the registry and the profile
   packages to the engine; the engine imports no profile. Output
-  unchanged, both structural comparisons clean.
+  unchanged, both structural comparisons clean. In review the same day:
+  the engine's interface became `build.DescriptionEncoder`, each profile
+  package became one encoder struct (`dcschema`, `simpledc`) plus its
+  `Definition`, and `Definition.Schemas` went: a package ships what its
+  documents point at, so `eark` dropped the six unreferenced meemoo XSDs
+  (its reference copy refreshed; `./build.sh eark` re-run the same day:
+  VALID, 0 warnings, the same counts as before).

@@ -33,9 +33,9 @@ func (t Terms) has(element string) bool {
 	return false
 }
 
-// LocalIdentifier returns the value of the dcterms:identifier term: the
+// localIdentifier returns the value of the dcterms:identifier term: the
 // producer's local catalog/inventory number ("" when absent).
-func (t Terms) LocalIdentifier() string {
+func (t Terms) localIdentifier() string {
 	for _, term := range t {
 		if term.Element == "dcterms:identifier" {
 			return term.Value
@@ -44,11 +44,11 @@ func (t Terms) LocalIdentifier() string {
 	return ""
 }
 
-// SetObjectIdentifier replaces the dcterms:identifier term's value in
+// setObjectIdentifier replaces the dcterms:identifier term's value in
 // place (a no-op when the terms carry none). Terms holds one identifier
 // slot, so the swap overwrites the local identifier: read it with
-// LocalIdentifier first.
-func (t Terms) SetObjectIdentifier(id string) {
+// localIdentifier first.
+func (t Terms) setObjectIdentifier(id string) {
 	for i, term := range t {
 		if term.Element == "dcterms:identifier" {
 			t[i].Value = id
