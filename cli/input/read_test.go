@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/encoders/dcschema"
+	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
 
 // minimalCSV is the smallest dcschema.csv that passes check: meemoo's
@@ -145,7 +145,7 @@ func TestReadRepresentations(t *testing.T) {
 	if master.Descriptive != nil {
 		t.Error("master has no dcschema.csv but carries descriptive terms")
 	}
-	if got, ok := access.Descriptive.(dcschema.Terms); !ok || len(got) != 1 || got[0].Element != "dcterms:title" {
+	if got, ok := access.Descriptive.(meemoo.Terms); !ok || len(got) != 1 || got[0].Element != "dcterms:title" {
 		t.Errorf("access descriptive = %#v, want its title term", access.Descriptive)
 	}
 	if got := paths(access.Files); strings.Join(got, ",") != "book.pdf" {

@@ -12,8 +12,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/characterization"
-	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -47,7 +47,7 @@ type Representation struct {
 	// to the label).
 	Type string
 	// Descriptive is nil unless the representation has its own descriptive
-	// rows file: dcschema.Terms from a dcschema.csv, dc.Terms from a dc.csv.
+	// rows file: meemoo.Terms from a dcschema.csv, eark.Terms from a dc.csv.
 	Descriptive sip.Description
 	// Files are the content files, in deterministic traversal order
 	// (lexical per directory).
@@ -64,7 +64,7 @@ type Package struct {
 	// Root is the absolute path of the input folder.
 	Root string
 	// Descriptive is the package-level description from the top-level rows
-	// file: dcschema.Terms from a dcschema.csv, dc.Terms from a dc.csv.
+	// file: meemoo.Terms from a dcschema.csv, eark.Terms from a dc.csv.
 	Descriptive sip.Description
 	// Representations holds at least one representation; a flat folder
 	// reads as a single one.
@@ -81,20 +81,20 @@ type Package struct {
 }
 
 // BuilderInput maps the validated folder onto the library's build input.
-func (p *Package) BuilderInput() *profiles.Input {
-	in := &profiles.Input{
+func (p *Package) BuilderInput() *build.Input {
+	in := &build.Input{
 		Characterization: p.Characterization,
 		Documentation:    sourceFiles(p.Documentation),
 		Premis:           sourceFiles(p.Premis),
 	}
-	// Assign a description only when the folder had one: a nil dc.Terms
+	// Assign a description only when the folder had one: a nil eark.Terms
 	// stored in the interface field would read as a present, empty
 	// description.
 	if p.Descriptive != nil {
 		in.Descriptive = p.Descriptive
 	}
 	for _, rep := range p.Representations {
-		sr := profiles.SourceRepresentation{
+		sr := build.SourceRepresentation{
 			Name:          rep.Name,
 			Label:         rep.Label,
 			Type:          rep.Type,
@@ -110,10 +110,10 @@ func (p *Package) BuilderInput() *profiles.Input {
 	return in
 }
 
-func sourceFiles(files []File) []profiles.SourceFile {
-	out := make([]profiles.SourceFile, len(files))
+func sourceFiles(files []File) []build.SourceFile {
+	out := make([]build.SourceFile, len(files))
 	for i, f := range files {
-		out[i] = profiles.SourceFile{Source: f.Source, Key: f.Rel, Path: f.Path}
+		out[i] = build.SourceFile{Source: f.Source, Key: f.Rel, Path: f.Path}
 	}
 	return out
 }

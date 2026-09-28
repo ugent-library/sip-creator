@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/ugent-library/sip-creator/archive"
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/cli/input"
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/sip"
@@ -74,7 +75,7 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("input folder %s does not conform to the input specification:\n%w", args[0], err)
 		}
 
-		builder := profiles.New(&profiles.Config{
+		builder := build.New(&build.Config{
 			Destination: args[1],
 			Logger:      logger,
 		})

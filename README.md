@@ -100,8 +100,9 @@ and hand `Build` your descriptive terms and content files:
 import (
 	"log/slog"
 
-	"github.com/ugent-library/sip-creator/encoders/dc"
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles"
+	"github.com/ugent-library/sip-creator/profiles/eark"
 )
 
 def, _ := profiles.Get("eark")
@@ -112,24 +113,24 @@ if err != nil {
 	// ...
 }
 
-builder := profiles.New(&profiles.Config{
+builder := build.New(&build.Config{
 	Destination: "./out",
 	Logger:      slog.Default(),
 })
 
-pkg, err := builder.Build(def, &profiles.Input{
-	// The eark profile writes Simple Dublin Core, so its terms come from
-	// encoders/dc; a meemoo profile takes dcschema.Terms from
-	// encoders/dcschema (dcterms:-prefixed elements plus schema.org).
-	Descriptive: dc.Terms{
+pkg, err := builder.Build(def, &build.Input{
+	// Each profile package owns its terms type: the eark profile writes
+	// Simple Dublin Core from eark.Terms; the basic profile takes
+	// meemoo.Terms (dcterms:-prefixed elements plus schema.org).
+	Descriptive: eark.Terms{
 		{Element: "identifier", Value: "inv.2024.001"},
 		{Element: "title", Value: "Correspondentie 1914-1918"},
 		{Element: "description", Value: "Brieven uit de collectie."},
 		{Element: "date", Value: "1914/1918"},
 	},
-	Representations: []profiles.SourceRepresentation{{
+	Representations: []build.SourceRepresentation{{
 		Name: "master",
-		Files: []profiles.SourceFile{
+		Files: []build.SourceFile{
 			{Source: "/data/scans/page-001.tif", Path: "page-001.tif"},
 		},
 	}},

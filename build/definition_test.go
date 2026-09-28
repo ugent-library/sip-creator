@@ -1,20 +1,19 @@
-package profiles
+package build_test
 
 import (
-	"maps"
-	"slices"
 	"strings"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/encoders/dc"
-	"github.com/ugent-library/sip-creator/encoders/dcschema"
-	"github.com/ugent-library/sip-creator/schemas"
+	"github.com/ugent-library/sip-creator/build"
+	"github.com/ugent-library/sip-creator/profiles"
+	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
 
 // earkDef returns the registered "eark" definition the tests build with.
-func earkDef(t *testing.T) Definition {
+func earkDef(t *testing.T) build.Definition {
 	t.Helper()
-	def, ok := Get("eark")
+	def, ok := profiles.Get("eark")
 	if !ok {
 		t.Fatal(`no "eark" definition registered`)
 	}
@@ -23,8 +22,8 @@ func earkDef(t *testing.T) Definition {
 
 // identityTerms is the input convention's own MUSTs and nothing more, in
 // the eark profile's standard, Simple Dublin Core.
-func identityTerms() dc.Terms {
-	return dc.Terms{
+func identityTerms() eark.Terms {
+	return eark.Terms{
 		{Element: "identifier", Value: "local-id-001"},
 		{Element: "title", Value: "Catus Testus"},
 	}
@@ -32,68 +31,43 @@ func identityTerms() dc.Terms {
 
 // meemooIdentityTerms is the same identity in meemoo's standard: short of
 // the four elements the basic profile requires.
-func meemooIdentityTerms() dcschema.Terms {
-	return dcschema.Terms{
+func meemooIdentityTerms() meemoo.Terms {
+	return meemoo.Terms{
 		{Element: "dcterms:identifier", Value: "local-id-001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
 	}
 }
 
 // Cardinality and the Dutch-language rule are meemoo's standard's own, so
-// Input.Validate applies them to dcschema terms at both levels whatever
+// build.Input.Validate applies them to meemoo terms at both levels whatever
 // the profile, and never to Simple Dublin Core terms.
 func TestInputValidateAppliesStandardRules(t *testing.T) {
 	_, in, _ := newTestBuilder(t)
 	in.Descriptive = append(testDescriptive(),
-		dcschema.Term{Element: "dcterms:abstract", Lang: "nl", Value: "een"},
-		dcschema.Term{Element: "dcterms:abstract", Lang: "nl", Value: "twee"})
+		meemoo.Term{Element: "dcterms:abstract", Lang: "nl", Value: "een"},
+		meemoo.Term{Element: "dcterms:abstract", Lang: "nl", Value: "twee"})
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), "more than once") {
 		t.Errorf("repeated abstract accepted: %v", err)
 	}
 
 	_, in, _ = newTestBuilder(t)
-	in.Descriptive = append(testDescriptive(), dcschema.Term{Element: "dcterms:subject", Lang: "en", Value: "cats"})
+	in.Descriptive = append(testDescriptive(), meemoo.Term{Element: "dcterms:subject", Lang: "en", Value: "cats"})
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `"nl"`) {
 		t.Errorf("subject without a Dutch entry accepted: %v", err)
 	}
 
 	_, in, _ = newTestBuilder(t)
-	in.Representations[0].Descriptive = dcschema.Terms{{Element: "dcterms:title", Lang: "en", Value: "Cats"}}
+	in.Representations[0].Descriptive = meemoo.Terms{{Element: "dcterms:title", Lang: "en", Value: "Cats"}}
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `representation "master"`) {
 		t.Errorf("representation title without a Dutch entry accepted: %v", err)
 	}
 
 	_, in, _ = newTestBuilder(t)
 	in.Descriptive = append(identityTerms(),
-		dc.Term{Element: "description", Lang: "en", Value: "one"},
-		dc.Term{Element: "description", Lang: "en", Value: "two"})
+		eark.Term{Element: "description", Lang: "en", Value: "one"},
+		eark.Term{Element: "description", Lang: "en", Value: "two"})
 	if err := in.Validate(); err != nil {
 		t.Errorf("Simple DC has no such rules, yet Validate refused: %v", err)
-	}
-}
-
-// Every registry entry's schema list names bundled files, so a typo fails
-// here rather than at the first build (a name may repeat across the encoder
-// lists a profile concatenates; the assembler ships it once). Both profiles
-// ship the whole bundle today; a profile shipping a subset gets its own
-// line.
-func TestRegistrySchemas(t *testing.T) {
-	bundle := schemas.Get()
-	for _, name := range Names() {
-		def, _ := Get(name)
-		for _, xsd := range def.Schemas {
-			if _, ok := bundle[xsd]; !ok {
-				t.Errorf("profile %q ships %q, which is not bundled", name, xsd)
-			}
-		}
-	}
-
-	all := slices.Sorted(maps.Keys(bundle))
-	for _, name := range []string{"basic", "eark"} {
-		def, _ := Get(name)
-		if got := slices.Compact(slices.Sorted(slices.Values(def.Schemas))); !slices.Equal(got, all) {
-			t.Errorf("profile %q Schemas = %v, want the whole bundle %v", name, got, all)
-		}
 	}
 }
 
@@ -134,7 +108,7 @@ func TestWithSubmitterRequiresName(t *testing.T) {
 }
 
 func TestWithSubmitterEARK(t *testing.T) {
-	def, ok := Get("eark")
+	def, ok := profiles.Get("eark")
 	if !ok {
 		t.Fatal(`no "eark" definition registered`)
 	}

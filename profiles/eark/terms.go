@@ -1,8 +1,10 @@
-// Package dc is the Simple Dublin Core descriptive world: the fifteen
+// Package eark is the eark profile: a plain E-ARK SIP for RODA-class
+// repositories. Its descriptive world is Simple Dublin Core, the fifteen
 // elements of the Dublin Core Metadata Element Set, unqualified, written as
-// the simpledc document RODA renders and indexes natively. The eark profile
-// writes it.
-package dc
+// the simpledc document RODA renders and indexes natively; its Definition
+// names the rest as data, and the registry in profiles/ hands that out as
+// "eark".
+package eark
 
 import (
 	"errors"

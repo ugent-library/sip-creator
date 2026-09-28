@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/ugent-library/sip-creator/profiles"
+	"github.com/ugent-library/sip-creator/build"
 )
 
 // repRow is one decoded representations.csv data row.
@@ -160,10 +160,10 @@ func (r *reader) decodeRepresentations(src string) (rows []repRow, decoded bool)
 		label, kind := cell(row, labelCol), cell(row, typeCol)
 		// Whether a value may be emitted is the library's rule, the same
 		// one an embedding caller hits; the decoder adds file/line context.
-		if err := profiles.ValidateAttributeText(label); err != nil {
+		if err := build.ValidateAttributeText(label); err != nil {
 			r.violate("%s line %d: label: %v", rel, line, err)
 		}
-		if err := profiles.ValidateAttributeText(kind); err != nil {
+		if err := build.ValidateAttributeText(kind); err != nil {
 			r.violate("%s line %d: type: %v", rel, line, err)
 		}
 		// Keep the row even when a value is bad: matching and coverage

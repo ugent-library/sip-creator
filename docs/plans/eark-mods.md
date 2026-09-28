@@ -51,10 +51,14 @@ the DC table while walking the folder, before any profile is known.
 1. **Separate descriptive worlds, no shared term type.** Each world owns
    its terms type, closed vocabulary table, validation and templates.
    There are three (revised 2026-09-23; the review of 2026-09-15 had one
-   DC world with two templates): `encoders/dcschema` for meemoo's
+   DC world with two templates): `profiles/meemoo` for meemoo's
    `dc+schema` document (Dublin Core terms plus schema.org, EDTF typing,
-   cardinality and language rules), `encoders/dc` for Simple Dublin Core
-   (fifteen elements), and `encoders/mods`. Meemoo's document and Simple
+   cardinality and language rules), `profiles/eark` for Simple Dublin Core
+   (fifteen elements), and `profiles/earkmods` (paths as of 2026-09-28,
+   [ADR-0018](../decisions/0018-engine-and-profile-packages.md): each world
+   lives in its profile's own package next to the profile's `Definition`;
+   they were `encoders/dcschema`, `encoders/dc` and `encoders/mods`
+   before). Meemoo's document and Simple
    DC share only the Go shape of a term; the DCMI dumb-down that derived
    the eark document from meemoo's vocabulary is removed with the split,
    because it silently dropped keys with no Simple DC parent
@@ -92,7 +96,11 @@ the DC table while walking the folder, before any profile is known.
    world) and `mods` once it exists, each a type check on the input's
    descriptions plus the encoder, built from its own package with no
    shared constructor. A registry entry names one in an
-   unexported field. Profiles stay what operators type: `basic`, `eark`
+   unexported field. (Revised 2026-09-28, ADR-0018: the standard is the
+   exported interface `build.DescriptiveStandard`, implemented by an
+   unexported type in each profile package next to its exported
+   `Definition`; the registry in `profiles/` closes the set.) Profiles
+   stay what operators type: `basic`, `eark`
    (name kept) and the new `eark-mods`, whose entry copies `eark` with
    `descriptive: mods`, `MDTYPE="MODS"`, `MDTYPEVERSION="3.7"`, `mods.xml`
    as the document name, identifier and title required, no cardinality or
@@ -117,9 +125,9 @@ the DC table while walking the folder, before any profile is known.
    result: the interface is `Validate` and `ValidateRequired()`; what a
    package-level description must state is each world's own list,
    checked in `Input.Validate` and by `check`, so `Definition` names no
-   descriptive elements; the swap sits behind the meemoo standard's value in
-   `profiles/descriptive.go`, the one file that knows the concrete type;
-   the encoders trust validated terms. ADR-0015 carries the note.
+   descriptive elements; the swap sits behind the meemoo standard, in
+   `profiles/meemoo` since the layout change of the same day; the
+   encoders trust validated terms. ADR-0015 carries the note.
 6. **Supplied documents reuse the essence path.** Withdrawn 2026-09-28
    ([ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md)).
    The route (a `DescriptiveDocument` path next to `Descriptive` on the
@@ -415,43 +423,47 @@ The library route is complete after this step.
       `schemas/`. It imports `xml.xsd` and `xlink.xsd` by absolute loc.gov
       URLs; both are bundled already, and S6 resolves the URLs with an XML
       catalog. Commit `Added: MODS 3.7 XSD in the schema bundle`.
-- [ ] **`encoders/mods` model.** `description.go`: `Description` holding
+- [ ] **`profiles/earkmods` model.** (The package is the `eark-mods`
+      profile's own, per ADR-0018; the boxes below said `encoders/mods`
+      until 2026-09-28.) `description.go`: `Description` holding
       `Terms []Term` (`Key`, `Lang`, `Value`) and `Items []Item`
       (`CallNumber`, `Barcode`, `Enumeration`), implementing
-      `sip.Description`; `LocalIdentifier` returns the `identifier` term.
-      `vocabulary.go`: the key table with `identifier` and `title`, each
-      row naming its template fragment and fixed attribute values; the MMS
-      ID `type` value is one constant here (open question). `ResolveKey`.
-- [ ] **`encoders/mods` validation.** Known key, language tag shape,
-      non-empty value; per item a non-empty call number and a barcode
-      unique across items; `ValidateRequired(keys...)`.
-- [ ] **`encoders/mods` template.** Root `mods:mods` with the MODS
+      `sip.Description`. `vocabulary.go`: the key table with `identifier`
+      and `title`, each row naming its template fragment and fixed
+      attribute values; the MMS ID `type` value is one constant here (open
+      question); the `required` list (identifier and title). `ResolveKey`.
+- [ ] **`profiles/earkmods` validation.** Known key, language tag shape,
+      non-empty value, every finding joined; per item a non-empty call
+      number and a barcode unique across items; `ValidateRequired()`
+      over the package's own required list.
+- [ ] **`profiles/earkmods` template.** Root `mods:mods` with the MODS
       namespace, `version="3.7"` and an `xsi:schemaLocation` onto
       `{{.Schemas}}/mods-3-7.xsd`; one fragment per key (`identifier` with
       its `type`, `titleInfo/title` with `xml:lang`); the items as one
       `location/holdingSimple` with one `copyInformation` per item
       (`shelfLocator`, `enumerationAndChronology` when set, `itemIdentifier
       type="barcode"` when set), omitted when there are no items; every
-      value escaped. `Encode(w, d, schemas)` validates first.
-- [ ] **`encoders/mods` tests.** Table invariants (unique keys, fragment
+      value escaped. `Encode(w, d, schemas)` trusts validated terms and
+      guards the interpolated element names in the template, as the two
+      DC worlds do.
+- [ ] **`profiles/earkmods` tests.** Table invariants (unique keys, fragment
       per row); encoder output (root, namespaces, version, escaping,
       `xml:lang`, one `copyInformation` per item with the right children,
       no `location` without items); refuses invalid terms or items without
-      writing. Commit `Added: encoders/mods with the two-row key table and
-      the items table`.
-- [ ] **The `eark-mods` profile.** A `mods` value in
-      `profiles/descriptive.go`: the check asserts the mods `Description`,
-      the encoder is `mods.Encode`. Registry entry copying
-      `eark` with `descriptive: mods`: `DescriptiveName
-      "mods.xml"`, no `RequiredKeys` beyond the identity every package
-      states, no cardinality or language rule, no PREMIS,
-      `EmitRepresentationType` true, `Schemas` = `mets.Schemas` plus
-      `mods.Schemas` (`mods-3-7.xsd` with `xlink.xsd` and `xml.xsd`, which
-      it imports by loc.gov URL and S6 maps onto the package copies), six
-      distinct files;
-      declaration `DescriptiveMDType "MODS"`, `DescriptiveMDTypeVersion
-      "3.7"`, the eark profile URL. `profiles.Names()` lists it, so the
-      CLI's unknown-profile message does too.
+      writing. Commit `Added: profiles/earkmods with the two-row key table
+      and the items table`.
+- [ ] **The `eark-mods` profile.** In `profiles/earkmods`, an unexported
+      type implementing `build.DescriptiveStandard`: `Check` asserts the
+      package's `Description`, `Encode` calls its `Encode`; no swap. An
+      exported `Definition` copying `eark`'s values: `DescriptiveName
+      "mods.xml"`, no cardinality or language rule, no PREMIS,
+      `EmitRepresentationType` true, `Schemas` = `mets.Schemas` plus the
+      package's `Schemas` (`mods-3-7.xsd` with `xlink.xsd` and `xml.xsd`,
+      which it imports by loc.gov URL and S6 maps onto the package
+      copies), six distinct files; declaration `DescriptiveMDType "MODS"`,
+      `DescriptiveMDTypeVersion "3.7"`, the eark profile URL. One line in
+      the registry in `profiles/`, so `profiles.Names()` and the CLI's
+      unknown-profile message list it.
 - [ ] **`profiles/` tests.** dc terms handed to `eark-mods`, and a mods
       description handed to `eark` or `basic`, fail before any write; a
       full `eark-mods` build has `metadata/descriptive/mods.xml`, exactly
@@ -464,8 +476,8 @@ The library route is complete after this step.
       the dmdSec typing`.
 - [ ] **Docs.** Design doc: encoders list, descriptive standards, profile table; the
       README's library example gets a MODS variant; `CLAUDE.md` system
-      shape names `encoders/mods`. Commit `Changed: docs for the mods
-      encoder and the eark-mods profile`.
+      shape names `profiles/earkmods`. Commit `Changed: docs for the
+      eark-mods profile`.
 - [ ] **Acceptance.** `go test ./...`; `./build.sh basic` and `./build.sh
       eark` VALID with 0 warnings; both comparisons clean. `eark-mods` has
       no fixture yet; the Go build test stands in until S6.
@@ -491,7 +503,7 @@ rule between those two arrived in S2; this step adds the MODS files.
       in any order, case-insensitive, unknown or repeated column a
       violation; `callnumber` non-empty on every row; `barcode` unique;
       allowed only at the root and only next to `mods.csv`.
-- [ ] **Mapping onto `profiles.Input`.** `Package` carries the decoded
+- [ ] **Mapping onto `build.Input`.** `Package` carries the decoded
       `sip.Description` per level; `BuilderInput` assigns it only when a
       file was read (the typed-nil pitfall from S2).
 - [ ] **Tests.** mods rows, items rows and each items violation, two files
@@ -556,8 +568,11 @@ as a deferred item (§8).
 - **`eark` still ships `descriptive_basic.xsd`**, which it never references.
   Dropping it is a deliberate output change and stays out of this plan.
 - **Library callers** change their import from `encoders/metadata` to
-  `encoders/dcschema` (meemoo) or `encoders/dc` (plain E-ARK) in S2; the
-  commit messages record the rename and the split.
+  `encoders/dcschema` (meemoo) or `encoders/dc` (plain E-ARK) in S2, and
+  on 2026-09-28 to `profiles/meemoo` and `profiles/eark`, with
+  `profiles.New`, `profiles.Config` and `profiles.Input` becoming
+  `build.New`, `build.Config` and `build.Input` (ADR-0018); the commit
+  messages record each break.
 
 ## Progress so far (2026-09-24)
 
@@ -611,3 +626,13 @@ as a deferred item (§8).
   `Definition.RequiredKeys` is gone and `ResolveKey` is the CLI's alone;
   the per-rule validators nobody called are unexported.
   ADR-0012 and ADR-0015 carry dated notes.
+- **The layout followed the same day**
+  ([ADR-0018](../decisions/0018-engine-and-profile-packages.md)): the
+  engine moved from `profiles/` to `build/`, each world moved into its
+  profile's own package (`profiles/meemoo`, `profiles/eark`) next to an
+  exported `Definition` and an unexported standard implementing
+  `build.DescriptiveStandard`, `profiles/` itself became the registry
+  only, and `encoders/` kept the two renderers of the graph. Imports now
+  run one way, from the CLI through the registry and the profile
+  packages to the engine; the engine imports no profile. Output
+  unchanged, both structural comparisons clean.

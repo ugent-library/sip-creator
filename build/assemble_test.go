@@ -1,4 +1,4 @@
-package profiles
+package build_test
 
 import (
 	"crypto/md5"
@@ -11,9 +11,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/characterization"
-	"github.com/ugent-library/sip-creator/encoders/dc"
-	"github.com/ugent-library/sip-creator/encoders/dcschema"
+	"github.com/ugent-library/sip-creator/profiles"
+	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -30,8 +32,8 @@ func fileMD5(t *testing.T, path string) string {
 // testDescriptive satisfies the strictest registered profile: meemoo's
 // four required elements, Dutch entries on the lang-tagged ones. It is the
 // basic profile's input; eark tests swap in identityTerms.
-func testDescriptive() dcschema.Terms {
-	return dcschema.Terms{
+func testDescriptive() meemoo.Terms {
+	return meemoo.Terms{
 		{Element: "dcterms:identifier", Value: "local-id-001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
 		{Element: "dcterms:description", Lang: "nl", Value: "Een testkat"},
@@ -39,8 +41,8 @@ func testDescriptive() dcschema.Terms {
 	}
 }
 
-// writeEssence puts one content file on disk and returns its SourceFile.
-func writeEssence(t *testing.T, dir, name, content string) SourceFile {
+// writeEssence puts one content file on disk and returns its build.SourceFile.
+func writeEssence(t *testing.T, dir, name, content string) build.SourceFile {
 	t.Helper()
 	src := filepath.Join(dir, filepath.FromSlash(name))
 	if err := os.MkdirAll(filepath.Dir(src), 0775); err != nil {
@@ -49,7 +51,7 @@ func writeEssence(t *testing.T, dir, name, content string) SourceFile {
 	if err := os.WriteFile(src, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
-	return SourceFile{Source: src, Key: name, Path: name}
+	return build.SourceFile{Source: src, Key: name, Path: name}
 }
 
 // testFormat returns the canned format assertion the report-based tests use.
@@ -62,7 +64,7 @@ func testFormat() *sip.Format {
 
 // report builds a characterization report with an entry (matching checksum,
 // canned format) for every given source file.
-func report(t *testing.T, files ...SourceFile) characterization.Report {
+func report(t *testing.T, files ...build.SourceFile) characterization.Report {
 	t.Helper()
 	rep := make(characterization.Report, len(files))
 	for _, f := range files {
@@ -77,18 +79,18 @@ func report(t *testing.T, files ...SourceFile) characterization.Report {
 
 // newTestBuilder returns a builder over the minimal valid input data: one
 // representation with one essence file, descriptive terms, no report.
-func newTestBuilder(t *testing.T) (b *Builder, in *Input, outDir string) {
+func newTestBuilder(t *testing.T) (b *build.Builder, in *build.Input, outDir string) {
 	t.Helper()
 	inDir, outDir := t.TempDir(), t.TempDir()
 	cat := writeEssence(t, inDir, "cat.jpg", "not really a jpeg")
 
-	in = &Input{
+	in = &build.Input{
 		Descriptive: testDescriptive(),
-		Representations: []SourceRepresentation{
-			{Name: "master", Files: []SourceFile{cat}},
+		Representations: []build.SourceRepresentation{
+			{Name: "master", Files: []build.SourceFile{cat}},
 		},
 	}
-	b = New(&Config{
+	b = build.New(&build.Config{
 		Destination: outDir,
 		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
@@ -96,9 +98,9 @@ func newTestBuilder(t *testing.T) (b *Builder, in *Input, outDir string) {
 }
 
 // basicDef returns the registered "basic" definition the tests build with.
-func basicDef(t *testing.T) Definition {
+func basicDef(t *testing.T) build.Definition {
 	t.Helper()
-	def, ok := Get("basic")
+	def, ok := profiles.Get("basic")
 	if !ok {
 		t.Fatal(`no "basic" definition registered`)
 	}
@@ -120,7 +122,7 @@ func TestAssemble(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	in.Characterization = report(t, in.Representations[0].Files...)
 
-	pkg, err := b.assemble(basicDef(t), in)
+	pkg, err := b.Assemble(basicDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -139,7 +141,7 @@ func TestAssemble(t *testing.T) {
 	if got := e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; got != "local-id-001" {
 		t.Errorf("MEEMOO-LOCAL-ID = %q, want %q", got, "local-id-001")
 	}
-	if got := e.Description.(dcschema.Terms).LocalIdentifier(); got != e.Identifier {
+	if got := e.Description.(meemoo.Terms).LocalIdentifier(); got != e.Identifier {
 		t.Errorf("description identifier = %q, want entity identifier %q", got, e.Identifier)
 	}
 
@@ -239,7 +241,7 @@ func TestAssemblePremislessProfile(t *testing.T) {
 	def.EmitPackagePremis = false
 	def.EmitRepresentationPremis = false
 
-	pkg, err := b.assemble(def, in)
+	pkg, err := b.Assemble(def, in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -262,9 +264,9 @@ func TestAssembleRepresentations(t *testing.T) {
 	a := writeEssence(t, inDir, "a.jpg", "essence bytes")
 	deep := writeEssence(t, inDir, "sub/deep.tif", "essence bytes")
 	in.Representations = append(in.Representations,
-		SourceRepresentation{Name: "access", Files: []SourceFile{a, deep}})
+		build.SourceRepresentation{Name: "access", Files: []build.SourceFile{a, deep}})
 
-	pkg, err := b.assemble(basicDef(t), in)
+	pkg, err := b.Assemble(basicDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -292,7 +294,7 @@ func TestAssembleRepresentations(t *testing.T) {
 func TestAssembleWithoutReport(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 
-	pkg, err := b.assemble(basicDef(t), in)
+	pkg, err := b.Assemble(basicDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble without report: %v", err)
 	}
@@ -314,7 +316,7 @@ func TestAssembleReportNoMatch(t *testing.T) {
 		src.Key: {MD5: fileMD5(t, src.Source)},
 	}
 
-	pkg, err := b.assemble(basicDef(t), in)
+	pkg, err := b.Assemble(basicDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble with no-match report: %v", err)
 	}
@@ -336,7 +338,7 @@ func TestAssembleReportMatchWithoutMime(t *testing.T) {
 		src.Key: {Format: testFormat(), MD5: fileMD5(t, src.Source)},
 	}
 
-	pkg, err := b.assemble(basicDef(t), in)
+	pkg, err := b.Assemble(basicDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble with mimeless match: %v", err)
 	}
@@ -357,7 +359,7 @@ func TestAssembleReportMissingEntry(t *testing.T) {
 		"somewhere/else.jpg": {MD5: "ab"},
 	}
 
-	if _, err := b.assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(basicDef(t), in); err == nil {
 		t.Fatal("assemble succeeded despite essence missing from the report")
 	}
 	requireEmpty(t, outDir)
@@ -373,7 +375,7 @@ func TestAssembleReportChecksumMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := b.assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(basicDef(t), in); err == nil {
 		t.Fatal("assemble succeeded despite essence changed since the report")
 	}
 	requireEmpty(t, outDir)
@@ -388,7 +390,7 @@ func TestAssembleReportChecksumless(t *testing.T) {
 		src.Key: {Format: testFormat(), Mime: "image/test"},
 	}
 
-	if _, err := b.assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(basicDef(t), in); err == nil {
 		t.Fatal("assemble succeeded despite a checksumless report entry")
 	}
 	requireEmpty(t, outDir)
@@ -403,7 +405,7 @@ func TestAssembleReportEntryError(t *testing.T) {
 		src.Key: {MD5: "ab", Errors: "permission denied"},
 	}
 
-	if _, err := b.assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(basicDef(t), in); err == nil {
 		t.Fatal("assemble succeeded despite a characterizer-reported file error")
 	}
 	requireEmpty(t, outDir)
@@ -416,12 +418,12 @@ func TestAssembleDocumentation(t *testing.T) {
 	inDir := t.TempDir()
 	manual := writeEssence(t, inDir, "manual.txt", "doc")
 	notes := writeEssence(t, inDir, "sub/notes.txt", "doc")
-	in.Documentation = []SourceFile{manual, notes}
+	in.Documentation = []build.SourceFile{manual, notes}
 	// The report knows the essence and one documentation file; the other
 	// documentation file has no entry, which is allowed.
 	in.Characterization = report(t, in.Representations[0].Files[0], manual)
 
-	pkg, err := b.assemble(basicDef(t), in)
+	pkg, err := b.Assemble(basicDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble with documentation: %v", err)
 	}
@@ -445,59 +447,59 @@ func TestAssembleDocumentation(t *testing.T) {
 	if err := os.WriteFile(manual.Source, []byte("changed"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := b.assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(basicDef(t), in); err == nil {
 		t.Fatal("assemble succeeded despite a stale documentation entry")
 	}
 }
 
-// Input.Validate is the embedding-caller guardrail: the graph rules the
+// build.Input.Validate is the embedding-caller guardrail: the graph rules the
 // folder convention enforces with Violations, re-checked for every producer.
 func TestInputValidate(t *testing.T) {
-	valid := func(t *testing.T) *Input {
+	valid := func(t *testing.T) *build.Input {
 		_, in, _ := newTestBuilder(t)
 		return in
 	}
 
 	tests := []struct {
 		name   string
-		break_ func(*Input)
+		break_ func(*build.Input)
 		want   string
 	}{
-		{"no descriptive", func(c *Input) { c.Descriptive = nil }, "no descriptive metadata"},
-		{"invalid term", func(c *Input) {
-			c.Descriptive = append(c.Descriptive.(dcschema.Terms), dcschema.Term{Element: "dcterms:titel", Value: "x"})
+		{"no descriptive", func(c *build.Input) { c.Descriptive = nil }, "no descriptive metadata"},
+		{"invalid term", func(c *build.Input) {
+			c.Descriptive = append(c.Descriptive.(meemoo.Terms), meemoo.Term{Element: "dcterms:titel", Value: "x"})
 		}, "not in the descriptive vocabulary"},
-		{"no identifier", func(c *Input) {
-			c.Descriptive = dcschema.Terms{{Element: "dcterms:title", Value: "x"}}
+		{"no identifier", func(c *build.Input) {
+			c.Descriptive = meemoo.Terms{{Element: "dcterms:title", Value: "x"}}
 		}, "identifier (dcterms:identifier) is required"},
-		{"no title", func(c *Input) {
-			c.Descriptive = dcschema.Terms{{Element: "dcterms:identifier", Value: "x"}}
+		{"no title", func(c *build.Input) {
+			c.Descriptive = meemoo.Terms{{Element: "dcterms:identifier", Value: "x"}}
 		}, "title (dcterms:title) is required"},
-		{"no representations", func(c *Input) { c.Representations = nil }, "at least one version"},
-		{"bad name", func(c *Input) { c.Representations[0].Name = "master copy" }, "may only contain"},
-		{"xml-unsafe label", func(c *Input) { c.Representations[0].Label = `Master "scan"` }, "cannot be emitted"},
-		{"xml-unsafe type", func(c *Input) { c.Representations[0].Type = "a<b" }, "cannot be emitted"},
-		{"duplicate label", func(c *Input) {
+		{"no representations", func(c *build.Input) { c.Representations = nil }, "at least one version"},
+		{"bad name", func(c *build.Input) { c.Representations[0].Name = "master copy" }, "may only contain"},
+		{"xml-unsafe label", func(c *build.Input) { c.Representations[0].Label = `Master "scan"` }, "cannot be emitted"},
+		{"xml-unsafe type", func(c *build.Input) { c.Representations[0].Type = "a<b" }, "cannot be emitted"},
+		{"duplicate label", func(c *build.Input) {
 			c.Representations = append(c.Representations, c.Representations[0])
 		}, "supplied twice"},
-		{"empty representation", func(c *Input) { c.Representations[0].Files = nil }, "no content files"},
-		{"duplicate logical path", func(c *Input) {
+		{"empty representation", func(c *build.Input) { c.Representations[0].Files = nil }, "no content files"},
+		{"duplicate logical path", func(c *build.Input) {
 			c.Representations[0].Files = append(c.Representations[0].Files, c.Representations[0].Files[0])
 		}, "share the logical path"},
-		{"file without source", func(c *Input) {
+		{"file without source", func(c *build.Input) {
 			c.Representations[0].Files[0].Source = ""
 		}, "needs both a Source and a Path"},
-		{"malformed package identifier", func(c *Input) {
+		{"malformed package identifier", func(c *build.Input) {
 			c.PackageIdentifier = "not-a-uuid"
 		}, "uuid-<uuid> form"},
-		{"invalid representation descriptive", func(c *Input) {
-			c.Representations[0].Descriptive = dcschema.Terms{{Element: "dcterms:titel", Value: "x"}}
+		{"invalid representation descriptive", func(c *build.Input) {
+			c.Representations[0].Descriptive = meemoo.Terms{{Element: "dcterms:titel", Value: "x"}}
 		}, "not in the descriptive vocabulary"},
-		{"received premis claims the generated name", func(c *Input) {
-			c.Premis = []SourceFile{{Source: "/x/premis.xml", Path: "premis.xml"}}
+		{"received premis claims the generated name", func(c *build.Input) {
+			c.Premis = []build.SourceFile{{Source: "/x/premis.xml", Path: "premis.xml"}}
 		}, "reserved for the generated"},
-		{"rep received premis claims the generated name", func(c *Input) {
-			c.Representations[0].Premis = []SourceFile{{Source: "/x/premis.xml", Path: "sub/premis.xml"}}
+		{"rep received premis claims the generated name", func(c *build.Input) {
+			c.Representations[0].Premis = []build.SourceFile{{Source: "/x/premis.xml", Path: "sub/premis.xml"}}
 		}, "reserved for the generated"},
 	}
 	for _, tt := range tests {
@@ -522,11 +524,11 @@ func TestInputValidate(t *testing.T) {
 // required.
 func TestAssembleRepresentationDescriptive(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
-	in.Representations[0].Descriptive = dcschema.Terms{
+	in.Representations[0].Descriptive = meemoo.Terms{
 		{Element: "dcterms:license", Value: "publiek domein"},
 	}
 
-	pkg, err := b.assemble(basicDef(t), in)
+	pkg, err := b.Assemble(basicDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -545,21 +547,21 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	// With an identifier term present, the representation identifier is
 	// swapped in, mirroring the package-level behavior.
 	b2, in2, _ := newTestBuilder(t)
-	in2.Representations[0].Descriptive = dcschema.Terms{
+	in2.Representations[0].Descriptive = meemoo.Terms{
 		{Element: "dcterms:identifier", Value: "rep-local-1"},
 	}
-	pkg2, err := b2.assemble(basicDef(t), in2)
+	pkg2, err := b2.Assemble(basicDef(t), in2)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
 	r2 := pkg2.Root.Representations[0]
-	if got := r2.Description.(dcschema.Terms).LocalIdentifier(); got != r2.Identifier {
+	if got := r2.Description.(meemoo.Terms).LocalIdentifier(); got != r2.Identifier {
 		t.Errorf("rep descriptive identifier = %q, want the representation identifier %q", got, r2.Identifier)
 	}
 
 	// Without rep terms, no node exists.
 	b3, in3, _ := newTestBuilder(t)
-	pkg3, err := b3.assemble(basicDef(t), in3)
+	pkg3, err := b3.Assemble(basicDef(t), in3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -572,7 +574,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 // absent). The dc world has no accessor for it because nothing in the
 // library reads it: the eark profile never swaps.
 func dcIdentifier(d sip.Description) string {
-	for _, term := range d.(dc.Terms) {
+	for _, term := range d.(eark.Terms) {
 		if term.Element == "identifier" {
 			return term.Value
 		}
@@ -586,11 +588,11 @@ func dcIdentifier(d sip.Description) string {
 func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 	in.Descriptive = identityTerms()
-	in.Representations[0].Descriptive = dc.Terms{
+	in.Representations[0].Descriptive = eark.Terms{
 		{Element: "identifier", Value: "rep-local-1"},
 	}
 
-	pkg, err := b.assemble(earkDef(t), in)
+	pkg, err := b.Assemble(earkDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -613,7 +615,7 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 func TestAssembleRepresentationDeclaration(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 	in.Descriptive = identityTerms()
-	pkg, err := b.assemble(earkDef(t), in)
+	pkg, err := b.Assemble(earkDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -631,7 +633,7 @@ func TestAssembleRepresentationDeclaration(t *testing.T) {
 	}
 
 	b2, in2, _ := newTestBuilder(t)
-	pkg2, err := b2.assemble(basicDef(t), in2)
+	pkg2, err := b2.Assemble(basicDef(t), in2)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -648,17 +650,17 @@ func TestAssembleRepresentationDeclaration(t *testing.T) {
 func TestAssembleRepresentationCascade(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 	inDir := t.TempDir()
-	in.Representations = []SourceRepresentation{
+	in.Representations = []build.SourceRepresentation{
 		{Name: "master", Label: "Master scan", Type: "archival",
-			Files: []SourceFile{writeEssence(t, inDir, "a.tiff", "a")}},
+			Files: []build.SourceFile{writeEssence(t, inDir, "a.tiff", "a")}},
 		{Name: "access", Label: "Access copy",
-			Files: []SourceFile{writeEssence(t, inDir, "b.pdf", "b")}},
+			Files: []build.SourceFile{writeEssence(t, inDir, "b.pdf", "b")}},
 		{Name: "preservation",
-			Files: []SourceFile{writeEssence(t, inDir, "c.tiff", "c")}},
+			Files: []build.SourceFile{writeEssence(t, inDir, "c.tiff", "c")}},
 	}
 
 	in.Descriptive = identityTerms()
-	pkg, err := b.assemble(earkDef(t), in)
+	pkg, err := b.Assemble(earkDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -691,10 +693,10 @@ func TestAssembleReceivedPremis(t *testing.T) {
 	inDir := t.TempDir()
 	pkgPremis := writeEssence(t, inDir, "vendor.xml", validPremis)
 	repPremis := writeEssence(t, inDir, "scanner/ocr.xml", validPremis)
-	in.Premis = []SourceFile{pkgPremis}
-	in.Representations[0].Premis = []SourceFile{repPremis}
+	in.Premis = []build.SourceFile{pkgPremis}
+	in.Representations[0].Premis = []build.SourceFile{repPremis}
 
-	pkg, err := b.assemble(basicDef(t), in)
+	pkg, err := b.Assemble(basicDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -731,9 +733,9 @@ func TestAssembleRepresentationDocumentation(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	inDir := t.TempDir()
 	note := writeEssence(t, inDir, "sub/scan-notes.txt", "doc")
-	in.Representations[0].Documentation = []SourceFile{note}
+	in.Representations[0].Documentation = []build.SourceFile{note}
 
-	pkg, err := b.assemble(basicDef(t), in)
+	pkg, err := b.Assemble(basicDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -757,9 +759,9 @@ func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	inDir := t.TempDir()
 	bad := writeEssence(t, inDir, "vendor.xml", "not xml at all")
-	in.Premis = []SourceFile{bad}
+	in.Premis = []build.SourceFile{bad}
 
-	if _, err := b.assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(basicDef(t), in); err == nil {
 		t.Fatal("assemble accepted a non-PREMIS received file")
 	}
 	requireEmpty(t, outDir)
@@ -771,7 +773,7 @@ func TestAssemblePackageIdentifier(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	in.PackageIdentifier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
 
-	pkg, err := b.assemble(basicDef(t), in)
+	pkg, err := b.Assemble(basicDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -809,13 +811,13 @@ func (otherDescription) ValidateRequired() error { return nil }
 func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	cases := []struct {
 		name string
-		def  Definition
+		def  build.Definition
 		desc sip.Description
 		want string
 	}{
-		{"unknown type to eark", earkDef(t), otherDescription{}, "dc.Terms"},
-		{"meemoo terms to eark", earkDef(t), testDescriptive(), "dcschema.Terms, not Simple Dublin Core"},
-		{"simple dc terms to basic", basicDef(t), identityTerms(), "dc.Terms, not meemoo dc+schema"},
+		{"unknown type to eark", earkDef(t), otherDescription{}, "eark.Terms"},
+		{"meemoo terms to eark", earkDef(t), testDescriptive(), "meemoo.Terms, not Simple Dublin Core"},
+		{"simple dc terms to basic", basicDef(t), identityTerms(), "eark.Terms, not meemoo dc+schema"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -858,7 +860,7 @@ func TestBuildRefusesUnbundledSchema(t *testing.T) {
 func TestBuildDefinitionWithoutDescriptiveStandardWritesNothing(t *testing.T) {
 	b, in, outDir := newTestBuilder(t)
 	def := basicDef(t)
-	def.descriptive = descriptive{}
+	def.Descriptive = nil
 	if _, err := b.Build(def, in); err == nil {
 		t.Fatal("Build accepted a definition without a descriptive standard")
 	}
@@ -878,13 +880,13 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 
 	cases := []struct {
 		name string
-		def  Definition
+		def  build.Definition
 		desc sip.Description
 		want string
 	}{
 		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description (dcterms:description) is required"},
-		{"basic without a title", basicDef(t), dcschema.Terms{{Element: "dcterms:identifier", Value: "x"}}, "title (dcterms:title) is required"},
-		{"eark without an identifier", earkDef(t), dc.Terms{{Element: "title", Value: "x"}}, "identifier is required"},
+		{"basic without a title", basicDef(t), meemoo.Terms{{Element: "dcterms:identifier", Value: "x"}}, "title (dcterms:title) is required"},
+		{"eark without an identifier", earkDef(t), eark.Terms{{Element: "title", Value: "x"}}, "identifier is required"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

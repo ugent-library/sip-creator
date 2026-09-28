@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ugent-library/sip-creator/encoders/dc"
-	"github.com/ugent-library/sip-creator/encoders/dcschema"
+	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -59,10 +59,10 @@ type rowsBuilder interface {
 }
 
 // dcschemaRows builds meemoo dc+schema terms from a dcschema.csv.
-type dcschemaRows struct{ terms dcschema.Terms }
+type dcschemaRows struct{ terms meemoo.Terms }
 
 func (b *dcschemaRows) add(key, lang, value string) error {
-	element, ok := dcschema.ResolveKey(key)
+	element, ok := meemoo.ResolveKey(key)
 	if !ok {
 		return unknownKey(key)
 	}
@@ -70,7 +70,7 @@ func (b *dcschemaRows) add(key, lang, value string) error {
 	// the library's rule, the same one an embedding caller hits; the
 	// decoder runs it per row only to add the file/line context, and drops
 	// a refused row so the finished list is not reported twice.
-	term := dcschema.Term{Element: element, Lang: lang, Value: value}
+	term := meemoo.Term{Element: element, Lang: lang, Value: value}
 	if err := term.Validate(); err != nil {
 		return err
 	}
@@ -90,14 +90,14 @@ func (b *dcschemaRows) finish(packageLevel bool) (sip.Description, []error) {
 }
 
 // dcRows builds Simple Dublin Core terms from a dc.csv.
-type dcRows struct{ terms dc.Terms }
+type dcRows struct{ terms eark.Terms }
 
 func (b *dcRows) add(key, lang, value string) error {
-	element, ok := dc.ResolveKey(key)
+	element, ok := eark.ResolveKey(key)
 	if !ok {
 		return unknownKey(key)
 	}
-	term := dc.Term{Element: element, Lang: lang, Value: value}
+	term := eark.Term{Element: element, Lang: lang, Value: value}
 	if err := term.Validate(); err != nil {
 		return err
 	}

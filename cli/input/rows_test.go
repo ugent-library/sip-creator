@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/encoders/dc"
-	"github.com/ugent-library/sip-creator/encoders/dcschema"
+	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
 
 // readCSV runs Read over a minimal flat tree carrying the given
@@ -40,7 +40,7 @@ func TestRowsHappy(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 
-	want := dcschema.Terms{
+	want := meemoo.Terms{
 		{Element: "dcterms:identifier", Value: "BIB.FA.2026.001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
 		{Element: "dcterms:description", Lang: "nl", Value: "Album met 48 foto's, zwart-wit"},
@@ -53,7 +53,7 @@ func TestRowsHappy(t *testing.T) {
 		{Element: "dcterms:abstract", Lang: "en", Value: "A photo album"},
 		{Element: "schema:artMedium", Lang: "nl", Value: "zilvergelatinedruk"},
 	}
-	got, ok := pkg.Descriptive.(dcschema.Terms)
+	got, ok := pkg.Descriptive.(meemoo.Terms)
 	if !ok || len(got) != len(want) {
 		t.Fatalf("got %T with %d terms, want %d dcschema terms:\n%v", pkg.Descriptive, len(got), len(want), pkg.Descriptive)
 	}
@@ -142,7 +142,7 @@ func TestRepresentationCSVNeedsNoIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("rep-level dcschema.csv must not require identifier/title: %v", err)
 	}
-	got, ok := pkg.Representations[0].Descriptive.(dcschema.Terms)
+	got, ok := pkg.Representations[0].Descriptive.(meemoo.Terms)
 	if !ok || len(got) != 1 || got[0].Element != "dcterms:license" {
 		t.Errorf("rep descriptive = %#v", pkg.Representations[0].Descriptive)
 	}
@@ -191,7 +191,7 @@ func TestRowsDCCSV(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	got, ok := pkg.Descriptive.(dc.Terms)
+	got, ok := pkg.Descriptive.(eark.Terms)
 	if !ok || len(got) != 3 || got[0].Element != "identifier" || got[2].Element != "coverage" {
 		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Descriptive)
 	}

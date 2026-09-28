@@ -2,10 +2,10 @@ package sip
 
 // Description is the decoded descriptive metadata of an entity or a
 // representation, in whichever descriptive standard the profile writes.
-// Each standard's encoder package supplies its own implementation
-// (dcschema.Terms, dc.Terms). The profile's descriptive standard knows the
-// concrete type and does everything that needs it, so nothing in sip/
-// depends on an encoder.
+// Each profile package supplies its own implementation (meemoo.Terms,
+// eark.Terms). The profile's descriptive standard knows the concrete type
+// and does everything that needs it, so nothing in sip/ depends on a
+// profile.
 type Description interface {
 	// Validate returns every way the description is not a valid one in its
 	// standard, joined into one error: an unknown element, a malformed

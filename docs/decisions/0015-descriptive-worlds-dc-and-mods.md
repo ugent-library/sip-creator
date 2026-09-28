@@ -2,7 +2,13 @@
 
 Status: **Proposed** (drafted 2026-09-22; the decisions were agreed in
 review on 2026-09-15 with the [eark-mods plan](../plans/eark-mods.md).
-Becomes Accepted when that plan's S3 ships.)
+Becomes Accepted when that plan's S3 ships.) **Superseded in part by
+[ADR-0018](0018-engine-and-profile-packages.md)** (2026-09-28): the worlds
+live in profile packages under `profiles/` (`profiles/meemoo`,
+`profiles/eark`) rather than under `encoders/`, and the descriptive
+standard is an exported interface on the engine that each profile package
+implements, closed by the registry rather than by an unexported field.
+The worlds themselves, and everything below about them, stand.
 
 ## Context
 
@@ -185,7 +191,9 @@ the meemoo standard's value in
   and a reader of a registry entry had to open a second file to learn what
   the profile writes. The behavior field on the profile is unexported, so
   the set of standards stays closed and no caller can hand `Definition` an
-  encoder of its own.
+  encoder of its own. (Superseded 2026-09-28 by ADR-0018: the field is the
+  exported `build.DescriptiveStandard`, implemented by each profile
+  package, and the registry closes the set.)
 
 ## Consequences
 

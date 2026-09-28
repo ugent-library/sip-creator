@@ -1,8 +1,10 @@
-// Package dcschema is meemoo's dc+schema descriptive world: Dublin Core
-// terms plus schema.org properties in the meemoo namespace, with the
-// required, cardinality and language rules of meemoo's SIP 1.2 basic
-// content profile. The meemoo profiles write it.
-package dcschema
+// Package meemoo is the basic profile: everything the tool knows about
+// meemoo SIP 1.2's basic content profile. Its descriptive world is the
+// dc+schema document, Dublin Core terms plus schema.org properties in the
+// meemoo namespace, with the profile's required, cardinality and language
+// rules; its Definition names the rest as data, and the registry in
+// profiles/ hands that out as "basic".
+package meemoo
 
 // Term is one descriptive statement: an element name from the descriptive
 // vocabulary, an optional language tag, and the value.

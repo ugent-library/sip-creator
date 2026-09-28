@@ -1,4 +1,4 @@
-package dcschema
+package meemoo
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-package profiles
+package build
 
 import (
 	"fmt"
@@ -45,8 +45,8 @@ type SourceRepresentation struct {
 	// Descriptive optionally describes this version only: identity
 	// (identifier, title) is not required here; the package-level
 	// descriptive carries the work's identity. Its concrete type must be
-	// the profile's descriptive standard (dcschema.Terms for meemoo
-	// profiles, dc.Terms for eark).
+	// the profile's descriptive standard (meemoo.Terms for meemoo
+	// profiles, eark.Terms for eark).
 	Descriptive sip.Description
 	// Premis optionally supplies received preservation documents about
 	// this representation: copied, never parsed. Each must be a
@@ -90,8 +90,8 @@ type Input struct {
 	// mets/@OBJID. Must take the uuid-<uuid> form when set.
 	PackageIdentifier string
 	// Descriptive is the package-level descriptive metadata. Its concrete
-	// type must be the profile's descriptive standard (dcschema.Terms for
-	// meemoo profiles, dc.Terms for eark).
+	// type must be the profile's descriptive standard (meemoo.Terms for
+	// meemoo profiles, eark.Terms for eark).
 	Descriptive sip.Description
 	// Representations is the content, at least one.
 	Representations []SourceRepresentation

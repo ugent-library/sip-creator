@@ -7,12 +7,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/encoders/dcschema"
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles"
+	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// The embedding-caller contract: a hand-constructed profiles.Input, with
+// The embedding-caller contract: a hand-constructed build.Input, with
 // no dcschema.csv or siegfried.json anywhere on disk, must build the same
 // package graph the folder convention produces. The folder is one
 // transport, not the API.
@@ -42,7 +43,7 @@ func TestBuilderInputEquivalence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	folderPkg, err := profiles.New(&profiles.Config{Destination: t.TempDir(), Logger: discard}).
+	folderPkg, err := build.New(&build.Config{Destination: t.TempDir(), Logger: discard}).
 		Build(def, pkg.BuilderInput())
 	if err != nil {
 		t.Fatalf("Build via folder: %v", err)
@@ -54,20 +55,20 @@ func TestBuilderInputEquivalence(t *testing.T) {
 	if err := os.WriteFile(src, []byte("essence bytes"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	handIn := &profiles.Input{
-		Descriptive: dcschema.Terms{
+	handIn := &build.Input{
+		Descriptive: meemoo.Terms{
 			{Element: "dcterms:identifier", Value: "ID-1"},
 			{Element: "dcterms:title", Value: "Test"},
 			{Element: "dcterms:description", Lang: "nl", Value: "Testbeschrijving"},
 			{Element: "dcterms:created", Value: "2026"},
 		},
-		Representations: []profiles.SourceRepresentation{
-			{Name: "master", Files: []profiles.SourceFile{
+		Representations: []build.SourceRepresentation{
+			{Name: "master", Files: []build.SourceFile{
 				{Source: src, Key: "irrelevant-without-report", Path: "scan.tiff"},
 			}},
 		},
 	}
-	handPkg, err := profiles.New(&profiles.Config{Destination: t.TempDir(), Logger: discard}).
+	handPkg, err := build.New(&build.Config{Destination: t.TempDir(), Logger: discard}).
 		Build(def, handIn)
 	if err != nil {
 		t.Fatalf("Build via hand-constructed input: %v", err)
@@ -95,7 +96,7 @@ func localID(p *sip.Package) string {
 }
 
 // A representation without its own dcschema.csv must map onto a nil
-// Descriptive. A nil dc.Terms stored in the interface field would read as
+// Descriptive. A nil eark.Terms stored in the interface field would read as
 // a present, empty description and earn the representation a descriptive
 // document it never had.
 func TestBuilderInputRepresentationWithoutDescriptive(t *testing.T) {

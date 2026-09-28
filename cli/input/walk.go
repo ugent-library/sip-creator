@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ugent-library/sip-creator/profiles"
+	"github.com/ugent-library/sip-creator/build"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -21,7 +21,7 @@ func (r *reader) readRepresentations(dir string) []Representation {
 		name := e.Name()
 		// The folder-name rule is the library's name rule:
 		// one source of truth for what a representation may be called.
-		if err := profiles.ValidateRepresentationName(name); err != nil {
+		if err := build.ValidateRepresentationName(name); err != nil {
 			// Still read the folder: the naming fix shouldn't hide any
 			// findings inside it (collect-all).
 			r.violate("representations/%s: %v", e.Name(), err)
@@ -84,7 +84,7 @@ func (r *reader) readFlatRepresentation(entries []os.DirEntry) Representation {
 	// The input folder's name becomes the representation's package-side
 	// name, so it must satisfy the same rule as a folder under
 	// representations/.
-	if err := profiles.ValidateRepresentationName(name); err != nil {
+	if err := build.ValidateRepresentationName(name); err != nil {
 		r.violate("the folder name names the single representation: %v", err)
 	}
 	rep := Representation{Name: name}

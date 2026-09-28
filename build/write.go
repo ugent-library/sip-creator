@@ -1,4 +1,4 @@
-package profiles
+package build
 
 import (
 	"io"

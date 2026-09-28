@@ -1,4 +1,4 @@
-package profiles
+package build
 
 import (
 	"crypto/md5"
@@ -80,8 +80,8 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) 
 	// description, and the producer's identifier it replaces travels as
 	// MEEMOO-LOCAL-ID. Without a swap the document keeps the producer's
 	// identifier as-is (ADR-0012).
-	if swap := def.descriptive.swap; swap != nil {
-		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", swap(d, e.Identifier))
+	if s, ok := def.Descriptive.(IdentifierSwapper); ok {
+		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", s.Swap(d, e.Identifier))
 	}
 	e.Description = d
 
@@ -167,8 +167,8 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 			// no-op when the terms carry none; rep-level identity is
 			// optional). The replaced value is not lifted: MEEMOO-LOCAL-ID
 			// is an identifier of the entity.
-			if swap := def.descriptive.swap; swap != nil {
-				swap(sr.Descriptive, r.Identifier)
+			if s, ok := def.Descriptive.(IdentifierSwapper); ok {
+				s.Swap(sr.Descriptive, r.Identifier)
 			}
 			r.Description = sr.Descriptive
 
