@@ -20,11 +20,11 @@ func readCSV(t *testing.T, csv string) (*Package, error) {
 }
 
 func TestRowsHappy(t *testing.T) {
-	// BOM, CRLF, RFC 4180 quoting, repeated keys, [lang] tags, the
-	// plain-key mappings, and the schema.org keys, all in one file.
+	// BOM, CRLF, RFC 4180 quoting, repeated keys, [lang] tags, a
+	// capitalized key, and the schema.org keys, all in one file.
 	csv := "\ufeffkey,value\r\n" +
 		"identifier,BIB.FA.2026.001\r\n" +
-		"title[nl],Fotoalbum Gent 1913\r\n" +
+		"Title[nl],Fotoalbum Gent 1913\r\n" +
 		"description[nl],\"Album met 48 foto's, zwart-wit\"\r\n" +
 		"created,1913\r\n" +
 		"subject[nl],stadsgezichten\r\n" +
@@ -41,21 +41,21 @@ func TestRowsHappy(t *testing.T) {
 	}
 
 	want := meemoo.Terms{
-		{Element: "dcterms:identifier", Value: "BIB.FA.2026.001"},
-		{Element: "dcterms:title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
-		{Element: "dcterms:description", Lang: "nl", Value: "Album met 48 foto's, zwart-wit"},
-		{Element: "dcterms:created", Value: "1913"},
-		{Element: "dcterms:subject", Lang: "nl", Value: "stadsgezichten"},
-		{Element: "dcterms:subject", Lang: "nl", Value: "wereldtentoonstellingen"},
-		{Element: "dcterms:isPartOf", Value: "Collectie Sacré"},
-		{Element: "dcterms:rightsHolder", Value: "Universiteitsbibliotheek Gent"},
-		{Element: "dcterms:abstract", Lang: "nl", Value: "Een fotoalbum"},
-		{Element: "dcterms:abstract", Lang: "en", Value: "A photo album"},
-		{Element: "schema:artMedium", Lang: "nl", Value: "zilvergelatinedruk"},
+		{Key: "identifier", Value: "BIB.FA.2026.001"},
+		{Key: "title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
+		{Key: "description", Lang: "nl", Value: "Album met 48 foto's, zwart-wit"},
+		{Key: "created", Value: "1913"},
+		{Key: "subject", Lang: "nl", Value: "stadsgezichten"},
+		{Key: "subject", Lang: "nl", Value: "wereldtentoonstellingen"},
+		{Key: "ispartof", Value: "Collectie Sacré"},
+		{Key: "rightsholder", Value: "Universiteitsbibliotheek Gent"},
+		{Key: "abstract", Lang: "nl", Value: "Een fotoalbum"},
+		{Key: "abstract", Lang: "en", Value: "A photo album"},
+		{Key: "artmedium", Lang: "nl", Value: "zilvergelatinedruk"},
 	}
 	got, ok := pkg.Descriptive.(meemoo.Terms)
 	if !ok || len(got) != len(want) {
-		t.Fatalf("got %T with %d terms, want %d dcschema terms:\n%v", pkg.Descriptive, len(got), len(want), pkg.Descriptive)
+		t.Fatalf("got %T with %d terms, want %d meemoo terms:\n%v", pkg.Descriptive, len(got), len(want), pkg.Descriptive)
 	}
 	for i, w := range want {
 		if got[i] != w {
@@ -64,8 +64,8 @@ func TestRowsHappy(t *testing.T) {
 	}
 }
 
-// A dcschema.csv is meemoo's: a language-tagged element without a Dutch
-// entry is a violation at check time, not only at build.
+// A dcschema.csv is meemoo's: a language-tagged key without a Dutch entry
+// is a violation at check time, not only at build.
 func TestRowsCSVRequiresDutch(t *testing.T) {
 	_, err := readCSV(t, minimalCSV+"abstract[en],A photo album\n")
 	assertViolation(t, err, `none in "nl"`)
@@ -84,8 +84,8 @@ func TestRowsViolations(t *testing.T) {
 		{"prefixed schema key", minimalCSV + "schema:artMedium,x\n", "prefixed keys"},
 		{"unknown prefix", minimalCSV + "foo:bar,x\n", "prefixed keys"},
 		{"empty value", minimalCSV + "subject,\n", "empty value"},
-		{"missing identifier", "key,value\ntitle,T\n", "identifier (dcterms:identifier) is required"},
-		{"missing title", "key,value\nidentifier,ID-1\n", "title (dcterms:title) is required"},
+		{"missing identifier", "key,value\ntitle,T\n", "identifier is required"},
+		{"missing title", "key,value\nidentifier,ID-1\n", "title is required"},
 		{"duplicate identifier", minimalCSV + "identifier,ID-2\n", "exactly one"},
 		{"single-valued key repeated", minimalCSV + "created,1913\ncreated,1914\n", "exactly one"},
 		{"per-language key repeated in one language", minimalCSV + "abstract[nl],a\nabstract[nl],b\n", `language "nl"`},
@@ -110,16 +110,21 @@ func TestRowsMissingHeaderStillDecodes(t *testing.T) {
 	assertViolation(t, err, `unknown key "titel"`)
 }
 
+// A finding about one term is reported at the row's line: the vocabulary
+// names the term by position, the decoder maps that back to the line.
 func TestRowsLineNumbers(t *testing.T) {
 	_, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle,T\ntitel,Oeps\n")
-	assertViolation(t, err, "line 4")
+	assertViolation(t, err, `line 4: unknown key "titel"`)
+	_, err = readCSV(t, minimalCSV+"subject[nl!],x\nsubject,\n")
+	assertViolation(t, err, `line 6: "nl!" is not a language tag`)
+	assertViolation(t, err, "line 7: subject has an empty value")
 }
 
 // A cardinality violation is a cross-row finding: no line number, but the
-// element and language it names locate the rows in a keyed file.
-func TestRowsRepeatNamesElementAndLanguage(t *testing.T) {
+// key and language it names locate the rows in a keyed file.
+func TestRowsRepeatNamesKeyAndLanguage(t *testing.T) {
 	_, err := readCSV(t, minimalCSV+"abstract[nl],a\nabstract[nl],b\n")
-	assertViolation(t, err, `dcterms:abstract appears more than once in language "nl"`)
+	assertViolation(t, err, `abstract appears more than once in language "nl"`)
 }
 
 // Per-language keys repeat freely across languages (title[nl] + title[en]);
@@ -143,7 +148,7 @@ func TestRepresentationCSVNeedsNoIdentity(t *testing.T) {
 		t.Fatalf("rep-level dcschema.csv must not require identifier/title: %v", err)
 	}
 	got, ok := pkg.Representations[0].Descriptive.(meemoo.Terms)
-	if !ok || len(got) != 1 || got[0].Element != "dcterms:license" {
+	if !ok || len(got) != 1 || got[0].Key != "license" {
 		t.Errorf("rep descriptive = %#v", pkg.Representations[0].Descriptive)
 	}
 }
@@ -192,7 +197,7 @@ func TestRowsDCCSV(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 	got, ok := pkg.Descriptive.(eark.Terms)
-	if !ok || len(got) != 3 || got[0].Element != "identifier" || got[2].Element != "coverage" {
+	if !ok || len(got) != 3 || got[0].Key != "identifier" || got[2].Key != "coverage" {
 		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Descriptive)
 	}
 }

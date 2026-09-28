@@ -140,6 +140,19 @@ the meemoo standard's value in
 `profiles/descriptive.go`; and the encoders no longer validate,
 `Input.Validate` being the one contract before a write.)
 
+(Revised again 2026-09-28, on review of the CLI's rows decoder: the
+worlds share the shape of a statement, `sip.Term`, keyed by the plain
+vocabulary key (`title`, not `dcterms:title`) with a language tag and a
+value. Each world's `Terms` stays its own list type with its own table,
+rules and template, and the element a key emits is the template's
+business alone. The CLI decodes rows into `sip.Term` values once and
+wraps them in the world's `Terms`; `ResolveKey` and the two per-world row
+builders are gone. A per-term finding is a `*sip.TermError` naming the
+term's position, which the CLI maps back to the row's line. This revisits
+the "one neutral term type" alternative below in a narrower form: only
+the struct is shared, not the methods, so no method needs the profile
+passed in.)
+
 ## Alternatives rejected
 
 - **One Dublin Core world carrying both the meemoo and the Simple DC
@@ -153,6 +166,9 @@ the meemoo standard's value in
   But a DC term produces one element and a MODS term produces a subtree; one
   type for both hides that difference, and every method on it (validate,
   resolve, render) would need the profile passed in to find the right table.
+  (Revisited 2026-09-28 in a narrower form, see the last note in the
+  decision: the shape of a statement is shared as `sip.Term`, the methods
+  stay on each world's own `Terms`.)
 - **A key grammar: qualifiers or paths parsed out of the key string.**
   Qualifiers (`name[role=aut]`, `title[type=alternative]`) checked against a
   closed list are a closed vocabulary spelled differently. They emit exactly

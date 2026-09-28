@@ -1,17 +1,16 @@
 package eark
 
-import "strings"
-
 // elements is the Dublin Core Metadata Element Set (ISO 15836), in the
-// order DCMI lists it. Every element is optional and repeatable in Simple
-// Dublin Core; which ones a package must state is profile data.
+// order DCMI lists it. In Simple Dublin Core a term's key is the element
+// name itself. Every element is optional and repeatable; which ones a
+// package must state is profile data.
 var elements = []string{
 	"title", "creator", "subject", "description", "publisher",
 	"contributor", "date", "type", "format", "identifier",
 	"source", "language", "relation", "coverage", "rights",
 }
 
-// required lists the elements a package-level description must state: the
+// required lists the keys a package-level description must state: the
 // identity every package states whatever the profile (input specification
 // §3), an identifier, which the eark profile keeps in the document as the
 // value operators search by (ADR-0012), and a title, the one name every
@@ -26,11 +25,3 @@ var elementSet = func() map[string]bool {
 	}
 	return set
 }()
-
-// ResolveKey maps a plain key from the CSV rows file onto the element it
-// names. In Simple Dublin Core the key is the element name; keys are
-// case-insensitive per the convention.
-func ResolveKey(key string) (element string, ok bool) {
-	element = strings.ToLower(key)
-	return element, elementSet[element]
-}

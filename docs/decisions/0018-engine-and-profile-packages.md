@@ -56,7 +56,10 @@ received-PREMIS check next to the PREMIS template.
 **Imports run one way.** `cli` → `profiles` → `profiles/*` → `build` →
 `sip`, `store`, `schemas`, `encoders/*`. The CLI also imports the profile
 packages directly for `Terms` and `ResolveKey`: the file name
-`dcschema.csv` already means the meemoo world.
+`dcschema.csv` already means the meemoo world. (Since later on
+2026-09-28, for `Terms` alone: the CLI decodes rows into `sip.Term`
+values and wraps them in the world's `Terms`; `ResolveKey` is gone. See
+the note of that date on ADR-0015.)
 
 **The engine's tests are an external test package.** `build_test` with an
 `export_test.go` that exposes the assembly phase, so the tests keep

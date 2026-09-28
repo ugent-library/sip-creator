@@ -6,51 +6,44 @@
 // profiles/ hands that out as "basic".
 package meemoo
 
-// Term is one descriptive statement: an element name from the descriptive
-// vocabulary, an optional language tag, and the value.
-type Term struct {
-	// Element is the vocabulary element name, e.g. "dcterms:title".
-	Element string
-	// Lang is the xml:lang value; empty when unspecified.
-	Lang string
-	// Value is the term's text.
-	Value string
-}
+import "github.com/ugent-library/sip-creator/sip"
 
-// Terms is an ordered list of descriptive statements; the order the
-// producer stated them in is preserved through to the emitted XML.
-// Any producer constructs it directly (the CLI's rows-file decoder is
-// one); Validate holds the rules on what a term may say.
-type Terms []Term
+// Terms is an ordered list of descriptive statements in the dc+schema
+// vocabulary, each keyed by the plain key the input specification's table
+// lists ("title", "created", "artmedium"); the order the producer stated
+// them in is preserved through to the emitted XML. Any producer constructs
+// it directly (the CLI's rows-file decoder is one); Validate holds the
+// rules on what a term may say.
+type Terms []sip.Term
 
-// has reports whether any term states the given element.
-func (t Terms) has(element string) bool {
+// has reports whether any term states the given key.
+func (t Terms) has(key string) bool {
 	for _, term := range t {
-		if term.Element == element {
+		if term.Key == key {
 			return true
 		}
 	}
 	return false
 }
 
-// localIdentifier returns the value of the dcterms:identifier term: the
-// producer's local catalog/inventory number ("" when absent).
+// localIdentifier returns the value of the identifier term: the producer's
+// local catalog/inventory number ("" when absent).
 func (t Terms) localIdentifier() string {
 	for _, term := range t {
-		if term.Element == "dcterms:identifier" {
+		if term.Key == "identifier" {
 			return term.Value
 		}
 	}
 	return ""
 }
 
-// setObjectIdentifier replaces the dcterms:identifier term's value in
-// place (a no-op when the terms carry none). Terms holds one identifier
-// slot, so the swap overwrites the local identifier: read it with
-// localIdentifier first.
+// setObjectIdentifier replaces the identifier term's value in place (a
+// no-op when the terms carry none). Terms holds one identifier slot, so
+// the swap overwrites the local identifier: read it with localIdentifier
+// first.
 func (t Terms) setObjectIdentifier(id string) {
 	for i, term := range t {
-		if term.Element == "dcterms:identifier" {
+		if term.Key == "identifier" {
 			t[i].Value = id
 			return
 		}

@@ -145,7 +145,7 @@ func TestReadRepresentations(t *testing.T) {
 	if master.Descriptive != nil {
 		t.Error("master has no dcschema.csv but carries descriptive terms")
 	}
-	if got, ok := access.Descriptive.(meemoo.Terms); !ok || len(got) != 1 || got[0].Element != "dcterms:title" {
+	if got, ok := access.Descriptive.(meemoo.Terms); !ok || len(got) != 1 || got[0].Key != "title" {
 		t.Errorf("access descriptive = %#v, want its title term", access.Descriptive)
 	}
 	if got := paths(access.Files); strings.Join(got, ",") != "book.pdf" {

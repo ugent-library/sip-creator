@@ -67,8 +67,8 @@ func (dcschema) Schemas() []string {
 }
 
 // The template interpolates element names from data. Every value is
-// escaped, and the element name passes through el, which admits only names
-// the vocabulary lists.
+// escaped, and the element name comes from el, which maps a key to the
+// element the vocabulary lists for it and admits nothing else.
 var termsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 	"el":      elementName,
 	"esc":     escapeXML,
@@ -83,7 +83,7 @@ var termsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
   xmlns:schema="https://schema.org/"
   xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic {{ .Schemas }}/descriptive_basic.xsd">
 {{- range .Terms }}
-  <{{ el .Element }}{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}{{ with xsitype .Element }} xsi:type="{{ . }}"{{ end }}>{{ esc .Value }}</{{ el .Element }}>
+  <{{ el .Key }}{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}{{ with xsitype .Key }} xsi:type="{{ . }}"{{ end }}>{{ esc .Value }}</{{ el .Key }}>
 {{- end }}
 </metadata>
 {{ end }}
@@ -97,20 +97,22 @@ type termsDoc struct {
 	Schemas string
 }
 
-// elementName is the template's one guard: the element name is the only
-// thing the template interpolates raw, and only a name the vocabulary
-// lists may reach the output. Returning an error aborts the render.
-func elementName(element string) (string, error) {
-	if _, ok := vocabularyByElement[element]; !ok {
-		return "", fmt.Errorf("%q is not in the descriptive vocabulary", element)
+// elementName is the element a key emits, and the template's one guard:
+// the element name is the only thing the template interpolates raw, and
+// only a name the vocabulary lists may reach the output. Returning an
+// error aborts the render.
+func elementName(key string) (string, error) {
+	row, ok := vocabularyByKey[key]
+	if !ok {
+		return "", fmt.Errorf("unknown key %q: not in the descriptive vocabulary", key)
 	}
-	return element, nil
+	return row.Element, nil
 }
 
-// xsiType is the xsi:type the vocabulary declares for the element: how
-// the meemoo document types its EDTF dates ("" for untyped elements).
-func xsiType(element string) string {
-	return vocabularyByElement[element].XSIType
+// xsiType is the xsi:type the vocabulary declares for the key's element:
+// how the meemoo document types its EDTF dates ("" for untyped elements).
+func xsiType(key string) string {
+	return vocabularyByKey[key].XSIType
 }
 
 // escapeXML makes a data value safe as XML character data or a quoted

@@ -67,7 +67,10 @@ the DC table while walking the folder, before any profile is known.
    shared by all worlds. It would have unified the CSV and the library on
    one key language, but a MODS term produces a subtree while a DC term
    produces an element, and forcing both through one type hides that
-   difference.
+   difference. (Narrowed 2026-09-28: the statement shape is shared as
+   `sip.Term`, keyed by the plain key; each world keeps its own `Terms`
+   type, table, rules and template. Only the struct is shared, not the
+   methods, so the objection does not apply. ADR-0015 carries the note.)
 2. **One key emits one complete MODS element with fixed attributes.** The
    MODS table maps a plain key to a template fragment plus the attribute
    values it needs (`identifier` becomes `mods:identifier` with a `type`
@@ -356,6 +359,9 @@ internal, but the emitted packages stay unchanged.
       in its encoder package rather than `Definition` data, spelled as
       elements; the finding keeps naming key and element. The keys had
       pulled `ResolveKey` into the library API for the CLI's sake.)
+      (Reversed again later that day: terms are keyed by the plain key
+      (`sip.Term`), `ResolveKey` is gone, and a finding names the key
+      alone in both worlds: `description is required but missing`.)
 - [x] **The identity rule is stated once.** (Added 2026-09-24 after
       review of the box above: requiredness was spelled three times, as
       a `Required` column in the meemoo table that only `basic` read, as
@@ -430,12 +436,12 @@ The library route is complete after this step.
 - [ ] **`profiles/earkmods` model.** (The package is the `eark-mods`
       profile's own, per ADR-0018; the boxes below said `encoders/mods`
       until 2026-09-28.) `description.go`: `Description` holding
-      `Terms []Term` (`Key`, `Lang`, `Value`) and `Items []Item`
-      (`CallNumber`, `Barcode`, `Enumeration`), implementing
-      `sip.Description`. `vocabulary.go`: the key table with `identifier`
-      and `title`, each row naming its template fragment and fixed
-      attribute values; the MMS ID `type` value is one constant here (open
-      question); the `required` list (identifier and title). `ResolveKey`.
+      `Terms []sip.Term` (the shape the DC worlds share since 2026-09-28)
+      and `Items []Item` (`CallNumber`, `Barcode`, `Enumeration`),
+      implementing `sip.Description`. `vocabulary.go`: the key table with
+      `identifier` and `title`, each row naming its template fragment and
+      fixed attribute values; the MMS ID `type` value is one constant here
+      (open question); the `required` list (identifier and title).
 - [ ] **`profiles/earkmods` validation.** Known key, language tag shape,
       non-empty value, every finding joined; per item a non-empty call
       number and a barcode unique across items; `ValidateRequired()`
@@ -491,10 +497,12 @@ The library route is complete after this step.
 `dcschema.csv`, `dc.csv`, the `metadata.csv` violation and the one-standard
 rule between those two arrived in S2; this step adds the MODS files.
 
-- [ ] **The mods row builder.** In `cli/input`, the generic reader for
+- [ ] **The mods rows file.** In `cli/input`, the one reader for
       `key[lang],value` rows (header check, key parsing, line numbers for
-      violations) gains a third builder: mods rows through
-      `mods.ResolveKey` into a mods `Description`.
+      violations) wraps the decoded `sip.Term` values of a `mods.csv` in a
+      mods `Description`: a third `vocabulary` value in `cli/input` next
+      to the meemoo and eark ones, naming the file and the terms type
+      (there is no builder per world since 2026-09-28).
 - [ ] **Reserved names.** `mods.csv` and `items.csv` join the reserved
       names at the root and inside representation directories (`items.csv`
       root only).
@@ -649,3 +657,13 @@ as a deferred item (§8).
   documents point at, so `eark` dropped the six unreferenced meemoo XSDs
   (its reference copy refreshed; `./build.sh eark` re-run the same day:
   VALID, 0 warnings, the same counts as before).
+- **The statement shape became shared** later the same day, output
+  unchanged (both structural comparisons clean): a term is a `sip.Term`
+  keyed by the plain vocabulary key, and each world's `Terms` is a list
+  of them with its own table, rules and template; the element a key
+  emits is the template's business alone. `ResolveKey` and the CLI's
+  per-world row builders are gone: the CLI decodes rows once and wraps
+  them in the world's `Terms`, and a per-term finding (`*sip.TermError`)
+  names the term's position, mapped back to the row's line. Findings
+  name keys in both worlds (`description is required but missing`).
+  ADR-0015 and ADR-0018 carry dated notes; S3's boxes follow.

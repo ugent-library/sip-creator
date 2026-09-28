@@ -91,7 +91,7 @@ A two-column CSV (`key,value`) describing what the package contains. This is the
 - In a `dcschema.csv`, `identifier`, `title`, `description` and `created` MUST be present and non-empty: meemoo's basic content profile requires all four. In a `dc.csv`, `identifier` and `title` MUST be present. The identifier is your local catalog or inventory number; it travels with the package as its local identifier. `check` reports a missing one.
 - Repeat a key for multiple values (two `creator` lines for two creators), but only for keys the table lists as repeatable. Keys listed as *per-language* may repeat only with distinct language tags (`title[nl]` plus `title[en]` is fine; two `title[nl]` rows are not). A second row for a single-valued key, or a repeated language on a per-language key, MUST be an error.
 - Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`. In `dcschema.csv`, wherever a language-tagged key is used, a Dutch entry (`[nl]`) MUST be among the rows (meemoo's rule); other languages are welcome alongside, but Dutch must be present. `check` reports a missing Dutch entry.
-- Unknown keys MUST be an error: a typo must not silently drop metadata. The table below is the entire vocabulary; it follows the flat-expressible elements of meemoo's basic content profile.
+- Unknown keys MUST be an error: a typo must not silently drop metadata. Keys are matched case-insensitively (`Title` reads as `title`). The table below is the entire vocabulary; it follows the flat-expressible elements of meemoo's basic content profile.
 
 Supported keys (plain names; the specialist mapping is in [§7](#7-mapping-to-the-sip-informative-for-specialists)):
 

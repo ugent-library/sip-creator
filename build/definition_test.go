@@ -8,6 +8,7 @@ import (
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 // earkDef returns the registered "eark" definition the tests build with.
@@ -24,17 +25,17 @@ func earkDef(t *testing.T) build.Definition {
 // the eark profile's standard, Simple Dublin Core.
 func identityTerms() eark.Terms {
 	return eark.Terms{
-		{Element: "identifier", Value: "local-id-001"},
-		{Element: "title", Value: "Catus Testus"},
+		{Key: "identifier", Value: "local-id-001"},
+		{Key: "title", Value: "Catus Testus"},
 	}
 }
 
 // meemooIdentityTerms is the same identity in meemoo's standard: short of
-// the four elements the basic profile requires.
+// the four keys the basic profile requires.
 func meemooIdentityTerms() meemoo.Terms {
 	return meemoo.Terms{
-		{Element: "dcterms:identifier", Value: "local-id-001"},
-		{Element: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
+		{Key: "identifier", Value: "local-id-001"},
+		{Key: "title", Lang: "nl", Value: "Catus Testus"},
 	}
 }
 
@@ -44,28 +45,28 @@ func meemooIdentityTerms() meemoo.Terms {
 func TestInputValidateAppliesStandardRules(t *testing.T) {
 	_, in, _ := newTestBuilder(t)
 	in.Descriptive = append(testDescriptive(),
-		meemoo.Term{Element: "dcterms:abstract", Lang: "nl", Value: "een"},
-		meemoo.Term{Element: "dcterms:abstract", Lang: "nl", Value: "twee"})
+		sip.Term{Key: "abstract", Lang: "nl", Value: "een"},
+		sip.Term{Key: "abstract", Lang: "nl", Value: "twee"})
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), "more than once") {
 		t.Errorf("repeated abstract accepted: %v", err)
 	}
 
 	_, in, _ = newTestBuilder(t)
-	in.Descriptive = append(testDescriptive(), meemoo.Term{Element: "dcterms:subject", Lang: "en", Value: "cats"})
+	in.Descriptive = append(testDescriptive(), sip.Term{Key: "subject", Lang: "en", Value: "cats"})
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `"nl"`) {
 		t.Errorf("subject without a Dutch entry accepted: %v", err)
 	}
 
 	_, in, _ = newTestBuilder(t)
-	in.Representations[0].Descriptive = meemoo.Terms{{Element: "dcterms:title", Lang: "en", Value: "Cats"}}
+	in.Representations[0].Descriptive = meemoo.Terms{{Key: "title", Lang: "en", Value: "Cats"}}
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `representation "master"`) {
 		t.Errorf("representation title without a Dutch entry accepted: %v", err)
 	}
 
 	_, in, _ = newTestBuilder(t)
 	in.Descriptive = append(identityTerms(),
-		eark.Term{Element: "description", Lang: "en", Value: "one"},
-		eark.Term{Element: "description", Lang: "en", Value: "two"})
+		sip.Term{Key: "description", Lang: "en", Value: "one"},
+		sip.Term{Key: "description", Lang: "en", Value: "two"})
 	if err := in.Validate(); err != nil {
 		t.Errorf("Simple DC has no such rules, yet Validate refused: %v", err)
 	}

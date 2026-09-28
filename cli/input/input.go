@@ -14,6 +14,8 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/characterization"
+	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -146,13 +148,13 @@ func Read(root string) (*Package, error) {
 
 // reader carries the walk's state: the input root all messages and report
 // keys are relative to, the findings collected so far, and the vocabulary
-// of the first descriptive rows file met (with its path), which every later
-// rows file in the folder must share.
+// of the first descriptive rows file met (with its path; nil until one is
+// met), which every later rows file in the folder must share.
 type reader struct {
 	root           string
 	violations     Violations
 	warnings       []string
-	vocabulary     vocabulary
+	vocabulary     *vocabulary
 	vocabularyFile string
 }
 
@@ -169,21 +171,27 @@ const (
 	sidecarName            = "siegfried.json"
 )
 
-// vocabulary is the one a descriptive rows file is in, told
-// by its name (input specification §3): dcschema.csv holds meemoo's
-// dc+schema vocabulary, dc.csv Simple Dublin Core.
-type vocabulary string
+// vocabulary is the one a descriptive rows file is in, told by its name
+// (input specification §3): what a message calls it, and the terms type
+// of the profile that reads it, which is all the decoder needs to know
+// about the world. Pointers, so the reader's "none met yet" is nil and two
+// files compare by identity.
+type vocabulary struct {
+	name  string
+	terms func([]sip.Term) sip.Description
+}
 
-const (
-	meemooVocabulary vocabulary = "meemoo dc+schema"
-	earkVocabulary   vocabulary = "Simple Dublin Core"
+var (
+	meemooVocabulary = &vocabulary{"meemoo dc+schema", func(t []sip.Term) sip.Description { return meemoo.Terms(t) }}
+	earkVocabulary   = &vocabulary{"Simple Dublin Core", func(t []sip.Term) sip.Description { return eark.Terms(t) }}
 )
 
 // rowsFile is one descriptive rows file found at one level of the input
-// folder, with the vocabulary its name announces.
+// folder, with the vocabulary its name announces: dcschema.csv holds
+// meemoo's dc+schema vocabulary, dc.csv Simple Dublin Core.
 type rowsFile struct {
 	src        string
-	vocabulary vocabulary
+	vocabulary *vocabulary
 }
 
 func newRowsFile(src, name string) rowsFile {

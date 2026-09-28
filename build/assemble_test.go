@@ -35,10 +35,10 @@ func fileMD5(t *testing.T, path string) string {
 // basic profile's input; eark tests swap in identityTerms.
 func testDescriptive() meemoo.Terms {
 	return meemoo.Terms{
-		{Element: "dcterms:identifier", Value: "local-id-001"},
-		{Element: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
-		{Element: "dcterms:description", Lang: "nl", Value: "Een testkat"},
-		{Element: "dcterms:created", Value: "2026"},
+		{Key: "identifier", Value: "local-id-001"},
+		{Key: "title", Lang: "nl", Value: "Catus Testus"},
+		{Key: "description", Lang: "nl", Value: "Een testkat"},
+		{Key: "created", Value: "2026"},
 	}
 }
 
@@ -142,7 +142,7 @@ func TestAssemble(t *testing.T) {
 	if got := e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; got != "local-id-001" {
 		t.Errorf("MEEMOO-LOCAL-ID = %q, want %q", got, "local-id-001")
 	}
-	if got := meemooIdentifier(e.Description); got != e.Identifier {
+	if got := identifierTerm(e.Description); got != e.Identifier {
 		t.Errorf("description identifier = %q, want entity identifier %q", got, e.Identifier)
 	}
 
@@ -470,14 +470,14 @@ func TestInputValidate(t *testing.T) {
 	}{
 		{"no descriptive", func(c *build.Input) { c.Descriptive = nil }, "no descriptive metadata"},
 		{"invalid term", func(c *build.Input) {
-			c.Descriptive = append(c.Descriptive.(meemoo.Terms), meemoo.Term{Element: "dcterms:titel", Value: "x"})
+			c.Descriptive = append(c.Descriptive.(meemoo.Terms), sip.Term{Key: "titel", Value: "x"})
 		}, "not in the descriptive vocabulary"},
 		{"no identifier", func(c *build.Input) {
-			c.Descriptive = meemoo.Terms{{Element: "dcterms:title", Value: "x"}}
-		}, "identifier (dcterms:identifier) is required"},
+			c.Descriptive = meemoo.Terms{{Key: "title", Value: "x"}}
+		}, "identifier is required"},
 		{"no title", func(c *build.Input) {
-			c.Descriptive = meemoo.Terms{{Element: "dcterms:identifier", Value: "x"}}
-		}, "title (dcterms:title) is required"},
+			c.Descriptive = meemoo.Terms{{Key: "identifier", Value: "x"}}
+		}, "title is required"},
 		{"no representations", func(c *build.Input) { c.Representations = nil }, "at least one version"},
 		{"bad name", func(c *build.Input) { c.Representations[0].Name = "master copy" }, "may only contain"},
 		{"xml-unsafe label", func(c *build.Input) { c.Representations[0].Label = `Master "scan"` }, "cannot be emitted"},
@@ -496,7 +496,7 @@ func TestInputValidate(t *testing.T) {
 			c.PackageIdentifier = "not-a-uuid"
 		}, "uuid-<uuid> form"},
 		{"invalid representation descriptive", func(c *build.Input) {
-			c.Representations[0].Descriptive = meemoo.Terms{{Element: "dcterms:titel", Value: "x"}}
+			c.Representations[0].Descriptive = meemoo.Terms{{Key: "titel", Value: "x"}}
 		}, "not in the descriptive vocabulary"},
 		{"received premis claims the generated name", func(c *build.Input) {
 			c.Premis = []build.SourceFile{{Source: "/x/premis.xml", Path: "premis.xml"}}
@@ -528,7 +528,7 @@ func TestInputValidate(t *testing.T) {
 func TestAssembleRepresentationDescriptive(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 	in.Representations[0].Descriptive = meemoo.Terms{
-		{Element: "dcterms:license", Value: "publiek domein"},
+		{Key: "license", Value: "publiek domein"},
 	}
 
 	pkg, err := b.Assemble(basicDef(t), in)
@@ -551,14 +551,14 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	// swapped in, mirroring the package-level behavior.
 	b2, in2, _ := newTestBuilder(t)
 	in2.Representations[0].Descriptive = meemoo.Terms{
-		{Element: "dcterms:identifier", Value: "rep-local-1"},
+		{Key: "identifier", Value: "rep-local-1"},
 	}
 	pkg2, err := b2.Assemble(basicDef(t), in2)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
 	r2 := pkg2.Root.Representations[0]
-	if got := meemooIdentifier(r2.Description); got != r2.Identifier {
+	if got := identifierTerm(r2.Description); got != r2.Identifier {
 		t.Errorf("rep descriptive identifier = %q, want the representation identifier %q", got, r2.Identifier)
 	}
 
@@ -573,24 +573,21 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	}
 }
 
-// meemooIdentifier returns the dcterms:identifier term of meemoo terms (""
-// when absent): what the swap wrote. Neither profile package exports an
-// accessor for its identifier; the swap is the meemoo package's own
-// business, and the eark profile never swaps.
-func meemooIdentifier(d sip.Description) string {
-	for _, term := range d.(meemoo.Terms) {
-		if term.Element == "dcterms:identifier" {
-			return term.Value
-		}
+// identifierTerm returns the value of the identifier term of either
+// world's terms ("" when absent): what the meemoo swap wrote, or what the
+// eark profile left alone. Neither profile package exports an accessor for
+// it; the swap is the meemoo package's own business, and the eark profile
+// never swaps.
+func identifierTerm(d sip.Description) string {
+	var terms []sip.Term
+	switch v := d.(type) {
+	case meemoo.Terms:
+		terms = v
+	case eark.Terms:
+		terms = v
 	}
-	return ""
-}
-
-// dcIdentifier returns the identifier element of Simple DC terms ("" when
-// absent).
-func dcIdentifier(d sip.Description) string {
-	for _, term := range d.(eark.Terms) {
-		if term.Element == "identifier" {
+	for _, term := range terms {
+		if term.Key == "identifier" {
 			return term.Value
 		}
 	}
@@ -604,7 +601,7 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 	in.Descriptive = identityTerms()
 	in.Representations[0].Descriptive = eark.Terms{
-		{Element: "identifier", Value: "rep-local-1"},
+		{Key: "identifier", Value: "rep-local-1"},
 	}
 
 	pkg, err := b.Assemble(earkDef(t), in)
@@ -612,13 +609,13 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 		t.Fatalf("assemble: %v", err)
 	}
 	e := pkg.Root
-	if got := dcIdentifier(e.Description); got != "local-id-001" {
+	if got := identifierTerm(e.Description); got != "local-id-001" {
 		t.Errorf("description identifier = %q, want the producer's %q", got, "local-id-001")
 	}
 	if _, ok := e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; ok {
 		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; it is a meemoo concept")
 	}
-	if got := dcIdentifier(e.Representations[0].Description); got != "rep-local-1" {
+	if got := identifierTerm(e.Representations[0].Description); got != "rep-local-1" {
 		t.Errorf("rep descriptive identifier = %q, want the producer's %q", got, "rep-local-1")
 	}
 }
@@ -905,9 +902,9 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 		desc sip.Description
 		want string
 	}{
-		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description (dcterms:description) is required"},
-		{"basic without a title", basicDef(t), meemoo.Terms{{Element: "dcterms:identifier", Value: "x"}}, "title (dcterms:title) is required"},
-		{"eark without an identifier", earkDef(t), eark.Terms{{Element: "title", Value: "x"}}, "identifier is required"},
+		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description is required"},
+		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "identifier", Value: "x"}}, "title is required"},
+		{"eark without an identifier", earkDef(t), eark.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

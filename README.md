@@ -120,13 +120,14 @@ builder := build.New(&build.Config{
 
 pkg, err := builder.Build(def, &build.Input{
 	// Each profile package owns its terms type: the eark profile writes
-	// Simple Dublin Core from eark.Terms; the basic profile takes
-	// meemoo.Terms (dcterms:-prefixed elements plus schema.org).
+	// Simple Dublin Core from eark.Terms, the basic profile meemoo's
+	// dc+schema document from meemoo.Terms. Both are lists of sip.Term,
+	// keyed by the plain keys of the input specification's tables.
 	Descriptive: eark.Terms{
-		{Element: "identifier", Value: "inv.2024.001"},
-		{Element: "title", Value: "Correspondentie 1914-1918"},
-		{Element: "description", Value: "Brieven uit de collectie."},
-		{Element: "date", Value: "1914/1918"},
+		{Key: "identifier", Value: "inv.2024.001"},
+		{Key: "title", Value: "Correspondentie 1914-1918"},
+		{Key: "description", Value: "Brieven uit de collectie."},
+		{Key: "date", Value: "1914/1918"},
 	},
 	Representations: []build.SourceRepresentation{{
 		Name: "master",

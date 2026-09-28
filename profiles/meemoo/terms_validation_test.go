@@ -1,8 +1,11 @@
 package meemoo
 
 import (
+	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 func TestValidateCardinality(t *testing.T) {
@@ -12,24 +15,24 @@ func TestValidateCardinality(t *testing.T) {
 		want  string // "" means conformant; else substring of the error
 	}{
 		{"single-valued repeated", Terms{
-			{Element: "dcterms:identifier", Value: "A"},
-			{Element: "dcterms:identifier", Value: "B"},
+			{Key: "identifier", Value: "A"},
+			{Key: "identifier", Value: "B"},
 		}, "exactly one"},
 		{"per-language same language", Terms{
-			{Element: "dcterms:abstract", Lang: "nl", Value: "een"},
-			{Element: "dcterms:abstract", Lang: "nl", Value: "twee"},
+			{Key: "abstract", Lang: "nl", Value: "een"},
+			{Key: "abstract", Lang: "nl", Value: "twee"},
 		}, `language "nl"`},
 		{"per-language distinct languages", Terms{
-			{Element: "dcterms:title", Lang: "nl", Value: "Kat"},
-			{Element: "dcterms:title", Lang: "en", Value: "Cat"},
+			{Key: "title", Lang: "nl", Value: "Kat"},
+			{Key: "title", Lang: "en", Value: "Cat"},
 		}, ""},
 		{"per-language untagged repeat", Terms{
-			{Element: "dcterms:abstract", Value: "een"},
-			{Element: "dcterms:abstract", Value: "twee"},
+			{Key: "abstract", Value: "een"},
+			{Key: "abstract", Value: "twee"},
 		}, "distinct language tags"},
 		{"repeatable repeated", Terms{
-			{Element: "dcterms:subject", Lang: "nl", Value: "katten"},
-			{Element: "dcterms:subject", Lang: "nl", Value: "testdata"},
+			{Key: "subject", Lang: "nl", Value: "katten"},
+			{Key: "subject", Lang: "nl", Value: "testdata"},
 		}, ""},
 	}
 	for _, tt := range tests {
@@ -48,75 +51,88 @@ func TestValidateCardinality(t *testing.T) {
 	}
 }
 
-// Every violation surfaces at once, not just the first.
+// Every violation surfaces at once, not just the first, each naming its
+// key.
 func TestValidateCardinalityJoinsFindings(t *testing.T) {
 	terms := Terms{
-		{Element: "dcterms:created", Value: "1913"},
-		{Element: "dcterms:created", Value: "1914"},
-		{Element: "dcterms:rights", Lang: "nl", Value: "a"},
-		{Element: "dcterms:rights", Lang: "nl", Value: "b"},
+		{Key: "created", Value: "1913"},
+		{Key: "created", Value: "1914"},
+		{Key: "rights", Lang: "nl", Value: "a"},
+		{Key: "rights", Lang: "nl", Value: "b"},
 	}
 	err := terms.validateCardinality()
 	if err == nil {
 		t.Fatal("want two findings, got none")
 	}
-	for _, want := range []string{"dcterms:created", "dcterms:rights"} {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("findings do not name %s: %v", want, err)
-		}
-	}
-}
-
-// Validate joins every finding, per-term ones included, so a producer sees
-// all of them in one round rather than the first bad term alone.
-func TestTermsValidateReportsEveryTerm(t *testing.T) {
-	terms := Terms{
-		{Element: "dcterms:titel", Value: "x"},
-		{Element: "dcterms:subject", Value: " "},
-	}
-	err := terms.Validate()
-	if err == nil {
-		t.Fatal("want two findings, got none")
-	}
-	for _, want := range []string{"term 1:", "term 2:"} {
+	for _, want := range []string{"created appears", "rights appears"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("findings do not include %q: %v", want, err)
 		}
 	}
 }
 
-// A package-level description states meemoo's four required elements;
-// each missing one is a finding naming the CSV key and the element, so a
-// rows file and a caller's terms can both be corrected from it.
-func TestValidateRequired(t *testing.T) {
-	err := (Terms{
-		{Element: "dcterms:identifier", Value: "A"},
-		{Element: "dcterms:title", Lang: "nl", Value: "Kat"},
-	}).ValidateRequired()
-	if err == nil {
-		t.Fatal("want the missing elements reported, got none")
+// Validate joins every finding, per-term ones included, so a producer sees
+// all of them in one round rather than the first bad term alone. A
+// per-term finding carries the term's position, so a caller who decoded
+// the terms from rows can point at the row.
+func TestTermsValidateReportsEveryTerm(t *testing.T) {
+	terms := Terms{
+		{Key: "identifier", Value: "A"},
+		{Key: "titel", Value: "x"},
+		{Key: "subject", Value: " "},
 	}
-	for _, want := range []string{"description (dcterms:description)", "created (dcterms:created)"} {
+	err := terms.Validate()
+	if err == nil {
+		t.Fatal("want two findings, got none")
+	}
+	for _, want := range []string{"term 2:", "term 3:"} {
 		if !strings.Contains(err.Error(), want) {
-			t.Errorf("findings do not name %s: %v", want, err)
+			t.Errorf("findings do not include %q: %v", want, err)
 		}
 	}
-	err = (Terms{{Element: "dcterms:title", Lang: "nl", Value: "Kat"}}).ValidateRequired()
-	if err == nil || !strings.Contains(err.Error(), "identifier (dcterms:identifier) is required") {
+	var positions []int
+	for _, finding := range err.(interface{ Unwrap() []error }).Unwrap() {
+		var te *sip.TermError
+		if errors.As(finding, &te) {
+			positions = append(positions, te.Index)
+		}
+	}
+	if len(positions) != 2 || positions[0] != 1 || positions[1] != 2 {
+		t.Errorf("per-term findings at positions %v, want [1 2]", positions)
+	}
+}
+
+// A package-level description states meemoo's four required keys; each
+// missing one is a finding naming the key.
+func TestValidateRequired(t *testing.T) {
+	err := (Terms{
+		{Key: "identifier", Value: "A"},
+		{Key: "title", Lang: "nl", Value: "Kat"},
+	}).ValidateRequired()
+	if err == nil {
+		t.Fatal("want the missing keys reported, got none")
+	}
+	for _, want := range []string{"description is required", "created is required"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("findings do not include %q: %v", want, err)
+		}
+	}
+	err = (Terms{{Key: "title", Lang: "nl", Value: "Kat"}}).ValidateRequired()
+	if err == nil || !strings.Contains(err.Error(), "identifier is required") {
 		t.Errorf("missing identifier not reported: %v", err)
 	}
-	complete := append(testTerms(), Term{Element: "dcterms:description", Lang: "nl", Value: "Een album"})
+	complete := append(testTerms(), sip.Term{Key: "description", Lang: "nl", Value: "Een album"})
 	if err := complete.ValidateRequired(); err != nil {
 		t.Fatalf("complete terms refused: %v", err)
 	}
 }
 
-// Every required element is one the table lists, so a typo in the list
-// fails here rather than at the first build.
-func TestRequiredElementsAreInTheVocabulary(t *testing.T) {
-	for _, element := range required {
-		if _, ok := vocabularyByElement[element]; !ok {
-			t.Errorf("required element %q is not in the vocabulary", element)
+// Every required key is one the table lists, so a typo in the list fails
+// here rather than at the first build.
+func TestRequiredKeysAreInTheVocabulary(t *testing.T) {
+	for _, key := range required {
+		if _, ok := vocabularyByKey[key]; !ok {
+			t.Errorf("required key %q is not in the vocabulary", key)
 		}
 	}
 }
@@ -128,16 +144,16 @@ func TestValidateRequiredLang(t *testing.T) {
 		lang  string
 		want  string // "" means conformant; else substring of the error
 	}{
-		{"no rule", Terms{{Element: "dcterms:title", Lang: "fr", Value: "x"}}, "", ""},
+		{"no rule", Terms{{Key: "title", Lang: "fr", Value: "x"}}, "", ""},
 		{"tagged without required language", Terms{
-			{Element: "dcterms:title", Lang: "fr", Value: "Chat"},
-		}, "nl", "dcterms:title"},
+			{Key: "title", Lang: "fr", Value: "Chat"},
+		}, "nl", "title carries"},
 		{"required language among others", Terms{
-			{Element: "dcterms:title", Lang: "fr", Value: "Chat"},
-			{Element: "dcterms:title", Lang: "nl", Value: "Kat"},
+			{Key: "title", Lang: "fr", Value: "Chat"},
+			{Key: "title", Lang: "nl", Value: "Kat"},
 		}, "nl", ""},
 		{"untagged values carry no rule", Terms{
-			{Element: "dcterms:creator", Value: "Edmond Sacré"},
+			{Key: "creator", Value: "Edmond Sacré"},
 		}, "nl", ""},
 	}
 	for _, tt := range tests {

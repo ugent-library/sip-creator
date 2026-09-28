@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 func testTerms() Terms {
 	return Terms{
-		{Element: "dcterms:identifier", Value: "BIB.FA.2026.001"},
-		{Element: "dcterms:title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
-		{Element: "dcterms:created", Value: "1913"},
-		{Element: "dcterms:subject", Lang: "nl", Value: "R&D <scans>"},
-		{Element: "schema:artMedium", Lang: "nl", Value: "zilvergelatinedruk"},
+		{Key: "identifier", Value: "BIB.FA.2026.001"},
+		{Key: "title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
+		{Key: "created", Value: "1913"},
+		{Key: "subject", Lang: "nl", Value: "R&D <scans>"},
+		{Key: "artmedium", Lang: "nl", Value: "zilvergelatinedruk"},
 	}
 }
 
@@ -31,6 +33,7 @@ func TestEncode(t *testing.T) {
 		`<dcterms:created xsi:type="edtf:EDTF-level1">1913</dcterms:created>`,
 		// operator values are arbitrary text and must be escaped
 		"<dcterms:subject xml:lang=\"nl\">R&amp;D &lt;scans&gt;</dcterms:subject>",
+		// the key maps to the camel-cased schema.org element
 		`<schema:artMedium xml:lang="nl">zilvergelatinedruk</schema:artMedium>`,
 	} {
 		if !strings.Contains(out, want) {
@@ -62,39 +65,40 @@ func TestEncodeSchemaLocation(t *testing.T) {
 }
 
 func TestEncodeRefusesInvalid(t *testing.T) {
-	bad := Terms{{Element: "dcterms:titel", Value: "x"}}
+	bad := Terms{{Key: "titel", Value: "x"}}
 	var buf bytes.Buffer
 	if err := (dcschema{}).Encode(&buf, bad, "../../schemas"); err == nil {
-		t.Fatal("Encode accepted an invalid element")
+		t.Fatal("Encode accepted an unknown key")
 	}
 	if buf.Len() != 0 {
 		t.Errorf("Encode wrote %d bytes despite refusing", buf.Len())
 	}
 }
 
-func TestTermValidate(t *testing.T) {
+func TestValidateTerm(t *testing.T) {
 	tests := []struct {
 		name string
-		term Term
+		term sip.Term
 		want string // "" means valid; else substring of the error
 	}{
-		{"valid plain", Term{Element: "dcterms:title", Value: "x"}, ""},
-		{"valid schema with lang", Term{Element: "schema:artform", Lang: "nl-BE", Value: "x"}, ""},
-		{"valid new key element", Term{Element: "dcterms:abstract", Value: "x"}, ""},
-		{"unprefixed", Term{Element: "title", Value: "x"}, "not in the descriptive vocabulary"},
-		{"misspelled dcterms", Term{Element: "dcterms:titel", Value: "x"}, "not in the descriptive vocabulary"},
-		// a real DCMI term meemoo's profile excludes; the old DCMI-55
-		// membership check accepted it
-		{"dcterms outside the profile", Term{Element: "dcterms:accrualPolicy", Value: "x"}, "not in the descriptive vocabulary"},
-		// schema.org is no longer an open passthrough
-		{"schema outside the profile", Term{Element: "schema:duration", Value: "x"}, "not in the descriptive vocabulary"},
-		{"unknown prefix", Term{Element: "foo:bar", Value: "x"}, "not in the descriptive vocabulary"},
-		{"bad lang", Term{Element: "dcterms:title", Lang: "nl!", Value: "x"}, "not a language tag"},
-		{"empty value", Term{Element: "dcterms:subject", Value: "  "}, "empty value"},
+		{"valid plain", sip.Term{Key: "title", Value: "x"}, ""},
+		{"valid schema.org key with lang", sip.Term{Key: "artform", Lang: "nl-BE", Value: "x"}, ""},
+		{"valid abstract", sip.Term{Key: "abstract", Value: "x"}, ""},
+		{"typo", sip.Term{Key: "titel", Value: "x"}, "unknown key"},
+		// a real DCMI term meemoo's profile excludes
+		{"dcterms outside the profile", sip.Term{Key: "accrualpolicy", Value: "x"}, "unknown key"},
+		// schema.org is not an open passthrough
+		{"schema outside the profile", sip.Term{Key: "duration", Value: "x"}, "unknown key"},
+		// a key is the plain word, never the element name it emits
+		{"element name as key", sip.Term{Key: "dcterms:title", Value: "x"}, "unknown key"},
+		// keys are lowercase; case folding is the rows file's convention
+		{"capitalized", sip.Term{Key: "Title", Value: "x"}, "unknown key"},
+		{"bad lang", sip.Term{Key: "title", Lang: "nl!", Value: "x"}, "not a language tag"},
+		{"empty value", sip.Term{Key: "subject", Value: "  "}, "empty value"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.term.Validate()
+			err := validateTerm(tt.term)
 			if tt.want == "" {
 				if err != nil {
 					t.Fatalf("want valid, got %v", err)
@@ -110,8 +114,8 @@ func TestTermValidate(t *testing.T) {
 
 func TestTermsValidateDuplicateIdentifier(t *testing.T) {
 	terms := Terms{
-		{Element: "dcterms:identifier", Value: "A"},
-		{Element: "dcterms:identifier", Value: "B"},
+		{Key: "identifier", Value: "A"},
+		{Key: "identifier", Value: "B"},
 	}
 	err := terms.Validate()
 	if err == nil || !strings.Contains(err.Error(), "exactly one") {
@@ -143,17 +147,17 @@ func TestTermsIdentifierSwap(t *testing.T) {
 }
 
 // Validate applies meemoo's own rules, not only term validity: the table's
-// cardinality limits and a Dutch entry wherever an element is
-// language-tagged, with every finding reported at once.
+// cardinality limits and a Dutch entry wherever a key is language-tagged,
+// with every finding reported at once and named by key.
 func TestTermsValidateAppliesMeemooRules(t *testing.T) {
 	terms := append(testTerms(),
-		Term{Element: "dcterms:created", Value: "1914"},
-		Term{Element: "dcterms:abstract", Lang: "en", Value: "About"})
+		sip.Term{Key: "created", Value: "1914"},
+		sip.Term{Key: "abstract", Lang: "en", Value: "About"})
 	err := terms.Validate()
 	if err == nil {
 		t.Fatal("want the repeated created and the abstract without Dutch refused")
 	}
-	for _, want := range []string{"dcterms:created appears more than once", `dcterms:abstract carries language-tagged values but none in "nl"`} {
+	for _, want := range []string{"created appears more than once", `abstract carries language-tagged values but none in "nl"`} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("findings do not include %q: %v", want, err)
 		}

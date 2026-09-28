@@ -2,17 +2,20 @@ package eark
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 func testTerms() Terms {
 	return Terms{
-		{Element: "identifier", Value: "uuid-x"},
-		{Element: "title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
-		{Element: "date", Value: "1913"},
-		{Element: "format", Value: "48 foto's"},
-		{Element: "subject", Value: "R&D <scans>"},
+		{Key: "identifier", Value: "uuid-x"},
+		{Key: "title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
+		{Key: "date", Value: "1913"},
+		{Key: "format", Value: "48 foto's"},
+		{Key: "subject", Value: "R&D <scans>"},
 	}
 }
 
@@ -60,58 +63,37 @@ func TestEncodeSchemaLocation(t *testing.T) {
 }
 
 func TestEncodeRefusesInvalid(t *testing.T) {
-	bad := Terms{{Element: "abstract", Value: "x"}} // a qualified term, not Simple DC
+	bad := Terms{{Key: "abstract", Value: "x"}} // a qualified term, not Simple DC
 	var buf bytes.Buffer
 	if err := (simpledc{}).Encode(&buf, bad, "../../schemas"); err == nil {
-		t.Fatal("Encode accepted an element outside Simple Dublin Core")
+		t.Fatal("Encode accepted a key outside Simple Dublin Core")
 	}
 	if buf.Len() != 0 {
 		t.Errorf("Encode wrote %d bytes despite refusing", buf.Len())
 	}
 }
 
-func TestResolveKey(t *testing.T) {
-	tests := []struct {
-		key     string
-		element string // "" means the key must be unknown
-	}{
-		{"identifier", "identifier"},
-		{"Title", "title"}, // keys are case-insensitive
-		{"coverage", "coverage"},
-		{"abstract", ""},      // a qualified term meemoo's vocabulary has; not Simple DC
-		{"dcterms:title", ""}, // prefixed keys are not supported
-		{"titel", ""},         // typo
-	}
-	for _, tt := range tests {
-		element, ok := ResolveKey(tt.key)
-		if tt.element == "" {
-			if ok {
-				t.Errorf("ResolveKey(%q) resolved to %q, want unknown", tt.key, element)
-			}
-			continue
-		}
-		if !ok || element != tt.element {
-			t.Errorf("ResolveKey(%q) = %q, %v; want %q", tt.key, element, ok, tt.element)
-		}
-	}
-}
-
-func TestTermValidate(t *testing.T) {
+func TestValidateTerm(t *testing.T) {
 	tests := []struct {
 		name string
-		term Term
+		term sip.Term
 		want string // "" means valid; else substring of the error
 	}{
-		{"valid", Term{Element: "title", Value: "x"}, ""},
-		{"valid with lang", Term{Element: "description", Lang: "nl-BE", Value: "x"}, ""},
-		{"qualified term", Term{Element: "abstract", Value: "x"}, "not a Simple Dublin Core element"},
-		{"prefixed", Term{Element: "dcterms:title", Value: "x"}, "not a Simple Dublin Core element"},
-		{"bad lang", Term{Element: "title", Lang: "nl!", Value: "x"}, "not a language tag"},
-		{"empty value", Term{Element: "subject", Value: "  "}, "empty value"},
+		{"valid", sip.Term{Key: "title", Value: "x"}, ""},
+		{"valid with lang", sip.Term{Key: "description", Lang: "nl-BE", Value: "x"}, ""},
+		{"valid coverage", sip.Term{Key: "coverage", Value: "x"}, ""},
+		// a qualified term meemoo's vocabulary has; not Simple DC
+		{"qualified term", sip.Term{Key: "abstract", Value: "x"}, "unknown key"},
+		{"prefixed", sip.Term{Key: "dcterms:title", Value: "x"}, "unknown key"},
+		{"typo", sip.Term{Key: "titel", Value: "x"}, "unknown key"},
+		// keys are lowercase; case folding is the rows file's convention
+		{"capitalized", sip.Term{Key: "Title", Value: "x"}, "unknown key"},
+		{"bad lang", sip.Term{Key: "title", Lang: "nl!", Value: "x"}, "not a language tag"},
+		{"empty value", sip.Term{Key: "subject", Value: "  "}, "empty value"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.term.Validate()
+			err := validateTerm(tt.term)
 			if tt.want == "" {
 				if err != nil {
 					t.Fatalf("want valid, got %v", err)
@@ -129,17 +111,17 @@ func TestTermValidate(t *testing.T) {
 // fine; only the identifier stays single.
 func TestTermsValidate(t *testing.T) {
 	repeated := Terms{
-		{Element: "identifier", Value: "A"},
-		{Element: "description", Value: "een"},
-		{Element: "description", Value: "twee"},
+		{Key: "identifier", Value: "A"},
+		{Key: "description", Value: "een"},
+		{Key: "description", Value: "twee"},
 	}
 	if err := repeated.Validate(); err != nil {
 		t.Fatalf("repeated description refused: %v", err)
 	}
 
 	twoIDs := Terms{
-		{Element: "identifier", Value: "A"},
-		{Element: "identifier", Value: "B"},
+		{Key: "identifier", Value: "A"},
+		{Key: "identifier", Value: "B"},
 	}
 	err := twoIDs.Validate()
 	if err == nil || !strings.Contains(err.Error(), "exactly one") {
@@ -150,38 +132,51 @@ func TestTermsValidate(t *testing.T) {
 // A package-level description states an identifier and a title; plain
 // E-ARK requires nothing more, and the list names only real elements.
 func TestValidateRequired(t *testing.T) {
-	err := (Terms{{Element: "identifier", Value: "A"}}).ValidateRequired()
+	err := (Terms{{Key: "identifier", Value: "A"}}).ValidateRequired()
 	if err == nil || !strings.Contains(err.Error(), "title is required") {
 		t.Fatalf("want the missing title named, got %v", err)
 	}
-	err = (Terms{{Element: "title", Value: "x"}}).ValidateRequired()
+	err = (Terms{{Key: "title", Value: "x"}}).ValidateRequired()
 	if err == nil || !strings.Contains(err.Error(), "identifier is required") {
 		t.Fatalf("want the missing identifier named, got %v", err)
 	}
 	if err := testTerms().ValidateRequired(); err != nil {
 		t.Fatalf("complete terms refused: %v", err)
 	}
-	for _, element := range required {
-		if !elementSet[element] {
-			t.Errorf("required element %q is not a Simple Dublin Core element", element)
+	for _, key := range required {
+		if !elementSet[key] {
+			t.Errorf("required key %q is not a Simple Dublin Core element", key)
 		}
 	}
 }
 
 // Validate joins every finding, per-term ones included, so a producer sees
-// all of them in one round rather than the first bad term alone.
+// all of them in one round rather than the first bad term alone. A
+// per-term finding carries the term's position, so a caller who decoded
+// the terms from rows can point at the row.
 func TestTermsValidateReportsEveryTerm(t *testing.T) {
 	terms := Terms{
-		{Element: "abstract", Value: "x"},
-		{Element: "subject", Value: " "},
+		{Key: "identifier", Value: "A"},
+		{Key: "abstract", Value: "x"},
+		{Key: "subject", Value: " "},
 	}
 	err := terms.Validate()
 	if err == nil {
 		t.Fatal("want two findings, got none")
 	}
-	for _, want := range []string{"term 1:", "term 2:"} {
+	for _, want := range []string{"term 2:", "term 3:"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("findings do not include %q: %v", want, err)
 		}
+	}
+	var positions []int
+	for _, finding := range err.(interface{ Unwrap() []error }).Unwrap() {
+		var te *sip.TermError
+		if errors.As(finding, &te) {
+			positions = append(positions, te.Index)
+		}
+	}
+	if len(positions) != 2 || positions[0] != 1 || positions[1] != 2 {
+		t.Errorf("per-term findings at positions %v, want [1 2]", positions)
 	}
 }

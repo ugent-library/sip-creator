@@ -57,10 +57,10 @@ func TestBuilderInputEquivalence(t *testing.T) {
 	}
 	handIn := &build.Input{
 		Descriptive: meemoo.Terms{
-			{Element: "dcterms:identifier", Value: "ID-1"},
-			{Element: "dcterms:title", Value: "Test"},
-			{Element: "dcterms:description", Lang: "nl", Value: "Testbeschrijving"},
-			{Element: "dcterms:created", Value: "2026"},
+			{Key: "identifier", Value: "ID-1"},
+			{Key: "title", Value: "Test"},
+			{Key: "description", Lang: "nl", Value: "Testbeschrijving"},
+			{Key: "created", Value: "2026"},
 		},
 		Representations: []build.SourceRepresentation{
 			{Name: "master", Files: []build.SourceFile{

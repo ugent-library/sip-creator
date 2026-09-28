@@ -52,8 +52,8 @@ func (simpledc) Schemas() []string {
 }
 
 // The template interpolates element names from data. Every value is
-// escaped, and the element name passes through el, which admits only the
-// fifteen.
+// escaped, and the element name comes from el, which admits only a key
+// naming one of the fifteen.
 var simpledcTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 	"el":  elementName,
 	"esc": escapeXML,
@@ -62,7 +62,7 @@ var simpledcTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 <?xml version='1.0' encoding='UTF-8'?>
 <simpledc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{{ .Schemas }}/dc.xsd">
 {{- range .Terms }}
-  <{{ el .Element }}>{{ esc .Value }}</{{ el .Element }}>
+  <{{ el .Key }}>{{ esc .Value }}</{{ el .Key }}>
 {{- end }}
 </simpledc>
 {{ end }}
@@ -76,14 +76,15 @@ type termsDoc struct {
 	Schemas string
 }
 
-// elementName is the template's one guard: the element name is the only
+// elementName is the element a key emits (in Simple Dublin Core, the key
+// itself), and the template's one guard: the element name is the only
 // thing the template interpolates raw, and only one of the fifteen may
 // reach the output. Returning an error aborts the render.
-func elementName(element string) (string, error) {
-	if !elementSet[element] {
-		return "", fmt.Errorf("%q is not a Simple Dublin Core element", element)
+func elementName(key string) (string, error) {
+	if !elementSet[key] {
+		return "", fmt.Errorf("unknown key %q: not a Simple Dublin Core element", key)
 	}
-	return element, nil
+	return key, nil
 }
 
 // escapeXML makes a data value safe as XML character data; terms carry
