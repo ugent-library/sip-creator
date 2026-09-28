@@ -375,7 +375,7 @@ internal, but the emitted packages stay unchanged.
       decision 6,
       [ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md).
       The Go files are back at the schemas commit; nothing to commit.
-- [ ] **Docs sweep.** Design doc: domain model, profile section, build
+- [x] **Docs sweep.** Design doc: domain model, profile section, build
       lifecycle for the interface, the descriptive standard on the profile
       and the schema list. This plan's status line. (Drafted 2026-09-24
       together with the document route, never committed; redone without
