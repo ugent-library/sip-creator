@@ -27,6 +27,13 @@ func (simpledc) Check(d sip.Description) error {
 	return nil
 }
 
+// NewDescription wraps flat statements in Terms: how a transport that decodes
+// statements without knowing the standard (the CLI's rows file) builds
+// the description Check accepts.
+func (simpledc) NewDescription(terms []sip.Term) sip.Description {
+	return Terms(terms)
+}
+
 // Encode writes d, which is Terms since Check ran before anything else, as
 // a Simple Dublin Core document (the dc_SimpleDC20021212 shape RODA
 // renders and indexes natively): one unqualified element per term, order

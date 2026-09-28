@@ -16,7 +16,7 @@ One folder = one package. In the simplest case:
 
 ```
 fotoalbum-gent-1913/
-├── dcschema.csv          ← describes the content (the only file you write; dc.csv for the eark profile)
+├── description.csv       ← describes the content (the only file you write)
 └── ... your files ...
 ```
 
@@ -24,27 +24,27 @@ With multiple versions of the content and extras:
 
 ```
 fotoalbum-gent-1913/
-├── dcschema.csv
+├── description.csv
 ├── representations.csv   ← optional: a label and type per representation
 ├── representations/
 │   ├── master/           ← the archival scans, any structure you like
 │   └── access/           ← e.g. a PDF version
-│       └── dcschema.csv  ← optional: describes just this version (e.g. its license)
+│       └── description.csv  ← optional: describes just this version (e.g. its license)
 ├── documentation/        ← optional: scan reports, context material
 └── premis/               ← optional: preservation XML received from a vendor
 ```
 
-Institution details (who submits, who archives, contact person, agreement number) do **not** live in the folder: they rarely change and come from the tool's configuration. See [What comes from configuration](#6-what-comes-from-configuration-and-the-command-line).
+Institution details (who submits, who archives, contact person, agreement number) do **not** live in the folder: they rarely change and come from the tool's configuration. See [What comes from configuration](#6-what-comes-from-configuration-and-the-command-line). Neither does the profile: you pass it to `check` and `create` with `--profile`, and it says which vocabulary `description.csv` is in (§3).
 
 ## 1. General rules
 
 - One input folder MUST correspond to one package.
-- Seven names at the top level are reserved: `dcschema.csv` and `dc.csv` (the descriptive rows, exactly one of the two, see §3), `representations/`, `representations.csv`, `documentation/`, `premis/`, and `siegfried.json` (each optional; `representations.csv` names representations, see §2; `siegfried.json` is the pre-computed characterization report, see §2). The former name `metadata.csv` is withdrawn (2026-09-23): a folder containing it MUST be an error that names the two files to rename it to. All other folder and file names are free, with any nesting.
+- Six names at the top level are reserved: `description.csv` (the descriptive rows, required, see §3), `representations/`, `representations.csv`, `documentation/`, `premis/`, and `siegfried.json` (each optional; `representations.csv` names representations, see §2; `siegfried.json` is the pre-computed characterization report, see §2). All other folder and file names are free, with any nesting; that includes the rows file's former names (`metadata.csv`, `dcschema.csv`, `dc.csv`), which are content like any other file.
 - Operating-system artifacts (`.DS_Store`, `Thumbs.db`, `desktop.ini`, `._*`) MUST be ignored by the tool: never packaged, never warned about.
 - Symbolic links anywhere in the input MUST be an error.
 - The tool MUST compare paths after Unicode canonical normalization (NFC), because macOS file names and typed CSV values often differ only in normalization form.
 - The tool MUST refuse to build when any MUST rule is violated, and MUST report all violations at once, in plain language, naming the file or folder concerned. SHOULD violations produce warnings.
-- The tool MUST offer a check-only mode that validates a folder's structure and metadata against the rules here without building anything. Content-level verification (the characterization report's checksum checks in §2 and the PREMIS conformance of received preservation files in §5) happens at build, not at check: those rules apply to whoever supplies the data, however it arrives.
+- The tool MUST offer a check-only mode that validates a folder's structure and metadata against the rules here without building anything. It takes the same profile a build takes, because the profile says which vocabulary the rows are in (§3), and no configuration. Content-level verification (the characterization report's checksum checks in §2 and the PREMIS conformance of received preservation files in §5) happens at build, not at check: those rules apply to whoever supplies the data, however it arrives.
 
 ## 2. Content files and representations
 
@@ -53,13 +53,13 @@ A *representation* is one version of the content: the archival master scans are 
 - **Simple case:** if there is no `representations/` folder, everything in the package folder (apart from the reserved names) is the content of a single representation, named after the input folder itself.
 - **Multiple versions:** if `representations/` exists, each folder directly inside it is one representation, named by its folder name. All content MUST then live inside `representations/`; content files elsewhere at the top level are an error (except inside `documentation/` and `premis/`).
 - Representation names (the folder names, or the input folder's own name in the simple case) MUST match `A–Z a–z 0–9 . _ -`. The name is used as-is inside the final package: it becomes the representation's directory name under `representations/` and, unless `representations.csv` says otherwise, its human-readable name and type in the generated metadata. Neither E-ARK CSIP nor the meemoo specification dictates a naming scheme; CSIP requires only that the names be unique, which folder names are by construction.
-- Inside a representation folder, four names are reserved: `dcschema.csv`, `dc.csv`, `documentation/` and `premis/` (all optional, see §3–5). Everything else is content, with free naming and nesting.
+- Inside a representation folder, three names are reserved: `description.csv`, `documentation/` and `premis/` (all optional, see §3–5). Everything else is content, with free naming and nesting.
 - Files are packaged in a stable, tool-determined order (alphabetical by path). This order carries no meaning: neither E-ARK CSIP nor the meemoo specification assigns semantics to file order. If a human-readable sequence matters to you, zero-pad your numbering (`0001.tiff`, `0002.tiff`, …); explicit ordering is a deferred feature (see §8, the manifest).
 - The tool computes checksums and sizes itself; you never supply those. File formats come from an optional pre-computed characterization report (`siegfried.json` at the top level, generated from the input root with `sf -hash md5 -json`) that the tool verifies against the files before trusting; you never hand-author format info ([ADR-0009](decisions/0009-characterization-as-sidecar-input.md)).
 
 ### `representations.csv`: labels and types (optional)
 
-A folder name makes a good machine name but not always a good display name or type. An optional `representations.csv` at the top level, next to `metadata.csv`, gives each representation a label (its human-readable name in the generated metadata) and a type (what an ingest system such as RODA shows as the representation's kind):
+A folder name makes a good machine name but not always a good display name or type. An optional `representations.csv` at the top level, next to `description.csv`, gives each representation a label (its human-readable name in the generated metadata) and a type (what an ingest system such as RODA shows as the representation's kind):
 
 ```csv
 directory,label,type
@@ -67,7 +67,7 @@ master,Master scan (TIFF),archival
 access,Access copy (PDF),access
 ```
 
-- MUST be UTF-8 with a header row naming its columns. The accepted columns, in any order, are `directory` (required), `label`, and `type` (each optional; header matching is case-insensitive, so a spreadsheet's `Directory` works too). An unknown or repeated column name MUST be an error: a typo must not silently drop a column. A UTF-8 BOM, CRLF line endings, and RFC 4180 quoting are accepted, as for `metadata.csv`.
+- MUST be UTF-8 with a header row naming its columns. The accepted columns, in any order, are `directory` (required), `label`, and `type` (each optional; header matching is case-insensitive, so a spreadsheet's `Directory` works too). An unknown or repeated column name MUST be an error: a typo must not silently drop a column. A UTF-8 BOM, CRLF line endings, and RFC 4180 quoting are accepted, as for `description.csv`.
 - `directory` names a folder directly under `representations/` by its bare name (`master`, not a path). Every row MUST match an existing folder, no two rows may name the same folder, and every folder MUST have a row. A folder without a row is an error, never an exclusion: silently dropping content from the package is the one thing this file must never cause. To leave material out, move it out of the input folder.
 - An empty `label` cell means the folder name; an empty `type` cell means the label. A file listing only folder names changes nothing about the output.
 - `label` and `type` values are emitted into the package's XML verbatim, so the characters `< > & "` MUST be an error.
@@ -75,22 +75,22 @@ access,Access copy (PDF),access
 - The file requires a `representations/` folder: in the simple flat case there is one representation named after the input folder, and a `representations.csv` MUST be an error.
 - The type reaches the output only in profiles that declare representation types (the `eark` profile; [ADR-0013](decisions/0013-representation-type-from-label.md)). Meemoo profiles fix their representation typing to the meemoo profile URI, so `type` has no effect there; `label` is emitted for every profile.
 
-## 3. Descriptive rows: `dcschema.csv` or `dc.csv`
+## 3. Descriptive rows: `description.csv`
 
-A two-column CSV (`key,value`) describing what the package contains. This is the only file an operator writes. Its name says which vocabulary the rows are in, and so which profile can build the folder:
+A two-column CSV (`key,value`) describing what the package contains. This is the only file an operator writes. The profile passed to `check` and `create` (`--profile`) says which vocabulary its rows are in:
 
-| file | vocabulary | profile |
-|---|---|---|
-| `dcschema.csv` | meemoo's dc+schema vocabulary: the key table below | `basic` |
-| `dc.csv` | Simple Dublin Core | `eark` |
+| profile | vocabulary |
+|---|---|
+| `basic` | meemoo's dc+schema vocabulary: the key table below |
+| `eark` | Simple Dublin Core |
 
-`dcschema.csv` takes the key table below. `dc.csv` takes the fifteen Simple Dublin Core elements as keys: `title`, `creator`, `subject`, `description`, `publisher`, `contributor`, `date`, `type`, `format`, `identifier`, `source`, `language`, `relation`, `coverage`, `rights`. Every one is optional and repeatable, `identifier` and `title` MUST be present at the top level, and a language tag is accepted but not written into the document. The two vocabularies are separate: a meemoo key in a `dc.csv` is an unknown key, not a silently dropped one ([ADR-0015](decisions/0015-descriptive-worlds-dc-and-mods.md)).
+Under `basic` the file takes the key table below. Under `eark` it takes the fifteen Simple Dublin Core elements as keys: `title`, `creator`, `subject`, `description`, `publisher`, `contributor`, `date`, `type`, `format`, `identifier`, `source`, `language`, `relation`, `coverage`, `rights`. Every one is optional and repeatable, `identifier` and `title` MUST be present at the top level, and a language tag is accepted but not written into the document. The two vocabularies are separate: a meemoo key under `eark` is an unknown key, not a silently dropped one ([ADR-0015](decisions/0015-descriptive-worlds-dc-and-mods.md)). Until 2026-09-28 the file was named after its vocabulary (`dcschema.csv`, `dc.csv`); the profile decides now ([ADR-0016](decisions/0016-descriptive-input-rows-or-supplied-document.md)).
 
-- Exactly one of the two files MUST be present at the top level; both at once MUST be an error. Every descriptive rows file in one input folder MUST be in the same vocabulary: a `dc.csv` inside a representation of a `dcschema.csv` package is an error.
+- The file MUST be present at the top level.
 - MUST be UTF-8 with a `key,value` header row. The tool MUST accept a UTF-8 BOM and CRLF line endings (spreadsheet tools produce both) and RFC 4180 quoting.
-- In a `dcschema.csv`, `identifier`, `title`, `description` and `created` MUST be present and non-empty: meemoo's basic content profile requires all four. In a `dc.csv`, `identifier` and `title` MUST be present. The identifier is your local catalog or inventory number; it travels with the package as its local identifier. `check` reports a missing one.
+- Under `basic`, `identifier`, `title`, `description` and `created` MUST be present and non-empty: meemoo's basic content profile requires all four. Under `eark`, `identifier` and `title` MUST be present. The identifier is your local catalog or inventory number; it travels with the package as its local identifier. `check` reports a missing one.
 - Repeat a key for multiple values (two `creator` lines for two creators), but only for keys the table lists as repeatable. Keys listed as *per-language* may repeat only with distinct language tags (`title[nl]` plus `title[en]` is fine; two `title[nl]` rows are not). A second row for a single-valued key, or a repeated language on a per-language key, MUST be an error.
-- Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`. In `dcschema.csv`, wherever a language-tagged key is used, a Dutch entry (`[nl]`) MUST be among the rows (meemoo's rule); other languages are welcome alongside, but Dutch must be present. `check` reports a missing Dutch entry.
+- Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`. Under `basic`, wherever a language-tagged key is used, a Dutch entry (`[nl]`) MUST be among the rows (meemoo's rule); other languages are welcome alongside, but Dutch must be present. `check` reports a missing Dutch entry.
 - Unknown keys MUST be an error: a typo must not silently drop metadata. Keys are matched case-insensitively (`Title` reads as `title`). The table below is the entire vocabulary; it follows the flat-expressible elements of meemoo's basic content profile.
 
 Supported keys (plain names; the specialist mapping is in [§7](#7-mapping-to-the-sip-informative-for-specialists)):
@@ -139,7 +139,7 @@ rights[nl],publiek domein
 
 ### Describing one representation
 
-A representation MAY carry its own rows file (at `representations/<name>/dcschema.csv` or `representations/<name>/dc.csv`, the same name as the package-level file) when something is true of that version only, typically a license or rights statement that differs between the master and an access copy. Same format and rules as the package-level file, with two differences:
+A representation MAY carry its own rows file (at `representations/<name>/description.csv`) when something is true of that version only, typically a license or rights statement that differs between the master and an access copy. Same format and rules as the package-level file, with two differences:
 
 - `identifier` and `title` are NOT required: the package-level description covers the work's identity. A `title` MAY still be given as a human-readable name for the version (e.g. "PDF-versie").
 - It describes the representation, not the work: keys like `created` or `creator` here refer to the making of this version.
@@ -194,9 +194,9 @@ Deliberate trade-off: because organization details come from configuration, an i
 | `representations.csv` `label` / `type` | representation METS `mets/@LABEL`; in the eark profile the type lands in `TYPE="Other"`+`csip:OTHERTYPE` and `CONTENTINFORMATIONTYPE="OTHER"`+`csip:OTHERCONTENTINFORMATIONTYPE` ([ADR-0013](decisions/0013-representation-type-from-label.md)) |
 | file order (stable, no semantics) | document order within the representation structMap; METS `ORDER` attributes are the real sequencing mechanism, deferred with the manifest (§8) |
 | `documentation/` (package and representation level) | `documentation/` folders, conformant per CSIPSTR16; METS fileSec `USE="DOCUMENTATION"` |
-| `dcschema.csv` keys | the meemoo table's elements, mapped as `dcterms:*` (`identifier`→`dcterms:identifier`, `rightsholder`→`dcterms:rightsHolder`, `ispartof`→`dcterms:isPartOf`, the rest 1:1) and `schema:*` (`artmedium`→`schema:artMedium`, `artform`→`schema:artform`), in `metadata/descriptive/dc+schema.xml`, METS dmdSec |
-| `dc.csv` keys | the unqualified Simple Dublin Core element of the same name (`title`→`<title>`), in `metadata/descriptive/dc.xml`, METS dmdSec |
-| `representations/<name>/dcschema.csv` or `dc.csv` | `representations/<name>/metadata/descriptive/*.xml`, dmdSec of that representation's METS (CSIPSTR12/13) |
+| `description.csv` keys under `basic` | the meemoo table's elements, mapped as `dcterms:*` (`identifier`→`dcterms:identifier`, `rightsholder`→`dcterms:rightsHolder`, `ispartof`→`dcterms:isPartOf`, the rest 1:1) and `schema:*` (`artmedium`→`schema:artMedium`, `artform`→`schema:artform`), in `metadata/descriptive/dc+schema.xml`, METS dmdSec |
+| `description.csv` keys under `eark` | the unqualified Simple Dublin Core element of the same name (`title`→`<title>`), in `metadata/descriptive/dc.xml`, METS dmdSec |
+| `representations/<name>/description.csv` | `representations/<name>/metadata/descriptive/*.xml`, dmdSec of that representation's METS (CSIPSTR12/13) |
 | `[lang]` suffixes | `xml:lang` attributes |
 | configuration: organizations, contacts | METS `metsHdr/agent` (`ROLE=CREATOR TYPE=ORGANIZATION` submitter; `ROLE=ARCHIVIST TYPE=ORGANIZATION` archival creator; individuals as contact agents) |
 | configuration: submission agreement | METS `altRecordID TYPE="SUBMISSIONAGREEMENT"` (SIP5) |

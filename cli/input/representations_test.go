@@ -2,13 +2,15 @@ package input
 
 import (
 	"testing"
+
+	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
 
 // twoRepTree returns the file map of a valid two-representation folder;
 // tests add their representations.csv on top.
 func twoRepTree() map[string]string {
 	return map[string]string{
-		"dcschema.csv":                     minimalCSV,
+		"description.csv":                  minimalCSV,
 		"representations/master/scan.tiff": "a",
 		"representations/access/book.pdf":  "b",
 	}
@@ -19,7 +21,7 @@ func TestRepresentationsCSV(t *testing.T) {
 	tree["representations.csv"] = "directory,label,type\nmaster,Master scan,archival\naccess,,\n"
 	root := writeTree(t, tree)
 
-	pkg, err := Read(root)
+	pkg, err := ReadDirectory(root, meemoo.Definition)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -50,7 +52,7 @@ func TestRepresentationsCSVColumnsByHeaderName(t *testing.T) {
 	tree["representations.csv"] = "Type,Directory\narchival,master\naccess-copy,access\n"
 	root := writeTree(t, tree)
 
-	pkg, err := Read(root)
+	pkg, err := ReadDirectory(root, meemoo.Definition)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -84,7 +86,7 @@ func TestRepresentationsCSVViolations(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			tree := twoRepTree()
 			tree["representations.csv"] = c.csv
-			_, err := Read(writeTree(t, tree))
+			_, err := ReadDirectory(writeTree(t, tree), meemoo.Definition)
 			assertViolation(t, err, c.want)
 		})
 	}
@@ -93,38 +95,38 @@ func TestRepresentationsCSVViolations(t *testing.T) {
 func TestRepresentationsCSVUncoveredDirectory(t *testing.T) {
 	tree := twoRepTree()
 	tree["representations.csv"] = "directory\nmaster\n"
-	_, err := Read(writeTree(t, tree))
+	_, err := ReadDirectory(writeTree(t, tree), meemoo.Definition)
 	assertViolation(t, err, "representations/access is not listed")
 }
 
 func TestRepresentationsCSVRequiresRepresentationsFolder(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":        minimalCSV,
+		"description.csv":     minimalCSV,
 		"scan.tiff":           "a",
 		"representations.csv": "directory\nx\n",
 	})
-	_, err := Read(root)
+	_, err := ReadDirectory(root, meemoo.Definition)
 	assertViolation(t, err, "requires a representations/ folder")
 }
 
 func TestRepresentationsCSVMustBeAFile(t *testing.T) {
 	tree := twoRepTree()
 	tree["representations.csv/"] = ""
-	_, err := Read(writeTree(t, tree))
+	_, err := ReadDirectory(writeTree(t, tree), meemoo.Definition)
 	assertViolation(t, err, "representations.csv is a folder")
 }
 
 // A Directory-only CSV listing every directory in lexical order is a no-op:
 // the read result equals the no-CSV read.
 func TestRepresentationsCSVDirectoryOnlyIsANoop(t *testing.T) {
-	plain, err := Read(writeTree(t, twoRepTree()))
+	plain, err := ReadDirectory(writeTree(t, twoRepTree()), meemoo.Definition)
 	if err != nil {
 		t.Fatalf("Read without CSV: %v", err)
 	}
 
 	tree := twoRepTree()
 	tree["representations.csv"] = "directory\naccess\nmaster\n"
-	withCSV, err := Read(writeTree(t, tree))
+	withCSV, err := ReadDirectory(writeTree(t, tree), meemoo.Definition)
 	if err != nil {
 		t.Fatalf("Read with CSV: %v", err)
 	}
@@ -145,7 +147,7 @@ func TestRepresentationsCSVDirectoryOnlyIsANoop(t *testing.T) {
 func TestRepresentationsCSVWithBOM(t *testing.T) {
 	tree := twoRepTree()
 	tree["representations.csv"] = "\ufeffdirectory,label\nmaster,Master scan\naccess,\n"
-	pkg, err := Read(writeTree(t, tree))
+	pkg, err := ReadDirectory(writeTree(t, tree), meemoo.Definition)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}

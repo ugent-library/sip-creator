@@ -45,7 +45,12 @@ build time.**
 - The generated package records every administrative value used (metsHdr
   agents, altRecordID): **audit the output, not the input**.
 - Input-contract validation (`check`) is config-independent: a folder's
-  conformance to the spec never depends on installation settings.
+  conformance to the spec never depends on installation settings. (Note
+  2026-09-28: `check` takes the same `--profile` flag as `create`, because
+  the profile says which vocabulary `description.csv` is in, see
+  [ADR-0016](0016-descriptive-input-rows-or-supplied-document.md). A
+  per-run flag is not an installation setting; `check` still runs with no
+  `.env`.)
 - Consequence accepted openly: one installation serves one submitting
   organization. If that assumption ever breaks, this decision must be
   revisited (per-package override files are the likely shape — deferred in

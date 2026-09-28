@@ -22,14 +22,14 @@ type repRow struct {
 // are not applied here: empty cells stay empty, and the library resolves the
 // name → label → type cascade, so the CLI and an embedding caller get
 // identical behavior.
-func (r *reader) applyRepresentations(src string, reps []Representation) []Representation {
-	rel := r.rel(src)
-	rows, decoded := r.decodeRepresentations(src)
+func (d *directory) applyRepresentations(src string, reps []Representation) []Representation {
+	rel := d.rel(src)
+	rows, decoded := d.decodeRepresentations(src)
 	if !decoded {
 		return reps
 	}
 	if len(rows) == 0 {
-		r.violate("%s: the file has no rows; list every representation directory, or delete the file", rel)
+		d.violate("%s: the file has no rows; list every representation directory, or delete the file", rel)
 		return reps
 	}
 
@@ -42,13 +42,13 @@ func (r *reader) applyRepresentations(src string, reps []Representation) []Repre
 	var ordered []Representation
 	for _, row := range rows {
 		if prev, ok := covered[row.dir]; ok {
-			r.violate("%s line %d: directory %q already has a row (line %d)", rel, row.line, row.dir, prev)
+			d.violate("%s line %d: directory %q already has a row (line %d)", rel, row.line, row.dir, prev)
 			continue
 		}
 		covered[row.dir] = row.line
 		i, ok := byName[row.dir]
 		if !ok {
-			r.violate("%s line %d: there is no directory representations/%s; every row must name an existing representation directory", rel, row.line, row.dir)
+			d.violate("%s line %d: there is no directory representations/%s; every row must name an existing representation directory", rel, row.line, row.dir)
 			continue
 		}
 		rep := reps[i]
@@ -61,7 +61,7 @@ func (r *reader) applyRepresentations(src string, reps []Representation) []Repre
 	// would silently drop content from the package.
 	for _, rep := range reps {
 		if _, ok := covered[rep.Name]; !ok {
-			r.violate("representations/%s is not listed in %s; add a row for it, or remove the directory", rep.Name, rel)
+			d.violate("representations/%s is not listed in %s; add a row for it, or remove the directory", rep.Name, rel)
 			ordered = append(ordered, rep)
 		}
 	}
@@ -74,21 +74,21 @@ func (r *reader) applyRepresentations(src string, reps []Representation) []Repre
 // values that are safe to emit as METS attributes. Returns decoded=false
 // when the file itself could not be decoded (violations recorded); a
 // decoded file with no data rows returns an empty slice.
-func (r *reader) decodeRepresentations(src string) (rows []repRow, decoded bool) {
-	rel := r.rel(src)
+func (d *directory) decodeRepresentations(src string) (rows []repRow, decoded bool) {
+	rel := d.rel(src)
 
-	cr, ok := r.openCSV(src)
+	cr, ok := d.openCSV(src)
 	if !ok {
 		return nil, false
 	}
 
 	header, err := cr.Read()
 	if errors.Is(err, io.EOF) {
-		r.violate(`%s: the file is empty; the first row must be the header "directory,label,type"`, rel)
+		d.violate(`%s: the file is empty; the first row must be the header "directory,label,type"`, rel)
 		return nil, false
 	}
 	if err != nil {
-		r.violate("%s: %v", rel, err)
+		d.violate("%s: %v", rel, err)
 		return nil, false
 	}
 
@@ -106,19 +106,19 @@ func (r *reader) decodeRepresentations(src string) (rows []repRow, decoded bool)
 		case "type":
 			col = &typeCol
 		default:
-			r.violate("%s: unknown column %q in the header; the columns are directory, label, type", rel, h)
+			d.violate("%s: unknown column %q in the header; the columns are directory, label, type", rel, h)
 			headerOK = false
 			continue
 		}
 		if *col >= 0 {
-			r.violate("%s: the header names column %q twice", rel, strings.TrimSpace(h))
+			d.violate("%s: the header names column %q twice", rel, strings.TrimSpace(h))
 			headerOK = false
 			continue
 		}
 		*col = i
 	}
 	if dirCol < 0 && headerOK {
-		r.violate(`%s: the header has no directory column; the first row must be a header like "directory,label,type"`, rel)
+		d.violate(`%s: the header has no directory column; the first row must be a header like "directory,label,type"`, rel)
 		headerOK = false
 	}
 	if !headerOK {
@@ -141,30 +141,30 @@ func (r *reader) decodeRepresentations(src string) (rows []repRow, decoded bool)
 		if err != nil {
 			// The reader may not recover its position after a syntax
 			// error; report it (the csv error names the line) and stop.
-			r.violate("%s: %v", rel, err)
+			d.violate("%s: %v", rel, err)
 			break
 		}
 		line, _ := cr.FieldPos(0)
 
 		if len(row) != len(header) {
-			r.violate("%s line %d: expected %d columns per the header, got %d", rel, line, len(header), len(row))
+			d.violate("%s line %d: expected %d columns per the header, got %d", rel, line, len(header), len(row))
 			continue
 		}
 		// A trailing space in a directory name is invisible in the file and
 		// can never match a portable-charset directory, so trim it away.
 		dir := strings.TrimSpace(cell(row, dirCol))
 		if dir == "" {
-			r.violate("%s line %d: the directory cell is empty; every row must name a representation directory", rel, line)
+			d.violate("%s line %d: the directory cell is empty; every row must name a representation directory", rel, line)
 			continue
 		}
 		label, kind := cell(row, labelCol), cell(row, typeCol)
 		// Whether a value may be emitted is the library's rule, the same
 		// one an embedding caller hits; the decoder adds file/line context.
 		if err := build.ValidateAttributeText(label); err != nil {
-			r.violate("%s line %d: label: %v", rel, line, err)
+			d.violate("%s line %d: label: %v", rel, line, err)
 		}
 		if err := build.ValidateAttributeText(kind); err != nil {
-			r.violate("%s line %d: type: %v", rel, line, err)
+			d.violate("%s line %d: type: %v", rel, line, err)
 		}
 		// Keep the row even when a value is bad: matching and coverage
 		// findings should still surface (collect-all).

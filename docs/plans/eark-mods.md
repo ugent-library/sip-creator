@@ -164,6 +164,14 @@ the DC table while walking the folder, before any profile is known.
    decide its meaning, which forces a profile flag onto `check`. Rejected:
    one merged key space serving both standards, which reintroduces the
    silent lossy mapping ADR-0011 removed.
+   (Superseded 2026-09-28, later: one name, `description.csv`, under every
+   profile, and `--profile` on `check` as on `create` says which
+   vocabulary it is in. The rejected profile flag on `check` is what was
+   chosen after all: ADR-0010 puts the profile on the command line, and
+   its config rule is about `.env`, which `check` still does without.
+   `dcschema.csv` and `dc.csv` are withdrawn names and `mods.csv` will
+   not exist; `items.csv` stays, allowed only under the profile that
+   reads it. ADR-0016 carries the note.)
 10. **Schema set as profile data.** `mods-3-7.xsd` joins the bundle (it
     imports `xlink.xsd` and `xml.xsd`, already bundled). A `Definition`
     lists the XSD files its packages ship, concatenated from the lists
@@ -207,6 +215,11 @@ where the file is optional:
 
 (`dc.xml` and `mods.xml`, finished documents, were two more rows of this
 table until 2026-09-28; deferred with decision 6.)
+(Since later on 2026-09-28 the three rows are one file, `description.csv`,
+whose vocabulary the `--profile` flag decides; the rows above say what it
+holds under each profile. Of the rules below, the first three and the
+last are moot: the profile flag decides, and the former names are not
+reserved.)
 
 `items.csv` MAY accompany `mods.csv` at the input root, one row per physical
 copy, with the columns `callnumber`, `barcode` and `enumeration`.
@@ -494,37 +507,31 @@ The library route is complete after this step.
 
 ### S4: CLI rows
 
-`dcschema.csv`, `dc.csv`, the `metadata.csv` violation and the one-standard
-rule between those two arrived in S2; this step adds the MODS files.
+`description.csv` under `basic` and `eark` arrived in S2 (named by
+standard until 2026-09-28, when the profile flag took over); this step
+adds MODS rows and `items.csv`.
 
-- [ ] **The mods rows file.** In `cli/input`, the one reader for
-      `key[lang],value` rows (header check, key parsing, line numbers for
-      violations) wraps the decoded `sip.Term` values of a `mods.csv` in a
-      mods `Description`: a third `vocabulary` value in `cli/input` next
-      to the meemoo and eark ones, naming the file and the terms type
-      (there is no builder per world since 2026-09-28).
-- [ ] **Reserved names.** `mods.csv` and `items.csv` join the reserved
-      names at the root and inside representation directories (`items.csv`
-      root only).
-- [ ] **One source per level, one standard per folder, three standards.**
-      More than one descriptive file at one level is a violation; none at
-      the root is a violation; the folder's standard is the standard of
-      its first descriptive file, and any file of another standard
-      anywhere is a violation naming both files.
+- [ ] **MODS rows.** `profiles/earkmods`'s encoder implements `NewDescription`
+      like the DC worlds, so `check --profile eark-mods` and `create
+      --profile eark-mods` read `description.csv` through the same
+      decoder with no change to `cli/input`'s rows code. Items need a
+      second input: extend `NewDescription`, or add an optional interface the
+      CLI detects as the engine detects `IdentifierSwapper`; decide then.
+- [ ] **Reserved names.** `items.csv` joins the reserved names at the
+      root.
 - [ ] **`items.csv`.** Decoded like `representations.csv`: closed header
       in any order, case-insensitive, unknown or repeated column a
       violation; `callnumber` non-empty on every row; `barcode` unique;
-      allowed only at the root and only next to `mods.csv`.
+      allowed only at the root and only under a profile that takes items.
 - [ ] **Mapping onto `build.Input`.** `Package` carries the decoded
       `sip.Description` per level; `BuilderInput` assigns it only when a
       file was read (the typed-nil pitfall from S2).
-- [ ] **Tests.** mods rows, items rows and each items violation, two files
-      at one level, mixed standards across all three, `items.csv` next to
-      `dc.csv` or `dcschema.csv`.
-- [ ] **Docs.** Input spec §1 (reserved names), §3 (the five row and
-      document files, the MODS key table, `items.csv`), §7 (mapping
-      table); README Input section; design doc CLI paragraph. Commit
-      `Added: mods.csv and items.csv rows in the input folder`.
+- [ ] **Tests.** mods rows, items rows and each items violation,
+      `items.csv` under `basic` or `eark`.
+- [ ] **Docs.** Input spec §1 (reserved names), §3 (the MODS key table
+      under `eark-mods`, `items.csv`), §7 (mapping table); README Input
+      section; design doc CLI paragraph. Commit
+      `Added: MODS rows and items.csv in the input folder`.
 - [ ] **Acceptance.** `go test ./...`; `./build.sh basic` and `./build.sh
       eark` VALID with 0 warnings; both comparisons clean.
 
@@ -538,8 +545,8 @@ as a deferred item (§8).
 
 ### S6: acceptance and closing docs
 
-- [ ] **Fixture.** `tmp/eark-mods/`: a copy of `tmp/eark` with `dc.csv`
-      replaced by `mods.csv` (`identifier`, `title[nl]`) and an `items.csv`
+- [ ] **Fixture.** `tmp/eark-mods/`: a copy of `tmp/eark` whose
+      `description.csv` holds MODS keys (`identifier`, `title[nl]`) and an `items.csv`
       of two copies, one carrying an enumeration.
 - [ ] **XML catalog.** `scripts/schema-catalog.xml` rewriting the loc.gov
       URLs the MODS schema imports (`http://www.loc.gov/mods/xml.xsd`,
@@ -667,3 +674,11 @@ as a deferred item (§8).
   names the term's position, mapped back to the row's line. Findings
   name keys in both worlds (`description is required but missing`).
   ADR-0015 and ADR-0018 carry dated notes; S3's boxes follow.
+- **The rows file became `description.csv`** later still, and `check`
+  takes `--profile` as `create` does: the profile says which vocabulary
+  the rows are in, the CLI hands decoded rows to the encoder's `NewDescription`,
+  and `cli/input` imports no profile package. The names by standard, the
+  one-standard-per-folder rule and `mods.csv` are withdrawn (ADR-0016's
+  note; ADR-0010 notes that a per-run flag is not configuration).
+  Fixtures renamed; output unchanged, both structural comparisons clean.
+  S4's boxes follow.

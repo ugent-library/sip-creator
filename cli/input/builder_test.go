@@ -14,7 +14,7 @@ import (
 )
 
 // The embedding-caller contract: a hand-constructed build.Input, with
-// no dcschema.csv or siegfried.json anywhere on disk, must build the same
+// no description.csv or siegfried.json anywhere on disk, must build the same
 // package graph the folder convention produces. The folder is one
 // transport, not the API.
 func TestBuilderInputEquivalence(t *testing.T) {
@@ -36,10 +36,10 @@ func TestBuilderInputEquivalence(t *testing.T) {
 		"description[nl],Testbeschrijving\n" +
 		"created,2026\n"
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":                     csv,
+		"description.csv":                  csv,
 		"representations/master/scan.tiff": "essence bytes",
 	})
-	pkg, err := Read(root)
+	pkg, err := ReadDirectory(root, meemoo.Definition)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestBuilderInputEquivalence(t *testing.T) {
 		t.Fatal(err)
 	}
 	handIn := &build.Input{
-		Descriptive: meemoo.Terms{
+		Description: meemoo.Terms{
 			{Key: "identifier", Value: "ID-1"},
 			{Key: "title", Value: "Test"},
 			{Key: "description", Lang: "nl", Value: "Testbeschrijving"},
@@ -95,18 +95,18 @@ func localID(p *sip.Package) string {
 	return p.Root.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]
 }
 
-// A representation without its own dcschema.csv must map onto a nil
+// A representation without its own description.csv must map onto a nil
 // Descriptive. A nil eark.Terms stored in the interface field would read as
 // a present, empty description and earn the representation a descriptive
 // document it never had.
 func TestBuilderInputRepresentationWithoutDescriptive(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":                        minimalCSV,
-		"representations/access/dcschema.csv": "key,value\ntitle,Access copy\n",
-		"representations/access/scan.jpg":     "access bytes",
-		"representations/master/scan.tiff":    "master bytes",
+		"description.csv":                        minimalCSV,
+		"representations/access/description.csv": "key,value\ntitle,Access copy\n",
+		"representations/access/scan.jpg":        "access bytes",
+		"representations/master/scan.tiff":       "master bytes",
 	})
-	pkg, err := Read(root)
+	pkg, err := ReadDirectory(root, meemoo.Definition)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -117,12 +117,12 @@ func TestBuilderInputRepresentationWithoutDescriptive(t *testing.T) {
 	for _, r := range in.Representations {
 		switch r.Name {
 		case "access":
-			if r.Descriptive == nil {
-				t.Error("access: Descriptive is nil, want its title term")
+			if r.Description == nil {
+				t.Error("access: Description is nil, want its title term")
 			}
 		case "master":
-			if r.Descriptive != nil {
-				t.Errorf("master: Descriptive = %#v, want nil (no dcschema.csv)", r.Descriptive)
+			if r.Description != nil {
+				t.Errorf("master: Description = %#v, want nil (no description.csv)", r.Description)
 			}
 		}
 	}

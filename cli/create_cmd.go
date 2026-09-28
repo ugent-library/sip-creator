@@ -8,12 +8,11 @@ import (
 	"github.com/ugent-library/sip-creator/archive"
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/cli/input"
-	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
 func init() {
-	createCmd.Flags().String("profile", "", "Set the profile of the SIP")
+	addProfileFlag(createCmd)
 	createCmd.Flags().Bool("no-zip", false, "Skip zipping; the package directory is the deliverable (e.g. for external bagging)")
 	createCmd.Flags().String("status", "", "Record status of the package (SIP3 vocabulary: new, supplement, replacement, test, version, delete); omitted means new")
 	createCmd.Flags().String("updates", "", "Identifier of the package this one updates; reused as this package's identifier (mets/@OBJID)")
@@ -27,17 +26,14 @@ var createCmd = &cobra.Command{
 	Args:         cobra.ExactArgs(2),
 	SilenceUsage: true, // a bad input folder is not a usage error
 	RunE: func(cmd *cobra.Command, args []string) error {
-		flagProfile, _ := cmd.Flags().GetString("profile")
-
-		def, ok := profiles.Get(flagProfile)
-		if !ok {
-			return fmt.Errorf("unknown profile %q (available: %s)",
-				flagProfile, strings.Join(profiles.Names(), ", "))
+		def, err := resolveProfile(cmd)
+		if err != nil {
+			return err
 		}
 
 		// The submitting organization is deployment config, not profile
 		// data: fill it into the definition before building.
-		def, err := def.WithSubmitter(cfg.Submitter.Name, cfg.Submitter.ORID)
+		def, err = def.WithSubmitter(cfg.Submitter.Name, cfg.Submitter.ORID)
 		if err != nil {
 			return fmt.Errorf("%w (set SIP_SUBMITTER_NAME and SIP_SUBMITTER_OR_ID)", err)
 		}
@@ -70,7 +66,7 @@ var createCmd = &cobra.Command{
 			def.Declaration.Type = cfg.ContentCategory
 		}
 
-		pkg, err := input.Read(args[0])
+		pkg, err := input.ReadDirectory(args[0], def)
 		if err != nil {
 			return fmt.Errorf("input folder %s does not conform to the input specification:\n%w", args[0], err)
 		}

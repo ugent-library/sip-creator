@@ -13,17 +13,17 @@ import (
 // one), and row width is left for the caller to check per row, for a better
 // message. Returns ok=false when the file is unreadable or not UTF-8, with
 // the violation recorded.
-func (r *reader) openCSV(src string) (cr *csv.Reader, ok bool) {
-	rel := r.rel(src)
+func (d *directory) openCSV(src string) (cr *csv.Reader, ok bool) {
+	rel := d.rel(src)
 
 	data, err := os.ReadFile(src)
 	if err != nil {
-		r.violate("%s: %v", rel, err)
+		d.violate("%s: %v", rel, err)
 		return nil, false
 	}
 	data = bytes.TrimPrefix(data, []byte("\ufeff"))
 	if !utf8.Valid(data) {
-		r.violate("%s: not valid UTF-8; re-export the file as UTF-8", rel)
+		d.violate("%s: not valid UTF-8; re-export the file as UTF-8", rel)
 		return nil, false
 	}
 

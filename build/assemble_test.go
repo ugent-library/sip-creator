@@ -30,10 +30,10 @@ func fileMD5(t *testing.T, path string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// testDescriptive satisfies the strictest registered profile: meemoo's
+// testDescription satisfies the strictest registered profile: meemoo's
 // four required elements, Dutch entries on the lang-tagged ones. It is the
 // basic profile's input; eark tests swap in identityTerms.
-func testDescriptive() meemoo.Terms {
+func testDescription() meemoo.Terms {
 	return meemoo.Terms{
 		{Key: "identifier", Value: "local-id-001"},
 		{Key: "title", Lang: "nl", Value: "Catus Testus"},
@@ -86,7 +86,7 @@ func newTestBuilder(t *testing.T) (b *build.Builder, in *build.Input, outDir str
 	cat := writeEssence(t, inDir, "cat.jpg", "not really a jpeg")
 
 	in = &build.Input{
-		Descriptive: testDescriptive(),
+		Description: testDescription(),
 		Representations: []build.SourceRepresentation{
 			{Name: "master", Files: []build.SourceFile{cat}},
 		},
@@ -468,15 +468,15 @@ func TestInputValidate(t *testing.T) {
 		break_ func(*build.Input)
 		want   string
 	}{
-		{"no descriptive", func(c *build.Input) { c.Descriptive = nil }, "no descriptive metadata"},
+		{"no descriptive", func(c *build.Input) { c.Description = nil }, "no descriptive metadata"},
 		{"invalid term", func(c *build.Input) {
-			c.Descriptive = append(c.Descriptive.(meemoo.Terms), sip.Term{Key: "titel", Value: "x"})
+			c.Description = append(c.Description.(meemoo.Terms), sip.Term{Key: "titel", Value: "x"})
 		}, "not in the descriptive vocabulary"},
 		{"no identifier", func(c *build.Input) {
-			c.Descriptive = meemoo.Terms{{Key: "title", Value: "x"}}
+			c.Description = meemoo.Terms{{Key: "title", Value: "x"}}
 		}, "identifier is required"},
 		{"no title", func(c *build.Input) {
-			c.Descriptive = meemoo.Terms{{Key: "identifier", Value: "x"}}
+			c.Description = meemoo.Terms{{Key: "identifier", Value: "x"}}
 		}, "title is required"},
 		{"no representations", func(c *build.Input) { c.Representations = nil }, "at least one version"},
 		{"bad name", func(c *build.Input) { c.Representations[0].Name = "master copy" }, "may only contain"},
@@ -496,7 +496,7 @@ func TestInputValidate(t *testing.T) {
 			c.PackageIdentifier = "not-a-uuid"
 		}, "uuid-<uuid> form"},
 		{"invalid representation descriptive", func(c *build.Input) {
-			c.Representations[0].Descriptive = meemoo.Terms{{Key: "titel", Value: "x"}}
+			c.Representations[0].Description = meemoo.Terms{{Key: "titel", Value: "x"}}
 		}, "not in the descriptive vocabulary"},
 		{"received premis claims the generated name", func(c *build.Input) {
 			c.Premis = []build.SourceFile{{Source: "/x/premis.xml", Path: "premis.xml"}}
@@ -527,7 +527,7 @@ func TestInputValidate(t *testing.T) {
 // required.
 func TestAssembleRepresentationDescriptive(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
-	in.Representations[0].Descriptive = meemoo.Terms{
+	in.Representations[0].Description = meemoo.Terms{
 		{Key: "license", Value: "publiek domein"},
 	}
 
@@ -550,7 +550,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	// With an identifier term present, the representation identifier is
 	// swapped in, mirroring the package-level behavior.
 	b2, in2, _ := newTestBuilder(t)
-	in2.Representations[0].Descriptive = meemoo.Terms{
+	in2.Representations[0].Description = meemoo.Terms{
 		{Key: "identifier", Value: "rep-local-1"},
 	}
 	pkg2, err := b2.Assemble(basicDef(t), in2)
@@ -599,8 +599,8 @@ func identifierTerm(d sip.Description) string {
 // standard has no swap (ADR-0012).
 func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
-	in.Descriptive = identityTerms()
-	in.Representations[0].Descriptive = eark.Terms{
+	in.Description = identityTerms()
+	in.Representations[0].Description = eark.Terms{
 		{Key: "identifier", Value: "rep-local-1"},
 	}
 
@@ -626,7 +626,7 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 // (ADR-0013).
 func TestAssembleRepresentationDeclaration(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
-	in.Descriptive = identityTerms()
+	in.Description = identityTerms()
 	pkg, err := b.Assemble(earkDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
@@ -671,7 +671,7 @@ func TestAssembleRepresentationCascade(t *testing.T) {
 			Files: []build.SourceFile{writeEssence(t, inDir, "c.tiff", "c")}},
 	}
 
-	in.Descriptive = identityTerms()
+	in.Description = identityTerms()
 	pkg, err := b.Assemble(earkDef(t), in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
@@ -828,13 +828,13 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 		want string
 	}{
 		{"unknown type to eark", earkDef(t), otherDescription{}, "eark.Terms"},
-		{"meemoo terms to eark", earkDef(t), testDescriptive(), "meemoo.Terms, not Simple Dublin Core"},
+		{"meemoo terms to eark", earkDef(t), testDescription(), "meemoo.Terms, not Simple Dublin Core"},
 		{"simple dc terms to basic", basicDef(t), identityTerms(), "eark.Terms, not meemoo dc+schema"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			b, in, outDir := newTestBuilder(t)
-			in.Descriptive = c.desc
+			in.Description = c.desc
 			_, err := b.Build(c.def, in)
 			if err == nil || !strings.Contains(err.Error(), c.want) {
 				t.Fatalf("Build error = %v, want the mismatch mentioning %q", err, c.want)
@@ -844,8 +844,8 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	}
 
 	b, in, outDir := newTestBuilder(t)
-	in.Descriptive = identityTerms()
-	in.Representations[0].Descriptive = otherDescription{}
+	in.Description = identityTerms()
+	in.Representations[0].Description = otherDescription{}
 	_, err := b.Build(earkDef(t), in)
 	if err == nil || !strings.Contains(err.Error(), `representation "master"`) {
 		t.Fatalf("Build error = %v, want the mismatch naming the representation", err)
@@ -891,7 +891,7 @@ func TestBuildDefinitionWithoutEncoderWritesNothing(t *testing.T) {
 // profile, all before any side effect.
 func TestBuildRequiredPerStandard(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
-	in.Descriptive = identityTerms()
+	in.Description = identityTerms()
 	if _, err := b.Build(earkDef(t), in); err != nil {
 		t.Fatalf("eark Build refused identity-only terms: %v", err)
 	}
@@ -909,7 +909,7 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			b, in, outDir := newTestBuilder(t)
-			in.Descriptive = c.desc
+			in.Description = c.desc
 			_, err := b.Build(c.def, in)
 			if err == nil || !strings.Contains(err.Error(), c.want) {
 				t.Fatalf("Build error = %v, want %q", err, c.want)

@@ -57,9 +57,11 @@ received-PREMIS check next to the PREMIS template.
 `sip`, `store`, `schemas`, `encoders/*`. The CLI also imports the profile
 packages directly for `Terms` and `ResolveKey`: the file name
 `dcschema.csv` already means the meemoo world. (Since later on
-2026-09-28, for `Terms` alone: the CLI decodes rows into `sip.Term`
-values and wraps them in the world's `Terms`; `ResolveKey` is gone. See
-the note of that date on ADR-0015.)
+2026-09-28, not at all: the CLI decodes rows into `sip.Term` values and
+hands them to the profile's encoder, whose `NewDescription` wraps them in the
+world's `Terms`; `ResolveKey` is gone, the rows file is `description.csv`
+under every profile, and `cli/input` imports no profile package. See the
+notes of that date on ADR-0015 and ADR-0016.)
 
 **The engine's tests are an external test package.** `build_test` with an
 `export_test.go` that exposes the assembly phase, so the tests keep

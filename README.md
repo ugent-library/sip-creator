@@ -22,9 +22,10 @@ ingest into the Flemish heritage archive.
   [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
   built on E-ARK SIP 2.0.4, for ingest into the Flemish heritage archive.
 * Builds a complete package from a plain input folder: your content files plus a simple
-  descriptive rows file (`dcschema.csv` for meemoo, `dc.csv` for plain E-ARK), out comes
-  a SIP with generated METS and PREMIS metadata and natively computed checksums.
-* Validates an input folder before building (`check`), reporting every violation at once.
+  descriptive rows file (`description.csv`), out comes a SIP with generated METS and
+  PREMIS metadata and natively computed checksums.
+* Validates an input folder before building (`check`, with the same `--profile` as
+  `create`), reporting every violation at once.
 * Optional PRONOM format identification based on a pre-computed
   [Siegfried](https://github.com/richardlehane/siegfried) report (see Format characterization).
 
@@ -76,6 +77,13 @@ Further flags:
   (`mets/@OBJID`).
 * `--no-zip` to skip zipping when the package directory itself is what you need.
 
+To check a folder without building anything, pass the same profile; `check` needs no
+configuration:
+
+```
+./bin/sip-creator check --profile eark ./your-input
+```
+
 **Delivering to an E-ARK-conformant repository (eark profile):** the zip is the
 deliverable; ingest it directly.
 
@@ -123,7 +131,7 @@ pkg, err := builder.Build(def, &build.Input{
 	// Simple Dublin Core from eark.Terms, the basic profile meemoo's
 	// dc+schema document from meemoo.Terms. Both are lists of sip.Term,
 	// keyed by the plain keys of the input specification's tables.
-	Descriptive: eark.Terms{
+	Description: eark.Terms{
 		{Key: "identifier", Value: "inv.2024.001"},
 		{Key: "title", Value: "Correspondentie 1914-1918"},
 		{Key: "description", Value: "Brieven uit de collectie."},
@@ -171,12 +179,12 @@ On the CLI the same fields come from the optional `representations.csv`
 ## Input
 
 One folder is one package. The smallest valid input is a descriptive rows file,
-`dcschema.csv` (meemoo profiles) or `dc.csv` (the `eark` profile), plus your content
-files, flat in one folder (they become the package's single representation):
+`description.csv`, plus your content files, flat in one folder (they become the
+package's single representation):
 
 ```
 your-input/
-├── dcschema.csv
+├── description.csv
 ├── scan-001.tif
 └── scan-002.tif
 ```
@@ -187,7 +195,7 @@ and the optional extras slot in per package or per representation:
 
 ```
 your-input/
-├── dcschema.csv              required: descriptive metadata (dc.csv for the eark profile)
+├── description.csv           required: descriptive metadata
 ├── representations.csv       optional: a label and type per representation
 ├── siegfried.json            optional: characterization sidecar (see Format characterization)
 ├── documentation/            optional: context material about the package
@@ -198,7 +206,7 @@ your-input/
     ├── master/
     │   ├── scan-001.tif
     │   ├── scan-002.tif
-    │   ├── dcschema.csv      optional: terms that apply to this version only
+    │   ├── description.csv   optional: terms that apply to this version only
     │   ├── documentation/    optional
     │   │   └── notes.txt
     │   └── premis/           optional
@@ -208,14 +216,12 @@ your-input/
         └── scan-002.jpg
 ```
 
-The rows file is a two-column `key,value` file with a header row. Its name says which
-vocabulary the rows are in: `dcschema.csv` holds meemoo's dc+schema vocabulary (the
-`basic` profile), `dc.csv` Simple Dublin Core (the `eark` profile), and a folder uses
-one name throughout. `dcschema.csv` keys come from meemoo's closed vocabulary of Dublin
-Core terms plus two schema.org properties; `dc.csv` keys are the fifteen Simple Dublin
-Core elements (both tables are in the [input specification](docs/input-spec.md)). Repeat
-a key for multiple values, and tag a value's language in square brackets where it
-matters:
+The rows file is a two-column `key,value` file with a header row. The profile you pass
+to `check` and `create` says which vocabulary the rows are in: under `basic` the keys
+come from meemoo's closed vocabulary of Dublin Core terms plus two schema.org
+properties; under `eark` they are the fifteen Simple Dublin Core elements (both tables
+are in the [input specification](docs/input-spec.md)). Repeat a key for multiple values,
+and tag a value's language in square brackets where it matters:
 
 ```csv
 key,value
@@ -231,9 +237,9 @@ extent[nl],48 foto's
 rights[nl],publiek domein
 ```
 
-`identifier` and `title` are always required. A `dcschema.csv` also requires `description`
-and `created` (meemoo's basic content profile), and a Dutch (`[nl]`) entry wherever a
-language-tagged key is used; `check` reports all of these. An unknown key is an error: a
+`identifier` and `title` are always required. Under `basic`, `description` and `created`
+are required too (meemoo's basic content profile), as is a Dutch (`[nl]`) entry wherever
+a language-tagged key is used; `check` reports all of these. An unknown key is an error: a
 typo must not silently drop metadata.
 
 The optional `representations.csv` gives each representation folder a display
@@ -256,8 +262,8 @@ package. The full rules are in the
 
 In short:
 
-* **`dcschema.csv` or `dc.csv`** (required, exactly one): the descriptive
-  metadata, see the example above.
+* **`description.csv`** (required): the descriptive metadata, see the example
+  above.
 * **Content**: either flat in the folder (one representation, named after the
   input folder itself), or one folder per version under
   `representations/<your-name>/`. Names are free-form (letters, digits,

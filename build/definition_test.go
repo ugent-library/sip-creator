@@ -44,7 +44,7 @@ func meemooIdentityTerms() meemoo.Terms {
 // the profile, and never to Simple Dublin Core terms.
 func TestInputValidateAppliesStandardRules(t *testing.T) {
 	_, in, _ := newTestBuilder(t)
-	in.Descriptive = append(testDescriptive(),
+	in.Description = append(testDescription(),
 		sip.Term{Key: "abstract", Lang: "nl", Value: "een"},
 		sip.Term{Key: "abstract", Lang: "nl", Value: "twee"})
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), "more than once") {
@@ -52,19 +52,19 @@ func TestInputValidateAppliesStandardRules(t *testing.T) {
 	}
 
 	_, in, _ = newTestBuilder(t)
-	in.Descriptive = append(testDescriptive(), sip.Term{Key: "subject", Lang: "en", Value: "cats"})
+	in.Description = append(testDescription(), sip.Term{Key: "subject", Lang: "en", Value: "cats"})
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `"nl"`) {
 		t.Errorf("subject without a Dutch entry accepted: %v", err)
 	}
 
 	_, in, _ = newTestBuilder(t)
-	in.Representations[0].Descriptive = meemoo.Terms{{Key: "title", Lang: "en", Value: "Cats"}}
+	in.Representations[0].Description = meemoo.Terms{{Key: "title", Lang: "en", Value: "Cats"}}
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `representation "master"`) {
 		t.Errorf("representation title without a Dutch entry accepted: %v", err)
 	}
 
 	_, in, _ = newTestBuilder(t)
-	in.Descriptive = append(identityTerms(),
+	in.Description = append(identityTerms(),
 		sip.Term{Key: "description", Lang: "en", Value: "one"},
 		sip.Term{Key: "description", Lang: "en", Value: "two"})
 	if err := in.Validate(); err != nil {

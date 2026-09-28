@@ -4,19 +4,21 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
 
 // readCSV runs Read over a minimal flat tree carrying the given
-// dcschema.csv, so the decoder is exercised through the real entry point.
+// description.csv under the basic profile, so the decoder is exercised
+// through the real entry point.
 func readCSV(t *testing.T, csv string) (*Package, error) {
 	t.Helper()
 	root := writeTree(t, map[string]string{
-		"dcschema.csv": csv,
-		"scan.tiff":    "x",
+		"description.csv": csv,
+		"scan.tiff":       "x",
 	})
-	return Read(root)
+	return ReadDirectory(root, meemoo.Definition)
 }
 
 func TestRowsHappy(t *testing.T) {
@@ -53,9 +55,9 @@ func TestRowsHappy(t *testing.T) {
 		{Key: "abstract", Lang: "en", Value: "A photo album"},
 		{Key: "artmedium", Lang: "nl", Value: "zilvergelatinedruk"},
 	}
-	got, ok := pkg.Descriptive.(meemoo.Terms)
+	got, ok := pkg.Description.(meemoo.Terms)
 	if !ok || len(got) != len(want) {
-		t.Fatalf("got %T with %d terms, want %d meemoo terms:\n%v", pkg.Descriptive, len(got), len(want), pkg.Descriptive)
+		t.Fatalf("got %T with %d terms, want %d meemoo terms:\n%v", pkg.Description, len(got), len(want), pkg.Description)
 	}
 	for i, w := range want {
 		if got[i] != w {
@@ -64,8 +66,8 @@ func TestRowsHappy(t *testing.T) {
 	}
 }
 
-// A dcschema.csv is meemoo's: a language-tagged key without a Dutch entry
-// is a violation at check time, not only at build.
+// Under the basic profile the rows are meemoo's: a language-tagged key
+// without a Dutch entry is a violation at check time, not only at build.
 func TestRowsCSVRequiresDutch(t *testing.T) {
 	_, err := readCSV(t, minimalCSV+"abstract[en],A photo album\n")
 	assertViolation(t, err, `none in "nl"`)
@@ -139,28 +141,28 @@ func TestRowsPerLanguageRepeat(t *testing.T) {
 
 func TestRepresentationCSVNeedsNoIdentity(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":                        minimalCSV,
-		"representations/master/scan.tiff":    "x",
-		"representations/master/dcschema.csv": "key,value\nlicense,publiek domein\n",
+		"description.csv":                        minimalCSV,
+		"representations/master/scan.tiff":       "x",
+		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	pkg, err := Read(root)
+	pkg, err := ReadDirectory(root, meemoo.Definition)
 	if err != nil {
-		t.Fatalf("rep-level dcschema.csv must not require identifier/title: %v", err)
+		t.Fatalf("rep-level description.csv must not require identifier/title: %v", err)
 	}
-	got, ok := pkg.Representations[0].Descriptive.(meemoo.Terms)
+	got, ok := pkg.Representations[0].Description.(meemoo.Terms)
 	if !ok || len(got) != 1 || got[0].Key != "license" {
-		t.Errorf("rep descriptive = %#v", pkg.Representations[0].Descriptive)
+		t.Errorf("rep descriptive = %#v", pkg.Representations[0].Description)
 	}
 }
 
 func TestRepresentationCSVDuplicateIdentifier(t *testing.T) {
 	// Identity is optional at rep level, but two identifiers stay ambiguous.
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":                        minimalCSV,
-		"representations/master/scan.tiff":    "x",
-		"representations/master/dcschema.csv": "key,value\nidentifier,A\nidentifier,B\n",
+		"description.csv":                        minimalCSV,
+		"representations/master/scan.tiff":       "x",
+		"representations/master/description.csv": "key,value\nidentifier,A\nidentifier,B\n",
 	})
-	_, err := Read(root)
+	_, err := ReadDirectory(root, meemoo.Definition)
 	assertViolation(t, err, "exactly one")
 }
 
@@ -174,68 +176,46 @@ func TestRowsQuotedNewline(t *testing.T) {
 	}
 }
 
-// The withdrawn name is refused with the rename hint, and the folder still
-// counts as having no descriptive rows.
-func TestRowsWithdrawnMetadataCSV(t *testing.T) {
-	root := writeTree(t, map[string]string{
-		"metadata.csv": minimalCSV,
-		"scan.tiff":    "x",
-	})
-	_, err := Read(root)
-	assertViolation(t, err, "metadata.csv is no longer read")
-	assertViolation(t, err, "descriptive rows are missing")
-}
-
-// dc.csv decodes into Simple Dublin Core terms through the same row syntax.
-func TestRowsDCCSV(t *testing.T) {
-	root := writeTree(t, map[string]string{
-		"dc.csv":    minimalDC + "coverage,Gent\n",
-		"scan.tiff": "x",
-	})
-	pkg, err := Read(root)
+// The profile, not the file, says which vocabulary the rows are in: the
+// same description.csv is Simple Dublin Core under eark and refused under
+// basic, where coverage is not a key.
+func TestRowsProfileDecidesTheVocabulary(t *testing.T) {
+	tree := map[string]string{
+		"description.csv": minimalDC + "coverage,Gent\n",
+		"scan.tiff":       "x",
+	}
+	pkg, err := ReadDirectory(writeTree(t, tree), eark.Definition)
 	if err != nil {
-		t.Fatalf("Read: %v", err)
+		t.Fatalf("Read under eark: %v", err)
 	}
-	got, ok := pkg.Descriptive.(eark.Terms)
+	got, ok := pkg.Description.(eark.Terms)
 	if !ok || len(got) != 3 || got[0].Key != "identifier" || got[2].Key != "coverage" {
-		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Descriptive)
+		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Description)
 	}
+
+	_, err = ReadDirectory(writeTree(t, tree), meemoo.Definition)
+	assertViolation(t, err, `unknown key "coverage"`)
 }
 
-// dc.csv knows only the fifteen Simple DC elements: meemoo's keys are
-// unknown there, at both levels.
-func TestRowsDCCSVRefusesMeemooKeys(t *testing.T) {
+// Under eark only the fifteen Simple DC elements are keys: meemoo's keys
+// are unknown there, at both levels.
+func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dc.csv":                           minimalDC + "abstract,x\n",
-		"representations/master/scan.tiff": "x",
-		"representations/master/dc.csv":    "key,value\nlicense,publiek domein\n",
+		"description.csv":                        minimalDC + "abstract,x\n",
+		"representations/master/scan.tiff":       "x",
+		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	_, err := Read(root)
+	_, err := ReadDirectory(root, eark.Definition)
 	assertViolation(t, err, `unknown key "abstract"`)
 	assertViolation(t, err, `unknown key "license"`)
 }
 
-// One rows file per level: both names at the root is a violation naming
-// both files.
-func TestRowsTwoFilesAtOneLevel(t *testing.T) {
-	root := writeTree(t, map[string]string{
-		"dcschema.csv": minimalCSV,
-		"dc.csv":       minimalDC,
-		"scan.tiff":    "x",
-	})
-	_, err := Read(root)
-	assertViolation(t, err, "dc.csv and dcschema.csv are both present")
-}
-
-// One vocabulary per folder: a dc.csv inside a representation of a
-// dcschema.csv package is a violation naming both files.
-func TestRowsMixedVocabularies(t *testing.T) {
-	root := writeTree(t, map[string]string{
-		"dcschema.csv":                     minimalCSV,
-		"representations/master/scan.tiff": "x",
-		"representations/master/dc.csv":    "key,value\ntitle,Master\n",
-	})
-	_, err := Read(root)
-	assertViolation(t, err, "same vocabulary")
-	assertViolation(t, err, "representations/master/dc.csv is Simple Dublin Core but dcschema.csv is meemoo dc+schema")
+// A definition without an encoder cannot say what the rows mean; it is
+// refused before the folder is touched, with the message Build gives.
+func TestReadDirectoryRequiresAnEncoder(t *testing.T) {
+	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "scan.tiff": "x"})
+	_, err := ReadDirectory(root, build.Definition{Name: "bare"})
+	if err == nil || !strings.Contains(err.Error(), "names no descriptive encoder") {
+		t.Fatalf("want the missing encoder refused, got %v", err)
+	}
 }

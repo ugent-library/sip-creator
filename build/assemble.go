@@ -78,7 +78,7 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 }
 
 func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) {
-	d := in.Descriptive
+	d := in.Description
 	// A standard that links descriptive and preservation metadata by a
 	// shared identifier (meemoo's) swaps the entity identifier into the
 	// description, and the producer's identifier it replaces travels as
@@ -164,16 +164,16 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 		r.Declaration = def.representationDeclaration(sr.resolvedType())
 		b.Logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("name", sr.Name))
 
-		if sr.Descriptive != nil {
+		if sr.Description != nil {
 			// Mirror the package-level swap: the emitted document carries
 			// the representation identifier instead of the producer's (a
 			// no-op when the terms carry none; rep-level identity is
 			// optional). The replaced value is not lifted: MEEMOO-LOCAL-ID
 			// is an identifier of the entity.
 			if s, ok := def.Encoder.(IdentifierSwapper); ok {
-				s.Swap(sr.Descriptive, r.Identifier)
+				s.Swap(sr.Description, r.Identifier)
 			}
-			r.Description = sr.Descriptive
+			r.Description = sr.Description
 
 			df := sip.NewFile()
 			df.Name = def.DescriptiveName

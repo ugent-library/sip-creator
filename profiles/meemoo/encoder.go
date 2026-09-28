@@ -30,6 +30,13 @@ func (dcschema) Check(d sip.Description) error {
 	return nil
 }
 
+// NewDescription wraps flat statements in Terms: how a transport that decodes
+// statements without knowing the standard (the CLI's rows file) builds
+// the description Check accepts.
+func (dcschema) NewDescription(terms []sip.Term) sip.Description {
+	return Terms(terms)
+}
+
 // Encode writes d, which is Terms since Check ran before anything else, as
 // meemoo's dc+schema document: one element per term, order preserved.
 // schemas is the relative path from the document to the package's

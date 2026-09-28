@@ -42,12 +42,12 @@ type SourceRepresentation struct {
 	Type string
 	// Files are the content files, in packaging order.
 	Files []SourceFile
-	// Descriptive optionally describes this version only: identity
+	// Description optionally describes this version only: identity
 	// (identifier, title) is not required here; the package-level
-	// descriptive carries the work's identity. Its concrete type must be
+	// description carries the work's identity. Its concrete type must be
 	// the profile's descriptive standard (meemoo.Terms for meemoo
 	// profiles, eark.Terms for eark).
-	Descriptive sip.Description
+	Description sip.Description
 	// Premis optionally supplies received preservation documents about
 	// this representation: copied, never parsed. Each must be a
 	// well-formed premis:premis document.
@@ -89,10 +89,10 @@ type Input struct {
 	// of minting one; this is how an update reuses the original package's
 	// mets/@OBJID. Must take the uuid-<uuid> form when set.
 	PackageIdentifier string
-	// Descriptive is the package-level descriptive metadata. Its concrete
+	// Description is the package-level descriptive metadata. Its concrete
 	// type must be the profile's descriptive standard (meemoo.Terms for
 	// meemoo profiles, eark.Terms for eark).
-	Descriptive sip.Description
+	Description sip.Description
 	// Representations is the content, at least one.
 	Representations []SourceRepresentation
 	// Documentation optionally documents the whole package.
@@ -143,17 +143,17 @@ func (in *Input) Validate() error {
 			return err
 		}
 	}
-	if in.Descriptive == nil {
+	if in.Description == nil {
 		return fmt.Errorf("no descriptive metadata supplied")
 	}
 	// The one place the terms rules run before a write; the encoders trust
 	// it. A package-level description must also state what its standard
 	// requires of one (an identifier and a title at least); a
 	// representation's need not.
-	if err := in.Descriptive.Validate(); err != nil {
+	if err := in.Description.Validate(); err != nil {
 		return fmt.Errorf("descriptive metadata: %w", err)
 	}
-	if err := in.Descriptive.ValidateRequired(); err != nil {
+	if err := in.Description.ValidateRequired(); err != nil {
 		return fmt.Errorf("descriptive metadata: %w", err)
 	}
 
@@ -181,8 +181,8 @@ func (in *Input) Validate() error {
 		if err := validateFiles(fmt.Sprintf("representation %q", r.Name), r.Files); err != nil {
 			return err
 		}
-		if r.Descriptive != nil {
-			if err := r.Descriptive.Validate(); err != nil {
+		if r.Description != nil {
+			if err := r.Description.Validate(); err != nil {
 				return fmt.Errorf("representation %q descriptive: %w", r.Name, err)
 			}
 		}

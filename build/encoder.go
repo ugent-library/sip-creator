@@ -8,17 +8,24 @@ import (
 )
 
 // DescriptionEncoder is what a profile plugs into the engine for its
-// descriptive metadata: which description type it accepts and how it
-// writes the document for it. Each profile package under profiles/
-// implements it for its own terms type, so everything that needs the
-// concrete type stays there and the engine speaks sip.Description only.
-// The registry in profiles/ is the closed set of encoders a build can use.
+// descriptive metadata: which description type it accepts, how to build
+// one from flat statements, and how it writes the document for it. Each
+// profile package under profiles/ implements it for its own terms type,
+// so everything that needs the concrete type stays there and the engine
+// speaks sip.Description only. The registry in profiles/ is the closed
+// set of encoders a build can use.
 type DescriptionEncoder interface {
 	// Check returns why d is not a description this encoder takes: a
 	// description of another type. It runs before validation and before
 	// any write, and guarantees the type assertions the encoder's other
 	// methods make.
 	Check(d sip.Description) error
+	// NewDescription builds this encoder's description from flat statements,
+	// the type Check takes.
+	// It is how a transport that decodes statements without knowing the
+	// standard, such as the CLI's rows file, builds the profile's
+	// description; the engine itself never calls it.
+	NewDescription(terms []sip.Term) sip.Description
 	// Encode writes d as the profile's descriptive document. schemas is
 	// the relative path from the document being written to the package's
 	// schemas/ dir; only the writer knows where a document lands.
@@ -45,16 +52,16 @@ type IdentifierSwapper interface {
 // encoder takes, the package's or a representation's. A missing package
 // description is Input.Validate's finding, not this check's.
 func checkDescriptions(enc DescriptionEncoder, in *Input) error {
-	if in.Descriptive != nil {
-		if err := enc.Check(in.Descriptive); err != nil {
+	if in.Description != nil {
+		if err := enc.Check(in.Description); err != nil {
 			return err
 		}
 	}
 	for _, r := range in.Representations {
-		if r.Descriptive == nil {
+		if r.Description == nil {
 			continue
 		}
-		if err := enc.Check(r.Descriptive); err != nil {
+		if err := enc.Check(r.Description); err != nil {
 			return fmt.Errorf("representation %q: %w", r.Name, err)
 		}
 	}

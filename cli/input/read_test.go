@@ -10,8 +10,8 @@ import (
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
 
-// minimalCSV is the smallest dcschema.csv that passes check: meemoo's
-// basic content profile requires these four keys. minimalDC is its dc.csv
+// minimalCSV is the smallest description.csv that passes check: meemoo's
+// basic content profile requires these four keys. minimalDC is its eark
 // counterpart: Simple DC requires identity only.
 const (
 	minimalCSV = "key,value\nidentifier,ID-1\ntitle,Test\ndescription,Testbeschrijving\ncreated,2026\n"
@@ -69,14 +69,14 @@ func paths(files []File) []string {
 
 func TestReadFlat(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":  minimalCSV,
-		"0002.tiff":     "b",
-		"0010.tiff":     "c",
-		"0001.tiff":     "a",
-		"sub/0003.tiff": "d",
+		"description.csv": minimalCSV,
+		"0002.tiff":       "b",
+		"0010.tiff":       "c",
+		"0001.tiff":       "a",
+		"sub/0003.tiff":   "d",
 	})
 
-	pkg, err := Read(root)
+	pkg, err := ReadDirectory(root, meemoo.Definition)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -103,7 +103,7 @@ func TestReadFlat(t *testing.T) {
 	if f.Source != filepath.Join(root, "sub", "0003.tiff") {
 		t.Errorf("Source = %q, want the absolute disk path", f.Source)
 	}
-	if pkg.Descriptive == nil {
+	if pkg.Description == nil {
 		t.Error("package descriptive terms missing")
 	}
 	if pkg.Characterization != nil {
@@ -113,19 +113,19 @@ func TestReadFlat(t *testing.T) {
 
 func TestReadRepresentations(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":                              minimalCSV,
+		"description.csv":                           minimalCSV,
 		"siegfried.json":                            `{"siegfried":"1.11.0","files":[]}`,
 		"documentation/report.pdf":                  "r",
 		"premis/vendor.xml":                         validPremis,
 		"representations/master/scan_2.tiff":        "b",
 		"representations/master/scan_10.tiff":       "c",
 		"representations/access/book.pdf":           "p",
-		"representations/access/dcschema.csv":       "key,value\ntitle,PDF-versie\n",
+		"representations/access/description.csv":    "key,value\ntitle,PDF-versie\n",
 		"representations/access/documentation/n.md": "n",
 		"representations/access/premis/ocr.xml":     validPremis,
 	})
 
-	pkg, err := Read(root)
+	pkg, err := ReadDirectory(root, meemoo.Definition)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -142,11 +142,11 @@ func TestReadRepresentations(t *testing.T) {
 	if got := paths(master.Files); strings.Join(got, ",") != "scan_10.tiff,scan_2.tiff" {
 		t.Errorf("master file order = %v, want lexical traversal order", got)
 	}
-	if master.Descriptive != nil {
-		t.Error("master has no dcschema.csv but carries descriptive terms")
+	if master.Description != nil {
+		t.Error("master has no description.csv but carries descriptive terms")
 	}
-	if got, ok := access.Descriptive.(meemoo.Terms); !ok || len(got) != 1 || got[0].Key != "title" {
-		t.Errorf("access descriptive = %#v, want its title term", access.Descriptive)
+	if got, ok := access.Description.(meemoo.Terms); !ok || len(got) != 1 || got[0].Key != "title" {
+		t.Errorf("access descriptive = %#v, want its title term", access.Description)
 	}
 	if got := paths(access.Files); strings.Join(got, ",") != "book.pdf" {
 		t.Errorf("access content = %v; reserved names must not count as content", got)
@@ -168,14 +168,14 @@ func TestReadRepresentations(t *testing.T) {
 
 func TestReadCollectsAllViolations(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		// no dcschema.csv
+		// no description.csv
 		"stray.tiff":                         "x", // content beside representations/
 		"representations/loose.txt":          "x", // file directly inside representations/
 		"representations/bad name/scan.tiff": "x", // rep-name character rule
 		"representations/empty/":             "",  // no content files
 	})
 
-	_, err := Read(root)
+	_, err := ReadDirectory(root, meemoo.Definition)
 	if err == nil {
 		t.Fatal("want violations, got none")
 	}
@@ -194,20 +194,20 @@ func TestReadCollectsAllViolations(t *testing.T) {
 
 func TestReadSymlink(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv": minimalCSV,
-		"scan.tiff":    "x",
+		"description.csv": minimalCSV,
+		"scan.tiff":       "x",
 	})
 	if err := os.Symlink(filepath.Join(root, "scan.tiff"), filepath.Join(root, "link.tiff")); err != nil {
 		t.Skipf("cannot create symlink: %v", err)
 	}
 
-	_, err := Read(root)
+	_, err := ReadDirectory(root, meemoo.Definition)
 	assertViolation(t, err, "symbolic link")
 }
 
 func TestReadIgnoresOSArtifacts(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":    minimalCSV,
+		"description.csv": minimalCSV,
 		"scan.tiff":       "x",
 		".DS_Store":       "junk",
 		"._scan.tiff":     "junk",
@@ -216,7 +216,7 @@ func TestReadIgnoresOSArtifacts(t *testing.T) {
 		"sub/0001.tiff":   "x",
 	})
 
-	pkg, err := Read(root)
+	pkg, err := ReadDirectory(root, meemoo.Definition)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -229,42 +229,42 @@ func TestReadIgnoresOSArtifacts(t *testing.T) {
 
 func TestReadArtifactsAreNotContent(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":                     minimalCSV,
+		"description.csv":                  minimalCSV,
 		"representations/master/.DS_Store": "junk",
 	})
 
-	_, err := Read(root)
+	_, err := ReadDirectory(root, meemoo.Definition)
 	assertViolation(t, err, "no content files")
 }
 
 func TestReadEmptyRepresentationsDir(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":     minimalCSV,
+		"description.csv":  minimalCSV,
 		"representations/": "",
 	})
 
-	_, err := Read(root)
+	_, err := ReadDirectory(root, meemoo.Definition)
 	assertViolation(t, err, "no representation folders")
 }
 
 func TestReadNoContent(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv": minimalCSV,
+		"description.csv": minimalCSV,
 	})
 
-	_, err := Read(root)
+	_, err := ReadDirectory(root, meemoo.Definition)
 	assertViolation(t, err, "no content files")
 }
 
 func TestReadReservedNameWrongKind(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv/oops.txt": "x", // reserved file name used as a folder
-		"documentation":         "x", // reserved folder name used as a file
-		"scan.tiff":             "x",
+		"description.csv/oops.txt": "x", // reserved file name used as a folder
+		"documentation":            "x", // reserved folder name used as a file
+		"scan.tiff":                "x",
 	})
 
-	_, err := Read(root)
-	assertViolation(t, err, "dcschema.csv is a folder")
+	_, err := ReadDirectory(root, meemoo.Definition)
+	assertViolation(t, err, "description.csv is a folder")
 	assertViolation(t, err, "documentation is a file")
 }
 
@@ -275,13 +275,13 @@ func TestReadReservedNameWrongKind(t *testing.T) {
 // fails at build.
 func TestReadPremisNamingRule(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":       minimalCSV,
+		"description.csv":    minimalCSV,
 		"scan.tiff":          "x",
 		"premis/premis.xml":  validPremis,
 		"premis/garbage.xml": "not xml; read does not judge content",
 	})
 
-	_, err := Read(root)
+	_, err := ReadDirectory(root, meemoo.Definition)
 	assertViolation(t, err, "premis.xml is reserved")
 
 	var v Violations
@@ -293,18 +293,18 @@ func TestReadPremisNamingRule(t *testing.T) {
 
 func TestReadBadSidecar(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":   minimalCSV,
-		"scan.tiff":      "x",
-		"siegfried.json": `{"not":"a report"}`,
+		"description.csv": minimalCSV,
+		"scan.tiff":       "x",
+		"siegfried.json":  `{"not":"a report"}`,
 	})
 
-	_, err := Read(root)
+	_, err := ReadDirectory(root, meemoo.Definition)
 	assertViolation(t, err, "siegfried.json")
 }
 
 func TestReadNFCCollision(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv": minimalCSV,
+		"description.csv": minimalCSV,
 	})
 	// The same name in NFC and NFD form; they can coexist only on a
 	// filesystem that does not normalize names (e.g. ext4).
@@ -317,6 +317,6 @@ func TestReadNFCCollision(t *testing.T) {
 		t.Skip("filesystem normalizes names; the collision cannot exist here")
 	}
 
-	_, err := Read(root)
+	_, err := ReadDirectory(root, meemoo.Definition)
 	assertViolation(t, err, "Unicode normalization")
 }

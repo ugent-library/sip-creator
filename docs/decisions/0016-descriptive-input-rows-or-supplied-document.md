@@ -1,10 +1,13 @@
 # 0016 — Descriptive input is rows or a supplied document, and the profile fixes the standard
 
 Status: **Accepted in part** (2026-09-28): the profile fixes the
-descriptive standard, and the CLI names its rows files by standard
-(`dcschema.csv` and `dc.csv` shipped in the
-[eark-mods plan](../plans/eark-mods.md)'s S2; `mods.csv` and `items.csv`
-follow in its S4). **Superseded in part by
+descriptive standard. **Superseded in part** (2026-09-28, later the same
+day): the rows file is `description.csv` under every profile and the
+`--profile` flag, on `check` as on `create`, says which vocabulary it is
+in; the names by standard (`dcschema.csv` and `dc.csv`, shipped in the
+[eark-mods plan](../plans/eark-mods.md)'s S2, and the planned `mods.csv`)
+and the one-standard-per-folder rule are withdrawn, see the note on the
+naming paragraph below. **Superseded in part by
 [ADR-0017](0017-supplied-descriptive-document-deferred.md)** (2026-09-28):
 the supplied-document route (`dc.xml`, `mods.xml`, the `DescriptiveDocument`
 input, its structural checks and the no-identity rule) is deferred; the
@@ -83,6 +86,21 @@ organisation.
 The folder stays self-describing, so `check` keeps taking no configuration.
 A mismatch between the folder's standard and the chosen profile surfaces at
 `create`.
+
+(Superseded 2026-09-28, later the same day: the rows file is
+`description.csv` under every profile, and `check` takes the same
+`--profile` flag as `create`, which says which vocabulary the rows are
+in. The name had stated the profile a second time next to the flag,
+reconciled by the encoder's type check at `create`, and `check` could not
+report the mismatch. ADR-0010 puts the profile on the command line,
+"flags, not folder contents", and its config-independence rule is about
+installation settings, which a per-run flag is not: `check` still needs
+no `.env`. The former names are not reserved and not checked for: a
+`dcschema.csv` left in a folder is content like any other file, and the
+missing `description.csv` is what `check` reports. `items.csv` for MODS
+stays as planned, allowed only under the profile that reads it.
+The CLI hands decoded rows to the profile's encoder, whose `NewDescription`
+builds the description, so `cli/input` imports no profile package.)
 
 ## Alternatives rejected
 

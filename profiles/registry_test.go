@@ -57,3 +57,14 @@ func TestRegistryEntriesNameAnEncoder(t *testing.T) {
 		}
 	}
 }
+
+// Every encoder's NewDescription builds what its Check accepts: the CLI hands
+// decoded rows to the one, and the engine runs the other on the result.
+func TestRegistryEncodersBuildWhatTheyCheck(t *testing.T) {
+	for _, name := range Names() {
+		def, _ := Get(name)
+		if err := def.Encoder.Check(def.Encoder.NewDescription(nil)); err != nil {
+			t.Errorf("profile %q: Check refuses what NewDescription built: %v", name, err)
+		}
+	}
+}
