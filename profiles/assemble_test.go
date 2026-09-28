@@ -139,7 +139,7 @@ func TestAssemble(t *testing.T) {
 	if got := e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; got != "local-id-001" {
 		t.Errorf("MEEMOO-LOCAL-ID = %q, want %q", got, "local-id-001")
 	}
-	if got := e.Description.LocalIdentifier(); got != e.Identifier {
+	if got := e.Description.(dcschema.Terms).LocalIdentifier(); got != e.Identifier {
 		t.Errorf("description identifier = %q, want entity identifier %q", got, e.Identifier)
 	}
 
@@ -553,7 +553,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 		t.Fatalf("assemble: %v", err)
 	}
 	r2 := pkg2.Root.Representations[0]
-	if got := r2.Description.LocalIdentifier(); got != r2.Identifier {
+	if got := r2.Description.(dcschema.Terms).LocalIdentifier(); got != r2.Identifier {
 		t.Errorf("rep descriptive identifier = %q, want the representation identifier %q", got, r2.Identifier)
 	}
 
@@ -568,9 +568,21 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	}
 }
 
+// dcIdentifier returns the identifier element of Simple DC terms ("" when
+// absent). The dc world has no accessor for it because nothing in the
+// library reads it: the eark profile never swaps.
+func dcIdentifier(d sip.Description) string {
+	for _, term := range d.(dc.Terms) {
+		if term.Element == "identifier" {
+			return term.Value
+		}
+	}
+	return ""
+}
+
 // The eark profile keeps the producer's identifier in the descriptive
-// terms, at both levels, and lifts no MEEMOO-LOCAL-ID onto the entity
-// (ADR-0012).
+// terms, at both levels, and lifts no MEEMOO-LOCAL-ID onto the entity: its
+// standard has no swap (ADR-0012).
 func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 	in.Descriptive = identityTerms()
@@ -583,13 +595,13 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 		t.Fatalf("assemble: %v", err)
 	}
 	e := pkg.Root
-	if got := e.Description.LocalIdentifier(); got != "local-id-001" {
+	if got := dcIdentifier(e.Description); got != "local-id-001" {
 		t.Errorf("description identifier = %q, want the producer's %q", got, "local-id-001")
 	}
 	if _, ok := e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; ok {
 		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; it is a meemoo concept")
 	}
-	if got := e.Representations[0].Description.LocalIdentifier(); got != "rep-local-1" {
+	if got := dcIdentifier(e.Representations[0].Description); got != "rep-local-1" {
 		t.Errorf("rep descriptive identifier = %q, want the producer's %q", got, "rep-local-1")
 	}
 }
@@ -787,9 +799,8 @@ func TestBuildInvalidConfigWritesNothing(t *testing.T) {
 // profile writes.
 type otherDescription struct{}
 
-func (otherDescription) LocalIdentifier() string          { return "other-1" }
-func (otherDescription) Validate() error                  { return nil }
-func (otherDescription) ValidateRequired(...string) error { return nil }
+func (otherDescription) Validate() error         { return nil }
+func (otherDescription) ValidateRequired() error { return nil }
 
 // A description of another standard is refused by the profile's
 // descriptive-standard check before validation and before any side effect,
@@ -854,19 +865,36 @@ func TestBuildDefinitionWithoutDescriptiveStandardWritesNothing(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// Build enforces the required key sets: identity-only terms build a
-// complete eark package and are refused under basic before any side effect.
-func TestBuildRequiredKeysPerProfile(t *testing.T) {
+// Build enforces what each standard requires of a package-level
+// description. Identity-only terms build a complete eark package; under
+// basic they are refused, and a missing identity is refused under either
+// profile, all before any side effect.
+func TestBuildRequiredPerStandard(t *testing.T) {
 	b, in, _ := newTestBuilder(t)
 	in.Descriptive = identityTerms()
 	if _, err := b.Build(earkDef(t), in); err != nil {
 		t.Fatalf("eark Build refused identity-only terms: %v", err)
 	}
 
-	b, in, outDir := newTestBuilder(t)
-	in.Descriptive = meemooIdentityTerms()
-	if _, err := b.Build(basicDef(t), in); err == nil {
-		t.Fatal("basic Build accepted terms without description and created")
+	cases := []struct {
+		name string
+		def  Definition
+		desc sip.Description
+		want string
+	}{
+		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description (dcterms:description) is required"},
+		{"basic without a title", basicDef(t), dcschema.Terms{{Element: "dcterms:identifier", Value: "x"}}, "title (dcterms:title) is required"},
+		{"eark without an identifier", earkDef(t), dc.Terms{{Element: "title", Value: "x"}}, "identifier is required"},
 	}
-	requireEmpty(t, outDir)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			b, in, outDir := newTestBuilder(t)
+			in.Descriptive = c.desc
+			_, err := b.Build(c.def, in)
+			if err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Fatalf("Build error = %v, want %q", err, c.want)
+			}
+			requireEmpty(t, outDir)
+		})
+	}
 }

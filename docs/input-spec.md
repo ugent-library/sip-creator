@@ -88,7 +88,7 @@ A two-column CSV (`key,value`) describing what the package contains. This is the
 
 - Exactly one of the two files MUST be present at the top level; both at once MUST be an error. Every descriptive rows file in one input folder MUST be in the same vocabulary: a `dc.csv` inside a representation of a `dcschema.csv` package is an error.
 - MUST be UTF-8 with a `key,value` header row. The tool MUST accept a UTF-8 BOM and CRLF line endings (spreadsheet tools produce both) and RFC 4180 quoting.
-- `identifier` and `title` MUST be present and non-empty. The identifier is your local catalog or inventory number; it travels with the package as its local identifier. Meemoo profiles additionally require `description` and `created` (their basic content profile requires all four); the tool refuses to build a meemoo package without them.
+- In a `dcschema.csv`, `identifier`, `title`, `description` and `created` MUST be present and non-empty: meemoo's basic content profile requires all four. In a `dc.csv`, `identifier` and `title` MUST be present. The identifier is your local catalog or inventory number; it travels with the package as its local identifier. `check` reports a missing one.
 - Repeat a key for multiple values (two `creator` lines for two creators), but only for keys the table lists as repeatable. Keys listed as *per-language* may repeat only with distinct language tags (`title[nl]` plus `title[en]` is fine; two `title[nl]` rows are not). A second row for a single-valued key, or a repeated language on a per-language key, MUST be an error.
 - Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`. In `dcschema.csv`, wherever a language-tagged key is used, a Dutch entry (`[nl]`) MUST be among the rows (meemoo's rule); other languages are welcome alongside, but Dutch must be present. `check` reports a missing Dutch entry.
 - Unknown keys MUST be an error: a typo must not silently drop metadata. The table below is the entire vocabulary; it follows the flat-expressible elements of meemoo's basic content profile.
@@ -99,8 +99,8 @@ Supported keys (plain names; the specialist mapping is in [§7](#7-mapping-to-th
 |---|---|---|
 | `identifier` | local catalog/inventory number (required) | no |
 | `title` | title of the work (required) | per-language |
-| `description` | free-text description (required for meemoo) | per-language |
-| `created` | creation date of the original (year or ISO date) (required for meemoo) | no |
+| `description` | free-text description (required) | per-language |
+| `created` | creation date of the original (year or ISO date) (required) | no |
 | `alternative` | alternative title | yes |
 | `abstract` | summary or abstract | per-language |
 | `creator` | maker of the work (photographer, author, artist) | yes |

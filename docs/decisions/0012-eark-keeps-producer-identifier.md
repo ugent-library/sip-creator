@@ -1,6 +1,11 @@
 # 0012 — The eark profile keeps the producer's identifier in dc.xml
 
-Status: Accepted (2026-09-01)
+Status: Accepted (2026-09-01). **Amended 2026-09-28:** the swap is the
+meemoo descriptive standard's own behavior, the `swap` function on its
+value in `profiles/descriptive.go`, no longer a `Definition` flag. The
+Simple DC standard has no swap, so the eark profile keeps the producer's
+identifier as decided below; a standard without a swap keeps it, which is
+what the flag's zero value used to guarantee.
 
 ## Context
 

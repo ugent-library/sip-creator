@@ -26,6 +26,7 @@ func TestRowsHappy(t *testing.T) {
 		"identifier,BIB.FA.2026.001\r\n" +
 		"title[nl],Fotoalbum Gent 1913\r\n" +
 		"description[nl],\"Album met 48 foto's, zwart-wit\"\r\n" +
+		"created,1913\r\n" +
 		"subject[nl],stadsgezichten\r\n" +
 		"subject[nl],wereldtentoonstellingen\r\n" +
 		"ispartof,Collectie Sacré\r\n" +
@@ -43,6 +44,7 @@ func TestRowsHappy(t *testing.T) {
 		{Element: "dcterms:identifier", Value: "BIB.FA.2026.001"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
 		{Element: "dcterms:description", Lang: "nl", Value: "Album met 48 foto's, zwart-wit"},
+		{Element: "dcterms:created", Value: "1913"},
 		{Element: "dcterms:subject", Lang: "nl", Value: "stadsgezichten"},
 		{Element: "dcterms:subject", Lang: "nl", Value: "wereldtentoonstellingen"},
 		{Element: "dcterms:isPartOf", Value: "Collectie Sacré"},
@@ -123,7 +125,7 @@ func TestRowsRepeatNamesElementAndLanguage(t *testing.T) {
 // Per-language keys repeat freely across languages (title[nl] + title[en]);
 // only a same-language repeat is a violation.
 func TestRowsPerLanguageRepeat(t *testing.T) {
-	if _, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle[nl],Kat\ntitle[en],Cat\n"); err != nil {
+	if _, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle[nl],Kat\ntitle[en],Cat\ndescription,x\ncreated,2026\n"); err != nil {
 		t.Fatalf("distinct languages must be accepted: %v", err)
 	}
 	_, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle[nl],Kat\ntitle[nl],Poes\n")
@@ -182,7 +184,7 @@ func TestRowsWithdrawnMetadataCSV(t *testing.T) {
 // dc.csv decodes into Simple Dublin Core terms through the same row syntax.
 func TestRowsDCCSV(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dc.csv":    minimalCSV + "coverage,Gent\n",
+		"dc.csv":    minimalDC + "coverage,Gent\n",
 		"scan.tiff": "x",
 	})
 	pkg, err := Read(root)
@@ -199,7 +201,7 @@ func TestRowsDCCSV(t *testing.T) {
 // unknown there, at both levels.
 func TestRowsDCCSVRefusesMeemooKeys(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dc.csv":                           minimalCSV + "abstract,x\n",
+		"dc.csv":                           minimalDC + "abstract,x\n",
 		"representations/master/scan.tiff": "x",
 		"representations/master/dc.csv":    "key,value\nlicense,publiek domein\n",
 	})
@@ -213,7 +215,7 @@ func TestRowsDCCSVRefusesMeemooKeys(t *testing.T) {
 func TestRowsTwoFilesAtOneLevel(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"dcschema.csv": minimalCSV,
-		"dc.csv":       minimalCSV,
+		"dc.csv":       minimalDC,
 		"scan.tiff":    "x",
 	})
 	_, err := Read(root)

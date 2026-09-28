@@ -29,11 +29,8 @@ type vocabularyRow struct {
 // key,value row, in the input specification's table order. This table is
 // the metadata model: the CSV decoder, validation, and the template all
 // read from it (ADR-0011). The Repeat column is meemoo's upper cardinality
-// limit, enforced by Validate. Which keys a package must state is not
-// table data: identifier and title are every package's identity, and what
-// meemoo's basic profile requires on top is that profile's own data
-// (profiles.Definition.RequiredKeys), both checked through
-// ValidateRequired.
+// limit, enforced by Validate. Which elements a package-level description
+// must state is the required list below, enforced by ValidateRequired.
 var vocabulary = []vocabularyRow{
 	{"identifier", "dcterms:identifier", once, ""},
 	{"title", "dcterms:title", oncePerLanguage, ""},
@@ -59,6 +56,16 @@ var vocabulary = []vocabularyRow{
 	{"artmedium", "schema:artMedium", many, ""},
 	{"artform", "schema:artform", many, ""},
 }
+
+// required lists the elements a package-level description must state:
+// meemoo's basic content profile requires an identifier, a title, a
+// description and a creation date (meemoo SIP 1.2, basic profile). The
+// first two are also the identity every package states whatever the
+// profile (input specification §3): the identifier is what the swap
+// overwrites and lifts onto the entity as MEEMOO-LOCAL-ID, the title the
+// one name every consumer shows. A representation's description need not
+// state any of them.
+var required = []string{"dcterms:identifier", "dcterms:title", "dcterms:description", "dcterms:created"}
 
 var (
 	vocabularyByKey     = make(map[string]vocabularyRow, len(vocabulary))

@@ -113,7 +113,13 @@ the DC table while walking the folder, before any profile is known.
    resolves: identifier and title, the identity every package states,
    are checked once in `Input.Validate` (`profiles.ValidateIdentity`,
    reused by `check`); a `Definition` lists only what its own spec adds
-   (revised 2026-09-24).
+   (revised 2026-09-24). Revised again 2026-09-28 on review of S2's
+   result: the interface is `Validate` and `ValidateRequired()`; what a
+   package-level description must state is each world's own list,
+   checked in `Input.Validate` and by `check`, so `Definition` names no
+   descriptive elements; the swap sits behind the meemoo standard's value in
+   `profiles/descriptive.go`, the one file that knows the concrete type;
+   the encoders trust validated terms. ADR-0015 carries the note.
 6. **Supplied documents reuse the essence path.** Withdrawn 2026-09-28
    ([ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md)).
    The route (a `DescriptiveDocument` path next to `Descriptive` on the
@@ -337,7 +343,11 @@ internal, but the emitted packages stay unchanged.
       it emits (`description (dcterms:description) is required but
       missing`), a Simple DC finding the key alone. Adjust the messages
       and the three tests that name elements. Commit `Changed: required
-      descriptive elements are named by vocabulary key`.
+      descriptive elements are named by vocabulary key`. (Reversed
+      2026-09-28: the required list is each world's own again, `required`
+      in its encoder package rather than `Definition` data, spelled as
+      elements; the finding keeps naming key and element. The keys had
+      pulled `ResolveKey` into the library API for the CLI's sake.)
 - [x] **The identity rule is stated once.** (Added 2026-09-24 after
       review of the box above: requiredness was spelled three times, as
       a `Required` column in the meemoo table that only `basic` read, as
@@ -352,7 +362,11 @@ internal, but the emitted packages stay unchanged.
       The `Required` column and `dcschema.RequiredKeys()` go. A registry
       test asserts every profile's keys resolve in its own world and pins
       the two sets. Output unchanged. Commit `Changed: the identity rule
-      is stated once; profiles list only what their spec adds`.
+      is stated once; profiles list only what their spec adds`. (Revised
+      2026-09-28: the rule is stated once per world, as the first two
+      entries of its required list; `Input.Validate` and `cli/input` call
+      the same `ValidateRequired`, so `profiles.ValidateIdentity` is
+      gone and a profile lists nothing.)
 - [x] **Schema list on `Definition`.** A `Schemas` field listing file
       names; both profiles list the eleven files in `schemas/` today. The
       assembler builds the schema nodes from the list, sorted as now; the
@@ -586,3 +600,14 @@ as a deferred item (§8).
   [ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md)
   records the deferral, and ADR-0015 and this plan no longer point richer
   records at a supplied document.
+- **The descriptive pipeline was simplified** the same day, output
+  unchanged (both structural comparisons clean): terms validation has one
+  owner (`Input.Validate` is the contract, the CLI's calls report, the
+  encoders trust, with a template guard on the element name); the
+  `Description` interface is `Validate` and `ValidateRequired()`; the
+  identifier swap and the local-identifier read sit behind the meemoo
+  standard's value, and the two `Definition` flags for them are gone;
+  what a package must state is each world's own list, so
+  `Definition.RequiredKeys` is gone and `ResolveKey` is the CLI's alone;
+  the per-rule validators nobody called are unexported.
+  ADR-0012 and ADR-0015 carry dated notes.

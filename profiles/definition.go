@@ -30,14 +30,6 @@ type Definition struct {
 	// DescriptiveName is the emitted filename of the descriptive document
 	// under metadata/descriptive/.
 	DescriptiveName string
-	// EmitLocalIdentifier lifts the producer's identifier onto the entity
-	// as MEEMOO-LOCAL-ID.
-	EmitLocalIdentifier bool
-	// SwapObjectIdentifier replaces the descriptive dcterms:identifier with
-	// the entity (or representation) identifier in the emitted document.
-	// When false the document keeps the producer's own identifier
-	// (ADR-0012).
-	SwapObjectIdentifier bool
 	// EmitPackagePremis emits the generated package PREMIS document.
 	EmitPackagePremis bool
 	// EmitRepresentationPremis emits a generated PREMIS document per
@@ -60,24 +52,6 @@ type Definition struct {
 	// dcschema.Schemas, dc.Schemas), concatenated. A name may appear in
 	// more than one list; each ships once. Every name must be bundled.
 	Schemas []string
-
-	// RequiredKeys are the vocabulary keys the profile's own spec requires
-	// at package level on top of the identifier and title every package
-	// states (ValidateIdentity): meemoo's basic content profile adds
-	// description and created, plain E-ARK adds nothing. Each is a plain
-	// key the profile's descriptive standard resolves through its table.
-	RequiredKeys []string
-}
-
-// validateDescriptive checks the package-level description against the
-// keys the profile's spec requires beyond identity, Definition data.
-// Requiredness applies at package level only: identity lives there, and a
-// representation's description is optional. Every other rule (identity,
-// term validity, meemoo's cardinality and language rules) runs in
-// Input.Validate. Findings are joined so one failed build names every gap
-// at once.
-func (d Definition) validateDescriptive(in *Input) error {
-	return in.Descriptive.ValidateRequired(d.RequiredKeys...)
 }
 
 // representationDeclaration returns the declaration a representation's METS
@@ -130,21 +104,9 @@ var registry = map[string]Definition{
 		RequireSubmitterORID: true,
 		// The filename meemoo's basic profile expects for the descriptive
 		// document.
-		DescriptiveName: "dc+schema.xml",
-		// meemoo links descriptive to preservation metadata by a shared
-		// UUID: dc+schema.xml carries the entity identifier, and the
-		// producer's own identifier travels as a MEEMOO-LOCAL-ID PREMIS
-		// object identifier.
-		EmitLocalIdentifier:      true,
-		SwapObjectIdentifier:     true,
+		DescriptiveName:          "dc+schema.xml",
 		EmitPackagePremis:        true,
 		EmitRepresentationPremis: true,
-		// meemoo's basic content profile requires title, identifier,
-		// description and created (meemoo SIP 1.2, basic profile). The first
-		// two are every package's identity, so only the other two are
-		// listed. Its cardinality limits and Dutch-language rule are the
-		// dcschema standard's own (dcschema.Terms.Validate).
-		RequiredKeys: []string{"description", "created"},
 		Declaration: sip.MetsDeclaration{
 			// meemoo SIP 1.2, the stable spec (docs/archive/meemoo-12.md):
 			// 1.2 requires the unversioned E-ARK SIP profile URL and the
@@ -168,19 +130,11 @@ var registry = map[string]Definition{
 		descriptive: simpleDC,
 		// Named after the simple-DC document it holds; meemoo's naming
 		// convention doesn't apply to the eark profile.
-		DescriptiveName:     "dc.xml",
-		EmitLocalIdentifier: false, // MEEMOO-LOCAL-ID is a meemoo concept
-		// dc.xml keeps the producer's identifier: CSIP has no rule tying it
-		// to the package identifier (mets/@OBJID carries that), and the
-		// ingesting catalogue indexes dc.xml, so operators find the package
-		// by the identifier they know (ADR-0012).
-		SwapObjectIdentifier: false,
+		DescriptiveName: "dc.xml",
 		// The eark profile emits no PREMIS: RODA drops package PREMIS that
 		// does not describe agents or events.
 		EmitPackagePremis:        false,
 		EmitRepresentationPremis: false,
-		// Plain E-ARK requires nothing beyond the identity every package
-		// states, so no RequiredKeys.
 		// RODA shows each representation's type from the representation
 		// METS's content typing (ADR-0013).
 		EmitRepresentationType: true,

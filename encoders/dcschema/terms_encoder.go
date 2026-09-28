@@ -15,10 +15,11 @@ import (
 // package's schemas/ dir.
 var Schemas = []string{"descriptive_basic.xsd", "dc.xsd", "dcterms.xsd", "dcmitype.xsd", "edtf.xsd", "schema.xsd", "xml.xsd"}
 
-// The template interpolates element names from data, so encoding validates
-// first (element names come from the closed vocabulary) and every value is
-// escaped.
+// The template interpolates element names from data. Every value is
+// escaped, and the element name passes through el, which admits only names
+// the vocabulary lists.
 var termsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
+	"el":      elementName,
 	"esc":     escapeXML,
 	"xsitype": xsiType,
 }).Parse(`
@@ -31,7 +32,7 @@ var termsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
   xmlns:schema="https://schema.org/"
   xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic {{ .Schemas }}/descriptive_basic.xsd">
 {{- range .Terms }}
-  <{{ .Element }}{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}{{ with xsitype .Element }} xsi:type="{{ . }}"{{ end }}>{{ esc .Value }}</{{ .Element }}>
+  <{{ el .Element }}{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}{{ with xsitype .Element }} xsi:type="{{ . }}"{{ end }}>{{ esc .Value }}</{{ el .Element }}>
 {{- end }}
 </metadata>
 {{ end }}
@@ -47,12 +48,27 @@ type termsDoc struct {
 
 // Encode writes the terms as meemoo's dc+schema document: one element per
 // term, order preserved. schemas is the relative path from the document to
-// the package's schemas/ dir.
+// the package's schemas/ dir. t must be valid: Terms.Validate is the
+// contract, run by the builder before any write, and Encode does not
+// repeat it. The document is rendered in memory first, so a refused term
+// writes nothing.
 func Encode(w io.Writer, t Terms, schemas string) error {
-	if err := t.Validate(); err != nil {
-		return fmt.Errorf("descriptive terms: %w", err)
+	var buf bytes.Buffer
+	if err := termsTemplate.ExecuteTemplate(&buf, "dcschema", termsDoc{t, schemas}); err != nil {
+		return err
 	}
-	return termsTemplate.ExecuteTemplate(w, "dcschema", termsDoc{t, schemas})
+	_, err := w.Write(buf.Bytes())
+	return err
+}
+
+// elementName is the template's one guard: the element name is the only
+// thing the template interpolates raw, and only a name the vocabulary
+// lists may reach the output. Returning an error aborts the render.
+func elementName(element string) (string, error) {
+	if _, ok := vocabularyByElement[element]; !ok {
+		return "", fmt.Errorf("%q is not in the descriptive vocabulary", element)
+	}
+	return element, nil
 }
 
 // xsiType is the xsi:type the vocabulary declares for the element: how

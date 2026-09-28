@@ -147,27 +147,41 @@ func TestTermsValidate(t *testing.T) {
 	}
 }
 
+// A package-level description states an identifier and a title; plain
+// E-ARK requires nothing more, and the list names only real elements.
 func TestValidateRequired(t *testing.T) {
-	terms := Terms{{Element: "identifier", Value: "A"}}
-	err := terms.ValidateRequired("identifier", "title")
+	err := (Terms{{Element: "identifier", Value: "A"}}).ValidateRequired()
 	if err == nil || !strings.Contains(err.Error(), "title is required") {
 		t.Fatalf("want the missing title named, got %v", err)
 	}
-	if err := testTerms().ValidateRequired("identifier", "title"); err != nil {
+	err = (Terms{{Element: "title", Value: "x"}}).ValidateRequired()
+	if err == nil || !strings.Contains(err.Error(), "identifier is required") {
+		t.Fatalf("want the missing identifier named, got %v", err)
+	}
+	if err := testTerms().ValidateRequired(); err != nil {
 		t.Fatalf("complete terms refused: %v", err)
 	}
-	// A key outside the fifteen can only be a mistake in a profile
-	// definition and is reported, never silently satisfied.
-	if err := terms.ValidateRequired("abstract"); err == nil || !strings.Contains(err.Error(), `"abstract"`) {
-		t.Errorf("unknown required key not reported: %v", err)
+	for _, element := range required {
+		if !elementSet[element] {
+			t.Errorf("required element %q is not a Simple Dublin Core element", element)
+		}
 	}
 }
 
-func TestLocalIdentifier(t *testing.T) {
-	if got := testTerms().LocalIdentifier(); got != "uuid-x" {
-		t.Errorf("LocalIdentifier = %q, want uuid-x", got)
+// Validate joins every finding, per-term ones included, so a producer sees
+// all of them in one round rather than the first bad term alone.
+func TestTermsValidateReportsEveryTerm(t *testing.T) {
+	terms := Terms{
+		{Element: "abstract", Value: "x"},
+		{Element: "subject", Value: " "},
 	}
-	if got := (Terms{{Element: "title", Value: "x"}}).LocalIdentifier(); got != "" {
-		t.Errorf("LocalIdentifier without identifier = %q, want empty", got)
+	err := terms.Validate()
+	if err == nil {
+		t.Fatal("want two findings, got none")
+	}
+	for _, want := range []string{"term 1:", "term 2:"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("findings do not include %q: %v", want, err)
+		}
 	}
 }

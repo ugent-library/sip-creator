@@ -34,33 +34,37 @@ const RequiredLang = "nl"
 
 // Validate checks every term, the one-identifier rule, and meemoo's own
 // rules: the vocabulary's cardinality limits and a Dutch entry wherever a
-// language-tagged element appears. The identifier rule stands on its own
-// because the local identifier is an identity, and two of them is an
-// ambiguity no consumer can resolve; the vocabulary also lists identifier
-// as `once`, and that overlap is deliberate.
+// language-tagged element appears. Every finding is reported, joined into
+// one error, so a producer corrects a document in one round. The
+// identifier rule stands on its own because the local identifier is an
+// identity, and two of them is an ambiguity no consumer can resolve; the
+// vocabulary also lists identifier as `once`, and that overlap is
+// deliberate.
 func (t Terms) Validate() error {
+	var errs []error
 	identifiers := 0
 	for i, term := range t {
 		if err := term.Validate(); err != nil {
-			return fmt.Errorf("term %d: %w", i+1, err)
+			errs = append(errs, fmt.Errorf("term %d: %w", i+1, err))
 		}
 		if term.Element == "dcterms:identifier" {
 			identifiers++
 		}
 	}
 	if identifiers > 1 {
-		return fmt.Errorf("dcterms:identifier appears %d times; give exactly one", identifiers)
+		errs = append(errs, fmt.Errorf("dcterms:identifier appears %d times; give exactly one", identifiers))
 	}
-	return errors.Join(t.ValidateCardinality(), t.ValidateRequiredLang(RequiredLang))
+	errs = append(errs, t.validateCardinality(), t.validateRequiredLang(RequiredLang))
+	return errors.Join(errs...)
 }
 
-// ValidateCardinality reports every term that exceeds its element's
-// cardinality (meemoo's 0..1/1..1 restrictions, counted per language
-// for lang-tagged elements). Findings name the element (and language),
-// which locates the offending rows in a keyed file; one joined error
-// carries them all. Validate includes this check; it is exported so a
-// transport can report the findings one by one.
-func (t Terms) ValidateCardinality() error {
+// validateCardinality reports every term that exceeds its element's
+// cardinality (meemoo's 0..1/1..1 restrictions, counted per language for
+// lang-tagged elements). Findings name the element (and language), which
+// locates the offending rows in a keyed file. An element outside the table
+// has the zero cardinality, many, so an unknown element never adds a false
+// repeat finding to the one Term.Validate already gave.
+func (t Terms) validateCardinality() error {
 	seen := map[string]int{}
 	var errs []error
 	for _, term := range t {
@@ -88,31 +92,23 @@ func (t Terms) ValidateCardinality() error {
 	return errors.Join(errs...)
 }
 
-// ValidateRequired reports each required key the terms do not state. Which
-// keys are required is profile data (meemoo's basic profile requires four;
-// plain E-ARK only the input convention's identity MUSTs), so the set
-// arrives as plain vocabulary keys, each resolved through the table. A
-// finding names the key and the element it emits, so a rows file and a
-// library caller's terms can both be corrected from it.
-func (t Terms) ValidateRequired(keys ...string) error {
+// ValidateRequired reports each element a package-level description must
+// state (required) that the terms do not. A finding names the CSV key and
+// the element, so a rows file and a library caller's terms can both be
+// corrected from it.
+func (t Terms) ValidateRequired() error {
 	var errs []error
-	for _, key := range keys {
-		element, ok := ResolveKey(key)
-		if !ok {
-			errs = append(errs, fmt.Errorf("required key %q is not in the descriptive vocabulary", key))
-			continue
-		}
-		if !t.Has(element) {
-			errs = append(errs, fmt.Errorf("%s (%s) is required but missing", key, element))
+	for _, element := range required {
+		if !t.has(element) {
+			errs = append(errs, fmt.Errorf("%s (%s) is required but missing", vocabularyByElement[element].Key, element))
 		}
 	}
 	return errors.Join(errs...)
 }
 
-// ValidateRequiredLang reports each element that carries language-tagged
-// values without one in lang. Validate applies it with RequiredLang; it is
-// exported so a transport can report the findings one by one ("" disables).
-func (t Terms) ValidateRequiredLang(lang string) error {
+// validateRequiredLang reports each element that carries language-tagged
+// values without one in lang ("" disables the rule).
+func (t Terms) validateRequiredLang(lang string) error {
 	if lang == "" {
 		return nil
 	}

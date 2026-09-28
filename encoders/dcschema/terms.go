@@ -18,12 +18,11 @@ type Term struct {
 // Terms is an ordered list of descriptive statements; the order the
 // producer stated them in is preserved through to the emitted XML.
 // Any producer constructs it directly (the CLI's rows-file decoder is
-// one); Validate holds the rules on what a term may say, and Encode
-// refuses invalid terms.
+// one); Validate holds the rules on what a term may say.
 type Terms []Term
 
-// Has reports whether any term states the given element.
-func (t Terms) Has(element string) bool {
+// has reports whether any term states the given element.
+func (t Terms) has(element string) bool {
 	for _, term := range t {
 		if term.Element == element {
 			return true

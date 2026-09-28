@@ -10,7 +10,13 @@ import (
 	"github.com/ugent-library/sip-creator/encoders/dcschema"
 )
 
-const minimalCSV = "key,value\nidentifier,ID-1\ntitle,Test\n"
+// minimalCSV is the smallest dcschema.csv that passes check: meemoo's
+// basic content profile requires these four keys. minimalDC is its dc.csv
+// counterpart: Simple DC requires identity only.
+const (
+	minimalCSV = "key,value\nidentifier,ID-1\ntitle,Test\ndescription,Testbeschrijving\ncreated,2026\n"
+	minimalDC  = "key,value\nidentifier,ID-1\ntitle,Test\n"
+)
 
 // validPremis is the smallest document the received-preservation rules
 // accept: well-formed, premis:premis root, PREMIS 3 namespace.

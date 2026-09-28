@@ -229,9 +229,10 @@ extent[nl],48 foto's
 rights[nl],publiek domein
 ```
 
-`identifier` and `title` are always required; meemoo profiles also require `description`
-and `created`, and a Dutch (`[nl]`) entry wherever a language-tagged key is used. An
-unknown key is an error: a typo must not silently drop metadata.
+`identifier` and `title` are always required. A `dcschema.csv` also requires `description`
+and `created` (meemoo's basic content profile), and a Dutch (`[nl]`) entry wherever a
+language-tagged key is used; `check` reports all of these. An unknown key is an error: a
+typo must not silently drop metadata.
 
 The optional `representations.csv` gives each representation folder a display
 label and a type (what an ingest system such as RODA shows as the

@@ -100,7 +100,7 @@ func localID(p *sip.Package) string {
 // document it never had.
 func TestBuilderInputRepresentationWithoutDescriptive(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dcschema.csv":                        "key,value\nidentifier,ID-1\ntitle,Test\n",
+		"dcschema.csv":                        minimalCSV,
 		"representations/access/dcschema.csv": "key,value\ntitle,Access copy\n",
 		"representations/access/scan.jpg":     "access bytes",
 		"representations/master/scan.tiff":    "master bytes",

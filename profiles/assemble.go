@@ -12,7 +12,6 @@ import (
 	"slices"
 
 	"github.com/ugent-library/sip-creator/characterization"
-	"github.com/ugent-library/sip-creator/encoders/dcschema"
 	"github.com/ugent-library/sip-creator/encoders/premis"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
@@ -76,18 +75,13 @@ func (b *Builder) assemble(def Definition, in *Input) (*sip.Package, error) {
 
 func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, in *Input) {
 	d := in.Descriptive
-	// Read the local identifier before swapping in the entity identifier:
-	// the terms hold one identifier slot, and the swap overwrites it. Per
-	// the meemoo spec the emitted document carries the entity identifier;
-	// the producer's own identifier travels as MEEMOO-LOCAL-ID. A profile
-	// without the swap emits the producer's identifier as-is (ADR-0012).
-	if def.EmitLocalIdentifier {
-		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", d.LocalIdentifier())
-	}
-	if def.SwapObjectIdentifier {
-		// The swap is meemoo's: only dcschema.Terms has the slot, and the
-		// descriptive-standard check in Build guarantees the type.
-		d.(dcschema.Terms).SetObjectIdentifier(e.Identifier)
+	// A standard that links descriptive and preservation metadata by a
+	// shared identifier (meemoo's) swaps the entity identifier into the
+	// description, and the producer's identifier it replaces travels as
+	// MEEMOO-LOCAL-ID. Without a swap the document keeps the producer's
+	// identifier as-is (ADR-0012).
+	if swap := def.descriptive.swap; swap != nil {
+		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", swap(d, e.Identifier))
 	}
 	e.Description = d
 
@@ -168,12 +162,13 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, in *Inp
 		b.Logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("name", sr.Name))
 
 		if sr.Descriptive != nil {
-			// Mirror the package-level swap: when the profile swaps and the
-			// terms carry an identifier, the emitted document carries the
-			// representation identifier instead (a no-op when they carry
-			// none; rep-level identity is optional).
-			if def.SwapObjectIdentifier {
-				sr.Descriptive.(dcschema.Terms).SetObjectIdentifier(r.Identifier)
+			// Mirror the package-level swap: the emitted document carries
+			// the representation identifier instead of the producer's (a
+			// no-op when the terms carry none; rep-level identity is
+			// optional). The replaced value is not lifted: MEEMOO-LOCAL-ID
+			// is an identifier of the entity.
+			if swap := def.descriptive.swap; swap != nil {
+				swap(sr.Descriptive, r.Identifier)
 			}
 			r.Description = sr.Descriptive
 

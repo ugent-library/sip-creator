@@ -9,7 +9,6 @@ import (
 
 	"github.com/ugent-library/sip-creator/encoders/dc"
 	"github.com/ugent-library/sip-creator/encoders/dcschema"
-	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -53,9 +52,9 @@ type rowsBuilder interface {
 	// refused.
 	add(key, lang, value string) error
 	// finish validates the finished list against the standard's own rules
-	// and, at package level, the identity the input specification requires.
-	// It returns the description (nil when there are no terms) and every
-	// finding.
+	// and, at package level, what the standard requires a package
+	// description to state. It returns the description (nil when there are
+	// no terms) and every finding.
 	finish(packageLevel bool) (sip.Description, []error)
 }
 
@@ -69,7 +68,8 @@ func (b *dcschemaRows) add(key, lang, value string) error {
 	}
 	// What a term may say (vocabulary, language tag, non-empty value) is
 	// the library's rule, the same one an embedding caller hits; the
-	// decoder only adds the file/line context.
+	// decoder runs it per row only to add the file/line context, and drops
+	// a refused row so the finished list is not reported twice.
 	term := dcschema.Term{Element: element, Lang: lang, Value: value}
 	if err := term.Validate(); err != nil {
 		return err
@@ -81,7 +81,7 @@ func (b *dcschemaRows) add(key, lang, value string) error {
 func (b *dcschemaRows) finish(packageLevel bool) (sip.Description, []error) {
 	errs := findings(b.terms.Validate())
 	if packageLevel {
-		errs = append(errs, findings(profiles.ValidateIdentity(b.terms))...)
+		errs = append(errs, findings(b.terms.ValidateRequired())...)
 	}
 	if len(b.terms) == 0 {
 		return nil, errs
@@ -108,7 +108,7 @@ func (b *dcRows) add(key, lang, value string) error {
 func (b *dcRows) finish(packageLevel bool) (sip.Description, []error) {
 	errs := findings(b.terms.Validate())
 	if packageLevel {
-		errs = append(errs, findings(profiles.ValidateIdentity(b.terms))...)
+		errs = append(errs, findings(b.terms.ValidateRequired())...)
 	}
 	if len(b.terms) == 0 {
 		return nil, errs
@@ -196,8 +196,9 @@ func (r *reader) decodeRows(f rowsFile, packageLevel bool) sip.Description {
 	// The standard's cross-row rules (cardinality, required language, one
 	// identifier) and the identity every package states are checked on the
 	// finished list: each finding names the key or element and language,
-	// which locates the rows in a keyed file. The identity rule is the
-	// library's (profiles.ValidateIdentity), so check and create agree.
+	// which locates the rows in a keyed file. These calls report; the
+	// library runs the same methods again as the contract before a build,
+	// so check and create agree.
 	d, errs := b.finish(packageLevel)
 	for _, err := range errs {
 		r.violate("%s: %v", rel, err)

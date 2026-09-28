@@ -82,7 +82,7 @@ func (sr SourceRepresentation) resolvedType() string {
 // embedding systems construct them directly.
 //
 // Build takes ownership of the data: the description may be mutated
-// (profiles with SwapObjectIdentifier swap the entity identifier in)
+// (a standard that swaps, meemoo's, writes the entity identifier in)
 // during assembly.
 type Input struct {
 	// PackageIdentifier optionally supplies the package identifier instead
@@ -146,10 +146,14 @@ func (in *Input) Validate() error {
 	if in.Descriptive == nil {
 		return fmt.Errorf("no descriptive metadata supplied")
 	}
+	// The one place the terms rules run before a write; the encoders trust
+	// it. A package-level description must also state what its standard
+	// requires of one (an identifier and a title at least); a
+	// representation's need not.
 	if err := in.Descriptive.Validate(); err != nil {
-		return err
+		return fmt.Errorf("descriptive metadata: %w", err)
 	}
-	if err := ValidateIdentity(in.Descriptive); err != nil {
+	if err := in.Descriptive.ValidateRequired(); err != nil {
 		return fmt.Errorf("descriptive metadata: %w", err)
 	}
 
@@ -194,20 +198,6 @@ func (in *Input) Validate() error {
 		return err
 	}
 	return validatePremisNames("package", in.Premis)
-}
-
-// ValidateIdentity reports the identity a package-level description must
-// state whatever the profile: an identifier and a title (input
-// specification §3, ADR-0016). Profiles that swap identifiers need the
-// identifier as the slot to overwrite, the others emit it as the identifier
-// consumers find the package by (ADR-0012); the title is the one
-// human-readable name every consumer shows. Both are plain vocabulary keys
-// every descriptive standard resolves; what a profile's own spec requires
-// on top is Definition.RequiredKeys. Exported because the CLI's check
-// command applies the same rule to a rows file before any profile is
-// known.
-func ValidateIdentity(d sip.Description) error {
-	return d.ValidateRequired("identifier", "title")
 }
 
 // validatePremisNames guards the received-premis file list with the usual

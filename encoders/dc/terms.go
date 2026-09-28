@@ -26,29 +26,17 @@ type Term struct {
 
 // Terms is an ordered list of descriptive statements; the order the
 // producer stated them in is preserved through to the emitted XML.
-// Validate holds the rules on what a term may say, and Encode refuses
-// invalid terms.
+// Validate holds the rules on what a term may say.
 type Terms []Term
 
-// Has reports whether any term states the given element.
-func (t Terms) Has(element string) bool {
+// has reports whether any term states the given element.
+func (t Terms) has(element string) bool {
 	for _, term := range t {
 		if term.Element == element {
 			return true
 		}
 	}
 	return false
-}
-
-// LocalIdentifier returns the value of the identifier element: the
-// producer's local catalog or inventory number ("" when absent).
-func (t Terms) LocalIdentifier() string {
-	for _, term := range t {
-		if term.Element == "identifier" {
-			return term.Value
-		}
-	}
-	return ""
 }
 
 // langRx is a pragmatic language-tag shape (primary subtag plus optional
@@ -71,39 +59,34 @@ func (t Term) Validate() error {
 }
 
 // Validate checks every term plus the one cross-term rule: at most one
-// identifier. The local identifier is an identity, and two of them is an
-// ambiguity no consumer can resolve. Simple Dublin Core itself limits
-// nothing: every element is optional and repeatable.
+// identifier. Every finding is reported, joined into one error. The local
+// identifier is an identity, and two of them is an ambiguity no consumer
+// can resolve. Simple Dublin Core itself limits nothing: every element is
+// optional and repeatable.
 func (t Terms) Validate() error {
+	var errs []error
 	identifiers := 0
 	for i, term := range t {
 		if err := term.Validate(); err != nil {
-			return fmt.Errorf("term %d: %w", i+1, err)
+			errs = append(errs, fmt.Errorf("term %d: %w", i+1, err))
 		}
 		if term.Element == "identifier" {
 			identifiers++
 		}
 	}
 	if identifiers > 1 {
-		return fmt.Errorf("identifier appears %d times; give exactly one", identifiers)
+		errs = append(errs, fmt.Errorf("identifier appears %d times; give exactly one", identifiers))
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
-// ValidateRequired reports each required key the terms do not state. Which
-// keys are required is profile data (plain E-ARK asks for the input
-// convention's identity MUSTs), so the set arrives as plain vocabulary keys,
-// each resolved through the element table; in Simple Dublin Core the key is
-// the element name.
-func (t Terms) ValidateRequired(keys ...string) error {
+// ValidateRequired reports each element a package-level description must
+// state (required) that the terms do not. In Simple Dublin Core the
+// element name is the CSV key, so a finding names it once.
+func (t Terms) ValidateRequired() error {
 	var errs []error
-	for _, key := range keys {
-		element, ok := ResolveKey(key)
-		if !ok {
-			errs = append(errs, fmt.Errorf("required key %q is not a Simple Dublin Core element", key))
-			continue
-		}
-		if !t.Has(element) {
+	for _, element := range required {
+		if !t.has(element) {
 			errs = append(errs, fmt.Errorf("%s is required but missing", element))
 		}
 	}

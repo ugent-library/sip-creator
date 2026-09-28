@@ -122,7 +122,17 @@ states (`identifier`, `title`) is checked once in `Input.Validate`, and a
 `created` for meemoo's basic profile; nothing for plain E-ARK). Decided
 2026-09-24: the meemoo table had carried a required column that one
 profile read while the other spelled its keys in a literal, and the CLI
-spelled the identity rule a third time in element names.
+spelled the identity rule a third time in element names. (Revised
+2026-09-28, on review of S2's result: the interface is `Validate` and
+`ValidateRequired()`. What a package-level description must state is
+each world's own list, identifier and title plus what its spec adds
+(description and created for meemoo's basic profile), checked in
+`Input.Validate` and by `check`, so a `Definition` names no descriptive
+elements and no world resolves CSV keys for the library; the identifier
+swap, with the reading of the local identifier it needs, moved behind
+the meemoo standard's value in
+`profiles/descriptive.go`; and the encoders no longer validate,
+`Input.Validate` being the one contract before a write.)
 
 ## Alternatives rejected
 

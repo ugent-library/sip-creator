@@ -34,7 +34,7 @@ func TestValidateCardinality(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.terms.ValidateCardinality()
+			err := tt.terms.validateCardinality()
 			if tt.want == "" {
 				if err != nil {
 					t.Fatalf("want conformant, got %v", err)
@@ -56,7 +56,7 @@ func TestValidateCardinalityJoinsFindings(t *testing.T) {
 		{Element: "dcterms:rights", Lang: "nl", Value: "a"},
 		{Element: "dcterms:rights", Lang: "nl", Value: "b"},
 	}
-	err := terms.ValidateCardinality()
+	err := terms.validateCardinality()
 	if err == nil {
 		t.Fatal("want two findings, got none")
 	}
@@ -67,28 +67,57 @@ func TestValidateCardinalityJoinsFindings(t *testing.T) {
 	}
 }
 
-func TestValidateRequired(t *testing.T) {
+// Validate joins every finding, per-term ones included, so a producer sees
+// all of them in one round rather than the first bad term alone.
+func TestTermsValidateReportsEveryTerm(t *testing.T) {
 	terms := Terms{
+		{Element: "dcterms:titel", Value: "x"},
+		{Element: "dcterms:subject", Value: " "},
+	}
+	err := terms.Validate()
+	if err == nil {
+		t.Fatal("want two findings, got none")
+	}
+	for _, want := range []string{"term 1:", "term 2:"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("findings do not include %q: %v", want, err)
+		}
+	}
+}
+
+// A package-level description states meemoo's four required elements;
+// each missing one is a finding naming the CSV key and the element, so a
+// rows file and a caller's terms can both be corrected from it.
+func TestValidateRequired(t *testing.T) {
+	err := (Terms{
 		{Element: "dcterms:identifier", Value: "A"},
 		{Element: "dcterms:title", Lang: "nl", Value: "Kat"},
-	}
-	if err := terms.ValidateRequired("identifier", "title"); err != nil {
-		t.Fatalf("want conformant, got %v", err)
-	}
-	err := terms.ValidateRequired("identifier", "title", "description", "created")
+	}).ValidateRequired()
 	if err == nil {
-		t.Fatal("want the missing keys reported, got none")
+		t.Fatal("want the missing elements reported, got none")
 	}
-	// A finding names the key and the element it emits.
 	for _, want := range []string{"description (dcterms:description)", "created (dcterms:created)"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("findings do not name %s: %v", want, err)
 		}
 	}
-	// A key outside the table can only be a mistake in a profile definition
-	// and is reported, never silently satisfied.
-	if err := terms.ValidateRequired("titel"); err == nil || !strings.Contains(err.Error(), `"titel"`) {
-		t.Errorf("unknown required key not reported: %v", err)
+	err = (Terms{{Element: "dcterms:title", Lang: "nl", Value: "Kat"}}).ValidateRequired()
+	if err == nil || !strings.Contains(err.Error(), "identifier (dcterms:identifier) is required") {
+		t.Errorf("missing identifier not reported: %v", err)
+	}
+	complete := append(testTerms(), Term{Element: "dcterms:description", Lang: "nl", Value: "Een album"})
+	if err := complete.ValidateRequired(); err != nil {
+		t.Fatalf("complete terms refused: %v", err)
+	}
+}
+
+// Every required element is one the table lists, so a typo in the list
+// fails here rather than at the first build.
+func TestRequiredElementsAreInTheVocabulary(t *testing.T) {
+	for _, element := range required {
+		if _, ok := vocabularyByElement[element]; !ok {
+			t.Errorf("required element %q is not in the vocabulary", element)
+		}
 	}
 }
 
@@ -113,7 +142,7 @@ func TestValidateRequiredLang(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.terms.ValidateRequiredLang(tt.lang)
+			err := tt.terms.validateRequiredLang(tt.lang)
 			if tt.want == "" {
 				if err != nil {
 					t.Fatalf("want conformant, got %v", err)
