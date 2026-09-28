@@ -149,18 +149,18 @@ func Read(root string) (*Package, error) {
 // of the first descriptive rows file met (with its path), which every later
 // rows file in the folder must share.
 type reader struct {
-	root         string
-	violations   Violations
-	warnings     []string
-	standard     descriptiveStandard
-	standardFile string
+	root           string
+	violations     Violations
+	warnings       []string
+	vocabulary     vocabulary
+	vocabularyFile string
 }
 
 // Reserved top-level names. Reserved names inside a representation are
 // a subset.
 const (
-	dcschemaName           = "dcschema.csv"
-	dcName                 = "dc.csv"
+	meemooRowsName         = "dcschema.csv"
+	earkRowsName           = "dc.csv"
 	withdrawnRowsName      = "metadata.csv" // the rows file's name until 2026-09-23
 	representationsName    = "representations"
 	representationsCSVName = "representations.csv"
@@ -169,28 +169,28 @@ const (
 	sidecarName            = "siegfried.json"
 )
 
-// descriptiveStandard is the vocabulary a descriptive rows file is in, told
+// vocabulary is the one a descriptive rows file is in, told
 // by its name (input specification §3): dcschema.csv holds meemoo's
 // dc+schema vocabulary, dc.csv Simple Dublin Core.
-type descriptiveStandard string
+type vocabulary string
 
 const (
-	dcschemaStandard descriptiveStandard = "meemoo dc+schema"
-	dcStandard       descriptiveStandard = "Simple Dublin Core"
+	meemooVocabulary vocabulary = "meemoo dc+schema"
+	earkVocabulary   vocabulary = "Simple Dublin Core"
 )
 
 // rowsFile is one descriptive rows file found at one level of the input
 // folder, with the vocabulary its name announces.
 type rowsFile struct {
-	src      string
-	standard descriptiveStandard
+	src        string
+	vocabulary vocabulary
 }
 
 func newRowsFile(src, name string) rowsFile {
-	if name == dcName {
-		return rowsFile{src, dcStandard}
+	if name == earkRowsName {
+		return rowsFile{src, earkVocabulary}
 	}
-	return rowsFile{src, dcschemaStandard}
+	return rowsFile{src, meemooVocabulary}
 }
 
 func (r *reader) read() *Package {
@@ -206,7 +206,7 @@ func (r *reader) read() *Package {
 		name := e.Name()
 		src := filepath.Join(r.root, e.Name())
 		switch name {
-		case dcschemaName, dcName:
+		case meemooRowsName, earkRowsName:
 			if e.IsDir() {
 				r.violate("%s is a folder; the reserved name is for the descriptive rows file", name)
 				continue

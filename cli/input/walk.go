@@ -43,7 +43,7 @@ func (r *reader) readRepresentation(dir, name string) Representation {
 		name := e.Name()
 		src := filepath.Join(dir, e.Name())
 		switch {
-		case name == dcschemaName || name == dcName:
+		case name == meemooRowsName || name == earkRowsName:
 			if e.IsDir() {
 				r.violate("%s is a folder; the reserved name is for the descriptive rows file", r.rel(src))
 				continue

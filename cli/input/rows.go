@@ -28,19 +28,19 @@ func (r *reader) decodeDescriptive(dir string, files []rowsFile, packageLevel bo
 		return nil
 	}
 	f := files[0]
-	r.noteStandard(f)
+	r.noteVocabulary(f)
 	return r.decodeRows(f, packageLevel)
 }
 
-// noteStandard records the vocabulary of the first rows file met and
+// noteVocabulary records the vocabulary of the first rows file met and
 // reports any later file in another one.
-func (r *reader) noteStandard(f rowsFile) {
-	if r.standard == "" {
-		r.standard, r.standardFile = f.standard, r.rel(f.src)
+func (r *reader) noteVocabulary(f rowsFile) {
+	if r.vocabulary == "" {
+		r.vocabulary, r.vocabularyFile = f.vocabulary, r.rel(f.src)
 		return
 	}
-	if r.standard != f.standard {
-		r.violate("%s is %s but %s is %s; every descriptive rows file in one input folder must be in the same vocabulary (input specification §3)", r.rel(f.src), f.standard, r.standardFile, r.standard)
+	if r.vocabulary != f.vocabulary {
+		r.violate("%s is %s but %s is %s; every descriptive rows file in one input folder must be in the same vocabulary (input specification §3)", r.rel(f.src), f.vocabulary, r.vocabularyFile, r.vocabulary)
 	}
 }
 
@@ -58,10 +58,10 @@ type rowsBuilder interface {
 	finish(packageLevel bool) (sip.Description, []error)
 }
 
-// dcschemaRows builds meemoo dc+schema terms from a dcschema.csv.
-type dcschemaRows struct{ terms meemoo.Terms }
+// meemooRows builds meemoo dc+schema terms from a dcschema.csv.
+type meemooRows struct{ terms meemoo.Terms }
 
-func (b *dcschemaRows) add(key, lang, value string) error {
+func (b *meemooRows) add(key, lang, value string) error {
 	element, ok := meemoo.ResolveKey(key)
 	if !ok {
 		return unknownKey(key)
@@ -78,7 +78,7 @@ func (b *dcschemaRows) add(key, lang, value string) error {
 	return nil
 }
 
-func (b *dcschemaRows) finish(packageLevel bool) (sip.Description, []error) {
+func (b *meemooRows) finish(packageLevel bool) (sip.Description, []error) {
 	errs := findings(b.terms.Validate())
 	if packageLevel {
 		errs = append(errs, findings(b.terms.ValidateRequired())...)
@@ -89,10 +89,10 @@ func (b *dcschemaRows) finish(packageLevel bool) (sip.Description, []error) {
 	return b.terms, errs
 }
 
-// dcRows builds Simple Dublin Core terms from a dc.csv.
-type dcRows struct{ terms eark.Terms }
+// earkRows builds Simple Dublin Core terms from a dc.csv.
+type earkRows struct{ terms eark.Terms }
 
-func (b *dcRows) add(key, lang, value string) error {
+func (b *earkRows) add(key, lang, value string) error {
 	element, ok := eark.ResolveKey(key)
 	if !ok {
 		return unknownKey(key)
@@ -105,7 +105,7 @@ func (b *dcRows) add(key, lang, value string) error {
 	return nil
 }
 
-func (b *dcRows) finish(packageLevel bool) (sip.Description, []error) {
+func (b *earkRows) finish(packageLevel bool) (sip.Description, []error) {
 	errs := findings(b.terms.Validate())
 	if packageLevel {
 		errs = append(errs, findings(b.terms.ValidateRequired())...)
@@ -148,11 +148,11 @@ func (r *reader) decodeRows(f rowsFile, packageLevel bool) sip.Description {
 	}
 
 	var b rowsBuilder
-	switch f.standard {
-	case dcStandard:
-		b = &dcRows{}
+	switch f.vocabulary {
+	case earkVocabulary:
+		b = &earkRows{}
 	default:
-		b = &dcschemaRows{}
+		b = &meemooRows{}
 	}
 
 	headerSeen := false
