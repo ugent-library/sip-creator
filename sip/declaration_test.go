@@ -5,29 +5,43 @@ import (
 	"testing"
 )
 
-func TestValidateRecordStatus(t *testing.T) {
-	for _, ok := range []string{"NEW", "SUPPLEMENT", "REPLACEMENT", "TEST", "VERSION", "DELETE"} {
-		if err := ValidateRecordStatus(ok); err != nil {
-			t.Errorf("ValidateRecordStatus(%q) = %v, want nil", ok, err)
+func TestParseRecordStatus(t *testing.T) {
+	for _, text := range []string{"REPLACEMENT", "replacement", "Replacement"} {
+		got, err := ParseRecordStatus(text)
+		if err != nil || got != RecordStatusReplacement {
+			t.Errorf("ParseRecordStatus(%q) = %q, %v; want REPLACEMENT", text, got, err)
 		}
 	}
-	for _, bad := range []string{"new", "UPDATE", ""} {
-		if err := ValidateRecordStatus(bad); err == nil {
-			t.Errorf("ValidateRecordStatus(%q) = nil, want error", bad)
+	for _, bad := range []string{"UPDATE", ""} {
+		if _, err := ParseRecordStatus(bad); err == nil {
+			t.Errorf("ParseRecordStatus(%q) = nil error, want error", bad)
 		}
 	}
 }
 
-func TestIsUpdateRecordStatus(t *testing.T) {
-	for _, yes := range []string{"SUPPLEMENT", "REPLACEMENT", "VERSION", "DELETE"} {
-		if !IsUpdateRecordStatus(yes) {
-			t.Errorf("IsUpdateRecordStatus(%q) = false, want true", yes)
+func TestRecordStatusIsValid(t *testing.T) {
+	for _, ok := range []RecordStatus{RecordStatusNew, RecordStatusSupplement, RecordStatusReplacement, RecordStatusTest, RecordStatusVersion, RecordStatusDelete} {
+		if !ok.IsValid() {
+			t.Errorf("%q.IsValid() = false, want true", ok)
 		}
 	}
-	// Lowercase is the caller's job to normalize, same as ValidateRecordStatus.
-	for _, no := range []string{"NEW", "TEST", "replacement", ""} {
-		if IsUpdateRecordStatus(no) {
-			t.Errorf("IsUpdateRecordStatus(%q) = true, want false", no)
+	// Exact: the METS template renders the value as is.
+	for _, bad := range []RecordStatus{"new", "UPDATE", ""} {
+		if bad.IsValid() {
+			t.Errorf("%q.IsValid() = true, want false", bad)
+		}
+	}
+}
+
+func TestRecordStatusIsUpdate(t *testing.T) {
+	for _, yes := range []RecordStatus{RecordStatusSupplement, RecordStatusReplacement, RecordStatusVersion, RecordStatusDelete} {
+		if !yes.IsUpdate() {
+			t.Errorf("%q.IsUpdate() = false, want true", yes)
+		}
+	}
+	for _, no := range []RecordStatus{RecordStatusNew, RecordStatusTest, "replacement", ""} {
+		if no.IsUpdate() {
+			t.Errorf("%q.IsUpdate() = true, want false", no)
 		}
 	}
 }

@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/ugent-library/sip-creator/archive"
@@ -44,17 +43,18 @@ var createCmd = &cobra.Command{
 		// callers may supply a package identifier for other reasons.
 		flagStatus, _ := cmd.Flags().GetString("status")
 		updates, _ := cmd.Flags().GetString("updates")
-		status := strings.ToUpper(flagStatus)
-		if status != "" {
-			if err := sip.ValidateRecordStatus(status); err != nil {
+		var status sip.RecordStatus
+		if flagStatus != "" {
+			status, err = sip.ParseRecordStatus(flagStatus)
+			if err != nil {
 				return err
 			}
 		}
 		switch {
-		case updates != "" && !sip.IsUpdateRecordStatus(status):
+		case updates != "" && !status.IsUpdate():
 			return fmt.Errorf("--updates names an earlier package, which needs --status supplement, replacement, version or delete")
-		case updates == "" && sip.IsUpdateRecordStatus(status):
-			return fmt.Errorf("--status %s updates an earlier package; pass its identifier with --updates", strings.ToLower(status))
+		case updates == "" && status.IsUpdate():
+			return fmt.Errorf("--status %s updates an earlier package; pass its identifier with --updates", flagStatus)
 		}
 		// Content category precedence: flag, then configured default, then
 		// the profile's registry value (an empty value on the source package).

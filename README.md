@@ -153,9 +153,9 @@ pkg, err := builder.Build(&build.SourcePackage{
 `Build` validates the source package against the profile's rules, then writes the complete
 package directory under `Destination` and returns the built package. A builder is
 constructed once per profile; what varies per package rides on the `SourcePackage`,
-including its record status and content category (`RecordStatus`, `ContentCategory`;
-empty means the profile's value) and, for an update, the identifier of the package it
-updates (`PackageIdentifier`). Zipping is a separate step (the `archive` package). The full API is on
+including its record status (`RecordStatus`, one of the `sip.RecordStatus` constants) and
+content category (`ContentCategory`; empty means the profile's value for both) and, for an
+update, the identifier of the package it updates (`PackageIdentifier`). Zipping is a separate step (the `archive` package). The full API is on
 [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator); the domain model
 and build lifecycle are described in
 [docs/sip-creator-design.md](docs/sip-creator-design.md).

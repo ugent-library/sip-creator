@@ -69,3 +69,15 @@ package to that profile declares, with the deployment's submitter added by
 - Output unchanged: both profiles compare structurally identical to their
   reference copies, and a test pins that the package's values land on the
   package and representation declarations and leave the profile's alone.
+- Note, later the same day: the record status became a typed vocabulary.
+  `sip.RecordStatus` carries the six SIP3 values as constants, with
+  `ParseRecordStatus` (text in any case onto the vocabulary), `IsValid`
+  (exact membership) and `IsUpdate` (the statuses that reference an earlier
+  package). The free functions `ValidateRecordStatus` and
+  `IsUpdateRecordStatus` are gone. `SourcePackage.RecordStatus` and
+  `MetsDeclaration.RecordStatus` carry the type, `SourcePackage.Validate`
+  checks the value exactly, and the CLI parses `--status` once. The type
+  lives with the declaration it feeds, the way the identifier scheme lives
+  with the identifiers: a shared value's own contract sits in `sip`, and
+  the lever calls it. SIP3 is a closed list, unlike the CSIP content
+  category, which stays a string.

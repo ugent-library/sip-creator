@@ -2,6 +2,7 @@ package sip
 
 import (
 	"fmt"
+	"strings"
 )
 
 // MetsDeclaration holds the profile-level values a METS document declares:
@@ -29,33 +30,54 @@ type MetsDeclaration struct {
 	DescriptiveMDTypeVersion string
 	// RecordStatus is metsHdr/@RECORDSTATUS (SIP3), rendered only when set:
 	// the E-ARK SIP spec defines an absent status as equal to NEW.
-	RecordStatus string
+	RecordStatus RecordStatus
 	// Agents are the metsHdr agent entries.
 	Agents []Agent
 }
 
-// recordStatuses is the SIP3 vocabulary for metsHdr/@RECORDSTATUS.
-var recordStatuses = map[string]bool{
-	"NEW": true, "SUPPLEMENT": true, "REPLACEMENT": true,
-	"TEST": true, "VERSION": true, "DELETE": true,
-}
+// RecordStatus is metsHdr/@RECORDSTATUS in the E-ARK SIP vocabulary (SIP3):
+// what the package does to the archive's holdings. The vocabulary is
+// closed, so the type carries its values as constants.
+type RecordStatus string
 
-// ValidateRecordStatus returns why status is not a legal
-// metsHdr/@RECORDSTATUS value (SIP3 vocabulary).
-func ValidateRecordStatus(status string) error {
-	if !recordStatuses[status] {
-		return fmt.Errorf("record status %q is not in the SIP3 vocabulary (NEW, SUPPLEMENT, REPLACEMENT, TEST, VERSION, DELETE)", status)
+// The SIP3 vocabulary. An absent status reads as NEW.
+const (
+	RecordStatusNew         RecordStatus = "NEW"
+	RecordStatusSupplement  RecordStatus = "SUPPLEMENT"
+	RecordStatusReplacement RecordStatus = "REPLACEMENT"
+	RecordStatusTest        RecordStatus = "TEST"
+	RecordStatusVersion     RecordStatus = "VERSION"
+	RecordStatusDelete      RecordStatus = "DELETE"
+)
+
+// ParseRecordStatus maps text written in any case onto the vocabulary, or
+// returns why it cannot. It is the way from an operator's or a caller's
+// string to a RecordStatus.
+func ParseRecordStatus(text string) (RecordStatus, error) {
+	s := RecordStatus(strings.ToUpper(text))
+	if !s.IsValid() {
+		return "", fmt.Errorf("record status %q is not in the SIP3 vocabulary (NEW, SUPPLEMENT, REPLACEMENT, TEST, VERSION, DELETE)", text)
 	}
-	return nil
+	return s, nil
 }
 
-// IsUpdateRecordStatus reports whether status declares this package an
-// update of an earlier one: a package that must reuse the original's
-// identifier as its mets/@OBJID. Like ValidateRecordStatus, it expects the
-// uppercase SIP3 form; callers normalize case before calling either.
-func IsUpdateRecordStatus(status string) bool {
-	switch status {
-	case "SUPPLEMENT", "REPLACEMENT", "VERSION", "DELETE":
+// IsValid reports whether s is one of the vocabulary's constants, exactly:
+// the METS template renders the value as is, so case is not folded here.
+func (s RecordStatus) IsValid() bool {
+	switch s {
+	case RecordStatusNew, RecordStatusSupplement, RecordStatusReplacement,
+		RecordStatusTest, RecordStatusVersion, RecordStatusDelete:
+		return true
+	}
+	return false
+}
+
+// IsUpdate reports whether s declares the package an update of an earlier
+// one: a package that must reuse the original's identifier as its
+// mets/@OBJID.
+func (s RecordStatus) IsUpdate() bool {
+	switch s {
+	case RecordStatusSupplement, RecordStatusReplacement, RecordStatusVersion, RecordStatusDelete:
 		return true
 	}
 	return false
