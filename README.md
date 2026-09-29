@@ -111,6 +111,7 @@ import (
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 def, _ := profiles.Get("eark")
@@ -151,13 +152,30 @@ pkg, err := builder.Build(&build.SourcePackage{
 ```
 
 `Build` validates the source package against the profile's rules, then writes the complete
-package directory under `Destination` and returns the built package. A builder is
-constructed once per profile; what varies per package rides on the `SourcePackage`,
-including its record status (`RecordStatus`, one of the `sip.RecordStatus` constants) and
-content category (`ContentCategory`; empty means the profile's value for both) and, for an
-update, the identifier of the package it updates (`PackageIdentifier`). Zipping is a separate step (the `archive` package). The full API is on
-[pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator); the domain model
-and build lifecycle are described in
+package directory under `Destination` and returns the built package. Zipping is a separate
+step (the `archive` package). A builder is constructed once per profile; what varies per
+package rides on the `SourcePackage`. The example above builds a new package with the
+profile's METS values. Three values are the package's own to set: an update of an earlier
+package reuses that package's identifier and says how it updates it, and the content
+category overrides the profile's:
+
+```go
+pkg, err := builder.Build(&build.SourcePackage{
+	// The identifier of the package this one updates becomes this package's
+	// mets/@OBJID; an update-class status requires it. RecordStatus is
+	// metsHdr/@RECORDSTATUS in the SIP3 vocabulary (the sip.RecordStatus
+	// constants) and ContentCategory is mets/@TYPE, the CSIP content
+	// category. Empty means the profile's value, which for the status the
+	// E-ARK SIP spec reads as NEW.
+	PackageIdentifier: "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e",
+	RecordStatus:      sip.RecordStatusReplacement,
+	ContentCategory:   "Textual works – Print",
+	// Description and Representations as above.
+})
+```
+
+The full API is on [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator);
+the domain model and build lifecycle are described in
 [docs/sip-creator-design.md](docs/sip-creator-design.md).
 
 #### Representation labels and types
