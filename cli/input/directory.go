@@ -14,12 +14,12 @@ import (
 
 // directory is the input folder under inspection: the root all messages and
 // report keys are relative to, the findings collected so far, and the
-// profile the folder is read as.
+// builder that gives the rows of a description.csv their meaning.
 type directory struct {
 	root       string
 	violations Violations
 	warnings   []string
-	profile    build.Definition
+	builder    DescriptionBuilder
 }
 
 // Reserved top-level names. Reserved names inside a representation are

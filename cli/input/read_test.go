@@ -7,7 +7,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+)
+
+// The readers the tests share, one per profile: a folder reads as basic
+// unless a test is about the eark vocabulary.
+var (
+	basicReader = New(meemoo.Definition.Encoder)
+	earkReader  = New(eark.Definition.Encoder)
 )
 
 // minimalCSV is the smallest description.csv that passes check: meemoo's
@@ -76,7 +84,7 @@ func TestReadFlat(t *testing.T) {
 		"sub/0003.tiff":   "d",
 	})
 
-	pkg, err := ReadDirectory(root, meemoo.Definition)
+	pkg, err := basicReader.Read(root)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -125,7 +133,7 @@ func TestReadRepresentations(t *testing.T) {
 		"representations/access/premis/ocr.xml":     validPremis,
 	})
 
-	pkg, err := ReadDirectory(root, meemoo.Definition)
+	pkg, err := basicReader.Read(root)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -175,7 +183,7 @@ func TestReadCollectsAllViolations(t *testing.T) {
 		"representations/empty/":             "",  // no content files
 	})
 
-	_, err := ReadDirectory(root, meemoo.Definition)
+	_, err := basicReader.Read(root)
 	if err == nil {
 		t.Fatal("want violations, got none")
 	}
@@ -201,7 +209,7 @@ func TestReadSymlink(t *testing.T) {
 		t.Skipf("cannot create symlink: %v", err)
 	}
 
-	_, err := ReadDirectory(root, meemoo.Definition)
+	_, err := basicReader.Read(root)
 	assertViolation(t, err, "symbolic link")
 }
 
@@ -216,7 +224,7 @@ func TestReadIgnoresOSArtifacts(t *testing.T) {
 		"sub/0001.tiff":   "x",
 	})
 
-	pkg, err := ReadDirectory(root, meemoo.Definition)
+	pkg, err := basicReader.Read(root)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -233,7 +241,7 @@ func TestReadArtifactsAreNotContent(t *testing.T) {
 		"representations/master/.DS_Store": "junk",
 	})
 
-	_, err := ReadDirectory(root, meemoo.Definition)
+	_, err := basicReader.Read(root)
 	assertViolation(t, err, "no content files")
 }
 
@@ -243,7 +251,7 @@ func TestReadEmptyRepresentationsDir(t *testing.T) {
 		"representations/": "",
 	})
 
-	_, err := ReadDirectory(root, meemoo.Definition)
+	_, err := basicReader.Read(root)
 	assertViolation(t, err, "no representation folders")
 }
 
@@ -252,7 +260,7 @@ func TestReadNoContent(t *testing.T) {
 		"description.csv": minimalCSV,
 	})
 
-	_, err := ReadDirectory(root, meemoo.Definition)
+	_, err := basicReader.Read(root)
 	assertViolation(t, err, "no content files")
 }
 
@@ -263,7 +271,7 @@ func TestReadReservedNameWrongKind(t *testing.T) {
 		"scan.tiff":                "x",
 	})
 
-	_, err := ReadDirectory(root, meemoo.Definition)
+	_, err := basicReader.Read(root)
 	assertViolation(t, err, "description.csv is a folder")
 	assertViolation(t, err, "documentation is a file")
 }
@@ -281,7 +289,7 @@ func TestReadPremisNamingRule(t *testing.T) {
 		"premis/garbage.xml": "not xml; read does not judge content",
 	})
 
-	_, err := ReadDirectory(root, meemoo.Definition)
+	_, err := basicReader.Read(root)
 	assertViolation(t, err, "premis.xml is reserved")
 
 	var v Violations
@@ -298,7 +306,7 @@ func TestReadBadSidecar(t *testing.T) {
 		"siegfried.json":  `{"not":"a report"}`,
 	})
 
-	_, err := ReadDirectory(root, meemoo.Definition)
+	_, err := basicReader.Read(root)
 	assertViolation(t, err, "siegfried.json")
 }
 
@@ -317,6 +325,6 @@ func TestReadNFCCollision(t *testing.T) {
 		t.Skip("filesystem normalizes names; the collision cannot exist here")
 	}
 
-	_, err := ReadDirectory(root, meemoo.Definition)
+	_, err := basicReader.Read(root)
 	assertViolation(t, err, "Unicode normalization")
 }

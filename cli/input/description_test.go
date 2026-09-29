@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
@@ -18,7 +17,7 @@ func readCSV(t *testing.T, csv string) (*Package, error) {
 		"description.csv": csv,
 		"scan.tiff":       "x",
 	})
-	return ReadDirectory(root, meemoo.Definition)
+	return basicReader.Read(root)
 }
 
 func TestRowsHappy(t *testing.T) {
@@ -145,7 +144,7 @@ func TestRepresentationCSVNeedsNoIdentity(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	pkg, err := ReadDirectory(root, meemoo.Definition)
+	pkg, err := basicReader.Read(root)
 	if err != nil {
 		t.Fatalf("rep-level description.csv must not require identifier/title: %v", err)
 	}
@@ -162,7 +161,7 @@ func TestRepresentationCSVDuplicateIdentifier(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nidentifier,A\nidentifier,B\n",
 	})
-	_, err := ReadDirectory(root, meemoo.Definition)
+	_, err := basicReader.Read(root)
 	assertViolation(t, err, "exactly one")
 }
 
@@ -184,7 +183,7 @@ func TestRowsProfileDecidesTheVocabulary(t *testing.T) {
 		"description.csv": minimalDC + "coverage,Gent\n",
 		"scan.tiff":       "x",
 	}
-	pkg, err := ReadDirectory(writeTree(t, tree), eark.Definition)
+	pkg, err := earkReader.Read(writeTree(t, tree))
 	if err != nil {
 		t.Fatalf("Read under eark: %v", err)
 	}
@@ -193,7 +192,7 @@ func TestRowsProfileDecidesTheVocabulary(t *testing.T) {
 		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Description)
 	}
 
-	_, err = ReadDirectory(writeTree(t, tree), meemoo.Definition)
+	_, err = basicReader.Read(writeTree(t, tree))
 	assertViolation(t, err, `unknown key "coverage"`)
 }
 
@@ -205,17 +204,17 @@ func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	_, err := ReadDirectory(root, eark.Definition)
+	_, err := earkReader.Read(root)
 	assertViolation(t, err, `unknown key "abstract"`)
 	assertViolation(t, err, `unknown key "license"`)
 }
 
-// A definition without an encoder cannot say what the rows mean; it is
-// refused before the folder is touched, with the message Build gives.
-func TestReadDirectoryRequiresAnEncoder(t *testing.T) {
+// Without a description builder the reader cannot say what the rows mean;
+// it is refused before the folder is touched.
+func TestReadRequiresABuilder(t *testing.T) {
 	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "scan.tiff": "x"})
-	_, err := ReadDirectory(root, build.Definition{Name: "bare"})
-	if err == nil || !strings.Contains(err.Error(), "names no descriptive encoder") {
-		t.Fatalf("want the missing encoder refused, got %v", err)
+	_, err := New(nil).Read(root)
+	if err == nil || !strings.Contains(err.Error(), "no description builder") {
+		t.Fatalf("want the missing builder refused, got %v", err)
 	}
 }

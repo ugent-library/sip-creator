@@ -66,7 +66,7 @@ var createCmd = &cobra.Command{
 			def.Declaration.Type = cfg.ContentCategory
 		}
 
-		pkg, err := input.ReadDirectory(args[0], def)
+		pkg, err := input.New(def.Encoder).Read(args[0])
 		if err != nil {
 			return fmt.Errorf("input folder %s does not conform to the input specification:\n%w", args[0], err)
 		}

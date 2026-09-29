@@ -29,7 +29,7 @@ var checkCmd = &cobra.Command{
 			return err
 		}
 
-		pkg, err := input.ReadDirectory(args[0], def)
+		pkg, err := input.New(def.Encoder).Read(args[0])
 		if err != nil {
 			if v, ok := errors.AsType[input.Violations](err); ok {
 				for _, line := range v {

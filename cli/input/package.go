@@ -8,6 +8,7 @@
 package input
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +17,20 @@ import (
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/sip"
 )
+
+// DescriptionBuilder builds the profile's description from the flat
+// statements a description.csv decodes to. It is the one thing this package
+// needs from a profile, declared here so the reader takes no profile
+// definition: a profile's descriptive encoder satisfies it, and a test may
+// pass its own. The description it returns carries the vocabulary's rules
+// (Validate, ValidateRequired), which the reader runs and reports as
+// violations.
+type DescriptionBuilder interface {
+	// NewDescription builds the description the terms state. The terms are
+	// decoded for syntax only: which keys exist and what a term may say
+	// are the description's own rules.
+	NewDescription(terms []sip.Term) sip.Description
+}
 
 // File is one content, documentation, or received-PREMIS file found in the
 // input folder.
@@ -47,8 +62,8 @@ type Representation struct {
 	// to the label).
 	Type string
 	// Description is nil unless the representation has its own
-	// description.csv; then it is in the description type of the profile
-	// handed to ReadDirectory.
+	// description.csv; then it is what the reader's builder made of the
+	// rows.
 	Description sip.Description
 	// Files are the content files, in deterministic traversal order
 	// (lexical per directory).
@@ -65,8 +80,7 @@ type Package struct {
 	// Root is the absolute path of the input folder.
 	Root string
 	// Description is the package-level description from the top-level
-	// description.csv, in the description type of the profile handed to
-	// ReadDirectory.
+	// description.csv, as the reader's builder made it.
 	Description sip.Description
 	// Representations holds at least one representation; a flat folder
 	// reads as a single one.
@@ -120,16 +134,27 @@ func sourceFiles(files []File) []build.SourceFile {
 	return out
 }
 
-// ReadDirectory walks and validates the folder at root against the input
-// specification, as the given profile: the profile says which vocabulary
-// the rows of a description.csv are in, and its encoder builds the
-// description from them, so check and create read a folder the same way.
-// Every MUST violation is collected and returned together as a Violations
-// error; when the error is non-nil the returned Package is incomplete and
-// must not be built.
-func ReadDirectory(root string, profile build.Definition) (*Package, error) {
-	if profile.Encoder == nil {
-		return nil, fmt.Errorf("profile %q names no descriptive encoder; use a registered definition", profile.Name)
+// Reader reads input folders as one profile: the builder it holds says
+// which vocabulary the rows of a description.csv are in, and each Read
+// walks one folder with it. check and create both construct it with the
+// profile's descriptive encoder, so they read a folder the same way.
+type Reader struct {
+	builder DescriptionBuilder
+}
+
+// New returns a reader whose folders are read with builder. Like
+// build.New, it validates nothing: Read refuses a nil builder.
+func New(builder DescriptionBuilder) *Reader {
+	return &Reader{builder: builder}
+}
+
+// Read walks and validates the folder at root against the input
+// specification. Every MUST violation is collected and returned together
+// as a Violations error; when the error is non-nil the returned Package is
+// incomplete and must not be built.
+func (r *Reader) Read(root string) (*Package, error) {
+	if r.builder == nil {
+		return nil, errors.New("no description builder: construct the reader with the profile's descriptive encoder, which says what the rows of description.csv mean")
 	}
 	abs, err := filepath.Abs(root)
 	if err != nil {
@@ -143,7 +168,7 @@ func ReadDirectory(root string, profile build.Definition) (*Package, error) {
 		return nil, fmt.Errorf("input folder %s is not a directory", root)
 	}
 
-	d := &directory{root: abs, profile: profile}
+	d := &directory{root: abs, builder: r.builder}
 	pkg := d.read()
 	pkg.Warnings = d.warnings
 	if len(d.violations) > 0 {

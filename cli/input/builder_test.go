@@ -39,7 +39,7 @@ func TestBuilderInputEquivalence(t *testing.T) {
 		"description.csv":                  csv,
 		"representations/master/scan.tiff": "essence bytes",
 	})
-	pkg, err := ReadDirectory(root, meemoo.Definition)
+	pkg, err := basicReader.Read(root)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -106,7 +106,7 @@ func TestBuilderInputRepresentationWithoutDescriptive(t *testing.T) {
 		"representations/access/scan.jpg":        "access bytes",
 		"representations/master/scan.tiff":       "master bytes",
 	})
-	pkg, err := ReadDirectory(root, meemoo.Definition)
+	pkg, err := basicReader.Read(root)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}

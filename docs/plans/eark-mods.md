@@ -517,6 +517,17 @@ adds MODS rows and `items.csv`.
       decoder with no change to `cli/input`'s rows code. Items need a
       second input: extend `NewDescription`, or add an optional interface the
       CLI detects as the engine detects `IdentifierSwapper`; decide then.
+      Decide the constructor's home with it. `NewDescription` is the one
+      method on `build.DescriptionEncoder` the engine never calls; the
+      CLI is its only caller, through `input.DescriptionBuilder`
+      (2026-09-29). Move it off the encoder onto `Definition`: as a
+      function field, the way `image.RegisterFormat` takes its decode
+      function, or as a second small interface the profile's encoder type
+      also implements. `DescriptionEncoder` then faces the engine only
+      (`Check`, `Encode`, `Schemas`, the optional swap) and the CLI takes
+      the constructor. The items shape (terms alone, or terms plus items)
+      fixes the constructor's signature, which is why the move waits for
+      this box instead of being done twice.
 - [ ] **Reserved names.** `items.csv` joins the reserved names at the
       root.
 - [ ] **`items.csv`.** Decoded like `representations.csv`: closed header
@@ -682,3 +693,12 @@ as a deferred item (§8).
   note; ADR-0010 notes that a per-run flag is not configuration).
   Fixtures renamed; output unchanged, both structural comparisons clean.
   S4's boxes follow.
+- **The reader takes only a description builder** (2026-09-29):
+  `input.ReadDirectory` became `input.New(builder).Read(root)`, the
+  constructor-plus-method shape of `build` and `archive`. The reader
+  holds an `input.DescriptionBuilder`, a one-method interface declared in
+  `cli/input` that the profile's descriptive encoder satisfies, instead
+  of the whole `build.Definition`; `check` and `create` construct it with
+  `def.Encoder`. No profile or output change. Moving
+  `NewDescription` off `build.DescriptionEncoder` is added to S4's MODS
+  rows box, where the items shape decides the constructor's signature.
