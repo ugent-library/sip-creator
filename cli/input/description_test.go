@@ -210,12 +210,12 @@ func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 	assertViolation(t, err, `unknown key "license"`)
 }
 
-// Without a description builder the reader cannot say what the rows mean;
-// it is refused before the folder is touched.
-func TestReadRequiresABuilder(t *testing.T) {
+// Without a description constructor the reader cannot say what the rows
+// mean; it is refused before the folder is touched.
+func TestReadRequiresAConstructor(t *testing.T) {
 	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "scan.tiff": "x"})
 	_, err := New(nil).Read(root)
-	if err == nil || !strings.Contains(err.Error(), "no description builder") {
-		t.Fatalf("want the missing builder refused, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "no description constructor") {
+		t.Fatalf("want the missing constructor refused, got %v", err)
 	}
 }

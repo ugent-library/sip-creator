@@ -9,8 +9,9 @@ import (
 // RODA-class repositories, writing dc.xml from Terms and no PREMIS. The
 // registry in profiles/ hands it out under the name "eark".
 var Definition = build.Definition{
-	Name:    "eark",
-	Encoder: simpledc{},
+	Name:           "eark",
+	Encoder:        simpledc{},
+	NewDescription: func(terms []sip.Term) sip.Description { return Terms(terms) },
 	// Named after the simple-DC document it holds; meemoo's naming
 	// convention doesn't apply to the eark profile.
 	DescriptiveName: "dc.xml",

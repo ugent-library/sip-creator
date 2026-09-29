@@ -15,8 +15,8 @@ import (
 // The readers the tests share, one per profile: a folder reads as basic
 // unless a test is about the eark vocabulary.
 var (
-	basicReader = New(meemoo.Definition.Encoder)
-	earkReader  = New(eark.Definition.Encoder)
+	basicReader = New(meemoo.Definition.NewDescription)
+	earkReader  = New(eark.Definition.NewDescription)
 )
 
 // minimalCSV is the smallest description.csv that passes check: meemoo's

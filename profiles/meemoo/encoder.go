@@ -13,7 +13,8 @@ import (
 
 // dcschema is the encoder for the dc+schema document as the engine sees
 // it: it accepts Terms, writes them with Encode, and swaps the entity
-// identifier in.
+// identifier in. Building Terms from flat statements is the Definition's
+// NewDescription, not the encoder's.
 type dcschema struct{}
 
 // IdentifierSwapper is optional to the engine, so a drift in Swap's
@@ -28,13 +29,6 @@ func (dcschema) Check(d sip.Description) error {
 		return fmt.Errorf("descriptive metadata is %T, not meemoo dc+schema terms (meemoo.Terms)", d)
 	}
 	return nil
-}
-
-// NewDescription wraps flat statements in Terms: how a transport that decodes
-// statements without knowing the standard (the CLI's rows file) builds
-// the description Check accepts.
-func (dcschema) NewDescription(terms []sip.Term) sip.Description {
-	return Terms(terms)
 }
 
 // Encode writes d, which is Terms since Check ran before anything else, as

@@ -511,23 +511,15 @@ The library route is complete after this step.
 standard until 2026-09-28, when the profile flag took over); this step
 adds MODS rows and `items.csv`.
 
-- [ ] **MODS rows.** `profiles/earkmods`'s encoder implements `NewDescription`
+- [ ] **MODS rows.** `profiles/earkmods` sets `Definition.NewDescription`
       like the DC worlds, so `check --profile eark-mods` and `create
       --profile eark-mods` read `description.csv` through the same
-      decoder with no change to `cli/input`'s rows code. Items need a
-      second input: extend `NewDescription`, or add an optional interface the
-      CLI detects as the engine detects `IdentifierSwapper`; decide then.
-      Decide the constructor's home with it. `NewDescription` is the one
-      method on `build.DescriptionEncoder` the engine never calls; the
-      CLI is its only caller, through `input.DescriptionBuilder`
-      (2026-09-29). Move it off the encoder onto `Definition`: as a
-      function field, the way `image.RegisterFormat` takes its decode
-      function, or as a second small interface the profile's encoder type
-      also implements. `DescriptionEncoder` then faces the engine only
-      (`Check`, `Encode`, `Schemas`, the optional swap) and the CLI takes
-      the constructor. The items shape (terms alone, or terms plus items)
-      fixes the constructor's signature, which is why the move waits for
-      this box instead of being done twice.
+      decoder with no change to `cli/input`'s rows code. The constructor's
+      home is settled (2026-09-29: a function field on `Definition`, the
+      encoder interface facing the engine only); its signature is the open
+      part. Items need a second input: widen the function's argument, or
+      add a second optional field next to it that the CLI uses when set;
+      decide then.
 - [ ] **Reserved names.** `items.csv` joins the reserved names at the
       root.
 - [ ] **`items.csv`.** Decoded like `representations.csv`: closed header
@@ -732,3 +724,9 @@ as a deferred item (§8).
   source package alone, and a package's record status and content
   category ride on `SourcePackage` next to `PackageIdentifier`. Output
   unchanged.
+- **`NewDescription` moved off the encoder** later the same day: it is a
+  function field on `Definition`, data a profile provides, and
+  `build.DescriptionEncoder` faces the engine only (`Check`, `Encode`,
+  `Schemas`, the optional swap). The CLI's reader takes the function;
+  `input.DescriptionBuilder` is gone. S4's MODS rows box keeps the
+  signature as its open part. Output unchanged.

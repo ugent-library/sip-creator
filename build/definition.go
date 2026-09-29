@@ -20,6 +20,11 @@ type Definition struct {
 	// description it accepts. A definition without one is refused before
 	// any write.
 	Encoder DescriptionEncoder
+	// NewDescription builds this profile's description from flat
+	// statements, the type Encoder's Check accepts. It is how a transport
+	// that decodes statements without knowing the standard, such as the
+	// CLI's rows file, builds the description; the engine never calls it.
+	NewDescription func(terms []sip.Term) sip.Description
 	// RequireSubmitterORID requires the submitting organization's meemoo
 	// OR-id, emitted as the agent's IDENTIFICATIONCODE note (meemoo SIP
 	// 1.2, metsHdr); WithSubmitter needs the OR-id when set.

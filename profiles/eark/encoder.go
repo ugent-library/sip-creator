@@ -12,7 +12,8 @@ import (
 )
 
 // simpledc is the encoder for the simpledc document as the engine sees it:
-// it accepts Terms and writes them with Encode. It never swaps: dc.xml
+// it accepts Terms and writes them with Encode; building Terms from flat
+// statements is the Definition's NewDescription. It never swaps: dc.xml
 // keeps the producer's identifier, because CSIP has no rule tying it to
 // the package identifier and the ingesting catalogue indexes dc.xml, so
 // operators find the package by the identifier they know (ADR-0012).
@@ -25,13 +26,6 @@ func (simpledc) Check(d sip.Description) error {
 		return fmt.Errorf("descriptive metadata is %T, not Simple Dublin Core terms (eark.Terms)", d)
 	}
 	return nil
-}
-
-// NewDescription wraps flat statements in Terms: how a transport that decodes
-// statements without knowing the standard (the CLI's rows file) builds
-// the description Check accepts.
-func (simpledc) NewDescription(terms []sip.Term) sip.Description {
-	return Terms(terms)
 }
 
 // Encode writes d, which is Terms since Check ran before anything else, as

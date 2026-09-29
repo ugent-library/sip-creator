@@ -106,3 +106,9 @@ building with the real profiles.
   dropped the six meemoo XSDs the eark package used to ship without
   referencing them, the output change the eark-mods plan had left open;
   the eark reference copy was refreshed with it (2026-09-28).
+- Note, 2026-09-29: `NewDescription` moved off `DescriptionEncoder` onto
+  `Definition` as a function field. The engine never called it; the CLI's
+  reader was its only caller. The encoder interface now faces the engine
+  only (`Check`, `Encode`, `Schemas`, the optional swap), and how a
+  profile's description is built from flat statements is data the profile
+  provides, in line with ADR-0019 and ADR-0020.

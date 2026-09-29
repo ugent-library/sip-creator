@@ -29,7 +29,7 @@ var checkCmd = &cobra.Command{
 			return err
 		}
 
-		source, err := input.New(def.Encoder).Read(args[0])
+		source, err := input.New(def.NewDescription).Read(args[0])
 		if err != nil {
 			if v, ok := errors.AsType[input.Violations](err); ok {
 				for _, line := range v {

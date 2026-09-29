@@ -72,7 +72,7 @@ func (d *directory) decodeDescription(src string, packageLevel bool) sip.Descrip
 	// A finding about one term names it by position, which the lines
 	// gathered above turn back into the row's line; a cross-row finding
 	// names the key and language, which locates the rows in a keyed file.
-	description := d.builder.NewDescription(terms)
+	description := d.newDescription(terms)
 	errs := findings(description.Validate())
 	if packageLevel {
 		errs = append(errs, findings(description.ValidateRequired())...)
