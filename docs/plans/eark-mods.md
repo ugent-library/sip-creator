@@ -534,8 +534,8 @@ adds MODS rows and `items.csv`.
       in any order, case-insensitive, unknown or repeated column a
       violation; `callnumber` non-empty on every row; `barcode` unique;
       allowed only at the root and only under a profile that takes items.
-- [ ] **The material.** The reader builds the `build.Material` directly
-      (since 2026-09-29, no CLI model in between). A level without a rows
+- [ ] **The source package.** The reader builds the `build.SourcePackage`
+      directly (since 2026-09-29, no CLI model in between). A level without a rows
       file must keep a nil `sip.Description` interface, never a typed nil
       of the MODS description type (the pitfall from S2).
 - [ ] **Tests.** mods rows, items rows and each items violation,
@@ -720,3 +720,8 @@ as a deferred item (§8).
   ([ADR-0019](../decisions/0019-build-is-the-library-face.md): `build` is
   the library's face, `sip` exports what a template or a second package
   reads and nothing more). The assembler assigns fields. Output unchanged.
+- **`build.Material` became `build.SourcePackage`** later the same day,
+  closing the `Source*` family: `SourcePackage`, `SourceRepresentation`
+  and `SourceFile` against `sip.Package`, `Representation` and `File`,
+  "Source X" being X as supplied before the build. The file is
+  `build/source.go`; ADR-0019 carries a note. Output unchanged.

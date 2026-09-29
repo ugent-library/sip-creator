@@ -1,10 +1,10 @@
 // Package input reads and validates a folder prepared per the input
-// specification (docs/input-spec.md) into the material the library builds
-// a package from.
+// specification (docs/input-spec.md) into the source package the library
+// builds a package from.
 //
 // It is the CLI's frontend to the library: the library (build/, profiles/,
 // sip/) never imports it, and systems embedding the library construct the
-// same build.Material directly from their own stores instead of preparing
+// same build.SourcePackage directly from their own stores instead of preparing
 // a folder. The folder is one transport, not the API.
 package input
 
@@ -47,11 +47,11 @@ func New(builder DescriptionBuilder) *Reader {
 }
 
 // Read walks and validates the folder at root against the input
-// specification and returns the material it holds, the value the builder
+// specification and returns the source package it holds, the value the builder
 // takes. Every MUST violation is collected and returned together as a
-// Violations error; when the error is non-nil the returned material is
+// Violations error; when the error is non-nil the returned source package is
 // incomplete and must not be built.
-func (r *Reader) Read(root string) (*build.Material, error) {
+func (r *Reader) Read(root string) (*build.SourcePackage, error) {
 	if r.builder == nil {
 		return nil, errors.New("no description builder: construct the reader with the profile's descriptive encoder, which says what the rows of description.csv mean")
 	}

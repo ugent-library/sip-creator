@@ -99,7 +99,7 @@ bagit.py --md5 sip-out/uuid-<uuid>/
 
 ### As a Go library
 
-The input folder is a CLI convention; the library takes the same material as plain Go
+The input folder is a CLI convention; the library takes the same source package as plain Go
 values, and no environment variables are involved: the submitter is data on the profile,
 the destination and logger are configuration. Resolve a profile, attach the submitter,
 and hand `Build` your descriptive terms and content files:
@@ -126,7 +126,7 @@ builder := build.New(&build.Config{
 	Logger:      slog.Default(),
 })
 
-pkg, err := builder.Build(def, &build.Material{
+pkg, err := builder.Build(def, &build.SourcePackage{
 	// Each profile package owns its terms type: the eark profile writes
 	// Simple Dublin Core from eark.Terms, the basic profile meemoo's
 	// dc+schema document from meemoo.Terms. Both are lists of sip.Term,
@@ -146,7 +146,7 @@ pkg, err := builder.Build(def, &build.Material{
 })
 ```
 
-`Build` validates the material against the profile's rules, then writes the complete
+`Build` validates the source package against the profile's rules, then writes the complete
 package directory under `Destination` and returns the built package. Zipping is a
 separate step (the `archive` package). The full API is on
 [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator); the domain model

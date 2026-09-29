@@ -19,11 +19,11 @@ import (
 )
 
 // assemble builds the complete package graph from the caller-supplied
-// material without writing anything to disk: every File node is created
+// source package without writing anything to disk: every File node is created
 // here with its Path declared, and the writer later back-fills fixity as
 // it emits.
-func (b *Builder) assemble(def Definition, m *Material) (*sip.Package, error) {
-	pkg := sip.NewPackage(b.Destination, m.PackageIdentifier)
+func (b *Builder) assemble(def Definition, source *SourcePackage) (*sip.Package, error) {
+	pkg := sip.NewPackage(b.Destination, source.PackageIdentifier)
 	b.Logger.Info("created a new package", slog.String("id", pkg.Identifier))
 
 	pkg.Declaration = &def.Declaration
@@ -31,7 +31,7 @@ func (b *Builder) assemble(def Definition, m *Material) (*sip.Package, error) {
 	e := sip.NewEntity()
 	b.Logger.Info("created an intellectual entity", slog.String("id", e.Identifier))
 
-	b.assembleDescriptive(e, def, m)
+	b.assembleDescriptive(e, def, source)
 	// The package ships the XSDs its documents point at and nothing else:
 	// what the METS documents reference, and what the descriptive document
 	// references. Each encoder knows its own list.
@@ -41,17 +41,17 @@ func (b *Builder) assemble(def Definition, m *Material) (*sip.Package, error) {
 	}
 	pkg.SchemaFiles = schemaFiles
 
-	docs, err := b.assembleDocumentationNodes(m.Documentation, m.Characterization)
+	docs, err := b.assembleDocumentationNodes(source.Documentation, source.Characterization)
 	if err != nil {
 		return nil, err
 	}
 	pkg.DocumentationFiles = docs
-	received, err := b.assembleReceivedPremis("package", m.Premis)
+	received, err := b.assembleReceivedPremis("package", source.Premis)
 	if err != nil {
 		return nil, err
 	}
 	pkg.ReceivedPremisFiles = received
-	if err := b.assembleRepresentations(e, def, m); err != nil {
+	if err := b.assembleRepresentations(e, def, source); err != nil {
 		return nil, err
 	}
 
@@ -77,8 +77,8 @@ func (b *Builder) assemble(def Definition, m *Material) (*sip.Package, error) {
 	return pkg, nil
 }
 
-func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, m *Material) {
-	d := m.Description
+func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, source *SourcePackage) {
+	d := source.Description
 	// A standard that links descriptive and preservation metadata by a
 	// shared identifier (meemoo's) swaps the entity identifier into the
 	// description, and the producer's identifier it replaces travels as
@@ -154,11 +154,11 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 // rep METS OBJID) is the producer's name, used verbatim: no spec dictates a
 // naming scheme (CSIP requires only uniqueness, and meemoo 2.x only that the
 // dir name equal the rep METS OBJID, which setting both from Name satisfies
-// for free), and Material.Validate has already checked every name for
+// for free), and SourcePackage.Validate has already checked every name for
 // uniqueness and the portable character set. Label and type resolve along
 // the defaulting cascade (name → label → type).
-func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, m *Material) error {
-	for _, sr := range m.Representations {
+func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, source *SourcePackage) error {
+	for _, sr := range source.Representations {
 		r := sip.NewRepresentation(sr.Name)
 		r.Label = sr.label()
 		r.Declaration = def.representationDeclaration(sr.resolvedType())
@@ -193,8 +193,8 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, m *Mate
 			// record still describes the bytes on disk. Fixity is not its job;
 			// the writer computes that during the streamed copy.
 			f.Mime = "application/octet-stream" // unknown; the report may refine it below
-			if m.Characterization != nil {
-				rec, err := b.essenceRecord(m.Characterization, src)
+			if source.Characterization != nil {
+				rec, err := b.essenceRecord(source.Characterization, src)
 				if err != nil {
 					return err
 				}
@@ -214,7 +214,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, m *Mate
 		}
 		r.ReceivedPremisFiles = received
 
-		docs, err := b.assembleDocumentationNodes(sr.Documentation, m.Characterization)
+		docs, err := b.assembleDocumentationNodes(sr.Documentation, source.Characterization)
 		if err != nil {
 			return err
 		}

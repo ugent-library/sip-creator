@@ -13,11 +13,11 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// The embedding-caller contract: a hand-constructed build.Material, with
+// The embedding-caller contract: a hand-constructed build.SourcePackage, with
 // no description.csv or siegfried.json anywhere on disk, must build the same
 // package graph the folder convention produces. The folder is one
 // transport, not the API.
-func TestMaterialEquivalence(t *testing.T) {
+func TestSourcePackageEquivalence(t *testing.T) {
 	def, ok := profiles.Get("basic")
 	if !ok {
 		t.Fatal(`no "basic" definition registered`)
@@ -55,7 +55,7 @@ func TestMaterialEquivalence(t *testing.T) {
 	if err := os.WriteFile(src, []byte("essence bytes"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	handIn := &build.Material{
+	handIn := &build.SourcePackage{
 		Description: meemoo.Terms{
 			{Key: "identifier", Value: "ID-1"},
 			{Key: "title", Value: "Test"},
@@ -99,7 +99,7 @@ func localID(p *sip.Package) string {
 // Description. A typed nil (a nil meemoo.Terms) stored in the interface
 // field would read as a present, empty description and earn the
 // representation a descriptive document it never had.
-func TestMaterialRepresentationWithoutDescriptive(t *testing.T) {
+func TestSourcePackageRepresentationWithoutDescriptive(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv":                        minimalCSV,
 		"representations/access/description.csv": "key,value\ntitle,Access copy\n",

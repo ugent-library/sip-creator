@@ -40,9 +40,9 @@ func meemooIdentityTerms() meemoo.Terms {
 }
 
 // Cardinality and the Dutch-language rule are meemoo's standard's own, so
-// build.Material.Validate applies them to meemoo terms at both levels whatever
+// build.SourcePackage.Validate applies them to meemoo terms at both levels whatever
 // the profile, and never to Simple Dublin Core terms.
-func TestMaterialValidateAppliesStandardRules(t *testing.T) {
+func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {
 	_, in, _ := newTestBuilder(t)
 	in.Description = append(testDescription(),
 		sip.Term{Key: "abstract", Lang: "nl", Value: "een"},

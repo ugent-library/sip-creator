@@ -48,16 +48,16 @@ type IdentifierSwapper interface {
 	Swap(d sip.Description, id string) (local string)
 }
 
-// checkDescriptions returns why a description in the material is not one
+// checkDescriptions returns why a description in the source package is not one
 // the encoder takes, the package's or a representation's. A missing
-// package description is Material.Validate's finding, not this check's.
-func checkDescriptions(enc DescriptionEncoder, m *Material) error {
-	if m.Description != nil {
-		if err := enc.Check(m.Description); err != nil {
+// package description is SourcePackage.Validate's finding, not this check's.
+func checkDescriptions(enc DescriptionEncoder, source *SourcePackage) error {
+	if source.Description != nil {
+		if err := enc.Check(source.Description); err != nil {
 			return err
 		}
 	}
-	for _, r := range m.Representations {
+	for _, r := range source.Representations {
 		if r.Description == nil {
 			continue
 		}

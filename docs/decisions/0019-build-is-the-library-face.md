@@ -1,6 +1,10 @@
 # 0019 — build is the library's face; sip holds the shared types and the engine's graph
 
-Status: **Accepted** (2026-09-29).
+Status: **Accepted** (2026-09-29). Note, later the same day: `build.Material`
+became `build.SourcePackage` and `build/material.go` became
+`build/source.go`, closing the `Source*` family against `sip.Package`,
+`Representation` and `File`; the text below keeps the name it was written
+with.
 
 ## Context
 

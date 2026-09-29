@@ -35,8 +35,8 @@ const (
 // read walks the top level: the reserved names each go to their decoder or
 // collector, everything else is content, whose place depends on whether a
 // representations/ folder exists.
-func (d *directory) read() *build.Material {
-	m := &build.Material{}
+func (d *directory) read() *build.SourcePackage {
+	source := &build.SourcePackage{}
 
 	var content []os.DirEntry
 	var description, repsDir, repsCSV string
@@ -70,25 +70,25 @@ func (d *directory) read() *build.Material {
 				d.violate("documentation is a file; the reserved name is for a folder")
 				continue
 			}
-			m.Documentation = d.collectFiles(src)
+			source.Documentation = d.collectFiles(src)
 		case premisName:
 			if !e.IsDir() {
 				d.violate("premis is a file; the reserved name is for a folder")
 				continue
 			}
-			m.Premis = d.collectPremisFiles(src)
+			source.Premis = d.collectPremisFiles(src)
 		case sidecarName:
 			if e.IsDir() {
 				d.violate("siegfried.json is a folder; the reserved name is for the characterization report")
 				continue
 			}
-			m.Characterization = d.decodeSidecar(src)
+			source.Characterization = d.decodeSidecar(src)
 		default:
 			content = append(content, e)
 		}
 	}
 
-	m.Description = d.decodeDescription(description, true)
+	source.Description = d.decodeDescription(description, true)
 
 	if repsDir != "" {
 		// With a representations/ folder, all content lives inside it;
@@ -96,18 +96,18 @@ func (d *directory) read() *build.Material {
 		for _, e := range content {
 			d.violate("%s: content must live inside representations/ when that folder exists (only documentation/ and premis/ may sit beside it)", e.Name())
 		}
-		m.Representations = d.readRepresentations(repsDir)
+		source.Representations = d.readRepresentations(repsDir)
 		if repsCSV != "" {
-			m.Representations = d.applyRepresentations(repsCSV, m.Representations)
+			source.Representations = d.applyRepresentations(repsCSV, source.Representations)
 		}
 	} else {
 		if repsCSV != "" {
 			d.violate("representations.csv requires a representations/ folder; a flat folder is one representation named after the folder itself")
 		}
-		m.Representations = []build.SourceRepresentation{d.readFlatRepresentation(content)}
+		source.Representations = []build.SourceRepresentation{d.readFlatRepresentation(content)}
 	}
 
-	return m
+	return source
 }
 
 func (d *directory) readRepresentations(dir string) []build.SourceRepresentation {

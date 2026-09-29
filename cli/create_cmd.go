@@ -66,7 +66,7 @@ var createCmd = &cobra.Command{
 			def.Declaration.Type = cfg.ContentCategory
 		}
 
-		material, err := input.New(def.Encoder).Read(args[0])
+		source, err := input.New(def.Encoder).Read(args[0])
 		if err != nil {
 			return fmt.Errorf("input folder %s does not conform to the input specification:\n%w", args[0], err)
 		}
@@ -81,9 +81,9 @@ var createCmd = &cobra.Command{
 			Logger:      logger,
 		})
 
-		material.PackageIdentifier = updates
+		source.PackageIdentifier = updates
 
-		built, err := builder.Build(def, material)
+		built, err := builder.Build(def, source)
 		if err != nil {
 			return err
 		}

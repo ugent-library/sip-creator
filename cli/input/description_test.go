@@ -12,7 +12,7 @@ import (
 // readCSV runs Read over a minimal flat tree carrying the given
 // description.csv under the basic profile, so the decoder is exercised
 // through the real entry point.
-func readCSV(t *testing.T, csv string) (*build.Material, error) {
+func readCSV(t *testing.T, csv string) (*build.SourcePackage, error) {
 	t.Helper()
 	root := writeTree(t, map[string]string{
 		"description.csv": csv,

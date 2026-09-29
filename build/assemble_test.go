@@ -80,12 +80,12 @@ func report(t *testing.T, files ...build.SourceFile) characterization.Report {
 
 // newTestBuilder returns a builder over the minimal valid input data: one
 // representation with one essence file, descriptive terms, no report.
-func newTestBuilder(t *testing.T) (b *build.Builder, in *build.Material, outDir string) {
+func newTestBuilder(t *testing.T) (b *build.Builder, in *build.SourcePackage, outDir string) {
 	t.Helper()
 	inDir, outDir := t.TempDir(), t.TempDir()
 	cat := writeEssence(t, inDir, "cat.jpg", "not really a jpeg")
 
-	in = &build.Material{
+	in = &build.SourcePackage{
 		Description: testDescription(),
 		Representations: []build.SourceRepresentation{
 			{Name: "master", Files: []build.SourceFile{cat}},
@@ -455,53 +455,53 @@ func TestAssembleDocumentation(t *testing.T) {
 	}
 }
 
-// build.Material.Validate is the embedding-caller guardrail: the graph rules the
+// build.SourcePackage.Validate is the embedding-caller guardrail: the graph rules the
 // folder convention enforces with Violations, re-checked for every producer.
-func TestMaterialValidate(t *testing.T) {
-	valid := func(t *testing.T) *build.Material {
+func TestSourcePackageValidate(t *testing.T) {
+	valid := func(t *testing.T) *build.SourcePackage {
 		_, in, _ := newTestBuilder(t)
 		return in
 	}
 
 	tests := []struct {
 		name   string
-		break_ func(*build.Material)
+		break_ func(*build.SourcePackage)
 		want   string
 	}{
-		{"no descriptive", func(c *build.Material) { c.Description = nil }, "no descriptive metadata"},
-		{"invalid term", func(c *build.Material) {
+		{"no descriptive", func(c *build.SourcePackage) { c.Description = nil }, "no descriptive metadata"},
+		{"invalid term", func(c *build.SourcePackage) {
 			c.Description = append(c.Description.(meemoo.Terms), sip.Term{Key: "titel", Value: "x"})
 		}, "not in the descriptive vocabulary"},
-		{"no identifier", func(c *build.Material) {
+		{"no identifier", func(c *build.SourcePackage) {
 			c.Description = meemoo.Terms{{Key: "title", Value: "x"}}
 		}, "identifier is required"},
-		{"no title", func(c *build.Material) {
+		{"no title", func(c *build.SourcePackage) {
 			c.Description = meemoo.Terms{{Key: "identifier", Value: "x"}}
 		}, "title is required"},
-		{"no representations", func(c *build.Material) { c.Representations = nil }, "at least one version"},
-		{"bad name", func(c *build.Material) { c.Representations[0].Name = "master copy" }, "may only contain"},
-		{"xml-unsafe label", func(c *build.Material) { c.Representations[0].Label = `Master "scan"` }, "cannot be emitted"},
-		{"xml-unsafe type", func(c *build.Material) { c.Representations[0].Type = "a<b" }, "cannot be emitted"},
-		{"duplicate label", func(c *build.Material) {
+		{"no representations", func(c *build.SourcePackage) { c.Representations = nil }, "at least one version"},
+		{"bad name", func(c *build.SourcePackage) { c.Representations[0].Name = "master copy" }, "may only contain"},
+		{"xml-unsafe label", func(c *build.SourcePackage) { c.Representations[0].Label = `Master "scan"` }, "cannot be emitted"},
+		{"xml-unsafe type", func(c *build.SourcePackage) { c.Representations[0].Type = "a<b" }, "cannot be emitted"},
+		{"duplicate label", func(c *build.SourcePackage) {
 			c.Representations = append(c.Representations, c.Representations[0])
 		}, "supplied twice"},
-		{"empty representation", func(c *build.Material) { c.Representations[0].Files = nil }, "no content files"},
-		{"duplicate logical path", func(c *build.Material) {
+		{"empty representation", func(c *build.SourcePackage) { c.Representations[0].Files = nil }, "no content files"},
+		{"duplicate logical path", func(c *build.SourcePackage) {
 			c.Representations[0].Files = append(c.Representations[0].Files, c.Representations[0].Files[0])
 		}, "share the logical path"},
-		{"file without source", func(c *build.Material) {
+		{"file without source", func(c *build.SourcePackage) {
 			c.Representations[0].Files[0].Source = ""
 		}, "needs both a Source and a Path"},
-		{"malformed package identifier", func(c *build.Material) {
+		{"malformed package identifier", func(c *build.SourcePackage) {
 			c.PackageIdentifier = "not-a-uuid"
 		}, "uuid-<uuid> form"},
-		{"invalid representation descriptive", func(c *build.Material) {
+		{"invalid representation descriptive", func(c *build.SourcePackage) {
 			c.Representations[0].Description = meemoo.Terms{{Key: "titel", Value: "x"}}
 		}, "not in the descriptive vocabulary"},
-		{"received premis claims the generated name", func(c *build.Material) {
+		{"received premis claims the generated name", func(c *build.SourcePackage) {
 			c.Premis = []build.SourceFile{{Source: "/x/premis.xml", Path: "premis.xml"}}
 		}, "reserved for the generated"},
-		{"rep received premis claims the generated name", func(c *build.Material) {
+		{"rep received premis claims the generated name", func(c *build.SourcePackage) {
 			c.Representations[0].Premis = []build.SourceFile{{Source: "/x/premis.xml", Path: "sub/premis.xml"}}
 		}, "reserved for the generated"},
 	}

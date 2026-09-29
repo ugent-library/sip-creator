@@ -29,7 +29,7 @@ var checkCmd = &cobra.Command{
 			return err
 		}
 
-		material, err := input.New(def.Encoder).Read(args[0])
+		source, err := input.New(def.Encoder).Read(args[0])
 		if err != nil {
 			if v, ok := errors.AsType[input.Violations](err); ok {
 				for _, line := range v {
@@ -41,11 +41,11 @@ var checkCmd = &cobra.Command{
 		}
 
 		files := 0
-		for _, r := range material.Representations {
+		for _, r := range source.Representations {
 			files += len(r.Files)
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "OK: %d representation(s), %d content file(s), %d documentation file(s)\n",
-			len(material.Representations), files, len(material.Documentation))
+			len(source.Representations), files, len(source.Documentation))
 		return nil
 	},
 }

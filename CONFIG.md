@@ -4,7 +4,7 @@
 
 Application config: the CLI's operator contract, read from the
 environment. The library never reads it: embedding systems pass a
-build.Config and per-build build.Material instead, and format info
+build.Config and per-build build.SourcePackage instead, and format info
 arrives via the siegfried.json sidecar (ADR-0009), not configuration.
 
  - The submitting organization, stamped into every package's METS as a

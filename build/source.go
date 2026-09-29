@@ -58,7 +58,7 @@ type SourceRepresentation struct {
 
 // label resolves the display label: Label, or Name when empty. The cascade
 // lives here, in the library, so the CLI's representations.csv and an
-// embedding caller's direct Material get identical defaulting.
+// embedding caller's direct SourcePackage get identical defaulting.
 func (sr SourceRepresentation) label() string {
 	if sr.Label != "" {
 		return sr.Label
@@ -75,7 +75,7 @@ func (sr SourceRepresentation) resolvedType() string {
 	return sr.label()
 }
 
-// Material is one package's source material, given as data, not files to
+// SourcePackage is one package as the caller supplies it, given as data, not files to
 // parse: descriptive metadata as a decoded Description, characterization
 // as a decoded report, essence and documentation as source paths. The
 // CLI's folder convention (cli/input) is one transport producing these
@@ -84,7 +84,7 @@ func (sr SourceRepresentation) resolvedType() string {
 // Build takes ownership of the data: the description may be mutated
 // (a standard that swaps, meemoo's, writes the entity identifier in)
 // during assembly.
-type Material struct {
+type SourcePackage struct {
 	// PackageIdentifier optionally supplies the package identifier instead
 	// of minting one; this is how an update reuses the original package's
 	// mets/@OBJID. Must take the uuid-<uuid> form when set.
@@ -137,31 +137,31 @@ func ValidateAttributeText(value string) error {
 // graph rules every producer must satisfy: the folder convention enforces
 // them with Violations phrased for the operator before building; embedding
 // callers hit them here. Fail-fast: one error, phrased for the developer.
-func (m *Material) Validate() error {
-	if m.PackageIdentifier != "" {
-		if err := sip.ValidateIdentifier(m.PackageIdentifier); err != nil {
+func (sp *SourcePackage) Validate() error {
+	if sp.PackageIdentifier != "" {
+		if err := sip.ValidateIdentifier(sp.PackageIdentifier); err != nil {
 			return err
 		}
 	}
-	if m.Description == nil {
+	if sp.Description == nil {
 		return fmt.Errorf("no descriptive metadata supplied")
 	}
 	// The one place the terms rules run before a write; the encoders trust
 	// it. A package-level description must also state what its standard
 	// requires of one (an identifier and a title at least); a
 	// representation's need not.
-	if err := m.Description.Validate(); err != nil {
+	if err := sp.Description.Validate(); err != nil {
 		return fmt.Errorf("descriptive metadata: %w", err)
 	}
-	if err := m.Description.ValidateRequired(); err != nil {
+	if err := sp.Description.ValidateRequired(); err != nil {
 		return fmt.Errorf("descriptive metadata: %w", err)
 	}
 
-	if len(m.Representations) == 0 {
+	if len(sp.Representations) == 0 {
 		return fmt.Errorf("no representations supplied: a package needs at least one version of the content")
 	}
-	names := make(map[string]bool, len(m.Representations))
-	for _, r := range m.Representations {
+	names := make(map[string]bool, len(sp.Representations))
+	for _, r := range sp.Representations {
 		if err := ValidateRepresentationName(r.Name); err != nil {
 			return err
 		}
@@ -194,10 +194,10 @@ func (m *Material) Validate() error {
 		}
 	}
 
-	if err := validateFiles("documentation", m.Documentation); err != nil {
+	if err := validateFiles("documentation", sp.Documentation); err != nil {
 		return err
 	}
-	return validatePremisNames("package", m.Premis)
+	return validatePremisNames("package", sp.Premis)
 }
 
 // validatePremisNames guards the received-premis file list with the usual
