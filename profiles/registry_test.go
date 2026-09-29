@@ -1,7 +1,6 @@
 package profiles
 
 import (
-	"maps"
 	"slices"
 	"testing"
 
@@ -21,10 +20,18 @@ func shipped(t *testing.T, name string) []string {
 	return slices.Compact(slices.Sorted(slices.Values(slices.Concat(mets.Schemas, def.Encoder.Schemas()))))
 }
 
+// withMETS returns the sorted set a profile ships when its descriptive
+// document points at names: the METS set plus those.
+func withMETS(names ...string) []string {
+	return slices.Sorted(slices.Values(append(slices.Clone(mets.Schemas), names...)))
+}
+
 // Every XSD a profile ships is bundled, so a typo in an encoder's list fails
 // here rather than at the first build, and each profile ships exactly what
-// its documents point at: basic the whole bundle (meemoo's descriptive
-// schema imports the Dublin Core family), eark the METS set plus dc.xsd.
+// its documents point at: basic the METS set plus meemoo's descriptive
+// schema and what it imports (the Dublin Core family, EDTF, schema.org,
+// xml.xsd), eark the METS set plus dc.xsd. The bundle is the union of what
+// the profiles ship, so no profile ships all of it.
 func TestRegistrySchemas(t *testing.T) {
 	bundle := schemas.Get()
 	for _, name := range Names() {
@@ -35,12 +42,13 @@ func TestRegistrySchemas(t *testing.T) {
 		}
 	}
 
-	if got, all := shipped(t, "basic"), slices.Sorted(maps.Keys(bundle)); !slices.Equal(got, all) {
-		t.Errorf("basic ships %v, want the whole bundle %v", got, all)
+	basic := withMETS("descriptive_basic.xsd", "dc.xsd", "dcterms.xsd", "dcmitype.xsd", "edtf.xsd", "schema.xsd", "xml.xsd")
+	if got := shipped(t, "basic"); !slices.Equal(got, basic) {
+		t.Errorf("basic ships %v, want the METS set plus meemoo's descriptive schemas %v", got, basic)
 	}
-	want := slices.Sorted(slices.Values(append(slices.Clone(mets.Schemas), "dc.xsd")))
-	if got := shipped(t, "eark"); !slices.Equal(got, want) {
-		t.Errorf("eark ships %v, want the METS set plus dc.xsd %v", got, want)
+	eark := withMETS("dc.xsd")
+	if got := shipped(t, "eark"); !slices.Equal(got, eark) {
+		t.Errorf("eark ships %v, want the METS set plus dc.xsd %v", got, eark)
 	}
 }
 

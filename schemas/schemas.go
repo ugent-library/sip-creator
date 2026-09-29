@@ -1,4 +1,6 @@
-// Package schemas bundles the XSDs every SIP carries in its schemas/ dir.
+// Package schemas bundles the XSDs a SIP can carry in its schemas/ dir: the
+// union of what the profiles ship. Which of them one package ships follows
+// from its documents, so no package carries the whole bundle.
 package schemas
 
 import (
