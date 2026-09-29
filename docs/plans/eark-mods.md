@@ -1,9 +1,11 @@
 # Plan: MODS 3.7 descriptive metadata for the plain E-ARK output
 
-*Status: **S2 done, S3 next** (2026-09-29): the refactor is on the branch
-`eark-mods-support`. Go tests, the structural comparisons of both profiles
-against their reference copies, and the commons-ip runs of `./build.sh`
-for both profiles (VALID, 0 warnings) are clean. The supplied-document
+*Status: **S3 done, S4 next** (2026-09-29): the `eark-mods` profile is
+registered on the branch `eark-mods-support` and the library route is
+complete; `check --profile eark-mods` already reads MODS rows, and
+`items.csv` is S4's. Go tests, the structural comparisons of both DC
+profiles against their reference copies, and the commons-ip runs of
+`./build.sh` for both (VALID, 0 warnings) are clean. The supplied-document
 route (decisions 6, 7, 8 and S5) was withdrawn on 2026-09-28 before it was
 committed ([ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md));
 descriptive metadata arrives as terms only. ADR-0015 and ADR-0016 are
@@ -555,7 +557,7 @@ template, and the exported `Definition`.
       assigning fields on `sip.NewPackage`, `sip.NewEntity` and
       `sip.NewFile` values, the graph having no setters since ADR-0019.
       Commit `Added: mets encoder test for the dmdSec typing`.
-- [ ] **Docs.** Design doc: the status line (three profiles), the
+- [x] **Docs.** Design doc: the status line (three profiles), the
       domain-model line naming the description types, the
       metadata-standards section (three worlds), and the `profiles/` and
       `schemas/` bullets under code organization (the basic profile no
@@ -564,9 +566,15 @@ template, and the exported `Definition`.
       with items. `CLAUDE.md`: the system shape names `profiles/earkmods`
       and the test inventory the new package. Commit `Changed: docs for
       the eark-mods profile`.
-- [ ] **Acceptance.** `go test ./...`; `./build.sh basic` and `./build.sh
+- [x] **Acceptance.** `go test ./...`; `./build.sh basic` and `./build.sh
       eark` VALID with 0 warnings; both comparisons clean. `eark-mods` has
-      no fixture yet; the Go build test stands in until S6.
+      no fixture yet; the Go build test stands in until S6. (Run
+      2026-09-29 as in S2: `CSIP_CMD` pointing at the commons-ip 2.11.2
+      jar on the host's Java 27, the jar fetched from the release URL the
+      validator Dockerfile pins and checked against its sha256, because
+      the Docker path is unsafe on this machine; basic passed=132 and
+      eark passed=129 with 28 skipped, the same counts as the reference
+      captures.)
 
 ### S4: CLI rows
 
