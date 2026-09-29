@@ -39,18 +39,18 @@ func (b *Builder) assemble(def Definition, m *Material) (*sip.Package, error) {
 	if err != nil {
 		return nil, fmt.Errorf("profile %q: %w", def.Name, err)
 	}
-	pkg.SetSchemaFiles(schemaFiles)
+	pkg.SchemaFiles = schemaFiles
 
 	docs, err := b.assembleDocumentationNodes(m.Documentation, m.Characterization)
 	if err != nil {
 		return nil, err
 	}
-	pkg.SetDocumentationFiles(docs)
+	pkg.DocumentationFiles = docs
 	received, err := b.assembleReceivedPremis("package", m.Premis)
 	if err != nil {
 		return nil, err
 	}
-	pkg.SetReceivedPremisFiles(received)
+	pkg.ReceivedPremisFiles = received
 	if err := b.assembleRepresentations(e, def, m); err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (b *Builder) assemble(def Definition, m *Material) (*sip.Package, error) {
 		pf.Name = "premis.xml"
 		pf.Path = "metadata/preservation/premis.xml"
 		pf.Mime = "text/xml" // generated XML
-		pkg.SetPremisFile(pf)
+		pkg.PremisFile = pf
 		b.Logger.Info("created a package PREMIS file", slog.String("id", pf.Identifier))
 	}
 
@@ -70,10 +70,10 @@ func (b *Builder) assemble(def Definition, m *Material) (*sip.Package, error) {
 	// Set for the no-empty-Mime invariant even though no template reads it:
 	// nothing references the package METS from inside the package.
 	mf.Mime = "text/xml"
-	pkg.SetMetsFile(mf)
+	pkg.MetsFile = mf
 	b.Logger.Info("created a package METS file", slog.String("id", mf.Identifier))
 
-	pkg.SetRoot(e)
+	pkg.Root = e
 	return pkg, nil
 }
 
@@ -85,7 +85,7 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, m *Material
 	// MEEMOO-LOCAL-ID. Without a swap the document keeps the producer's
 	// identifier as-is (ADR-0012).
 	if s, ok := def.Encoder.(IdentifierSwapper); ok {
-		e.AddAdditionalIdentifier("MEEMOO-LOCAL-ID", s.Swap(d, e.Identifier))
+		e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"] = s.Swap(d, e.Identifier)
 	}
 	e.Description = d
 
@@ -93,7 +93,7 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, m *Material
 	df.Name = def.DescriptiveName
 	df.Path = "metadata/descriptive/" + df.Name
 	df.Mime = "text/xml" // generated XML
-	e.SetDescriptionFile(df)
+	e.DescriptionFile = df
 	b.Logger.Info("created a descriptive file", slog.String("id", df.Identifier))
 }
 
@@ -179,7 +179,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, m *Mate
 			df.Name = def.DescriptiveName
 			df.Path = "metadata/descriptive/" + df.Name // rep-relative, per File.Path
 			df.Mime = "text/xml"                        // generated XML
-			r.SetDescriptionFile(df)
+			r.DescriptionFile = df
 			b.Logger.Info("created a representation descriptive file", slog.String("id", df.Identifier))
 		}
 
@@ -203,8 +203,8 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, m *Mate
 					f.Mime = rec.Mime
 				}
 			}
-			f.SetRepresentation(r)
-			r.AddFile(f)
+			f.Representation = r
+			r.Files = append(r.Files, f)
 			b.Logger.Info("placed an essence file", slog.String("id", f.Identifier))
 		}
 
@@ -212,20 +212,20 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, m *Mate
 		if err != nil {
 			return err
 		}
-		r.SetReceivedPremisFiles(received)
+		r.ReceivedPremisFiles = received
 
 		docs, err := b.assembleDocumentationNodes(sr.Documentation, m.Characterization)
 		if err != nil {
 			return err
 		}
-		r.SetDocumentationFiles(docs)
+		r.DocumentationFiles = docs
 
 		if def.EmitRepresentationPremis {
 			pf := sip.NewFile()
 			pf.Name = "premis.xml"
 			pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
 			pf.Mime = "text/xml"                         // generated XML
-			r.SetPremisFile(pf)
+			r.PremisFile = pf
 			b.Logger.Info("created a representation PREMIS file", slog.String("id", pf.Identifier))
 		}
 
@@ -233,11 +233,11 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, m *Mate
 		mf.Name = "METS.xml"
 		mf.Path = "representations/" + r.Name + "/METS.xml" // package-relative: referenced from package METS
 		mf.Mime = "text/xml"                                // generated XML
-		r.SetMetsFile(mf)
+		r.MetsFile = mf
 		b.Logger.Info("created a representation METS file", slog.String("id", mf.Identifier))
 
-		r.SetEntity(e)
-		e.AddRepresentation(r)
+		r.Entity = e
+		e.Representations = append(e.Representations, r)
 	}
 	return nil
 }

@@ -716,3 +716,7 @@ as a deferred item (§8).
   the decoder returned a nil interface for a missing rows file.
   `Reader.Read` now returns the material; `Root` (never read) and
   `Warnings` (no emitter left) went with the model. Output unchanged.
+- **The graph lost its setters and the sub-entity slot** the same day
+  ([ADR-0019](../decisions/0019-build-is-the-library-face.md): `build` is
+  the library's face, `sip` exports what a template or a second package
+  reads and nothing more). The assembler assigns fields. Output unchanged.

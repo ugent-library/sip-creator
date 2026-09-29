@@ -63,10 +63,6 @@ func NewFormatRegistry() *FormatRegistry {
 	}
 }
 
-func (f *File) SetRepresentation(r *Representation) {
-	f.Representation = r
-}
-
 // NewFile mints a File with a fresh uuid-<uuid> identifier.
 func NewFile() *File {
 	return &File{

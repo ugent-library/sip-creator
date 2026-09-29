@@ -5,7 +5,8 @@ import (
 	"uuid"
 )
 
-// Entity is one intellectual entity: the work the package describes.
+// Entity is one intellectual entity: the work the package describes. A
+// package has one; sub-entities are not modeled.
 type Entity struct {
 	// Identifier identifies the entity in PREMIS and the emitted
 	// descriptive document (uuid-<uuid>).
@@ -15,25 +16,11 @@ type Entity struct {
 	AdditionalIdentifiers map[string]string
 	// Representations are the versions of the content.
 	Representations []*Representation
-	// Entities are sub-entities; nothing assembles them yet.
-	Entities []*Entity
 	// Description carries the decoded descriptive metadata until the writer
 	// serializes it.
 	Description Description
 	// DescriptionFile is the node for the generated descriptive document.
 	DescriptionFile *File
-}
-
-func (e *Entity) AddAdditionalIdentifier(idType, id string) {
-	e.AdditionalIdentifiers[idType] = id
-}
-
-func (e *Entity) SetDescriptionFile(f *File) {
-	e.DescriptionFile = f
-}
-
-func (e *Entity) AddRepresentation(r *Representation) {
-	e.Representations = append(e.Representations, r)
 }
 
 // EachRepresentation calls fn for every representation in order; the

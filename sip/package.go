@@ -7,7 +7,10 @@ import (
 )
 
 // Package is one assembled SIP: the graph of entities, representations,
-// and file nodes the writer emits.
+// and file nodes the writer emits. The graph checks nothing itself: its
+// invariants (identifiers minted, paths declared, a mime type on every
+// node) are the assembler's to keep, and what a caller supplies is
+// validated before assembly on build.Material (ADR-0019).
 type Package struct {
 	// Location is the package directory on disk: the destination dir
 	// joined with the identifier.
@@ -33,18 +36,6 @@ type Package struct {
 	DocumentationFiles []*File
 }
 
-func (p *Package) SetRoot(e *Entity) {
-	p.Root = e
-}
-
-func (p *Package) SetPremisFile(f *File) {
-	p.PremisFile = f
-}
-
-func (p *Package) SetReceivedPremisFiles(files []*File) {
-	p.ReceivedPremisFiles = files
-}
-
 // PremisFiles lists every preservation document the package METS must
 // reference: the generated PREMIS (when emitted) first, then the
 // received ones. Each gets one digiprovMD, all in one amdSec.
@@ -56,28 +47,10 @@ func (p *Package) PremisFiles() []*File {
 	return append(files, p.ReceivedPremisFiles...)
 }
 
-func (p *Package) SetMetsFile(f *File) {
-	p.MetsFile = f
-}
-
-func (p *Package) SetSchemaFiles(files []*File) {
-	p.SchemaFiles = files
-}
-
-func (p *Package) SetDocumentationFiles(files []*File) {
-	p.DocumentationFiles = files
-}
-
 // DescriptiveFiles lists every descriptive document the package METS must
-// reference: sub-entities first, then the root. Sub-entities never nest
-// deeper than one level today (nothing assembles them yet); revisit this
-// when they do.
+// reference: the root entity's alone, since a package has one entity.
 func (p *Package) DescriptiveFiles() []*File {
-	var files []*File
-	for _, e := range p.Root.Entities {
-		files = append(files, e.DescriptionFile)
-	}
-	return append(files, p.Root.DescriptionFile)
+	return []*File{p.Root.DescriptionFile}
 }
 
 // NewPackage roots a package under baseDir. A caller-supplied identifier

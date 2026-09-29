@@ -46,26 +46,6 @@ type Representation struct {
 	Declaration *MetsDeclaration
 }
 
-func (r *Representation) AddFile(f *File) {
-	r.Files = append(r.Files, f)
-}
-
-func (r *Representation) SetDescriptionFile(f *File) {
-	r.DescriptionFile = f
-}
-
-func (r *Representation) SetPremisFile(f *File) {
-	r.PremisFile = f
-}
-
-func (r *Representation) SetReceivedPremisFiles(files []*File) {
-	r.ReceivedPremisFiles = files
-}
-
-func (r *Representation) SetDocumentationFiles(files []*File) {
-	r.DocumentationFiles = files
-}
-
 // PremisFiles lists every preservation document the representation METS
 // must reference: the generated PREMIS (when emitted) first, then the
 // received ones. Each gets one digiprovMD, all in one amdSec.
@@ -75,14 +55,6 @@ func (r *Representation) PremisFiles() []*File {
 		files = append(files, r.PremisFile)
 	}
 	return append(files, r.ReceivedPremisFiles...)
-}
-
-func (r *Representation) SetMetsFile(f *File) {
-	r.MetsFile = f
-}
-
-func (r *Representation) SetEntity(e *Entity) {
-	r.Entity = e
 }
 
 // NewRepresentation mints a Representation named name, with a fresh

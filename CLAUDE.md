@@ -75,9 +75,9 @@ Write idiomatic Go (Effective Go, Go Code Review Comments, Google's Go Style Gui
 
 A clever-but-dense diff gets rejected; a verbose-but-obvious one is accepted. Write it the way a colleague reading it for the first time would understand fastest.
 
-Keep the API surface small. Default to unexported: every exported symbol is a commitment in a long-lived codebase. Don't export a function or type unless it has a cross-package caller.
+Keep the API surface small. Default to unexported: every exported symbol is a commitment in a long-lived codebase. Don't export a function or type unless it has a cross-package caller. `build` is the library's face: every lever an implementer pulls (the material, the definition, the config, the builder, the encoder interface a profile implements) lives there. `sip/` holds the shared domain types and the engine's graph, and exports what a template or a second package reads, nothing more; the assembler builds the graph by assigning fields, so the graph has no setters ([ADR-0019](docs/decisions/0019-build-is-the-library-face.md)).
 
-Keep operational failures (I/O, config) as `error`/`fmt.Errorf`. Domain validation belongs on the `sip/` domain types as `Validate` methods (none exist yet; that is where they go when they arrive). Wrap with `%w` and unwrap with `errors.Is`/`errors.As` where a caller needs to branch on the cause; don't both log and return an error; pick one.
+Keep operational failures (I/O, config) as `error`/`fmt.Errorf`. Validation of what an implementer supplies lives on the lever in `build` (`Material.Validate` and the name and attribute rules next to it); the graph in `sip/` has no caller-facing checks, its invariants are the assembler's to keep (ADR-0019). Wrap with `%w` and unwrap with `errors.Is`/`errors.As` where a caller needs to branch on the cause; don't both log and return an error; pick one.
 
 **Streaming I/O.** An `io.Reader` is consumed as it is read; it cannot be read twice. Essence files can be large: prefer streaming (`io.Copy` reader-to-writer) over buffering whole files in memory.
 

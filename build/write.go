@@ -182,7 +182,6 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package,
 }
 
 func (b *Builder) writePackagePremis(st *store.Store, pkg *sip.Package) error {
-	// TODO also account for sub-IE(s) tied to the root entity
 	pf := pkg.PremisFile
 	info, err := st.WriteMetadata(pf.Path, func(w io.Writer) error {
 		return premis.EncodeEntity(w, pkg.Root)
