@@ -534,9 +534,9 @@ adds MODS rows and `items.csv`.
       in any order, case-insensitive, unknown or repeated column a
       violation; `callnumber` non-empty on every row; `barcode` unique;
       allowed only at the root and only under a profile that takes items.
-- [ ] **Mapping onto `build.Input`.** `Package` carries the decoded
-      `sip.Description` per level; `BuilderInput` assigns it only when a
-      file was read (the typed-nil pitfall from S2).
+- [ ] **Mapping onto `build.Material`.** `Package` carries the decoded
+      `sip.Description` per level; `Package.Material` assigns it only when
+      a file was read (the typed-nil pitfall from S2).
 - [ ] **Tests.** mods rows, items rows and each items violation,
       `items.csv` under `basic` or `eark`.
 - [ ] **Docs.** Input spec §1 (reserved names), §3 (the MODS key table
@@ -702,3 +702,9 @@ as a deferred item (§8).
   `def.Encoder`. No profile or output change. Moving
   `NewDescription` off `build.DescriptionEncoder` is added to S4's MODS
   rows box, where the items shape decides the constructor's signature.
+- **`build.Input` became `build.Material`** the same day, with
+  `Package.BuilderInput()` becoming `Package.Material()` and the file
+  `build/material.go`: the type is one package's source material as
+  data, the word the docs already used for it, and "input" was spent
+  twice, on the CLI's folder and on the library's data. Library callers
+  change the type name; nothing else changes.

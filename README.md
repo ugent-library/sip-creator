@@ -126,7 +126,7 @@ builder := build.New(&build.Config{
 	Logger:      slog.Default(),
 })
 
-pkg, err := builder.Build(def, &build.Input{
+pkg, err := builder.Build(def, &build.Material{
 	// Each profile package owns its terms type: the eark profile writes
 	// Simple Dublin Core from eark.Terms, the basic profile meemoo's
 	// dc+schema document from meemoo.Terms. Both are lists of sip.Term,
@@ -146,7 +146,7 @@ pkg, err := builder.Build(def, &build.Input{
 })
 ```
 
-`Build` validates the input against the profile's rules, then writes the complete
+`Build` validates the material against the profile's rules, then writes the complete
 package directory under `Destination` and returns the built package. Zipping is a
 separate step (the `archive` package). The full API is on
 [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator); the domain model

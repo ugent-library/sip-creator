@@ -96,9 +96,10 @@ type Package struct {
 	Warnings []string
 }
 
-// BuilderInput maps the validated folder onto the library's build input.
-func (p *Package) BuilderInput() *build.Input {
-	in := &build.Input{
+// Material maps the validated folder onto the library's material for one
+// package.
+func (p *Package) Material() *build.Material {
+	m := &build.Material{
 		Characterization: p.Characterization,
 		Documentation:    sourceFiles(p.Documentation),
 		Premis:           sourceFiles(p.Premis),
@@ -107,7 +108,7 @@ func (p *Package) BuilderInput() *build.Input {
 	// stored in the interface field would read as a present, empty
 	// description.
 	if p.Description != nil {
-		in.Description = p.Description
+		m.Description = p.Description
 	}
 	for _, rep := range p.Representations {
 		sr := build.SourceRepresentation{
@@ -121,9 +122,9 @@ func (p *Package) BuilderInput() *build.Input {
 		if rep.Description != nil {
 			sr.Description = rep.Description
 		}
-		in.Representations = append(in.Representations, sr)
+		m.Representations = append(m.Representations, sr)
 	}
-	return in
+	return m
 }
 
 func sourceFiles(files []File) []build.SourceFile {

@@ -13,11 +13,11 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// The embedding-caller contract: a hand-constructed build.Input, with
+// The embedding-caller contract: a hand-constructed build.Material, with
 // no description.csv or siegfried.json anywhere on disk, must build the same
 // package graph the folder convention produces. The folder is one
 // transport, not the API.
-func TestBuilderInputEquivalence(t *testing.T) {
+func TestMaterialEquivalence(t *testing.T) {
 	def, ok := profiles.Get("basic")
 	if !ok {
 		t.Fatal(`no "basic" definition registered`)
@@ -44,7 +44,7 @@ func TestBuilderInputEquivalence(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 	folderPkg, err := build.New(&build.Config{Destination: t.TempDir(), Logger: discard}).
-		Build(def, pkg.BuilderInput())
+		Build(def, pkg.Material())
 	if err != nil {
 		t.Fatalf("Build via folder: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestBuilderInputEquivalence(t *testing.T) {
 	if err := os.WriteFile(src, []byte("essence bytes"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	handIn := &build.Input{
+	handIn := &build.Material{
 		Description: meemoo.Terms{
 			{Key: "identifier", Value: "ID-1"},
 			{Key: "title", Value: "Test"},
@@ -99,7 +99,7 @@ func localID(p *sip.Package) string {
 // Descriptive. A nil eark.Terms stored in the interface field would read as
 // a present, empty description and earn the representation a descriptive
 // document it never had.
-func TestBuilderInputRepresentationWithoutDescriptive(t *testing.T) {
+func TestMaterialRepresentationWithoutDescriptive(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv":                        minimalCSV,
 		"representations/access/description.csv": "key,value\ntitle,Access copy\n",
@@ -110,7 +110,7 @@ func TestBuilderInputRepresentationWithoutDescriptive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	in := pkg.BuilderInput()
+	in := pkg.Material()
 	if len(in.Representations) != 2 {
 		t.Fatalf("got %d representations, want 2", len(in.Representations))
 	}

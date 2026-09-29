@@ -81,10 +81,10 @@ var createCmd = &cobra.Command{
 			Logger:      logger,
 		})
 
-		in := pkg.BuilderInput()
-		in.PackageIdentifier = updates
+		material := pkg.Material()
+		material.PackageIdentifier = updates
 
-		built, err := builder.Build(def, in)
+		built, err := builder.Build(def, material)
 		if err != nil {
 			return err
 		}
