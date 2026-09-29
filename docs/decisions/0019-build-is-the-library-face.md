@@ -87,10 +87,13 @@ what the renderers need. A build turns the first into the second.
 - CLAUDE.md's rule that domain validation goes on `sip/` types as
   `Validate` methods is replaced: validation of supplied data is on
   `build.Material`.
-- Open: `Build` returns `*sip.Package`, the one place the graph reaches a
+- `Build` returns `*sip.Package`, the one place the graph reaches a
   caller. The CLI's archiver reads the location and identifier from it.
   Whether systems that automate ingest workflows need the whole graph back
-  (per-file fixity, say) or a small `build` result is decided by a real
-  need, not here.
+  (per-file fixity, say) or a small `build` result was left to a real
+  need. Decided 2026-09-29, later the same day: it stays the graph. A
+  caller reads it and does not build on it, and a smaller result would
+  drop the per-file fixity that an ingest system is the most likely to
+  want back.
 - Multi-entity packages, when a design arrives, add the slot back with the
   design ([TODO.md](../TODO.md)).
