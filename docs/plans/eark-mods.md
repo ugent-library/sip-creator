@@ -491,7 +491,7 @@ template, and the exported `Definition`.
       maps that to an `items.csv` line is S4's); every finding joined
       into one error. `ValidateRequired()` runs over the package's own
       required list.
-- [ ] **`profiles/earkmods` encoder and template.** `encoder.go`: the
+- [x] **`profiles/earkmods` encoder and template.** `encoder.go`: the
       unexported type `mods` implementing `build.DescriptionEncoder`, as
       `simpledc` and `dcschema` do. `Check` asserts `Record`. `Encode(w,
       d, schemas)` renders in memory first, so a refused render writes
