@@ -482,7 +482,7 @@ template, and the exported `Definition`.
       names the element, as the meemoo row does; "fragment" was the word
       until 2026-09-29); the MMS ID `type` value is one constant here (open
       question); the `required` list (identifier and title).
-- [ ] **`profiles/earkmods` validation.** In `record.go`, the shape the DC
+- [x] **`profiles/earkmods` validation.** In `record.go`, the shape the DC
       worlds settled on 2026-09-28: `Validate` checks every term (known
       key, language tag shape, non-empty value) with a `*sip.TermError`
       per finding, so the CLI maps it back to a row; the one-identifier
