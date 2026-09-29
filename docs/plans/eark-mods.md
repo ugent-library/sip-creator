@@ -512,7 +512,7 @@ template, and the exported `Definition`.
       (`shelfLocator`, `enumerationAndChronology` when set, `itemIdentifier
       type="barcode"` when set), omitted when there are no items; every
       value escaped.
-- [ ] **`profiles/earkmods` tests.** As the DC worlds have them: table
+- [x] **`profiles/earkmods` tests.** As the DC worlds have them: table
       invariants (unique keys, a sub-template per element, the required
       keys in the table); encoder output (root, namespaces, version, escaping,
       `xml:lang`, the schema-location hint at both depths, one
@@ -521,6 +521,9 @@ template, and the exported `Definition`.
       positions; `Encode` refuses an unknown key without writing;
       `Schemas()` names bundled files only. Commit `Added:
       profiles/earkmods with the two-row key table and the items table`.
+      (Landed 2026-09-29 as four commits, one per box above, each
+      reviewed on its own; the sample documents also validated against
+      the bundled schema with xmllint through a catalog, the S6 shape.)
 - [ ] **The `eark-mods` profile.** `profile.go` in `profiles/earkmods`: an
       exported `Definition` with `Name "eark-mods"`, `Encoder mods{}`,
       `NewDescription` returning a `Record` of the terms and no items (how

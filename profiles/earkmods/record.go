@@ -2,7 +2,9 @@
 // RODA-class repositories whose descriptive world is MODS 3.7. A package
 // describes one bibliographic record, the statements about the work plus
 // the physical copies the library holds of it, and the vocabulary maps
-// each plain key onto one complete MODS element (ADR-0015).
+// each plain key onto one complete MODS element (ADR-0015). Its Definition
+// names the rest as data, and the registry in profiles/ hands that out as
+// "eark-mods".
 package earkmods
 
 import (
