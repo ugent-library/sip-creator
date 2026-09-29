@@ -56,14 +56,11 @@ var createCmd = &cobra.Command{
 		case updates == "" && sip.IsUpdateRecordStatus(status):
 			return fmt.Errorf("--status %s updates an earlier package; pass its identifier with --updates", strings.ToLower(status))
 		}
-		def.Declaration.RecordStatus = status
-
 		// Content category precedence: flag, then configured default, then
-		// the profile's registry value.
-		if cc, _ := cmd.Flags().GetString("content-category"); cc != "" {
-			def.Declaration.Type = cc
-		} else if cfg.ContentCategory != "" {
-			def.Declaration.Type = cfg.ContentCategory
+		// the profile's registry value (an empty value on the source package).
+		contentCategory, _ := cmd.Flags().GetString("content-category")
+		if contentCategory == "" {
+			contentCategory = cfg.ContentCategory
 		}
 
 		source, err := input.New(def.Encoder).Read(args[0])
@@ -71,19 +68,27 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("input folder %s does not conform to the input specification:\n%w", args[0], err)
 		}
 
-		builder := build.New(&build.Config{
+		builder, err := build.New(&build.Config{
+			Profile:     def,
 			Destination: args[1],
 			Logger:      logger,
 		})
+		if err != nil {
+			return err
+		}
 
 		zipper := archive.New(&archive.Config{
 			Destination: args[1],
 			Logger:      logger,
 		})
 
+		// The values that are this package's own, next to what the folder
+		// supplied: the profile carries the defaults.
 		source.PackageIdentifier = updates
+		source.RecordStatus = status
+		source.ContentCategory = contentCategory
 
-		built, err := builder.Build(def, source)
+		built, err := builder.Build(source)
 		if err != nil {
 			return err
 		}

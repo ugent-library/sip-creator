@@ -43,8 +43,11 @@ func TestSourcePackageEquivalence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	folderPkg, err := build.New(&build.Config{Destination: t.TempDir(), Logger: discard}).
-		Build(def, pkg)
+	folderBuilder, err := build.New(&build.Config{Profile: def, Destination: t.TempDir(), Logger: discard})
+	if err != nil {
+		t.Fatal(err)
+	}
+	folderPkg, err := folderBuilder.Build(pkg)
 	if err != nil {
 		t.Fatalf("Build via folder: %v", err)
 	}
@@ -68,8 +71,11 @@ func TestSourcePackageEquivalence(t *testing.T) {
 			}},
 		},
 	}
-	handPkg, err := build.New(&build.Config{Destination: t.TempDir(), Logger: discard}).
-		Build(def, handIn)
+	handBuilder, err := build.New(&build.Config{Profile: def, Destination: t.TempDir(), Logger: discard})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handPkg, err := handBuilder.Build(handIn)
 	if err != nil {
 		t.Fatalf("Build via hand-constructed input: %v", err)
 	}

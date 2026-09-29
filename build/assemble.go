@@ -22,22 +22,33 @@ import (
 // source package without writing anything to disk: every File node is created
 // here with its Path declared, and the writer later back-fills fixity as
 // it emits.
-func (b *Builder) assemble(def Definition, source *SourcePackage) (*sip.Package, error) {
-	pkg := sip.NewPackage(b.Destination, source.PackageIdentifier)
-	b.Logger.Info("created a new package", slog.String("id", pkg.Identifier))
+func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {
+	pkg := sip.NewPackage(b.destination, source.PackageIdentifier)
+	b.logger.Info("created a new package", slog.String("id", pkg.Identifier))
 
-	pkg.Declaration = &def.Declaration
+	// The package's declaration starts from the profile's and takes the
+	// values that are this package's own: its record status and content
+	// category. A copy, so the graph never points into the builder's
+	// profile.
+	decl := b.profile.Declaration
+	if source.RecordStatus != "" {
+		decl.RecordStatus = source.RecordStatus
+	}
+	if source.ContentCategory != "" {
+		decl.Type = source.ContentCategory
+	}
+	pkg.Declaration = &decl
 
 	e := sip.NewEntity()
-	b.Logger.Info("created an intellectual entity", slog.String("id", e.Identifier))
+	b.logger.Info("created an intellectual entity", slog.String("id", e.Identifier))
 
-	b.assembleDescriptive(e, def, source)
+	b.assembleDescriptive(e, source)
 	// The package ships the XSDs its documents point at and nothing else:
 	// what the METS documents reference, and what the descriptive document
 	// references. Each encoder knows its own list.
-	schemaFiles, err := schemaFileNodes(slices.Concat(mets.Schemas, def.Encoder.Schemas()))
+	schemaFiles, err := schemaFileNodes(slices.Concat(mets.Schemas, b.profile.Encoder.Schemas()))
 	if err != nil {
-		return nil, fmt.Errorf("profile %q: %w", def.Name, err)
+		return nil, fmt.Errorf("profile %q: %w", b.profile.Name, err)
 	}
 	pkg.SchemaFiles = schemaFiles
 
@@ -51,17 +62,17 @@ func (b *Builder) assemble(def Definition, source *SourcePackage) (*sip.Package,
 		return nil, err
 	}
 	pkg.ReceivedPremisFiles = received
-	if err := b.assembleRepresentations(e, def, source); err != nil {
+	if err := b.assembleRepresentations(e, *pkg.Declaration, source); err != nil {
 		return nil, err
 	}
 
-	if def.EmitPackagePremis {
+	if b.profile.EmitPackagePremis {
 		pf := sip.NewFile()
 		pf.Name = "premis.xml"
 		pf.Path = "metadata/preservation/premis.xml"
 		pf.Mime = "text/xml" // generated XML
 		pkg.PremisFile = pf
-		b.Logger.Info("created a package PREMIS file", slog.String("id", pf.Identifier))
+		b.logger.Info("created a package PREMIS file", slog.String("id", pf.Identifier))
 	}
 
 	mf := sip.NewFile()
@@ -71,30 +82,30 @@ func (b *Builder) assemble(def Definition, source *SourcePackage) (*sip.Package,
 	// nothing references the package METS from inside the package.
 	mf.Mime = "text/xml"
 	pkg.MetsFile = mf
-	b.Logger.Info("created a package METS file", slog.String("id", mf.Identifier))
+	b.logger.Info("created a package METS file", slog.String("id", mf.Identifier))
 
 	pkg.Root = e
 	return pkg, nil
 }
 
-func (b *Builder) assembleDescriptive(e *sip.Entity, def Definition, source *SourcePackage) {
+func (b *Builder) assembleDescriptive(e *sip.Entity, source *SourcePackage) {
 	d := source.Description
 	// A standard that links descriptive and preservation metadata by a
 	// shared identifier (meemoo's) swaps the entity identifier into the
 	// description, and the producer's identifier it replaces travels as
 	// MEEMOO-LOCAL-ID. Without a swap the document keeps the producer's
 	// identifier as-is (ADR-0012).
-	if s, ok := def.Encoder.(IdentifierSwapper); ok {
+	if s, ok := b.profile.Encoder.(IdentifierSwapper); ok {
 		e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"] = s.Swap(d, e.Identifier)
 	}
 	e.Description = d
 
 	df := sip.NewFile()
-	df.Name = def.DescriptiveName
+	df.Name = b.profile.DescriptiveName
 	df.Path = "metadata/descriptive/" + df.Name
 	df.Mime = "text/xml" // generated XML
 	e.DescriptionFile = df
-	b.Logger.Info("created a descriptive file", slog.String("id", df.Identifier))
+	b.logger.Info("created a descriptive file", slog.String("id", df.Identifier))
 }
 
 // schemaFileNodes declares one graph node per XSD the package ships, sorted
@@ -156,13 +167,14 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 // dir name equal the rep METS OBJID, which setting both from Name satisfies
 // for free), and SourcePackage.Validate has already checked every name for
 // uniqueness and the portable character set. Label and type resolve along
-// the defaulting cascade (name → label → type).
-func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, source *SourcePackage) error {
+// the defaulting cascade (name → label → type). decl is the package's
+// declaration, which each representation's own declaration starts from.
+func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaration, source *SourcePackage) error {
 	for _, sr := range source.Representations {
 		r := sip.NewRepresentation(sr.Name)
 		r.Label = sr.label()
-		r.Declaration = def.representationDeclaration(sr.resolvedType())
-		b.Logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("name", sr.Name))
+		r.Declaration = b.profile.representationDeclaration(decl, sr.resolvedType())
+		b.logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("name", sr.Name))
 
 		if sr.Description != nil {
 			// Mirror the package-level swap: the emitted document carries
@@ -170,17 +182,17 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, source 
 			// no-op when the terms carry none; rep-level identity is
 			// optional). The replaced value is not lifted: MEEMOO-LOCAL-ID
 			// is an identifier of the entity.
-			if s, ok := def.Encoder.(IdentifierSwapper); ok {
+			if s, ok := b.profile.Encoder.(IdentifierSwapper); ok {
 				s.Swap(sr.Description, r.Identifier)
 			}
 			r.Description = sr.Description
 
 			df := sip.NewFile()
-			df.Name = def.DescriptiveName
+			df.Name = b.profile.DescriptiveName
 			df.Path = "metadata/descriptive/" + df.Name // rep-relative, per File.Path
 			df.Mime = "text/xml"                        // generated XML
 			r.DescriptionFile = df
-			b.Logger.Info("created a representation descriptive file", slog.String("id", df.Identifier))
+			b.logger.Info("created a representation descriptive file", slog.String("id", df.Identifier))
 		}
 
 		for _, src := range sr.Files {
@@ -205,7 +217,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, source 
 			}
 			f.Representation = r
 			r.Files = append(r.Files, f)
-			b.Logger.Info("placed an essence file", slog.String("id", f.Identifier))
+			b.logger.Info("placed an essence file", slog.String("id", f.Identifier))
 		}
 
 		received, err := b.assembleReceivedPremis(fmt.Sprintf("representation %q", sr.Name), sr.Premis)
@@ -220,13 +232,13 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, source 
 		}
 		r.DocumentationFiles = docs
 
-		if def.EmitRepresentationPremis {
+		if b.profile.EmitRepresentationPremis {
 			pf := sip.NewFile()
 			pf.Name = "premis.xml"
 			pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
 			pf.Mime = "text/xml"                         // generated XML
 			r.PremisFile = pf
-			b.Logger.Info("created a representation PREMIS file", slog.String("id", pf.Identifier))
+			b.logger.Info("created a representation PREMIS file", slog.String("id", pf.Identifier))
 		}
 
 		mf := sip.NewFile()
@@ -234,7 +246,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, def Definition, source 
 		mf.Path = "representations/" + r.Name + "/METS.xml" // package-relative: referenced from package METS
 		mf.Mime = "text/xml"                                // generated XML
 		r.MetsFile = mf
-		b.Logger.Info("created a representation METS file", slog.String("id", mf.Identifier))
+		b.logger.Info("created a representation METS file", slog.String("id", mf.Identifier))
 
 		r.Entity = e
 		e.Representations = append(e.Representations, r)
@@ -267,7 +279,7 @@ func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile)
 		node.Path = "metadata/preservation/" + src.Path // container-relative, per File.Path
 		node.Mime = "text/xml"                          // verified XML above
 		files = append(files, node)
-		b.Logger.Info("placed a received preservation file", slog.String("id", node.Identifier))
+		b.logger.Info("placed a received preservation file", slog.String("id", node.Identifier))
 	}
 	return files, nil
 }

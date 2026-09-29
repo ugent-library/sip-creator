@@ -4,6 +4,6 @@ import "github.com/ugent-library/sip-creator/sip"
 
 // Assemble exposes the assembly phase to the external tests, which inspect
 // the graph a build declares without writing anything.
-func (b *Builder) Assemble(def Definition, source *SourcePackage) (*sip.Package, error) {
-	return b.assemble(def, source)
+func (b *Builder) Assemble(source *SourcePackage) (*sip.Package, error) {
+	return b.assemble(source)
 }

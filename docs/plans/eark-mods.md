@@ -725,3 +725,10 @@ as a deferred item (§8).
   and `SourceFile` against `sip.Package`, `Representation` and `File`,
   "Source X" being X as supplied before the build. The file is
   `build/source.go`; ADR-0019 carries a note. Output unchanged.
+- **The profile became builder configuration** later the same day
+  ([ADR-0020](../decisions/0020-profile-is-builder-configuration.md)):
+  `build.New(&build.Config{Profile, Destination, Logger})` returns an
+  error for a profile without an encoder, `Build(source)` takes the
+  source package alone, and a package's record status and content
+  category ride on `SourcePackage` next to `PackageIdentifier`. Output
+  unchanged.

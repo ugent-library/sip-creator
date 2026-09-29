@@ -43,7 +43,7 @@ func meemooIdentityTerms() meemoo.Terms {
 // build.SourcePackage.Validate applies them to meemoo terms at both levels whatever
 // the profile, and never to Simple Dublin Core terms.
 func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {
-	_, in, _ := newTestBuilder(t)
+	_, in, _ := newTestBuilder(t, basicDef(t))
 	in.Description = append(testDescription(),
 		sip.Term{Key: "abstract", Lang: "nl", Value: "een"},
 		sip.Term{Key: "abstract", Lang: "nl", Value: "twee"})
@@ -51,19 +51,19 @@ func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {
 		t.Errorf("repeated abstract accepted: %v", err)
 	}
 
-	_, in, _ = newTestBuilder(t)
+	_, in, _ = newTestBuilder(t, basicDef(t))
 	in.Description = append(testDescription(), sip.Term{Key: "subject", Lang: "en", Value: "cats"})
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `"nl"`) {
 		t.Errorf("subject without a Dutch entry accepted: %v", err)
 	}
 
-	_, in, _ = newTestBuilder(t)
+	_, in, _ = newTestBuilder(t, basicDef(t))
 	in.Representations[0].Description = meemoo.Terms{{Key: "title", Lang: "en", Value: "Cats"}}
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `representation "master"`) {
 		t.Errorf("representation title without a Dutch entry accepted: %v", err)
 	}
 
-	_, in, _ = newTestBuilder(t)
+	_, in, _ = newTestBuilder(t, basicDef(t))
 	in.Description = append(identityTerms(),
 		sip.Term{Key: "description", Lang: "en", Value: "one"},
 		sip.Term{Key: "description", Lang: "en", Value: "two"})

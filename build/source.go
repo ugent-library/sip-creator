@@ -89,6 +89,17 @@ type SourcePackage struct {
 	// of minting one; this is how an update reuses the original package's
 	// mets/@OBJID. Must take the uuid-<uuid> form when set.
 	PackageIdentifier string
+	// RecordStatus optionally declares this package's metsHdr/@RECORDSTATUS
+	// in the SIP3 vocabulary, uppercase: NEW, SUPPLEMENT, REPLACEMENT, TEST,
+	// VERSION or DELETE. Empty means the profile's value; profiles declare
+	// none, which the E-ARK SIP spec reads as NEW. An update-class status
+	// says this package supplements or replaces an earlier one, whose
+	// identifier must then travel in PackageIdentifier.
+	RecordStatus string
+	// ContentCategory optionally declares this package's mets/@TYPE, its
+	// content category in the CSIP vocabulary; empty means the profile's
+	// value. Must satisfy ValidateAttributeText.
+	ContentCategory string
 	// Description is the package-level descriptive metadata. Its concrete
 	// type must be the profile's descriptive standard (meemoo.Terms for
 	// meemoo profiles, eark.Terms for eark).
@@ -142,6 +153,21 @@ func (sp *SourcePackage) Validate() error {
 		if err := sip.ValidateIdentifier(sp.PackageIdentifier); err != nil {
 			return err
 		}
+	}
+	if sp.RecordStatus != "" {
+		if err := sip.ValidateRecordStatus(sp.RecordStatus); err != nil {
+			return err
+		}
+	}
+	// An update-class status names an earlier package by reusing its
+	// identifier; without one the package claims to update something it
+	// does not name. The reverse is allowed: an identifier on a NEW package
+	// may be one a caller minted upstream.
+	if sip.IsUpdateRecordStatus(sp.RecordStatus) && sp.PackageIdentifier == "" {
+		return fmt.Errorf("record status %s updates an earlier package, so PackageIdentifier must carry that package's identifier", sp.RecordStatus)
+	}
+	if err := ValidateAttributeText(sp.ContentCategory); err != nil {
+		return fmt.Errorf("content category: %w", err)
 	}
 	if sp.Description == nil {
 		return fmt.Errorf("no descriptive metadata supplied")

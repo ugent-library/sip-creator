@@ -12,7 +12,7 @@ import (
 type MetsDeclaration struct {
 	// ProfileURL is mets/@PROFILE.
 	ProfileURL string
-	// Type is mets/@TYPE, the content category; overridable per run.
+	// Type is mets/@TYPE, the content category.
 	Type string
 	// OtherType is mets/@csip:OTHERTYPE, rendered only when set; CSIP
 	// requires it when Type is "Other".

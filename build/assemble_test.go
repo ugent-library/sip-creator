@@ -78,9 +78,10 @@ func report(t *testing.T, files ...build.SourceFile) characterization.Report {
 	return rep
 }
 
-// newTestBuilder returns a builder over the minimal valid input data: one
-// representation with one essence file, descriptive terms, no report.
-func newTestBuilder(t *testing.T) (b *build.Builder, in *build.SourcePackage, outDir string) {
+// newTestBuilder returns a builder for def over the minimal valid input
+// data: one representation with one essence file, descriptive terms, no
+// report.
+func newTestBuilder(t *testing.T, def build.Definition) (b *build.Builder, in *build.SourcePackage, outDir string) {
 	t.Helper()
 	inDir, outDir := t.TempDir(), t.TempDir()
 	cat := writeEssence(t, inDir, "cat.jpg", "not really a jpeg")
@@ -91,10 +92,14 @@ func newTestBuilder(t *testing.T) (b *build.Builder, in *build.SourcePackage, ou
 			{Name: "master", Files: []build.SourceFile{cat}},
 		},
 	}
-	b = build.New(&build.Config{
+	b, err := build.New(&build.Config{
+		Profile:     def,
 		Destination: outDir,
 		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	return b, in, outDir
 }
 
@@ -120,10 +125,10 @@ func requireEmpty(t *testing.T, outDir string) {
 }
 
 func TestAssemble(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.Characterization = report(t, in.Representations[0].Files...)
 
-	pkg, err := b.Assemble(basicDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -238,13 +243,12 @@ func TestAssemble(t *testing.T) {
 }
 
 func TestAssemblePremislessProfile(t *testing.T) {
-	b, in, _ := newTestBuilder(t)
-
 	def := basicDef(t)
 	def.EmitPackagePremis = false
 	def.EmitRepresentationPremis = false
+	b, in, _ := newTestBuilder(t, def)
 
-	pkg, err := b.Assemble(def, in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -259,7 +263,7 @@ func TestAssemblePremislessProfile(t *testing.T) {
 }
 
 func TestAssembleRepresentations(t *testing.T) {
-	b, in, _ := newTestBuilder(t)
+	b, in, _ := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
 
 	// A second representation with a nested file: each package-side name is
@@ -269,7 +273,7 @@ func TestAssembleRepresentations(t *testing.T) {
 	in.Representations = append(in.Representations,
 		build.SourceRepresentation{Name: "access", Files: []build.SourceFile{a, deep}})
 
-	pkg, err := b.Assemble(basicDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -295,9 +299,9 @@ func TestAssembleRepresentations(t *testing.T) {
 // Characterization is optional in contract (ADR-0009): no report means the
 // build proceeds without format info.
 func TestAssembleWithoutReport(t *testing.T) {
-	b, in, _ := newTestBuilder(t)
+	b, in, _ := newTestBuilder(t, basicDef(t))
 
-	pkg, err := b.Assemble(basicDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble without report: %v", err)
 	}
@@ -313,13 +317,13 @@ func TestAssembleWithoutReport(t *testing.T) {
 // An entry with no match is a genuine no-match: Format stays nil for that
 // file only, and assembly succeeds.
 func TestAssembleReportNoMatch(t *testing.T) {
-	b, in, _ := newTestBuilder(t)
+	b, in, _ := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
 	in.Characterization = characterization.Report{
 		src.Key: {MD5: fileMD5(t, src.Source)},
 	}
 
-	pkg, err := b.Assemble(basicDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble with no-match report: %v", err)
 	}
@@ -335,13 +339,13 @@ func TestAssembleReportNoMatch(t *testing.T) {
 // A match that asserts no mime still yields the Format, and the mime falls
 // back to the admitted unknown; the two facts are independent.
 func TestAssembleReportMatchWithoutMime(t *testing.T) {
-	b, in, _ := newTestBuilder(t)
+	b, in, _ := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
 	in.Characterization = characterization.Report{
 		src.Key: {Format: testFormat(), MD5: fileMD5(t, src.Source)},
 	}
 
-	pkg, err := b.Assemble(basicDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble with mimeless match: %v", err)
 	}
@@ -357,12 +361,12 @@ func TestAssembleReportMatchWithoutMime(t *testing.T) {
 // Essence the report doesn't know aborts: the file was added (or the report
 // generated from the wrong directory) after the characterization run.
 func TestAssembleReportMissingEntry(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.Characterization = characterization.Report{
 		"somewhere/else.jpg": {MD5: "ab"},
 	}
 
-	if _, err := b.Assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(in); err == nil {
 		t.Fatal("assemble succeeded despite essence missing from the report")
 	}
 	requireEmpty(t, outDir)
@@ -371,14 +375,14 @@ func TestAssembleReportMissingEntry(t *testing.T) {
 // Changed bytes fail the MD5 check: a stale report must never lend its
 // format claims to different content.
 func TestAssembleReportChecksumMismatch(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
 	in.Characterization = report(t, src)
 	if err := os.WriteFile(src.Source, []byte("different bytes now"), 0600); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := b.Assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(in); err == nil {
 		t.Fatal("assemble succeeded despite essence changed since the report")
 	}
 	requireEmpty(t, outDir)
@@ -387,13 +391,13 @@ func TestAssembleReportChecksumMismatch(t *testing.T) {
 // A record without a checksum can't be verified against the bytes, so it
 // aborts rather than being trusted.
 func TestAssembleReportChecksumless(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
 	in.Characterization = characterization.Report{
 		src.Key: {Format: testFormat(), Mime: "image/test"},
 	}
 
-	if _, err := b.Assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(in); err == nil {
 		t.Fatal("assemble succeeded despite a checksumless report entry")
 	}
 	requireEmpty(t, outDir)
@@ -402,13 +406,13 @@ func TestAssembleReportChecksumless(t *testing.T) {
 // A per-file error recorded by the characterizer aborts: the tool is telling
 // us it never characterized these bytes.
 func TestAssembleReportEntryError(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
 	in.Characterization = characterization.Report{
 		src.Key: {MD5: "ab", Errors: "permission denied"},
 	}
 
-	if _, err := b.Assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(in); err == nil {
 		t.Fatal("assemble succeeded despite a characterizer-reported file error")
 	}
 	requireEmpty(t, outDir)
@@ -417,7 +421,7 @@ func TestAssembleReportEntryError(t *testing.T) {
 // Documentation needs no characterization entry (ADR-0009): no entry is
 // fine, a present entry enriches the mime but its checksum must match.
 func TestAssembleDocumentation(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
 	manual := writeEssence(t, inDir, "manual.txt", "doc")
 	notes := writeEssence(t, inDir, "sub/notes.txt", "doc")
@@ -426,7 +430,7 @@ func TestAssembleDocumentation(t *testing.T) {
 	// documentation file has no entry, which is allowed.
 	in.Characterization = report(t, in.Representations[0].Files[0], manual)
 
-	pkg, err := b.Assemble(basicDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble with documentation: %v", err)
 	}
@@ -450,7 +454,7 @@ func TestAssembleDocumentation(t *testing.T) {
 	if err := os.WriteFile(manual.Source, []byte("changed"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := b.Assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(in); err == nil {
 		t.Fatal("assemble succeeded despite a stale documentation entry")
 	}
 }
@@ -459,7 +463,7 @@ func TestAssembleDocumentation(t *testing.T) {
 // folder convention enforces with Violations, re-checked for every producer.
 func TestSourcePackageValidate(t *testing.T) {
 	valid := func(t *testing.T) *build.SourcePackage {
-		_, in, _ := newTestBuilder(t)
+		_, in, _ := newTestBuilder(t, basicDef(t))
 		return in
 	}
 
@@ -495,6 +499,15 @@ func TestSourcePackageValidate(t *testing.T) {
 		{"malformed package identifier", func(c *build.SourcePackage) {
 			c.PackageIdentifier = "not-a-uuid"
 		}, "uuid-<uuid> form"},
+		{"record status outside the vocabulary", func(c *build.SourcePackage) {
+			c.RecordStatus = "supplement"
+		}, "SIP3 vocabulary"},
+		{"update status without the updated package's identifier", func(c *build.SourcePackage) {
+			c.RecordStatus = "REPLACEMENT"
+		}, "PackageIdentifier must carry"},
+		{"xml-unsafe content category", func(c *build.SourcePackage) {
+			c.ContentCategory = "a<b"
+		}, "cannot be emitted"},
 		{"invalid representation descriptive", func(c *build.SourcePackage) {
 			c.Representations[0].Description = meemoo.Terms{{Key: "titel", Value: "x"}}
 		}, "not in the descriptive vocabulary"},
@@ -526,12 +539,12 @@ func TestSourcePackageValidate(t *testing.T) {
 // term is swapped for the representation identifier, and identity is not
 // required.
 func TestAssembleRepresentationDescriptive(t *testing.T) {
-	b, in, _ := newTestBuilder(t)
+	b, in, _ := newTestBuilder(t, basicDef(t))
 	in.Representations[0].Description = meemoo.Terms{
 		{Key: "license", Value: "publiek domein"},
 	}
 
-	pkg, err := b.Assemble(basicDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -549,11 +562,11 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 
 	// With an identifier term present, the representation identifier is
 	// swapped in, mirroring the package-level behavior.
-	b2, in2, _ := newTestBuilder(t)
+	b2, in2, _ := newTestBuilder(t, basicDef(t))
 	in2.Representations[0].Description = meemoo.Terms{
 		{Key: "identifier", Value: "rep-local-1"},
 	}
-	pkg2, err := b2.Assemble(basicDef(t), in2)
+	pkg2, err := b2.Assemble(in2)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -563,8 +576,8 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	}
 
 	// Without rep terms, no node exists.
-	b3, in3, _ := newTestBuilder(t)
-	pkg3, err := b3.Assemble(basicDef(t), in3)
+	b3, in3, _ := newTestBuilder(t, basicDef(t))
+	pkg3, err := b3.Assemble(in3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -594,17 +607,43 @@ func identifierTerm(d sip.Description) string {
 	return ""
 }
 
+// A package's record status and content category are its own, supplied on
+// the source package: they land on the package declaration and on each
+// representation's, and the profile's declaration stays as it was.
+func TestAssembleDeclaresPackageValues(t *testing.T) {
+	before := basicDef(t).Declaration
+	b, in, _ := newTestBuilder(t, basicDef(t))
+	in.PackageIdentifier = "uuid-3f2c1d0e-1111-4222-8333-444455556666"
+	in.RecordStatus = "REPLACEMENT"
+	in.ContentCategory = "Textual works – Print"
+
+	pkg, err := b.Assemble(in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	if pkg.Declaration.RecordStatus != "REPLACEMENT" || pkg.Declaration.Type != "Textual works – Print" {
+		t.Errorf("package declaration = %q/%q, want the source package's status and category", pkg.Declaration.RecordStatus, pkg.Declaration.Type)
+	}
+	rd := pkg.Root.Representations[0].Declaration
+	if rd.RecordStatus != "REPLACEMENT" || rd.Type != "Textual works – Print" {
+		t.Errorf("representation declaration = %q/%q, want the package's", rd.RecordStatus, rd.Type)
+	}
+	if after := basicDef(t).Declaration; after.RecordStatus != before.RecordStatus || after.Type != before.Type {
+		t.Errorf("profile declaration changed: %q/%q", after.RecordStatus, after.Type)
+	}
+}
+
 // The eark profile keeps the producer's identifier in the descriptive
 // terms, at both levels, and lifts no MEEMOO-LOCAL-ID onto the entity: its
 // standard has no swap (ADR-0012).
 func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
-	b, in, _ := newTestBuilder(t)
+	b, in, _ := newTestBuilder(t, earkDef(t))
 	in.Description = identityTerms()
 	in.Representations[0].Description = eark.Terms{
 		{Key: "identifier", Value: "rep-local-1"},
 	}
 
-	pkg, err := b.Assemble(earkDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -625,9 +664,9 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 // profile declaration unchanged; the package declaration never changes
 // (ADR-0013).
 func TestAssembleRepresentationDeclaration(t *testing.T) {
-	b, in, _ := newTestBuilder(t)
+	b, in, _ := newTestBuilder(t, earkDef(t))
 	in.Description = identityTerms()
-	pkg, err := b.Assemble(earkDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -644,8 +683,8 @@ func TestAssembleRepresentationDeclaration(t *testing.T) {
 			pkg.Declaration.Type, pkg.Declaration.OtherType)
 	}
 
-	b2, in2, _ := newTestBuilder(t)
-	pkg2, err := b2.Assemble(basicDef(t), in2)
+	b2, in2, _ := newTestBuilder(t, basicDef(t))
+	pkg2, err := b2.Assemble(in2)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -660,7 +699,7 @@ func TestAssembleRepresentationDeclaration(t *testing.T) {
 // Label and type resolve along the name → label → type cascade, and an
 // explicit type reaches the eark representation declaration.
 func TestAssembleRepresentationCascade(t *testing.T) {
-	b, in, _ := newTestBuilder(t)
+	b, in, _ := newTestBuilder(t, earkDef(t))
 	inDir := t.TempDir()
 	in.Representations = []build.SourceRepresentation{
 		{Name: "master", Label: "Master scan", Type: "archival",
@@ -672,7 +711,7 @@ func TestAssembleRepresentationCascade(t *testing.T) {
 	}
 
 	in.Description = identityTerms()
-	pkg, err := b.Assemble(earkDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -701,14 +740,14 @@ const validPremis = `<?xml version="1.0"?><premis:premis xmlns:premis="http://ww
 // Received preservation files become graph nodes at both levels (copied,
 // never parsed) and must actually be premis:premis documents.
 func TestAssembleReceivedPremis(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
 	pkgPremis := writeEssence(t, inDir, "vendor.xml", validPremis)
 	repPremis := writeEssence(t, inDir, "scanner/ocr.xml", validPremis)
 	in.Premis = []build.SourceFile{pkgPremis}
 	in.Representations[0].Premis = []build.SourceFile{repPremis}
 
-	pkg, err := b.Assemble(basicDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -742,12 +781,12 @@ func TestAssembleReceivedPremis(t *testing.T) {
 // documentation: nodes under documentation/, no characterization entry
 // required.
 func TestAssembleRepresentationDocumentation(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
 	note := writeEssence(t, inDir, "sub/scan-notes.txt", "doc")
 	in.Representations[0].Documentation = []build.SourceFile{note}
 
-	pkg, err := b.Assemble(basicDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -768,12 +807,12 @@ func TestAssembleRepresentationDocumentation(t *testing.T) {
 // A received file that is not a PREMIS document aborts assembly: packaging
 // it under metadata/preservation/ would be a false preservation claim.
 func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
 	bad := writeEssence(t, inDir, "vendor.xml", "not xml at all")
 	in.Premis = []build.SourceFile{bad}
 
-	if _, err := b.Assemble(basicDef(t), in); err == nil {
+	if _, err := b.Assemble(in); err == nil {
 		t.Fatal("assemble accepted a non-PREMIS received file")
 	}
 	requireEmpty(t, outDir)
@@ -782,10 +821,10 @@ func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {
 // A supplied package identifier is reused verbatim (how an update keeps
 // the original package's mets/@OBJID); empty means mint.
 func TestAssemblePackageIdentifier(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.PackageIdentifier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
 
-	pkg, err := b.Assemble(basicDef(t), in)
+	pkg, err := b.Assemble(in)
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -800,10 +839,10 @@ func TestAssemblePackageIdentifier(t *testing.T) {
 // Build refuses invalid input data before any side effect: the negative
 // twin of the embedding-caller contract.
 func TestBuildInvalidConfigWritesNothing(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.Representations = nil
 
-	if _, err := b.Build(basicDef(t), in); err == nil {
+	if _, err := b.Build(in); err == nil {
 		t.Fatal("Build succeeded on an invalid config")
 	}
 	requireEmpty(t, outDir)
@@ -833,9 +872,9 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			b, in, outDir := newTestBuilder(t)
+			b, in, outDir := newTestBuilder(t, c.def)
 			in.Description = c.desc
-			_, err := b.Build(c.def, in)
+			_, err := b.Build(in)
 			if err == nil || !strings.Contains(err.Error(), c.want) {
 				t.Fatalf("Build error = %v, want the mismatch mentioning %q", err, c.want)
 			}
@@ -843,10 +882,10 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 		})
 	}
 
-	b, in, outDir := newTestBuilder(t)
+	b, in, outDir := newTestBuilder(t, earkDef(t))
 	in.Description = identityTerms()
 	in.Representations[0].Description = otherDescription{}
-	_, err := b.Build(earkDef(t), in)
+	_, err := b.Build(in)
 	if err == nil || !strings.Contains(err.Error(), `representation "master"`) {
 		t.Fatalf("Build error = %v, want the mismatch naming the representation", err)
 	}
@@ -863,10 +902,10 @@ func (unbundledSchemas) Schemas() []string { return []string{"nope.xsd"} }
 // assembly, before any write: the alternative is an empty XSD in the
 // package.
 func TestBuildRefusesUnbundledSchema(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
 	def := basicDef(t)
 	def.Encoder = unbundledSchemas{def.Encoder}
-	_, err := b.Build(def, in)
+	b, in, outDir := newTestBuilder(t, def)
+	_, err := b.Build(in)
 	if err == nil || !strings.Contains(err.Error(), `"nope.xsd"`) {
 		t.Fatalf("Build error = %v, want the unbundled schema named", err)
 	}
@@ -874,15 +913,19 @@ func TestBuildRefusesUnbundledSchema(t *testing.T) {
 }
 
 // A definition built outside the registry names no descriptive encoder
-// and is refused before any side effect, as an error rather than a panic.
-func TestBuildDefinitionWithoutEncoderWritesNothing(t *testing.T) {
-	b, in, outDir := newTestBuilder(t)
+// and is refused when the builder is constructed, as an error rather than
+// a panic, so no build can start from it.
+func TestNewRefusesDefinitionWithoutEncoder(t *testing.T) {
 	def := basicDef(t)
 	def.Encoder = nil
-	if _, err := b.Build(def, in); err == nil {
-		t.Fatal("Build accepted a definition without a descriptive standard")
+	_, err := build.New(&build.Config{
+		Profile:     def,
+		Destination: t.TempDir(),
+		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
+	})
+	if err == nil {
+		t.Fatal("New accepted a definition without a descriptive standard")
 	}
-	requireEmpty(t, outDir)
 }
 
 // Build enforces what each standard requires of a package-level
@@ -890,9 +933,9 @@ func TestBuildDefinitionWithoutEncoderWritesNothing(t *testing.T) {
 // basic they are refused, and a missing identity is refused under either
 // profile, all before any side effect.
 func TestBuildRequiredPerStandard(t *testing.T) {
-	b, in, _ := newTestBuilder(t)
+	b, in, _ := newTestBuilder(t, earkDef(t))
 	in.Description = identityTerms()
-	if _, err := b.Build(earkDef(t), in); err != nil {
+	if _, err := b.Build(in); err != nil {
 		t.Fatalf("eark Build refused identity-only terms: %v", err)
 	}
 
@@ -908,9 +951,9 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			b, in, outDir := newTestBuilder(t)
+			b, in, outDir := newTestBuilder(t, c.def)
 			in.Description = c.desc
-			_, err := b.Build(c.def, in)
+			_, err := b.Build(in)
 			if err == nil || !strings.Contains(err.Error(), c.want) {
 				t.Fatalf("Build error = %v, want %q", err, c.want)
 			}
