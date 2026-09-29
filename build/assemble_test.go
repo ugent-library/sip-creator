@@ -16,6 +16,7 @@ import (
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -586,11 +587,11 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	}
 }
 
-// identifierTerm returns the value of the identifier term of either
-// world's terms ("" when absent): what the meemoo swap wrote, or what the
-// eark profile left alone. Neither profile package exports an accessor for
-// it; the swap is the meemoo package's own business, and the eark profile
-// never swaps.
+// identifierTerm returns the value of the identifier term of any world's
+// description ("" when absent): what the meemoo swap wrote, or what the
+// eark profiles left alone. No profile package exports an accessor for it;
+// the swap is the meemoo package's own business, and the eark profiles
+// never swap.
 func identifierTerm(d sip.Description) string {
 	var terms []sip.Term
 	switch v := d.(type) {
@@ -598,6 +599,8 @@ func identifierTerm(d sip.Description) string {
 		terms = v
 	case eark.Terms:
 		terms = v
+	case earkmods.Record:
+		terms = v.Terms
 	}
 	for _, term := range terms {
 		if term.Key == "identifier" {
@@ -858,7 +861,8 @@ func (otherDescription) ValidateRequired() error { return nil }
 // A description of another standard is refused by the profile's
 // descriptive-standard check before validation and before any side effect,
 // at package and representation level alike: a type no profile writes,
-// meemoo terms handed to eark, Simple DC terms handed to basic.
+// meemoo terms handed to eark, Simple DC terms handed to basic or to
+// eark-mods, a MODS record handed to either DC profile.
 func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	cases := []struct {
 		name string
@@ -869,6 +873,9 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 		{"unknown type to eark", earkDef(t), otherDescription{}, "eark.Terms"},
 		{"meemoo terms to eark", earkDef(t), testDescription(), "meemoo.Terms, not Simple Dublin Core"},
 		{"simple dc terms to basic", basicDef(t), identityTerms(), "eark.Terms, not meemoo dc+schema"},
+		{"simple dc terms to eark-mods", earkmodsDef(t), identityTerms(), "eark.Terms, not a MODS record"},
+		{"record to eark", earkDef(t), identityRecord(), "earkmods.Record, not Simple Dublin Core"},
+		{"record to basic", basicDef(t), identityRecord(), "earkmods.Record, not meemoo dc+schema"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -948,6 +955,7 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description is required"},
 		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "identifier", Value: "x"}}, "title is required"},
 		{"eark without an identifier", earkDef(t), eark.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
+		{"eark-mods without a title", earkmodsDef(t), earkmods.Record{Terms: []sip.Term{{Key: "identifier", Value: "x"}}}, "title is required"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -959,5 +967,59 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 			}
 			requireEmpty(t, outDir)
 		})
+	}
+}
+
+// The eark-mods profile builds a complete package from a record: mods.xml
+// under metadata/descriptive with the items rendered, the METS set plus the
+// MODS schema and nothing else under schemas/, and a package METS whose
+// dmdSec types the document as MODS 3.7. No swap: the record keeps the
+// producer's identifier and no MEEMOO-LOCAL-ID is lifted (ADR-0012).
+func TestBuildEarkMods(t *testing.T) {
+	b, in, _ := newTestBuilder(t, earkmodsDef(t))
+	rec := identityRecord()
+	rec.Items = []earkmods.Item{{CallNumber: "BIB.FA.001", Barcode: "000000123"}}
+	in.Description = rec
+
+	pkg, err := b.Build(in)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+
+	doc, err := os.ReadFile(filepath.Join(pkg.Location, "metadata", "descriptive", "mods.xml"))
+	if err != nil {
+		t.Fatalf("mods.xml not written: %v", err)
+	}
+	for _, want := range []string{
+		`<mods:mods `,
+		`<mods:title>Catus Testus</mods:title>`,
+		`<mods:itemIdentifier type="barcode">000000123</mods:itemIdentifier>`,
+	} {
+		if !strings.Contains(string(doc), want) {
+			t.Errorf("mods.xml missing %s\n%s", want, doc)
+		}
+	}
+	if got := identifierTerm(pkg.Root.Description); got != "local-id-001" {
+		t.Errorf("description identifier = %q, want the producer's %q", got, "local-id-001")
+	}
+	if _, ok := pkg.Root.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; ok {
+		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; eark-mods has no swap")
+	}
+
+	names := make([]string, 0, len(pkg.SchemaFiles))
+	for _, sf := range pkg.SchemaFiles {
+		names = append(names, sf.Name)
+	}
+	want := slices.Sorted(slices.Values(append(slices.Clone(mets.Schemas), "mods-3-7.xsd")))
+	if !slices.Equal(names, want) {
+		t.Errorf("schemas = %v, want the METS set plus the MODS schema %v", names, want)
+	}
+
+	metsDoc, err := os.ReadFile(filepath.Join(pkg.Location, "METS.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(metsDoc), `MDTYPE="MODS" MDTYPEVERSION="3.7"`) {
+		t.Errorf("package METS dmdSec does not type the document as MODS 3.7:\n%s", metsDoc)
 	}
 }

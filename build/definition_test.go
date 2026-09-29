@@ -7,6 +7,7 @@ import (
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -21,6 +22,17 @@ func earkDef(t *testing.T) build.Definition {
 	return def
 }
 
+// earkmodsDef returns the registered "eark-mods" definition the tests
+// build with.
+func earkmodsDef(t *testing.T) build.Definition {
+	t.Helper()
+	def, ok := profiles.Get("eark-mods")
+	if !ok {
+		t.Fatal(`no "eark-mods" definition registered`)
+	}
+	return def
+}
+
 // identityTerms is the input convention's own MUSTs and nothing more, in
 // the eark profile's standard, Simple Dublin Core.
 func identityTerms() eark.Terms {
@@ -28,6 +40,15 @@ func identityTerms() eark.Terms {
 		{Key: "identifier", Value: "local-id-001"},
 		{Key: "title", Value: "Catus Testus"},
 	}
+}
+
+// identityRecord is the same identity in the eark-mods profile's standard,
+// a MODS record without items.
+func identityRecord() earkmods.Record {
+	return earkmods.Record{Terms: []sip.Term{
+		{Key: "identifier", Value: "local-id-001"},
+		{Key: "title", Value: "Catus Testus"},
+	}}
 }
 
 // meemooIdentityTerms is the same identity in meemoo's standard: short of

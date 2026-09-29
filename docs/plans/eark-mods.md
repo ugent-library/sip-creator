@@ -524,7 +524,7 @@ template, and the exported `Definition`.
       (Landed 2026-09-29 as four commits, one per box above, each
       reviewed on its own; the sample documents also validated against
       the bundled schema with xmllint through a catalog, the S6 shape.)
-- [ ] **The `eark-mods` profile.** `profile.go` in `profiles/earkmods`: an
+- [x] **The `eark-mods` profile.** `profile.go` in `profiles/earkmods`: an
       exported `Definition` with `Name "eark-mods"`, `Encoder mods{}`,
       `NewDescription` returning a `Record` of the terms and no items (how
       items reach a record from the folder is S4's), `RequireSubmitterORID`

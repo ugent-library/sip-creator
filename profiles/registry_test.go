@@ -30,8 +30,9 @@ func withMETS(names ...string) []string {
 // here rather than at the first build, and each profile ships exactly what
 // its documents point at: basic the METS set plus meemoo's descriptive
 // schema and what it imports (the Dublin Core family, EDTF, schema.org,
-// xml.xsd), eark the METS set plus dc.xsd. The bundle is the union of what
-// the profiles ship, so no profile ships all of it.
+// xml.xsd), eark the METS set plus dc.xsd, eark-mods the METS set plus
+// mods-3-7.xsd. The bundle is the union of what the profiles ship, so no
+// profile ships all of it.
 func TestRegistrySchemas(t *testing.T) {
 	bundle := schemas.Get()
 	for _, name := range Names() {
@@ -49,6 +50,10 @@ func TestRegistrySchemas(t *testing.T) {
 	eark := withMETS("dc.xsd")
 	if got := shipped(t, "eark"); !slices.Equal(got, eark) {
 		t.Errorf("eark ships %v, want the METS set plus dc.xsd %v", got, eark)
+	}
+	earkmods := withMETS("mods-3-7.xsd")
+	if got := shipped(t, "eark-mods"); !slices.Equal(got, earkmods) {
+		t.Errorf("eark-mods ships %v, want the METS set plus mods-3-7.xsd %v", got, earkmods)
 	}
 }
 
