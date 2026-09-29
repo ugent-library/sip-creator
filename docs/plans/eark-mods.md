@@ -88,6 +88,10 @@ the DC table while walking the folder, before any profile is known.
    sub-terms. That is acceptable because the source data is flat columns.
    A richer record has no route into the package until the table grows a
    row for its shape or the supplied-document route returns (decision 6).
+   (2026-09-29: the table row names the element the key emits, as the
+   meemoo row does, and the template renders that element complete; the
+   "template fragment" of this decision is that element's sub-template,
+   not a column of its own.)
 3. **The profile fixes the descriptive standard.** The input supplies
    terms to encode in that standard. MODS terms given to a DC profile are
    a build error before any disk write, and the reverse likewise. (Until
@@ -451,7 +455,7 @@ tests in `profiles/`.) The new package copies the layout of
 vocabulary table with the required list, the encoder type with its
 template, and the exported `Definition`.
 
-- [ ] **`mods-3-7.xsd` in the bundle.** Fetch the schema (loc.gov refuses
+- [x] **`mods-3-7.xsd` in the bundle.** Fetch the schema (loc.gov refuses
       scripted downloads; the Internet Archive serves the raw file), check
       the header says MODS 3.7 and the size is about 53 KB, add it to
       `schemas/`. It imports `xml.xsd` and `xlink.xsd` by absolute loc.gov
@@ -473,10 +477,11 @@ template, and the exported `Definition`.
       (decided 2026-09-29). The field doc on `Items` states that items
       describe the package level only (ADR-0015; see the open question).
       `vocabulary.go`: the key table with `identifier` and `title`, each
-      row naming the fragment the template renders for it and the fixed
-      attribute values that fragment needs; the MMS ID `type` value is one
-      constant here (open question); the `required` list (identifier and
-      title).
+      row naming the MODS element the key emits, which the template
+      renders complete, and the fixed attribute value it carries (the row
+      names the element, as the meemoo row does; "fragment" was the word
+      until 2026-09-29); the MMS ID `type` value is one constant here (open
+      question); the `required` list (identifier and title).
 - [ ] **`profiles/earkmods` validation.** In `record.go`, the shape the DC
       worlds settled on 2026-09-28: `Validate` checks every term (known
       key, language tag shape, non-empty value) with a `*sip.TermError`
@@ -500,15 +505,16 @@ template, and the exported `Definition`.
       (decided 2026-09-29; the box had said six files, with `xlink.xsd`
       and `xml.xsd`). The template: root `mods:mods` with the MODS
       namespace, `version="3.7"` and an `xsi:schemaLocation` onto
-      `{{.Schemas}}/mods-3-7.xsd`; one fragment per key (`identifier` with
-      its `type`, `titleInfo/title` with `xml:lang`); the items as one
+      `{{.Schemas}}/mods-3-7.xsd`; one sub-template per element
+      (`identifier` with its `type`, `titleInfo/title` with `xml:lang`);
+      the items as one
       `location/holdingSimple` with one `copyInformation` per item
       (`shelfLocator`, `enumerationAndChronology` when set, `itemIdentifier
       type="barcode"` when set), omitted when there are no items; every
       value escaped.
 - [ ] **`profiles/earkmods` tests.** As the DC worlds have them: table
-      invariants (unique keys, a fragment per row, the required keys in
-      the table); encoder output (root, namespaces, version, escaping,
+      invariants (unique keys, a sub-template per element, the required
+      keys in the table); encoder output (root, namespaces, version, escaping,
       `xml:lang`, the schema-location hint at both depths, one
       `copyInformation` per item with the right children, no `location`
       without items); `Validate` reports every finding with per-term
