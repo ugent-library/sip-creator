@@ -467,7 +467,7 @@ template, and the exported `Definition`.
       doc of `schemas/` says the bundle is what every SIP carries, which
       becomes the union of what the profiles ship. Commit `Added: MODS 3.7
       XSD in the schema bundle`.
-- [ ] **`profiles/earkmods` model.** `record.go`: `Record`, a struct of
+- [x] **`profiles/earkmods` model.** `record.go`: `Record`, a struct of
       `Terms []sip.Term` (the statement shape the worlds share since
       2026-09-28) and `Items []Item` (`CallNumber`, `Barcode`,
       `Enumeration`), implementing `sip.Description`. The name says what
