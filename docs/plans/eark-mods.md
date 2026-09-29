@@ -549,7 +549,7 @@ template, and the exported `Definition`.
       `profiles/registry_test.go` the schema assertion pins that set for
       `eark-mods`; the two other registry tests cover the new entry as
       they iterate `Names()`. Commit `Added: eark-mods profile`.
-- [ ] **First `encoders/mets` test.** The `dmdSec` carries `MDTYPE` and
+- [x] **First `encoders/mets` test.** The `dmdSec` carries `MDTYPE` and
       `MDTYPEVERSION` from the declaration, and omits `MDTYPEVERSION` when
       the declaration leaves it empty. The graph under test is built by
       assigning fields on `sip.NewPackage`, `sip.NewEntity` and

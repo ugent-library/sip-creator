@@ -16,9 +16,11 @@ ingest into the Flemish heritage archive.
 
 ## Features
 
-* Implements two profiles, selected with `--profile`: `eark` builds a plain
-  [E-ARK SIP](https://earksip.dilcis.eu/) 2.2.0 for E-ARK-conformant repositories;
-  `basic` builds a SIP conforming to the
+* Implements three profiles, selected with `--profile`: `eark` builds a plain
+  [E-ARK SIP](https://earksip.dilcis.eu/) 2.2.0 for E-ARK-conformant repositories with
+  Simple Dublin Core descriptive metadata; `eark-mods` builds the same package with
+  [MODS 3.7](https://www.loc.gov/standards/mods/) descriptive metadata for bibliographic
+  records; `basic` builds a SIP conforming to the
   [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
   built on E-ARK SIP 2.0.4, for ingest into the Flemish heritage archive.
 * Builds a complete package from a plain input folder: your content files plus a simple
@@ -84,8 +86,8 @@ configuration:
 ./bin/sip-creator check --profile eark ./your-input
 ```
 
-**Delivering to an E-ARK-conformant repository (eark profile):** the zip is the
-deliverable; ingest it directly.
+**Delivering to an E-ARK-conformant repository (eark and eark-mods profiles):** the zip
+is the deliverable; ingest it directly.
 
 **Delivering to Meemoo (basic profile):** meemoo's transfer format wraps the SIP in a
 BagIt bag — an envelope this tool deliberately does not produce. Use `--no-zip` to
@@ -132,10 +134,11 @@ if err != nil {
 }
 
 pkg, err := builder.Build(&build.SourcePackage{
-	// Each profile package owns its terms type: the eark profile writes
-	// Simple Dublin Core from eark.Terms, the basic profile meemoo's
-	// dc+schema document from meemoo.Terms. Both are lists of sip.Term,
-	// keyed by the plain keys of the input specification's tables.
+	// Each profile package owns its description type: the eark profile
+	// writes Simple Dublin Core from eark.Terms, the basic profile meemoo's
+	// dc+schema document from meemoo.Terms (both lists of sip.Term, keyed
+	// by the plain keys of the input specification's tables), and the
+	// eark-mods profile MODS 3.7 from an earkmods.Record (below).
 	Description: eark.Terms{
 		{Key: "identifier", Value: "inv.2024.001"},
 		{Key: "title", Value: "Correspondentie 1914-1918"},
@@ -171,6 +174,33 @@ pkg, err := builder.Build(&build.SourcePackage{
 	RecordStatus:      sip.RecordStatusReplacement,
 	ContentCategory:   "Textual works – Print",
 	// Description and Representations as above.
+})
+```
+
+The `eark-mods` profile takes a bibliographic record instead of a list of terms: the
+statements about the work, plus the library's physical copies of it as items, each a
+call number with an optional barcode and an optional volume or issue designation. Items
+belong to the package-level record only; a representation is a version of the content,
+never a copy:
+
+```go
+import "github.com/ugent-library/sip-creator/profiles/earkmods"
+
+def, _ := profiles.Get("eark-mods")
+// WithSubmitter and build.New as above.
+
+pkg, err := builder.Build(&build.SourcePackage{
+	Description: earkmods.Record{
+		Terms: []sip.Term{
+			{Key: "identifier", Value: "990001234560471"},
+			{Key: "title", Lang: "nl", Value: "Correspondentie 1914-1918"},
+		},
+		Items: []earkmods.Item{
+			{CallNumber: "BIB.HS.001", Barcode: "000012345678"},
+			{CallNumber: "BIB.HS.002", Enumeration: "deel 2"},
+		},
+	},
+	// Representations as above.
 })
 ```
 
@@ -244,8 +274,11 @@ your-input/
 The rows file is a two-column `key,value` file with a header row. The profile you pass
 to `check` and `create` says which vocabulary the rows are in: under `basic` the keys
 come from meemoo's closed vocabulary of Dublin Core terms plus two schema.org
-properties; under `eark` they are the fifteen Simple Dublin Core elements (both tables
-are in the [input specification](docs/input-spec.md)). Repeat a key for multiple values,
+properties; under `eark` they are the fifteen Simple Dublin Core elements; under
+`eark-mods` they are the MODS keys, `identifier` and `title` today (the two DC tables
+are in the [input specification](docs/input-spec.md); the MODS table and its items
+file join it with the [eark-mods plan](docs/plans/eark-mods.md)'s next step). Repeat a
+key for multiple values,
 and tag a value's language in square brackets where it matters:
 
 ```csv
