@@ -537,7 +537,7 @@ template, and the exported `Definition`.
       The field docs that name the description types a profile accepts
       (`SourcePackage.Description`, `SourceRepresentation.Description`,
       `sip.Description`) gain `earkmods.Record`.
-- [ ] **Engine and registry tests.** In `build/assemble_test.go`, where
+- [x] **Engine and registry tests.** In `build/assemble_test.go`, where
       the checks against the real profiles live: the case tables of
       `TestBuildRejectsDescriptionOfAnotherStandard` (eark terms handed to
       `eark-mods`; a record handed to `eark` and to `basic`) and
