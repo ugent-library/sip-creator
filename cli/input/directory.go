@@ -18,7 +18,6 @@ import (
 type directory struct {
 	root       string
 	violations Violations
-	warnings   []string
 	builder    DescriptionBuilder
 }
 
@@ -36,8 +35,8 @@ const (
 // read walks the top level: the reserved names each go to their decoder or
 // collector, everything else is content, whose place depends on whether a
 // representations/ folder exists.
-func (d *directory) read() *Package {
-	pkg := &Package{Root: d.root}
+func (d *directory) read() *build.Material {
+	m := &build.Material{}
 
 	var content []os.DirEntry
 	var description, repsDir, repsCSV string
@@ -71,25 +70,25 @@ func (d *directory) read() *Package {
 				d.violate("documentation is a file; the reserved name is for a folder")
 				continue
 			}
-			pkg.Documentation = d.collectFiles(src)
+			m.Documentation = d.collectFiles(src)
 		case premisName:
 			if !e.IsDir() {
 				d.violate("premis is a file; the reserved name is for a folder")
 				continue
 			}
-			pkg.Premis = d.collectPremisFiles(src)
+			m.Premis = d.collectPremisFiles(src)
 		case sidecarName:
 			if e.IsDir() {
 				d.violate("siegfried.json is a folder; the reserved name is for the characterization report")
 				continue
 			}
-			pkg.Characterization = d.decodeSidecar(src)
+			m.Characterization = d.decodeSidecar(src)
 		default:
 			content = append(content, e)
 		}
 	}
 
-	pkg.Description = d.decodeDescription(description, true)
+	m.Description = d.decodeDescription(description, true)
 
 	if repsDir != "" {
 		// With a representations/ folder, all content lives inside it;
@@ -97,22 +96,22 @@ func (d *directory) read() *Package {
 		for _, e := range content {
 			d.violate("%s: content must live inside representations/ when that folder exists (only documentation/ and premis/ may sit beside it)", e.Name())
 		}
-		pkg.Representations = d.readRepresentations(repsDir)
+		m.Representations = d.readRepresentations(repsDir)
 		if repsCSV != "" {
-			pkg.Representations = d.applyRepresentations(repsCSV, pkg.Representations)
+			m.Representations = d.applyRepresentations(repsCSV, m.Representations)
 		}
 	} else {
 		if repsCSV != "" {
 			d.violate("representations.csv requires a representations/ folder; a flat folder is one representation named after the folder itself")
 		}
-		pkg.Representations = []Representation{d.readFlatRepresentation(content)}
+		m.Representations = []build.SourceRepresentation{d.readFlatRepresentation(content)}
 	}
 
-	return pkg
+	return m
 }
 
-func (d *directory) readRepresentations(dir string) []Representation {
-	var reps []Representation
+func (d *directory) readRepresentations(dir string) []build.SourceRepresentation {
+	var reps []build.SourceRepresentation
 	for _, e := range d.readDir(dir) {
 		if !e.IsDir() {
 			d.violate("representations/%s: only representation folders may sit directly inside representations/", e.Name())
@@ -134,8 +133,8 @@ func (d *directory) readRepresentations(dir string) []Representation {
 	return reps
 }
 
-func (d *directory) readRepresentation(dir, name string) Representation {
-	rep := Representation{Name: name}
+func (d *directory) readRepresentation(dir, name string) build.SourceRepresentation {
+	rep := build.SourceRepresentation{Name: name}
 	var description string
 	for _, e := range d.readDir(dir) {
 		// Reserved names are ASCII, which NFC normalization never alters,
@@ -179,7 +178,7 @@ func (d *directory) readRepresentation(dir, name string) Representation {
 // readFlatRepresentation handles the simple case: no
 // representations/ folder, so every non-reserved entry is the content of a
 // single representation, named after the input folder itself.
-func (d *directory) readFlatRepresentation(entries []os.DirEntry) Representation {
+func (d *directory) readFlatRepresentation(entries []os.DirEntry) build.SourceRepresentation {
 	name := filepath.Base(d.root)
 	// The input folder's name becomes the representation's package-side
 	// name, so it must satisfy the same rule as a folder under
@@ -187,7 +186,7 @@ func (d *directory) readFlatRepresentation(entries []os.DirEntry) Representation
 	if err := build.ValidateRepresentationName(name); err != nil {
 		d.violate("the folder name names the single representation: %v", err)
 	}
-	rep := Representation{Name: name}
+	rep := build.SourceRepresentation{Name: name}
 	for _, e := range entries {
 		src := filepath.Join(d.root, e.Name())
 		if e.IsDir() {
@@ -205,8 +204,8 @@ func (d *directory) readFlatRepresentation(entries []os.DirEntry) Representation
 // collectFiles gathers every file under dir recursively with Path relative
 // to dir; documentation/, premis/, and representation content all collect
 // the same way.
-func (d *directory) collectFiles(dir string) []File {
-	var files []File
+func (d *directory) collectFiles(dir string) []build.SourceFile {
+	var files []build.SourceFile
 	d.walkContent(dir, dir, &files)
 	return files
 }
@@ -216,17 +215,17 @@ func (d *directory) collectFiles(dir string) []File {
 // transport-level premis rule: premis.xml belongs to the generated
 // document. Content conformance (well-formed premis:premis) is
 // deliberately left to assembly.
-func (d *directory) collectPremisFiles(dir string) []File {
+func (d *directory) collectPremisFiles(dir string) []build.SourceFile {
 	files := d.collectFiles(dir)
 	for _, f := range files {
 		if path.Base(f.Path) == "premis.xml" {
-			d.violate("%s: premis.xml is reserved for the generated preservation document; rename the received file", f.Rel)
+			d.violate("%s: premis.xml is reserved for the generated preservation document; rename the received file", f.Key)
 		}
 	}
 	return files
 }
 
-func (d *directory) walkContent(base, dir string, files *[]File) {
+func (d *directory) walkContent(base, dir string, files *[]build.SourceFile) {
 	for _, e := range d.readDir(dir) {
 		src := filepath.Join(dir, e.Name())
 		if e.IsDir() {
@@ -237,7 +236,7 @@ func (d *directory) walkContent(base, dir string, files *[]File) {
 	}
 }
 
-func (d *directory) newFile(base, src string) File {
+func (d *directory) newFile(base, src string) build.SourceFile {
 	relRoot, err := filepath.Rel(d.root, src)
 	if err != nil {
 		relRoot = src
@@ -246,11 +245,11 @@ func (d *directory) newFile(base, src string) File {
 	if err != nil {
 		relBase = filepath.Base(src)
 	}
-	return File{
+	return build.SourceFile{
 		Source: src,
-		// Rel is not NFC-normalized: it must match the filename exactly
+		// Key is not NFC-normalized: it must match the filename exactly
 		// as the characterization report recorded it.
-		Rel:  path.Clean(filepath.ToSlash(relRoot)),
+		Key:  path.Clean(filepath.ToSlash(relRoot)),
 		Path: norm.NFC.String(filepath.ToSlash(relBase)),
 	}
 }

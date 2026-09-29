@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
@@ -11,7 +12,7 @@ import (
 // readCSV runs Read over a minimal flat tree carrying the given
 // description.csv under the basic profile, so the decoder is exercised
 // through the real entry point.
-func readCSV(t *testing.T, csv string) (*Package, error) {
+func readCSV(t *testing.T, csv string) (*build.Material, error) {
 	t.Helper()
 	root := writeTree(t, map[string]string{
 		"description.csv": csv,

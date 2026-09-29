@@ -22,7 +22,7 @@ type repRow struct {
 // are not applied here: empty cells stay empty, and the library resolves the
 // name → label → type cascade, so the CLI and an embedding caller get
 // identical behavior.
-func (d *directory) applyRepresentations(src string, reps []Representation) []Representation {
+func (d *directory) applyRepresentations(src string, reps []build.SourceRepresentation) []build.SourceRepresentation {
 	rel := d.rel(src)
 	rows, decoded := d.decodeRepresentations(src)
 	if !decoded {
@@ -39,7 +39,7 @@ func (d *directory) applyRepresentations(src string, reps []Representation) []Re
 	}
 
 	covered := make(map[string]int, len(rows)) // directory → line of its row
-	var ordered []Representation
+	var ordered []build.SourceRepresentation
 	for _, row := range rows {
 		if prev, ok := covered[row.dir]; ok {
 			d.violate("%s line %d: directory %q already has a row (line %d)", rel, row.line, row.dir, prev)

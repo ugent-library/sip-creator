@@ -534,9 +534,10 @@ adds MODS rows and `items.csv`.
       in any order, case-insensitive, unknown or repeated column a
       violation; `callnumber` non-empty on every row; `barcode` unique;
       allowed only at the root and only under a profile that takes items.
-- [ ] **Mapping onto `build.Material`.** `Package` carries the decoded
-      `sip.Description` per level; `Package.Material` assigns it only when
-      a file was read (the typed-nil pitfall from S2).
+- [ ] **The material.** The reader builds the `build.Material` directly
+      (since 2026-09-29, no CLI model in between). A level without a rows
+      file must keep a nil `sip.Description` interface, never a typed nil
+      of the MODS description type (the pitfall from S2).
 - [ ] **Tests.** mods rows, items rows and each items violation,
       `items.csv` under `basic` or `eark`.
 - [ ] **Docs.** Input spec §1 (reserved names), §3 (the MODS key table
@@ -708,3 +709,10 @@ as a deferred item (§8).
   data, the word the docs already used for it, and "input" was spent
   twice, on the CLI's folder and on the library's data. Library callers
   change the type name; nothing else changes.
+- **The CLI model collapsed onto `build.Material`** the same day:
+  `input.Package`, `input.Representation` and `input.File` carried the
+  same fields as `build.Material`, `SourceRepresentation` and
+  `SourceFile`, and the copy between them had lost its one guard once
+  the decoder returned a nil interface for a missing rows file.
+  `Reader.Read` now returns the material; `Root` (never read) and
+  `Warnings` (no emitter left) went with the model. Output unchanged.

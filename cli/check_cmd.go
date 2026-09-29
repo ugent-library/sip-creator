@@ -29,7 +29,7 @@ var checkCmd = &cobra.Command{
 			return err
 		}
 
-		pkg, err := input.New(def.Encoder).Read(args[0])
+		material, err := input.New(def.Encoder).Read(args[0])
 		if err != nil {
 			if v, ok := errors.AsType[input.Violations](err); ok {
 				for _, line := range v {
@@ -40,16 +40,12 @@ var checkCmd = &cobra.Command{
 			return err
 		}
 
-		for _, w := range pkg.Warnings {
-			fmt.Fprintln(cmd.ErrOrStderr(), "warning:", w)
-		}
-
 		files := 0
-		for _, r := range pkg.Representations {
+		for _, r := range material.Representations {
 			files += len(r.Files)
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "OK: %d representation(s), %d content file(s), %d documentation file(s)\n",
-			len(pkg.Representations), files, len(pkg.Documentation))
+			len(material.Representations), files, len(material.Documentation))
 		return nil
 	},
 }

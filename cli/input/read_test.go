@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
@@ -67,7 +68,7 @@ func assertViolation(t *testing.T, err error, substr string) {
 	t.Errorf("no violation mentions %q; got:\n%s", substr, v.Error())
 }
 
-func paths(files []File) []string {
+func paths(files []build.SourceFile) []string {
 	out := make([]string, len(files))
 	for i, f := range files {
 		out[i] = f.Path
@@ -105,8 +106,8 @@ func TestReadFlat(t *testing.T) {
 	}
 
 	f := rep.Files[3]
-	if f.Rel != "sub/0003.tiff" {
-		t.Errorf("Rel = %q, want input-root-relative %q", f.Rel, "sub/0003.tiff")
+	if f.Key != "sub/0003.tiff" {
+		t.Errorf("Key = %q, want input-root-relative %q", f.Key, "sub/0003.tiff")
 	}
 	if f.Source != filepath.Join(root, "sub", "0003.tiff") {
 		t.Errorf("Source = %q, want the absolute disk path", f.Source)
@@ -166,7 +167,7 @@ func TestReadRepresentations(t *testing.T) {
 	if len(pkg.Documentation) != 1 || pkg.Documentation[0].Path != "report.pdf" {
 		t.Errorf("package documentation = %v", paths(pkg.Documentation))
 	}
-	if len(pkg.Premis) != 1 || pkg.Premis[0].Rel != "premis/vendor.xml" {
+	if len(pkg.Premis) != 1 || pkg.Premis[0].Key != "premis/vendor.xml" {
 		t.Errorf("package premis = %v", pkg.Premis)
 	}
 	if pkg.Characterization == nil {
