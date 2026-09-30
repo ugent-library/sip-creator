@@ -277,7 +277,7 @@ come from meemoo's closed vocabulary of Dublin Core terms plus two schema.org
 properties; under `eark` they are the fifteen Simple Dublin Core elements; under
 `eark-mods` they are the MODS keys, `identifier` and `title` today (the two DC tables
 are in the [input specification](docs/input-spec.md); the MODS table and its items
-file join it with the [eark-mods plan](docs/plans/eark-mods.md)'s next step). Repeat a
+file join it with the [descriptive-model plan](docs/plans/descriptive-model.md)). Repeat a
 key for multiple values,
 and tag a value's language in square brackets where it matters:
 

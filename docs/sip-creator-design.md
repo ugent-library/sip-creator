@@ -4,7 +4,7 @@ SIP Creator is a Go library and CLI that assembles a producer's essence files an
 
 This document describes **what the system is today**: the domain model, the package layout it produces, and the build lifecycle. It reflects the code as it stands, including its known gaps and rough edges; where the code is mid-evolution, that is called out rather than smoothed over. The *why* behind key choices lives in the [decision records](decisions/); planned changes live in [plans/](plans/); the backlog lives in [TODO.md](TODO.md). See [README.md](README.md) for how the docs are organized, and the repo-root `CLAUDE.md` for coding conventions.
 
-> **Status: experimental, work in progress.** Three profiles are registered: `basic` (meemoo SIP 1.2), `eark` (plain E-ARK SIP with Simple Dublin Core) and `eark-mods` (the same with MODS 3.7). The `basic` and `eark` sample packages validate **VALID** against commons-ip, each against the E-ARK spec version of its era (2.0.4 and 2.2.0 respectively); `eark-mods` has no fixture yet and a Go build test stands in until the [eark-mods plan](plans/eark-mods.md)'s acceptance step.
+> **Status: experimental, work in progress.** Three profiles are registered: `basic` (meemoo SIP 1.2), `eark` (plain E-ARK SIP with Simple Dublin Core) and `eark-mods` (the same with MODS 3.7). The `basic` and `eark` sample packages validate **VALID** against commons-ip, each against the E-ARK spec version of its era (2.0.4 and 2.2.0 respectively); `eark-mods` has no fixture yet and a Go build test stands in until the [descriptive-model plan](plans/descriptive-model.md)'s acceptance step.
 
 ## Domain model
 

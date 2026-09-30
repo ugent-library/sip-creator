@@ -1,0 +1,279 @@
+# Plan: the descriptive model follows its standard, and supplied documents return for the eark profiles
+
+*Status: **S1 in progress** (2026-09-30). Drafted on the branch
+`descriptive-model` from the review of 2026-09-30 that closed the
+[eark-mods plan](../archive/eark-mods.md) after its S3, with
+[ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)
+recording the decision. The library's descriptive model is still the flat
+statement list of ADR-0015; the CLI still hands rows to
+`Definition.NewDescription`; no supplied document is accepted anywhere.
+Update this line as steps land.*
+
+## Context
+
+The eark-mods plan delivered the `eark-mods` profile with a MODS
+description modelled as flat statements plus a list of items. Its next
+step, `items.csv` in the CLI, needed a neutral item shape in `sip/` and a
+widened constructor on `build.Definition`, because the CLI's reader knows
+no profile and the model is a list. That was the flat model straining, and
+the review that followed ([ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md))
+decided three things:
+
+1. The model follows its standard: a typed struct where the standard is a
+   tree (MODS), a list of `sip.Term` where it is flat (dc+schema, Simple
+   DC).
+2. The CSV owns its syntax, vocabulary and mapping on the CLI side, one
+   adapter per profile. The library carries no constructor for a
+   transport.
+3. A supplied document is a second description type behind
+   `sip.Description`, accepted by the two eark profiles and refused by
+   `basic`.
+
+This plan builds those in that order, then carries over the eark-mods
+acceptance work (fixture, XML catalog, xmllint in build.sh, reference
+capture) the old plan never reached.
+
+## Shape after the plan
+
+**Library.** `build.SourcePackage.Description` and each representation's
+`Description` take a `sip.Description`, which is one of: `meemoo.Terms`
+(list of `sip.Term`), `eark.Terms` (list of `sip.Term`), `earkmods.Record`
+(typed fields: identifier, titles, items, later names and dates), or
+`build.Document` (a finished `dc.xml` or `mods.xml`, eark profiles only).
+`build.Definition` has no `NewDescription`. A profile's encoder `Check`
+accepts its model, and for the eark profiles also a document whose root is
+its standard's.
+
+**CLI.** `cli/input` keeps the generic reader: folder rules, the CSV
+syntax, `items.csv` decoding, and the document file names. One adapter per
+profile (`cli/input/meemoo`, `cli/input/eark`, `cli/input/earkmods`)
+implements a small interface declared in `cli/input` and imports its
+profile package; the reader takes the adapter. `cli/profile.go` pairs each
+`--profile` value with its definition and its adapter.
+
+**Folder.** Per level, exactly one of `description.csv` or the profile's
+document (`dc.xml` under `eark`, `mods.xml` under `eark-mods`, none under
+`basic`). `items.csv` at the root next to `description.csv` under
+`eark-mods` only.
+
+## File specification (to fold into input-spec.md when shipped)
+
+| profile | `description.csv` keys | document | `items.csv` |
+|---|---|---|---|
+| `basic` | meemoo's dc+schema table | not accepted | not accepted |
+| `eark` | the fifteen Simple Dublin Core elements | `dc.xml`, root `simpledc` | not accepted |
+| `eark-mods` | `identifier`, `title`, later the record's other fields | `mods.xml`, root `mods:mods` with `version="3.7"` | one row per copy |
+
+Rules, all MUST violations collected by `check`:
+
+- At the input root, exactly one of `description.csv` or the profile's
+  document. Both, or neither, is a violation. Inside a representation
+  directory, at most one of the two.
+- A document under a profile that takes none (`basic`) is a violation. A
+  document of another standard's name (`mods.xml` under `eark`) is
+  content, not a document; the profile's METS would otherwise declare a
+  type the file does not have.
+- A document MUST be well-formed XML with the standard's root element;
+  the tool checks nothing else in it (ADR-0003). build.sh runs xmllint over
+  every `mods.xml` in a package as acceptance.
+- `items.csv` follows the `representations.csv` rules: UTF-8, a header
+  naming `callnumber` and optionally `barcode` and `enumeration` in any
+  order, case-insensitive, an unknown or repeated column a violation;
+  `callnumber` non-empty on every row; `barcode` unique across rows. Only
+  at the root, only next to `description.csv`, only under `eark-mods`.
+- `description.csv` keeps today's rules: `key,value` header, UTF-8,
+  `key[lang]`, unknown keys and a second row for a single-valued key are
+  violations, `identifier` and `title` required at the root.
+
+## Execution steps
+
+Library first, output unchanged until S7 captures the eark-mods reference.
+Every step ends with `go test ./...` green, `./build.sh basic` and
+`./build.sh eark` VALID with 0 warnings, and the structural comparison in
+scripts/reference-diff.sh clean for both against their reference copies.
+
+Each step is a checkbox list. A box is ticked when its commit is on the
+branch; every commit message is proposed in chat and committed after
+approval.
+
+### S1: docs first
+
+- [x] This plan.
+- [x] [ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md).
+- [x] Notes on ADR-0011, 0015, 0016 and 0018; ADR-0017 superseded.
+- [x] The eark-mods plan closed (S1 to S3 shipped, S4 to S6 superseded here)
+      and moved to `docs/archive/`; the links that pointed at it follow.
+      Commit `Added: ADR-0021 and the descriptive-model plan; eark-mods plan
+      archived`.
+
+### S2: the CLI adapters, model unchanged
+
+A pure move of the row-to-description step from the library to the CLI.
+The model stays the flat statement list, so this step is a refactor and
+both comparisons stay clean.
+
+- [ ] **The adapter interface.** In `cli/input`, a one-method interface
+      named for what it does: it gives the decoded rows of one level their
+      meaning and returns the profile's description plus findings, each
+      with the row's line. It takes the rows the reader decoded (key,
+      language, value, line) and, for the package level, the item rows of
+      an `items.csv` when one is present (S4 adds the file; the parameter
+      exists from here so the signature does not change twice). The
+      reader keeps the syntax rules it has: header, two columns, the
+      `[lang]` shape, no prefixed keys. It keeps running `Validate` and
+      `ValidateRequired` on the result and mapping a `*sip.TermError` to a
+      line; a finding that is not a term error is printed with the file
+      name.
+- [ ] **Three adapters.** `cli/input/meemoo`, `cli/input/eark` and
+      `cli/input/earkmods`, each importing its profile package and, for
+      now, wrapping the rows as the profile's `NewDescription` did. The
+      earkmods adapter reports item rows as unsupported until S3 gives the
+      record its fields.
+- [ ] **The profile table.** `cli/profile.go` resolves `--profile` to the
+      definition and the adapter; `check` and `create` construct the
+      reader with `input.New(adapter)`. `build.Definition.NewDescription`
+      goes, with its field doc and the registry test that called it; that
+      test moves to the CLI, asserting each adapter builds what its
+      profile's `Check` accepts.
+- [ ] **Docs.** `CLAUDE.md`: the system shape's input paragraph (the reader
+      takes the profile's adapter; the generic reader imports no profile
+      package, the adapters do). Design doc: the CLI/library boundary and
+      the input contract paragraph. ADR-0018's note. Commit `Changed: the
+      CLI's adapters build a profile's description from rows`.
+- [ ] **Acceptance.** `go test ./...`; both profiles VALID; both
+      comparisons clean.
+
+### S3: the typed MODS record
+
+- [ ] **`earkmods.Record` by field.** `Identifier string` (the catalogue
+      number; the `type` attribute stays the constant `mmsIDType`),
+      `Titles []Title` (`Value`, `Lang`), `Items []Item` as today. `Validate`
+      keeps the item rules and checks each title's value and language tag;
+      `ValidateRequired` requires the identifier and one title.
+      `vocabulary.go` and `sip.Term` leave the package; the template walks
+      the fields in a fixed order (identifier, titles, location). The
+      document for an identifier, a title and two items is byte-identical
+      to today's, pinned by the encoder test.
+- [ ] **The earkmods adapter's key table.** The key table moves to
+      `cli/input/earkmods`: each key names the field it fills and whether
+      it may repeat (`identifier` once, `title` per language). An unknown
+      key, a second `identifier` and a repeated language are file findings
+      with lines. Item rows fill `Items` in row order.
+- [ ] **Tests.** Record validation and encoding in `profiles/earkmods`;
+      the adapter in `cli/input/earkmods`; the engine cases in
+      `build/assemble_test.go` construct a `Record` by field.
+- [ ] **Docs.** README library example (a `Record` by field); design doc
+      domain-model line; the field docs on `SourcePackage.Description` and
+      `sip.Description` that name the types. Commit `Changed: the MODS
+      record is a typed model`.
+- [ ] **Acceptance.** As S2.
+
+### S4: `items.csv`
+
+- [ ] **Reserved name and decoding.** `items.csv` joins the reserved names
+      at the root; the reader decodes it like `representations.csv` (closed
+      header in any order, case-insensitive, unknown or repeated column a
+      violation, `callnumber` non-empty, `barcode` unique) and hands the
+      rows to the adapter; an adapter without a place for them reports the
+      file. Inside a representation directory it is a violation: items
+      describe the package level only (ADR-0015).
+- [ ] **Tests.** Item rows reaching a record; each item violation;
+      `items.csv` under `basic` and `eark`; `items.csv` inside a
+      representation directory.
+- [ ] **Docs.** Input spec §1 (reserved names), §3 (the MODS keys under
+      `eark-mods`, `items.csv`), §7 (mapping); README Input section.
+      Commit `Added: items.csv carries a MODS record's copies`.
+- [ ] **Acceptance.** As S2.
+
+### S5: supplied documents in the library
+
+- [ ] **`build.Document`.** A finished descriptive document supplied as a
+      file: its path, and after `Validate` its root element. `Validate`
+      reads the file once and requires well-formed XML; `ValidateRequired`
+      is a no-op. The root reader is lifted out of the received-PREMIS
+      check into one function both call.
+- [ ] **Encoders.** `eark` and `earkmods` accept their model or a document
+      whose root is their standard's (`simpledc` without namespace;
+      `mods:mods` in the MODS v3 namespace with `version="3.7"`), and
+      `Encode` streams the file for a document. `basic` refuses a document
+      with a message naming the swap. `Schemas()` is unchanged: the package
+      ships the standard's schema whatever the document points at.
+- [ ] **Tests.** A `dc.xml` handed to `eark` and a `mods.xml` to
+      `eark-mods` land under `metadata/descriptive/` with fixity and the
+      right `dmdSec` typing; a `dc.xml` handed to `eark-mods`, any document
+      to `basic`, a malformed file and a MODS document of another version
+      are refused before any write; a document on a representation lands
+      in that representation's METS.
+- [ ] **Docs.** Design doc (domain model, build lifecycle, validation);
+      README library example (a `Document` variant). Commit `Added: a
+      supplied descriptive document is a second description type for the
+      eark profiles`.
+- [ ] **Acceptance.** As S2.
+
+### S6: supplied documents in the folder
+
+- [ ] **File names and rules.** The adapter names the document it accepts
+      (`dc.xml`, `mods.xml`, or none). The reader treats that name as
+      reserved at the root and inside each representation directory, and
+      applies the one-per-level rule of the file specification above;
+      `items.csv` next to a document is a violation.
+- [ ] **Tests.** Each rule, under each profile.
+- [ ] **Docs.** Input spec §1, §3, §7 and §8 (the deferred item becomes
+      current for the eark profiles); README Input section. Commit `Added:
+      dc.xml and mods.xml in the input folder`.
+- [ ] **Acceptance.** As S2.
+
+### S7: eark-mods acceptance
+
+Carried over from the eark-mods plan's S6.
+
+- [ ] **Fixture.** `tmp/eark-mods/`: a copy of `tmp/eark` (its
+      `documentation/` included, which keeps CSIPSTR16 satisfied) whose
+      `description.csv` holds `identifier` and `title[nl]`, plus an
+      `items.csv` of two copies, one carrying an enumeration.
+- [ ] **XML catalog.** `scripts/schema-catalog.xml` rewriting the two
+      loc.gov URLs the MODS schema imports
+      (`http://www.loc.gov/standards/xlink/xlink.xsd`,
+      `http://www.loc.gov/mods/xml.xsd`) onto the bundled copies in
+      `schemas/`, so xmllint runs with `--nonet`.
+- [ ] **build.sh.** An explicit `eark-mods` case (E-ARK 2.2.0); after
+      `create`, `xmllint --noout --nonet --schema <pkg>/schemas/mods-3-7.xsd`
+      over every `mods.xml` in the package with `XML_CATALOG_FILES`
+      pointing at the catalog, a failure exiting non-zero like an INVALID
+      package. xmllint joins the documented requirements in the script
+      header, README and `CLAUDE.md`.
+- [ ] **Run it.** `./build.sh eark-mods` VALID with 0 warnings and the
+      xmllint pass clean; the package METS `dmdSec` read by hand
+      (`MDTYPE="MODS" MDTYPEVERSION="3.7"`). Capture the package as
+      `tmp/reference/eark-mods/pkg` and note it in `tmp/reference/README.md`.
+      Commit `Added: eark-mods fixture, XML catalog and xmllint pass in
+      build.sh`.
+
+### S8: closing docs
+
+- [ ] README (three profiles, both routes); design doc (status line,
+      package layout, validation section naming the xmllint pass);
+      `CLAUDE.md` development commands ("all three profiles validate
+      VALID"); `docs/TODO.md` (the stale `profiles/descriptive.go` pointer
+      in the meemoo 2.x item); ADR-0021 to Accepted with the date; this
+      plan's status line to shipped, then the plan moves to
+      `docs/archive/`. Commit `Changed: docs for the descriptive model;
+      plan archived`.
+
+## Open questions
+
+- **The `type` attribute on `mods:identifier`** for the MMS ID: one
+  constant, decided by the owner of the repository side, changed in one
+  place (carried over).
+- **Further MODS fields.** Names (personal and corporate, with a relator
+  code per role) and dates (`encoding="edtf"`) as fields on the record,
+  each with a template line, an adapter key and a spec line; supplied with
+  the repository's index fields (carried over). A record richer than the
+  fields is a supplied `mods.xml`.
+- **Items on a representation-level record.** The library has no
+  per-level hook, so a caller who puts items on a representation's record
+  gets them rendered there; the CLI refuses `items.csv` inside a
+  representation directory. Left as is (carried over from 2026-09-29).
+- **Where the adapter interface's item rows live** once more than one
+  profile takes a second table: today only `eark-mods` does, and the rows
+  are a CLI shape.
