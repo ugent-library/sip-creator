@@ -1,6 +1,6 @@
 # Plan: the descriptive model follows its standard, and supplied documents return for the eark profiles
 
-*Status: **S5 done, S6 next** (2026-09-30; S4 withdrawn). Drafted on the branch
+*Status: **S6 done, S7 next** (2026-09-30; S4 withdrawn). Drafted on the branch
 `descriptive-model` from the review of 2026-09-30 that closed the
 [eark-mods plan](../archive/eark-mods.md) after its S3, with
 [ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)
@@ -10,8 +10,10 @@ has no constructor for a transport, and `earkmods.Record` is typed by
 field with its key table on the CLI side; both DC profiles validate VALID
 with 0 warnings and compare identical to their reference copies, and the
 MODS document is pinned byte for byte. `items.csv` is withdrawn (the
-review of S3, 2026-09-30): the rows carry flat statements only. No
-supplied document is accepted yet. Update this line as steps land.*
+review of S3, 2026-09-30): the rows carry flat statements only. The
+library accepts a supplied `dc.xml` or `mods.xml` as a `build.DescriptiveDocument`
+under the two eark profiles; the folder does not yet. Update this line as
+steps land.*
 
 ## Context
 
@@ -43,7 +45,7 @@ capture) the old plan never reached.
 `Description` take a `sip.Description`, which is one of: `meemoo.Terms`
 (list of `sip.Term`), `eark.Terms` (list of `sip.Term`), `earkmods.Record`
 (typed fields: identifier, titles, items, later names and dates), or
-`build.Document` (a finished `dc.xml` or `mods.xml`, eark profiles only).
+`build.DescriptiveDocument` (a finished `dc.xml` or `mods.xml`, eark profiles only).
 `build.Definition` has no `NewDescription`. A profile's encoder `Check`
 accepts its model, and for the eark profiles also a document whose root is
 its standard's.
@@ -289,28 +291,57 @@ it in the docs. Docs only, no code.
 
 ### S6: supplied documents in the library
 
-- [ ] **`build.Document`.** A finished descriptive document supplied as a
+- [x] **`build.DescriptiveDocument`.** A finished descriptive document supplied as a
       file: its path, and after `Validate` its root element. `Validate`
       reads the file once and requires well-formed XML; `ValidateRequired`
       is a no-op. The root reader is lifted out of the received-PREMIS
-      check into one function both call.
-- [ ] **Encoders.** `eark` and `earkmods` accept their model or a document
+      check into one function both call. (Landed as `build.DescriptiveDocument{Source}`
+      with `Validate`, `ValidateRequired` and `Root()`, which the engine
+      calls for the profile's check. The type stays a plain value and
+      caches nothing: the file is read once for the root and once when the
+      writer copies it, which a small document makes cheap. The shared
+      reader is `encoders/xmldoc.Root`, with `Attr` for the version
+      attribute; the received-PREMIS check calls it and keeps its own
+      messages.)
+- [x] **Encoders.** `eark` and `earkmods` accept their model or a document
       whose root is their standard's (`simpledc` without namespace;
       `mods:mods` in the MODS v3 namespace with `version="3.7"`), and
       `Encode` streams the file for a document. `basic` refuses a document
       with a message naming the swap. `Schemas()` is unchanged: the package
       ships the standard's schema whatever the document points at.
-- [ ] **Tests.** A `dc.xml` handed to `eark` and a `mods.xml` to
+      (Revised in review before the commit: the first cut had the two
+      encoders type-switch on the document in `Check` and stream it from
+      `Encode`, which made `Check` do file I/O and `Encode` ignore its
+      schemas argument. Landed instead as `build.DescriptiveDocumentChecker`, the
+      optional interface next to `IdentifierSwapper`, with
+      `CheckDescriptiveDocument(root)` on the two eark encoders, a pure judgement of
+      the root element; the engine reads the root and refuses a document
+      for an encoder without the interface, which is how `basic` refuses;
+      the writer copies a document with `store.CopyFile` where it would
+      render a model. `Check` and `Encode` see models only. The MODS
+      namespace and version are two constants the template and the check
+      share; a MODS document without a version attribute is refused too,
+      since the METS declares one.)
+- [x] **Tests.** A `dc.xml` handed to `eark` and a `mods.xml` to
       `eark-mods` land under `metadata/descriptive/` with fixity and the
       right `dmdSec` typing; a `dc.xml` handed to `eark-mods`, any document
       to `basic`, a malformed file and a MODS document of another version
       are refused before any write; a document on a representation lands
-      in that representation's METS.
-- [ ] **Docs.** Design doc (domain model, build lifecycle, validation);
-      README library example (a `Document` variant). Commit `Added: a
+      in that representation's METS. (In `build/document_test.go`, plus
+      an `oai_dc` wrapper refused under `eark`, a missing file, a MODS
+      document without a version and `DescriptiveDocument.Validate` on its own; the
+      copied bytes are compared in the build test; `encoders/xmldoc` has
+      its own table.)
+- [x] **Docs.** Design doc (domain model, build lifecycle, validation);
+      README library example (a `DescriptiveDocument` variant). Commit `Added: a
       supplied descriptive document is a second description type for the
-      eark profiles`.
-- [ ] **Acceptance.** As S2.
+      eark profiles`. (Also the design doc's `build/` and `encoders/`
+      bullets, the write-phase items, `CLAUDE.md`'s encoders and domain
+      model lines, the `sip.Description` doc and the field docs on
+      `SourcePackage`.)
+- [x] **Acceptance.** As S2. (Run 2026-09-30 as in S2: basic passed=132,
+      eark passed=129, 28 skipped, VALID with 0 warnings; both structural
+      comparisons identical.)
 
 ### S7: supplied documents in the folder
 

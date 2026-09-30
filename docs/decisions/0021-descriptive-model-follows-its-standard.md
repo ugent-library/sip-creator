@@ -75,17 +75,21 @@ and exact: it builds the model or refuses with a line number, and it never
 approximates. ADR-0011's closed vocabulary stands for the CSV.
 
 **A supplied document is a second description type, for the two eark
-profiles.** `build.Document` is a finished descriptive document supplied
+profiles.** `build.DescriptiveDocument` is a finished descriptive document supplied
 as a file. It implements `sip.Description`: `Validate` reads it once,
 requires well-formed XML and captures the root element;
 `ValidateRequired` trusts it, since nothing in the eark profiles reads an
-identifier back out of the descriptive metadata. Each eark encoder's
-`Check` accepts its model or a document whose root is its standard's
-(`simpledc` without namespace for `eark`; `mods:mods` in the MODS v3
-namespace carrying `version="3.7"` for `eark-mods`), and its `Encode`
-streams the file. The assembler and the writer do not branch. The root
-reader is shared with the received-PREMIS check. The `basic` profile
-refuses documents: meemoo's document must carry the entity identifier the
+identifier back out of the descriptive metadata. The engine reads a
+document's root element once and asks the profile's encoder, through the
+optional `DescriptiveDocumentChecker` interface (the idiom `IdentifierSwapper` set),
+whether that root is its standard's (`simpledc` without namespace for
+`eark`; `mods:mods` in the MODS v3 namespace carrying `version="3.7"` for
+`eark-mods`); an encoder without the interface takes no document. The
+writer copies a document with the store's streamed copy, fixity computed
+on the way as for essence, where it would render a model. The assembler
+does not branch and the encoders never see a document. The root reader is
+shared with the received-PREMIS check. The `basic` profile's encoder is no
+`DescriptiveDocumentChecker`: meemoo's document must carry the entity identifier the
 tool mints at build, which the swap writes in, and the tool does not edit
 XML.
 
@@ -123,7 +127,8 @@ typed record or a supplied `mods.xml`. There is no second table.
 - **The document route as a second input path** (ADR-0016's
   `DescriptiveDocument` field at every level). Its cost was the branches
   at every level, recorded in ADR-0017. A second type behind the existing
-  interface costs a type check in two encoders and one shared root reader.
+  interface costs one optional interface with a method per eark encoder,
+  one check and one copy branch in the engine, and one shared root reader.
 - **Documents for meemoo.** The swap needs the entity UUID, which exists
   only at build.
 - **A key grammar or delimiters inside a value.** Rejected in ADR-0015 and

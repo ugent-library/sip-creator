@@ -8,20 +8,51 @@ import (
 	"text/template"
 
 	"github.com/ugent-library/sip-creator/build"
+	"github.com/ugent-library/sip-creator/encoders/xmldoc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
 // mods is the encoder for the MODS document as the engine sees it: it
-// accepts Record and writes it with Encode. It never swaps: mods.xml
-// keeps the producer's identifier, the catalogue number the ingesting
-// repository indexes and operators search by (ADR-0012).
+// accepts Record and writes it with Encode, and says which supplied
+// document is one of its own. It never swaps: mods.xml keeps the
+// producer's identifier, the catalogue number the ingesting repository
+// indexes and operators search by (ADR-0012).
 type mods struct{}
 
-var _ build.DescriptionEncoder = mods{}
+// DescriptiveDocumentChecker is optional to the engine, so a drift in CheckDescriptiveDocument's
+// signature would fail silently; the assertion makes it a build error.
+var (
+	_ build.DescriptionEncoder         = mods{}
+	_ build.DescriptiveDocumentChecker = mods{}
+)
+
+// The namespace and version the template declares and a supplied document
+// must declare: the METS types the document MODS 3.7, so a document of
+// another version would make the METS lie.
+const (
+	namespace = "http://www.loc.gov/mods/v3"
+	version   = "3.7"
+)
 
 func (mods) Check(d sip.Description) error {
 	if _, ok := d.(Record); !ok {
 		return fmt.Errorf("descriptive metadata is %T, not a MODS record (earkmods.Record)", d)
+	}
+	return nil
+}
+
+// CheckDescriptiveDocument returns why root is not a mods:mods element in the MODS v3
+// namespace declaring the version the package's METS declares.
+func (mods) CheckDescriptiveDocument(root xml.StartElement) error {
+	if root.Name.Space != namespace || root.Name.Local != "mods" {
+		return fmt.Errorf("root element is {%s}%s, expected a mods:mods document in the MODS v3 namespace (%s)", root.Name.Space, root.Name.Local, namespace)
+	}
+	got, ok := xmldoc.Attr(root, "version")
+	switch {
+	case !ok:
+		return fmt.Errorf("the root declares no version; the package declares MODS %s, so the document must carry version=%q", version, version)
+	case got != version:
+		return fmt.Errorf("the root declares version=%q, but the package declares MODS %s", got, version)
 	}
 	return nil
 }
@@ -35,7 +66,7 @@ func (mods) Check(d sip.Description) error {
 // rendered in memory first, so a failed render writes nothing.
 func (mods) Encode(w io.Writer, d sip.Description, schemas string) error {
 	var buf bytes.Buffer
-	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemas, localIdentifierType}); err != nil {
+	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemas, localIdentifierType, namespace, version}); err != nil {
 		return err
 	}
 	_, err := w.Write(buf.Bytes())
@@ -62,14 +93,14 @@ const localIdentifierType = "local"
 // record states one, one titleInfo per title, and the items as one
 // location/holdingSimple with one copyInformation each, omitted when
 // there are none. Every value is escaped; the only raw interpolations are
-// the identifier's type, a constant, and the schemas path the writer
-// supplies.
+// the identifier's type, the namespace and version, all constants, and
+// the schemas path the writer supplies.
 var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 	"esc": escapeXML,
 }).Parse(`
 {{ define "mods" -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<mods:mods xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.7" xsi:schemaLocation="http://www.loc.gov/mods/v3 {{ .Schemas }}/mods-3-7.xsd">
+<mods:mods xmlns:mods="{{ .Namespace }}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="{{ .Version }}" xsi:schemaLocation="{{ .Namespace }} {{ .Schemas }}/mods-3-7.xsd">
 {{- with .Record.Identifier }}
   <mods:identifier type="{{ $.IdentifierType }}">{{ esc . }}</mods:identifier>
 {{- end }}
@@ -100,12 +131,15 @@ var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 `))
 
 // recordDoc is one MODS document to render: the record, the relative path
-// from the document's location to the package's bundled schemas/ dir, and
-// the type attribute the identifier carries.
+// from the document's location to the package's bundled schemas/ dir, the
+// type attribute the identifier carries, and the namespace and version
+// the root declares.
 type recordDoc struct {
 	Record         Record
 	Schemas        string
 	IdentifierType string
+	Namespace      string
+	Version        string
 }
 
 // escapeXML makes a data value safe as XML character data or a quoted

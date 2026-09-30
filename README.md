@@ -210,6 +210,21 @@ pkg, err := builder.Build(&build.SourcePackage{
 })
 ```
 
+A record richer than the fields, or one that already exists as a document, travels as a
+supplied file. The two eark profiles accept a `build.DescriptiveDocument` in place of terms or a
+record, copy it into the package as it is after checking that it is well-formed XML with
+the standard's root element (`simpledc` for `eark`, `mods:mods` declaring version 3.7 for
+`eark-mods`), and leave its validity against the schema to the validators downstream. The
+`basic` profile takes terms only, because meemoo's document must carry the entity
+identifier the build mints:
+
+```go
+pkg, err := builder.Build(&build.SourcePackage{
+	Description: build.DescriptiveDocument{Source: "/data/records/990001234560471/mods.xml"},
+	// Representations as above.
+})
+```
+
 #### Bringing your own profile
 
 The three profiles above are reference implementations of one route, and the engine

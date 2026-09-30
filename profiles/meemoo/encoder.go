@@ -13,7 +13,9 @@ import (
 
 // dcschema is the encoder for the dc+schema document as the engine sees
 // it: it accepts Terms, writes them with Encode, and swaps the entity
-// identifier in.
+// identifier in. It is no DescriptiveDocumentChecker: meemoo's document must carry
+// the entity identifier the build mints, which Swap writes into terms, so
+// a supplied document has no place here and the engine refuses one.
 type dcschema struct{}
 
 // IdentifierSwapper is optional to the engine, so a drift in Swap's

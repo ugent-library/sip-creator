@@ -12,17 +12,34 @@ import (
 )
 
 // simpledc is the encoder for the simpledc document as the engine sees it:
-// it accepts Terms and writes them with Encode. It never swaps: dc.xml
-// keeps the producer's identifier, because CSIP has no rule tying it to
-// the package identifier and the ingesting catalogue indexes dc.xml, so
-// operators find the package by the identifier they know (ADR-0012).
+// it accepts Terms and writes them with Encode, and says which supplied
+// document is one of its own. It never swaps: dc.xml keeps the producer's
+// identifier, because CSIP has no rule tying it to the package identifier
+// and the ingesting catalogue indexes dc.xml, so operators find the
+// package by the identifier they know (ADR-0012).
 type simpledc struct{}
 
-var _ build.DescriptionEncoder = simpledc{}
+// DescriptiveDocumentChecker is optional to the engine, so a drift in CheckDescriptiveDocument's
+// signature would fail silently; the assertion makes it a build error.
+var (
+	_ build.DescriptionEncoder         = simpledc{}
+	_ build.DescriptiveDocumentChecker = simpledc{}
+)
 
 func (simpledc) Check(d sip.Description) error {
 	if _, ok := d.(Terms); !ok {
 		return fmt.Errorf("descriptive metadata is %T, not Simple Dublin Core terms (eark.Terms)", d)
+	}
+	return nil
+}
+
+// CheckDescriptiveDocument returns why root is not the simpledc element this template
+// emits, without namespace. A document of another shape (an oai_dc
+// wrapper, a MODS record) would make the METS declare a type the file does
+// not have.
+func (simpledc) CheckDescriptiveDocument(root xml.StartElement) error {
+	if root.Name.Space != "" || root.Name.Local != "simpledc" {
+		return fmt.Errorf("root element is {%s}%s, expected a simpledc document without namespace", root.Name.Space, root.Name.Local)
 	}
 	return nil
 }

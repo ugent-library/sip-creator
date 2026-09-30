@@ -7,9 +7,10 @@ import "fmt"
 // Each profile package supplies its own implementation (meemoo.Terms,
 // eark.Terms, earkmods.Record): a list of Term values where the standard
 // is a flat list, a struct typed by field where it is a tree, under the
-// profile's own rules. The profile's descriptive standard knows the
-// concrete type and does everything that needs it, so nothing in sip/
-// depends on a profile.
+// profile's own rules. build.DescriptiveDocument, a finished document supplied as a
+// file, is one more, for the profiles whose encoder accepts it. The
+// profile's descriptive standard knows the concrete type and does
+// everything that needs it, so nothing in sip/ depends on a profile.
 type Description interface {
 	// Validate returns every way the description is not a valid one in its
 	// standard, joined into one error: an unknown key, a malformed

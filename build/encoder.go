@@ -1,6 +1,7 @@
 package build
 
 import (
+	"encoding/xml"
 	"fmt"
 	"io"
 
@@ -43,12 +44,24 @@ type IdentifierSwapper interface {
 	Swap(d sip.Description, id string) (local string)
 }
 
+// DescriptiveDocumentChecker is the optional part of a DescriptionEncoder whose
+// profile takes a supplied descriptive document (DescriptiveDocument) next to its own
+// description type. CheckDescriptiveDocument returns why root, the document's root
+// element as the engine read it, is not the profile's standard: another
+// element or namespace, or a version other than the one the METS declares.
+// An encoder without it takes no supplied document; meemoo's is one,
+// because its document must carry the entity identifier the build mints,
+// which Swap writes into terms (ADR-0021).
+type DescriptiveDocumentChecker interface {
+	CheckDescriptiveDocument(root xml.StartElement) error
+}
+
 // checkDescriptions returns why a description in the source package is not one
 // the encoder takes, the package's or a representation's. A missing
 // package description is SourcePackage.Validate's finding, not this check's.
 func checkDescriptions(enc DescriptionEncoder, source *SourcePackage) error {
 	if source.Description != nil {
-		if err := enc.Check(source.Description); err != nil {
+		if err := checkDescription(enc, source.Description); err != nil {
 			return err
 		}
 	}
@@ -56,9 +69,32 @@ func checkDescriptions(enc DescriptionEncoder, source *SourcePackage) error {
 		if r.Description == nil {
 			continue
 		}
-		if err := enc.Check(r.Description); err != nil {
+		if err := checkDescription(enc, r.Description); err != nil {
 			return fmt.Errorf("representation %q: %w", r.Name, err)
 		}
+	}
+	return nil
+}
+
+// checkDescription returns why one description is not one the encoder
+// takes: a model of another type, or a supplied document for a profile that
+// takes none or whose root is another standard's. Reading the document is
+// the engine's; the encoder sees the root element only.
+func checkDescription(enc DescriptionEncoder, d sip.Description) error {
+	doc, ok := d.(DescriptiveDocument)
+	if !ok {
+		return enc.Check(d)
+	}
+	checker, ok := enc.(DescriptiveDocumentChecker)
+	if !ok {
+		return fmt.Errorf("a supplied descriptive document is not accepted: this profile takes its own description type only")
+	}
+	root, err := doc.Root()
+	if err != nil {
+		return err
+	}
+	if err := checker.CheckDescriptiveDocument(root); err != nil {
+		return fmt.Errorf("supplied descriptive document %s: %w", doc.Source, err)
 	}
 	return nil
 }
