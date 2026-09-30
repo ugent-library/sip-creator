@@ -587,11 +587,10 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	}
 }
 
-// identifierTerm returns the value of the identifier term of any world's
-// description ("" when absent): what the meemoo swap wrote, or what the
-// eark profiles left alone. No profile package exports an accessor for it;
-// the swap is the meemoo package's own business, and the eark profiles
-// never swap.
+// identifierTerm returns the identifier any world's description states
+// ("" when absent): what the meemoo swap wrote, or what the eark profiles
+// left alone. No profile package exports an accessor for it; the swap is
+// the meemoo package's own business, and the eark profiles never swap.
 func identifierTerm(d sip.Description) string {
 	var terms []sip.Term
 	switch v := d.(type) {
@@ -600,7 +599,7 @@ func identifierTerm(d sip.Description) string {
 	case eark.Terms:
 		terms = v
 	case earkmods.Record:
-		terms = v.Terms
+		return v.Identifier
 	}
 	for _, term := range terms {
 		if term.Key == "identifier" {
@@ -955,7 +954,7 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description is required"},
 		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "identifier", Value: "x"}}, "title is required"},
 		{"eark without an identifier", earkDef(t), eark.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
-		{"eark-mods without a title", earkmodsDef(t), earkmods.Record{Terms: []sip.Term{{Key: "identifier", Value: "x"}}}, "title is required"},
+		{"eark-mods without a title", earkmodsDef(t), earkmods.Record{Identifier: "x"}, "title is required"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

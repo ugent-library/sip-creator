@@ -31,7 +31,7 @@ func (d *directory) decodeDescription(src string, packageLevel bool) sip.Descrip
 		return nil
 	}
 
-	var rows []Row
+	var statements []Statement
 	headerSeen := false
 	for {
 		row, err := cr.Read()
@@ -65,34 +65,32 @@ func (d *directory) decodeDescription(src string, packageLevel bool) sip.Descrip
 		if !ok {
 			continue
 		}
-		rows = append(rows, Row{Key: key, Lang: lang, Value: row[1], Line: line})
+		statements = append(statements, Statement{Key: key, Lang: lang, Value: row[1], Line: line})
 	}
 
-	description, misplaced := d.vocabulary.Description(rows, nil) // no items.csv is read yet
-	for _, f := range misplaced {
-		if f.Line > 0 {
-			d.violate("%s line %d: %v", rel, f.Line, f.Err)
-			continue
-		}
-		d.violate("%s: %v", rel, f.Err)
-	}
-
-	// A finding about one term names it by position, which the rows turn
-	// back into the row's line; a cross-row finding names the key and
-	// language, which locates the rows in a keyed file.
-	errs := flatten(description.Validate())
+	// A finding about one statement is reported at the row's line: the
+	// vocabulary names the line itself, and the description's rules name
+	// a term's position, which the statements turn back into a line. A
+	// cross-row finding names the key and language, which locates the
+	// rows in a keyed file.
+	description, errs := d.vocabulary.Description(statements)
+	errs = append(errs, flatten(description.Validate())...)
 	if packageLevel {
 		errs = append(errs, flatten(description.ValidateRequired())...)
 	}
 	for _, err := range errs {
+		var se *StatementError
 		var te *sip.TermError
-		if errors.As(err, &te) && te.Index < len(rows) {
-			d.violate("%s line %d: %v", rel, rows[te.Index].Line, te.Err)
-			continue
+		switch {
+		case errors.As(err, &se):
+			d.violate("%s line %d: %v", rel, se.Line, se.Err)
+		case errors.As(err, &te) && te.Index < len(statements):
+			d.violate("%s line %d: %v", rel, statements[te.Index].Line, te.Err)
+		default:
+			d.violate("%s: %v", rel, err)
 		}
-		d.violate("%s: %v", rel, err)
 	}
-	if len(rows) == 0 {
+	if len(statements) == 0 {
 		return nil
 	}
 	return description

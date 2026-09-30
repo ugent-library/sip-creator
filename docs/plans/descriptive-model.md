@@ -1,16 +1,17 @@
 # Plan: the descriptive model follows its standard, and supplied documents return for the eark profiles
 
-*Status: **S2 done, S3 next** (2026-09-30). Drafted on the branch
+*Status: **S3 done, S4 next** (2026-09-30). Drafted on the branch
 `descriptive-model` from the review of 2026-09-30 that closed the
 [eark-mods plan](../archive/eark-mods.md) after its S3, with
 [ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)
 recording the decision. The reader takes an `input.Vocabulary`, the
-profiles' vocabularies live in `cli/input/vocabulary`, and
-`build.Definition` has no constructor for a transport; both DC profiles
-validate VALID with 0 warnings and compare identical to their reference
-copies. The library's descriptive model is still the flat statement list
-of ADR-0015; no supplied document is accepted anywhere. Update this line
-as steps land.*
+profiles' vocabularies live in `cli/input/vocabulary`, `build.Definition`
+has no constructor for a transport, and `earkmods.Record` is typed by
+field with its key table on the CLI side; both DC profiles validate VALID
+with 0 warnings and compare identical to their reference copies, and the
+MODS document is pinned byte for byte. `items.csv` is withdrawn (the
+review of S3, 2026-09-30): the rows carry flat statements only. No
+supplied document is accepted yet. Update this line as steps land.*
 
 ## Context
 
@@ -48,7 +49,7 @@ accepts its model, and for the eark profiles also a document whose root is
 its standard's.
 
 **CLI.** `cli/input` keeps the generic reader: folder rules, the CSV
-syntax, `items.csv` decoding, and the document file names. One adapter per
+syntax, and the document file names. One adapter per
 profile (`cli/input/meemoo`, `cli/input/eark`, `cli/input/earkmods`)
 implements a small interface declared in `cli/input` and imports its
 profile package; the reader takes the adapter. `cli/profile.go` pairs each
@@ -56,16 +57,16 @@ profile package; the reader takes the adapter. `cli/profile.go` pairs each
 
 **Folder.** Per level, exactly one of `description.csv` or the profile's
 document (`dc.xml` under `eark`, `mods.xml` under `eark-mods`, none under
-`basic`). `items.csv` at the root next to `description.csv` under
-`eark-mods` only.
+`basic`). The rows are flat statements about the level's entity; a
+record's copies and any other structure travel in a supplied `mods.xml`.
 
 ## File specification (to fold into input-spec.md when shipped)
 
-| profile | `description.csv` keys | document | `items.csv` |
-|---|---|---|---|
-| `basic` | meemoo's dc+schema table | not accepted | not accepted |
-| `eark` | the fifteen Simple Dublin Core elements | `dc.xml`, root `simpledc` | not accepted |
-| `eark-mods` | `identifier`, `title`, later the record's other fields | `mods.xml`, root `mods:mods` with `version="3.7"` | one row per copy |
+| profile | `description.csv` keys | document |
+|---|---|---|
+| `basic` | meemoo's dc+schema table | not accepted |
+| `eark` | the fifteen Simple Dublin Core elements | `dc.xml`, root `simpledc` |
+| `eark-mods` | `identifier`, `title`, later the record's other flat fields | `mods.xml`, root `mods:mods` with `version="3.7"` |
 
 Rules, all MUST violations collected by `check`:
 
@@ -79,11 +80,10 @@ Rules, all MUST violations collected by `check`:
 - A document MUST be well-formed XML with the standard's root element;
   the tool checks nothing else in it (ADR-0003). build.sh runs xmllint over
   every `mods.xml` in a package as acceptance.
-- `items.csv` follows the `representations.csv` rules: UTF-8, a header
-  naming `callnumber` and optionally `barcode` and `enumeration` in any
-  order, case-insensitive, an unknown or repeated column a violation;
-  `callnumber` non-empty on every row; `barcode` unique across rows. Only
-  at the root, only next to `description.csv`, only under `eark-mods`.
+- The rows carry flat statements only. A record's copies have no rows
+  file: `items.csv` (ADR-0015, twelfth decision) was withdrawn on
+  2026-09-30 in the review of S3, before it shipped; copies travel in a
+  supplied `mods.xml`, or in the library's record.
 - `description.csv` keeps today's rules: `key,value` header, UTF-8,
   `key[lang]`, unknown keys and a second row for a single-valued key are
   violations, `identifier` and `title` required at the root.
@@ -129,6 +129,11 @@ both comparisons stay clean.
       name. (Landed as `input.Vocabulary` with `Row`, `ItemRow` and
       `Finding` in `cli/input/vocabulary.go`; the name is the input
       specification's word for what the profile decides about the rows.
+      Renamed in the review of S3: a row is a `Statement`, one thing the
+      folder states about the level's entity, and a problem with one is a
+      `*StatementError`, an error value mirroring `sip.TermError`, returned
+      in a plain `[]error` next to errors about the file; `ItemRow` went
+      with `items.csv`.
       `cli/profile.go` resolves the vocabulary next to the definition, so
       the commands change once. The reader's tests keep two small test
       vocabularies of their own: they call an unexported function, so
@@ -143,8 +148,8 @@ both comparisons stay clean.
       the same name under an alias, and the pairing of names to
       vocabularies is one table either way. The package is the one CLI
       package importing the profile packages for descriptive metadata.
-      Item rows are one finding about the file under every profile for
-      now, never dropped.)
+      Item rows were one finding about the file under every profile,
+      never dropped, until `items.csv` was withdrawn in the review of S3.)
 - [x] **The profile table.** `cli/profile.go` resolves `--profile` to the
       definition and the adapter; `check` and `create` construct the
       reader with `input.New(adapter)`. `build.Definition.NewDescription`
@@ -170,7 +175,7 @@ both comparisons stay clean.
 
 ### S3: the typed MODS record
 
-- [ ] **`earkmods.Record` by field.** `Identifier string` (the catalogue
+- [x] **`earkmods.Record` by field.** `Identifier string` (the catalogue
       number; the `type` attribute stays the constant `mmsIDType`),
       `Titles []Title` (`Value`, `Lang`), `Items []Item` as today. `Validate`
       keeps the item rules and checks each title's value and language tag;
@@ -178,37 +183,58 @@ both comparisons stay clean.
       `vocabulary.go` and `sip.Term` leave the package; the template walks
       the fields in a fixed order (identifier, titles, location). The
       document for an identifier, a title and two items is byte-identical
-      to today's, pinned by the encoder test.
-- [ ] **The earkmods adapter's key table.** The key table moves to
+      to today's, pinned by the encoder test. (Landed as planned; the
+      bytes were captured from the old template before the change and
+      are the golden test's constant. `Validate` also refuses a blank
+      identifier, since the field being empty means "none"; the
+      one-identifier rule is gone, the type enforces it. `mmsIDType` sits
+      next to the template now. The template lost its `element` func and
+      the self-referencing parse: it walks fields, no key reaches it.)
+- [x] **The earkmods adapter's key table.** The key table moves to
       `cli/input/earkmods`: each key names the field it fills and whether
       it may repeat (`identifier` once, `title` per language). An unknown
       key, a second `identifier` and a repeated language are file findings
-      with lines. Item rows fill `Items` in row order.
-- [ ] **Tests.** Record validation and encoding in `profiles/earkmods`;
+      with lines. Item rows fill `Items` in row order. (Landed in
+      `cli/input/vocabulary/earkmods.go` as `modsKeys`, a map from key to
+      `placement`: a fill function, whether the key takes a language tag,
+      and a cardinality. A statement the vocabulary refuses is not placed,
+      so the record's own `Validate` does not report it a second time; the
+      refused kinds are an unknown key, a language on `identifier`, an
+      empty value, a second `identifier` and a repeated language, each a
+      `*input.StatementError` at its line naming the line of the statement
+      that was placed. Item rows are not read: `items.csv` was withdrawn
+      in the review of this step, see S4. A malformed language tag stays
+      the record's rule and is reported with the title's position, not a
+      line; see the open question.)
+- [x] **Tests.** Record validation and encoding in `profiles/earkmods`;
       the adapter in `cli/input/earkmods`; the engine cases in
-      `build/assemble_test.go` construct a `Record` by field.
-- [ ] **Docs.** README library example (a `Record` by field); design doc
+      `build/assemble_test.go` construct a `Record` by field. (Plus a run
+      of `check` and `create --profile eark-mods` on scratch folders: the
+      valid one builds a package whose `mods.xml` equals the golden bytes
+      and whose METS types it `MDTYPE="MODS" MDTYPEVERSION="3.7"`; the
+      one with every refused kind of row reports each at its line.)
+- [x] **Docs.** README library example (a `Record` by field); design doc
       domain-model line; the field docs on `SourcePackage.Description` and
       `sip.Description` that name the types. Commit `Changed: the MODS
-      record is a typed model`.
-- [ ] **Acceptance.** As S2.
+      record is a typed model`. (The design doc's descriptive bullet and
+      its validation paragraph, `sip.Description`'s doc and `CLAUDE.md`'s
+      profile paragraph describe the typed record; the field docs on
+      `SourcePackage` name `earkmods.Record` unchanged.)
+- [x] **Acceptance.** As S2. (Run 2026-09-30 as in S2: basic passed=132,
+      eark passed=129, 28 skipped, VALID with 0 warnings; both structural
+      comparisons identical; `go test ./...` green with the golden test.)
 
 ### S4: `items.csv`
 
-- [ ] **Reserved name and decoding.** `items.csv` joins the reserved names
-      at the root; the reader decodes it like `representations.csv` (closed
-      header in any order, case-insensitive, unknown or repeated column a
-      violation, `callnumber` non-empty, `barcode` unique) and hands the
-      rows to the adapter; an adapter without a place for them reports the
-      file. Inside a representation directory it is a violation: items
-      describe the package level only (ADR-0015).
-- [ ] **Tests.** Item rows reaching a record; each item violation;
-      `items.csv` under `basic` and `eark`; `items.csv` inside a
-      representation directory.
-- [ ] **Docs.** Input spec §1 (reserved names), §3 (the MODS keys under
-      `eark-mods`, `items.csv`), §7 (mapping); README Input section.
-      Commit `Added: items.csv carries a MODS record's copies`.
-- [ ] **Acceptance.** As S2.
+Withdrawn 2026-09-30 in the review of S3, before it shipped. A one-to-many
+child table is the flat-to-rich device the CSV should not grow
+([ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)):
+the rows carry flat statements about the level's entity and nothing else,
+and a record's copies reach the package through the library's record, as
+the ingest system supplies them, or through a supplied `mods.xml` (S5,
+S6). `Record.Items`, its rules and the `copyInformation` rendering stay in
+the library. The input specification's MODS keys under `eark-mods` land
+with S6's docs. ADR-0015's twelfth decision and ADR-0016 carry the note.
 
 ### S5: supplied documents in the library
 
@@ -240,8 +266,7 @@ both comparisons stay clean.
 - [ ] **File names and rules.** The adapter names the document it accepts
       (`dc.xml`, `mods.xml`, or none). The reader treats that name as
       reserved at the root and inside each representation directory, and
-      applies the one-per-level rule of the file specification above;
-      `items.csv` next to a document is a violation.
+      applies the one-per-level rule of the file specification above.
 - [ ] **Tests.** Each rule, under each profile.
 - [ ] **Docs.** Input spec §1, §3, §7 and §8 (the deferred item becomes
       current for the eark profiles); README Input section. Commit `Added:
@@ -254,8 +279,12 @@ Carried over from the eark-mods plan's S6.
 
 - [ ] **Fixture.** `tmp/eark-mods/`: a copy of `tmp/eark` (its
       `documentation/` included, which keeps CSIPSTR16 satisfied) whose
-      `description.csv` holds `identifier` and `title[nl]`, plus an
-      `items.csv` of two copies, one carrying an enumeration.
+      package-level description is a supplied `mods.xml` carrying an
+      identifier, a title and two copies, one with an enumeration, and
+      whose representation carries a `description.csv` with a `title[nl]`,
+      so the acceptance run exercises the document route and the rows
+      route in one package. (Revised 2026-09-30 with the withdrawal of
+      `items.csv`; needs S5 and S6 first.)
 - [ ] **XML catalog.** `scripts/schema-catalog.xml` rewriting the two
       loc.gov URLs the MODS schema imports
       (`http://www.loc.gov/standards/xlink/xlink.xsd`,
@@ -299,6 +328,11 @@ Carried over from the eark-mods plan's S6.
   per-level hook, so a caller who puts items on a representation's record
   gets them rendered there; the CLI refuses `items.csv` inside a
   representation directory. Left as is (carried over from 2026-09-29).
-- **Where the adapter interface's item rows live** once more than one
-  profile takes a second table: today only `eark-mods` does, and the rows
-  are a CLI shape.
+- **A malformed language tag on a MODS title has no line.** The tag's
+  shape is the record's rule (`Validate`), and the record names the title
+  by position ("title 2"), which the reader prints with the file name but
+  no line. The flat worlds report the same finding with a line through
+  `*sip.TermError`. Giving it a line means either checking the tag's shape
+  in the reader for every profile (a syntax rule next to the `[lang]`
+  bracket check) or repeating the check in the MODS vocabulary. Left as
+  is on 2026-09-30; the position is enough to find the row.

@@ -92,8 +92,10 @@ XML.
 **The CLI takes a document per level.** `dc.xml` under `eark` and
 `mods.xml` under `eark-mods`, at the input root or inside a representation
 directory, exactly one of the document or `description.csv` per level.
-Under `basic` a document is a violation. `items.csv` accompanies
-`description.csv` only: a supplied document carries its own copies.
+Under `basic` a document is a violation. The rows of `description.csv`
+are flat statements about the level's entity and nothing else: a record's
+copies, and any other structure, reach the package through the library's
+typed record or a supplied `mods.xml`. There is no second table.
 
 ## Alternatives rejected
 
@@ -106,6 +108,12 @@ Under `basic` a document is a violation. `items.csv` accompanies
   and the result is still not the standard's shape. Dataverse and CKAN
   chose this compromise for forms; the library's callers construct records
   in code, where a typed field is clearer.
+- **A second table for the record's copies** (`items.csv`, ADR-0015's
+  twelfth decision and the eark-mods plan's S4). A one-to-many child
+  table is the flat-to-rich device the CSV should not grow, and every
+  later nested element would ask for the same. Copies travel in the
+  library's record, as the ingest system supplies them, or in a supplied
+  document. Withdrawn in the review of 2026-09-30, before it shipped.
 - **A full schema binding**, structs generated from the XSD or
   `encoding/xml` struct trees. They permit everything the schema permits,
   which is what the closed vocabulary exists to prevent, and Go's
@@ -135,7 +143,7 @@ Under `basic` a document is a violation. `items.csv` accompanies
 - A MODS field costs a field on the record, a template line, a key in the
   adapter's table and a line in the input specification. A record richer
   than the fields is supplied as `mods.xml`; the CLI does not grow a
-  grammar for it.
+  grammar for it, nor a second table.
 - A supplied document that is well-formed with the right root but invalid
   against its schema is packaged, and xmllint in build.sh and the
   repository's own validation catch it, as for received PREMIS. The
@@ -145,8 +153,9 @@ Under `basic` a document is a violation. `items.csv` accompanies
   its deferred item on operator-supplied descriptive XML is enacted for the
   eark profiles. The rule in `CLAUDE.md` that `cli/input` imports no
   profile package narrows to the generic reader.
-- ADR-0011 narrows to the CSV. ADR-0015's worlds, interface and items
-  stand; its rule that one key emits one complete element is revised for
-  MODS. ADR-0016's document route returns in another shape; ADR-0017 is
+- ADR-0011 narrows to the CSV. ADR-0015's worlds, interface and the items
+  on the record stand; its rule that one key emits one complete element is
+  revised for MODS, and its `items.csv` is withdrawn. ADR-0016's document
+  route returns in another shape and its `items.csv` rules go; ADR-0017 is
   superseded. ADR-0018's note placing `NewDescription` on `Definition` is
   undone.

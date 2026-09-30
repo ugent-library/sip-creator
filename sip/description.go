@@ -5,10 +5,11 @@ import "fmt"
 // Description is the decoded descriptive metadata of an entity or a
 // representation, in whichever descriptive standard the profile writes.
 // Each profile package supplies its own implementation (meemoo.Terms,
-// eark.Terms, earkmods.Record): a list of Term values, or a struct holding
-// one, under the profile's own rules. The profile's descriptive standard
-// knows the concrete type and does everything that needs it, so nothing in
-// sip/ depends on a profile.
+// eark.Terms, earkmods.Record): a list of Term values where the standard
+// is a flat list, a struct typed by field where it is a tree, under the
+// profile's own rules. The profile's descriptive standard knows the
+// concrete type and does everything that needs it, so nothing in sip/
+// depends on a profile.
 type Description interface {
 	// Validate returns every way the description is not a valid one in its
 	// standard, joined into one error: an unknown key, a malformed

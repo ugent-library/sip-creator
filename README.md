@@ -177,11 +177,11 @@ pkg, err := builder.Build(&build.SourcePackage{
 })
 ```
 
-The `eark-mods` profile takes a bibliographic record instead of a list of terms: the
-statements about the work, plus the library's physical copies of it as items, each a
-call number with an optional barcode and an optional volume or issue designation. Items
-belong to the package-level record only; a representation is a version of the content,
-never a copy:
+The `eark-mods` profile takes a bibliographic record instead of a list of terms. MODS is
+a tree, so the record is typed by field: its identifier, its titles, and the library's
+physical copies of it as items, each a call number with an optional barcode and an
+optional volume or issue designation. Items belong to the package-level record only; a
+representation is a version of the content, never a copy:
 
 ```go
 import "github.com/ugent-library/sip-creator/profiles/earkmods"
@@ -191,9 +191,9 @@ def, _ := profiles.Get("eark-mods")
 
 pkg, err := builder.Build(&build.SourcePackage{
 	Description: earkmods.Record{
-		Terms: []sip.Term{
-			{Key: "identifier", Value: "990001234560471"},
-			{Key: "title", Lang: "nl", Value: "Correspondentie 1914-1918"},
+		Identifier: "990001234560471",
+		Titles: []earkmods.Title{
+			{Value: "Correspondentie 1914-1918", Lang: "nl"},
 		},
 		Items: []earkmods.Item{
 			{CallNumber: "BIB.HS.001", Barcode: "000012345678"},
@@ -276,8 +276,8 @@ to `check` and `create` says which vocabulary the rows are in: under `basic` the
 come from meemoo's closed vocabulary of Dublin Core terms plus two schema.org
 properties; under `eark` they are the fifteen Simple Dublin Core elements; under
 `eark-mods` they are the MODS keys, `identifier` and `title` today (the two DC tables
-are in the [input specification](docs/input-spec.md); the MODS table and its items
-file join it with the [descriptive-model plan](docs/plans/descriptive-model.md)). Repeat a
+are in the [input specification](docs/input-spec.md); the MODS table joins it with the
+[descriptive-model plan](docs/plans/descriptive-model.md)). Repeat a
 key for multiple values,
 and tag a value's language in square brackets where it matters:
 

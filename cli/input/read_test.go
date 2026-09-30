@@ -13,26 +13,26 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// meemooRows and earkRows are the tests' vocabularies for the two flat
-// profiles: the rows as stated, wrapped as the profile's terms. The CLI's
-// own vocabularies in cli/input/vocabulary import this package, so its
-// tests cannot use them.
-type meemooRows struct{}
+// meemooVocab and earkVocab are the tests' vocabularies for the two flat
+// profiles: the statements as stated, wrapped as the profile's terms. The
+// CLI's own vocabularies in cli/input/vocabulary import this package, so
+// its tests cannot use them.
+type meemooVocab struct{}
 
-func (meemooRows) Description(rows []Row, _ []ItemRow) (sip.Description, []Finding) {
-	return meemoo.Terms(terms(rows)), nil
+func (meemooVocab) Description(statements []Statement) (sip.Description, []error) {
+	return meemoo.Terms(terms(statements)), nil
 }
 
-type earkRows struct{}
+type earkVocab struct{}
 
-func (earkRows) Description(rows []Row, _ []ItemRow) (sip.Description, []Finding) {
-	return eark.Terms(terms(rows)), nil
+func (earkVocab) Description(statements []Statement) (sip.Description, []error) {
+	return eark.Terms(terms(statements)), nil
 }
 
-func terms(rows []Row) []sip.Term {
-	out := make([]sip.Term, len(rows))
-	for i, r := range rows {
-		out[i] = sip.Term{Key: r.Key, Lang: r.Lang, Value: r.Value}
+func terms(statements []Statement) []sip.Term {
+	out := make([]sip.Term, len(statements))
+	for i, s := range statements {
+		out[i] = sip.Term{Key: s.Key, Lang: s.Lang, Value: s.Value}
 	}
 	return out
 }
@@ -40,8 +40,8 @@ func terms(rows []Row) []sip.Term {
 // The readers the tests share, one per profile: a folder reads as basic
 // unless a test is about the eark vocabulary.
 var (
-	basicReader = New(meemooRows{})
-	earkReader  = New(earkRows{})
+	basicReader = New(meemooVocab{})
+	earkReader  = New(earkVocab{})
 )
 
 // minimalCSV is the smallest description.csv that passes check: meemoo's

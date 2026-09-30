@@ -223,9 +223,10 @@ func TestReadRequiresAVocabulary(t *testing.T) {
 	}
 }
 
-// A vocabulary's own findings are reported at the row's line, or against
-// the file when they concern no row, next to the description's rules.
-func TestVocabularyFindingsNameTheLine(t *testing.T) {
+// A vocabulary's own errors are reported at the row's line when they are
+// about one statement, or against the file otherwise, next to the
+// description's rules.
+func TestVocabularyErrorsNameTheLine(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv": "key,value\nidentifier,ID-1\ntitle,T\n",
 		"scan.tiff":       "x",
@@ -236,15 +237,15 @@ func TestVocabularyFindingsNameTheLine(t *testing.T) {
 	assertViolation(t, err, "identifier is required")
 }
 
-// placesNothing is a vocabulary that refuses every row at its line, adds
-// one finding about the file, and returns an empty eark description, so
+// placesNothing is a vocabulary that refuses every statement at its line,
+// adds one error about the file, and returns an empty eark description, so
 // the description's own required-keys rule still runs on the result.
 type placesNothing struct{}
 
-func (placesNothing) Description(rows []Row, _ []ItemRow) (sip.Description, []Finding) {
-	findings := []Finding{{Err: errors.New("nothing fits")}}
-	for _, r := range rows {
-		findings = append(findings, Finding{Line: r.Line, Err: fmt.Errorf("no place for %s", r.Key)})
+func (placesNothing) Description(statements []Statement) (sip.Description, []error) {
+	errs := []error{errors.New("nothing fits")}
+	for _, s := range statements {
+		errs = append(errs, &StatementError{Line: s.Line, Err: fmt.Errorf("no place for %s", s.Key)})
 	}
-	return eark.Terms(nil), findings
+	return eark.Terms(nil), errs
 }

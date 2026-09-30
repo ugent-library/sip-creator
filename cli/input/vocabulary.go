@@ -1,31 +1,35 @@
 package input
 
-import "github.com/ugent-library/sip-creator/sip"
+import (
+	"fmt"
 
-// Vocabulary gives the rows of a description.csv their meaning under one
-// profile: which keys exist, what each one says, and how the rows become
-// the profile's description. The --profile flag picks it. One
-// implementation per profile lives in a package beside this one and
-// imports that profile's package; this package imports none, so the
+	"github.com/ugent-library/sip-creator/sip"
+)
+
+// Vocabulary gives the statements of a description.csv their meaning under
+// one profile: which keys exist, what each one says, and how the
+// statements become the profile's description. The --profile flag picks
+// it. One implementation per profile lives in a package beside this one
+// and imports that profile's package; this package imports none, so the
 // reader is the same for every profile.
 type Vocabulary interface {
-	// Description builds the profile's description from the rows of one
-	// level, in file order, and reports each row it cannot place as a
-	// Finding naming the row's line. It returns a description even when it
-	// reports findings and even for no rows at all, so the reader can run
-	// the description's own rules (Validate, ValidateRequired) and report
-	// everything in one pass. The statements of the returned description
-	// keep the rows' order, so a *sip.TermError from Validate names the row
-	// at that position. items are the rows of the package's items.csv,
-	// nil when the level has none; a vocabulary with no place for copies
-	// reports them.
-	Description(rows []Row, items []ItemRow) (sip.Description, []Finding)
+	// Description builds the profile's description from the statements of
+	// one level, in file order, and reports each statement it cannot place
+	// as a *StatementError naming the row's line; an error that is not
+	// about one statement concerns the file as a whole. It returns a
+	// description even when it reports errors and even for no statements
+	// at all, so the reader can run the description's own rules (Validate,
+	// ValidateRequired) and report everything in one pass. Where the
+	// description is a list of terms it keeps the statements' order, so a
+	// *sip.TermError from Validate names the statement at that position.
+	Description(statements []Statement) (sip.Description, []error)
 }
 
-// Row is one statement decoded from a description.csv: the key and the
-// language tag parsed from the first column, the value of the second, and
-// the line it was read from.
-type Row struct {
+// Statement is one row of a description.csv: one thing the folder states
+// about the described entity, as a key, an optional language tag and a
+// value, with the line it was read from. The reader checks the row's
+// syntax only; what the key means is the vocabulary's.
+type Statement struct {
 	// Key is the plain vocabulary key as the first column spells it,
 	// lowercased, without the language tag.
 	Key string
@@ -38,26 +42,16 @@ type Row struct {
 	Line int
 }
 
-// ItemRow is one row of an items.csv: one physical copy of the described
-// record, and the line it was read from.
-type ItemRow struct {
-	// CallNumber is the copy's call number; every row states one.
-	CallNumber string
-	// Barcode is the copy's barcode; empty when the row has none.
-	Barcode string
-	// Enumeration is the copy's volume or issue designation; empty when the
-	// row has none.
-	Enumeration string
+// StatementError is a finding about one statement of a description.csv:
+// which row, by line, and what is wrong with it. It is the CLI's
+// counterpart of sip.TermError, which names a term by position.
+type StatementError struct {
 	// Line is the row's line in the file, counted from one.
 	Line int
-}
-
-// Finding is one thing a Vocabulary could not place: the line it concerns
-// and what is wrong.
-type Finding struct {
-	// Line is the row's line in the file, counted from one; zero for a
-	// finding about the file as a whole.
-	Line int
-	// Err says what is wrong.
+	// Err says what is wrong with the statement.
 	Err error
 }
+
+func (e *StatementError) Error() string { return fmt.Sprintf("line %d: %v", e.Line, e.Err) }
+
+func (e *StatementError) Unwrap() error { return e.Err }

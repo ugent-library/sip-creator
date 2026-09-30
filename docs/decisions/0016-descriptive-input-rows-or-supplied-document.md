@@ -19,8 +19,9 @@ the supplied document returns for the two eark profiles (`dc.xml`,
 `mods.xml`, one per level) as a second description type behind
 `sip.Description`, not as a path next to the terms; the structural check
 and the no-identity rule below stand, the essence-path mechanics do not.
-`items.csv` accompanies `description.csv` only, since a supplied document
-carries its own copies. The CLI no longer hands rows to a `NewDescription`
+`items.csv` is withdrawn: the rows carry flat statements only, and a
+record's copies reach a package through the library's record or a
+supplied `mods.xml`. The CLI no longer hands rows to a `NewDescription`
 on the profile: an adapter per profile on the CLI side builds the
 description.
 

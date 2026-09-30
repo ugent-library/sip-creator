@@ -15,7 +15,11 @@ list of statements where one key emits one complete element, so the
 second decision below and the "one key" consequences are superseded for
 MODS; `sip.Term` stays the statement shape of the two Dublin Core worlds
 only, and the CSV keys and their mapping move to the CLI. The worlds
-themselves, the `Description` interface and the items decision stand.
+themselves, the `Description` interface and the items on the record
+stand; the `items.csv` file of the twelfth decision is withdrawn from the
+CLI (2026-09-30, the same review, before it shipped): the rows carry flat
+statements only, and copies reach a package through the library's record
+or a supplied `mods.xml`.
 
 ## Context
 
