@@ -13,8 +13,8 @@ import (
 // implements it for its own terms type, so everything that needs the
 // concrete type stays there and the engine speaks sip.Description only.
 // The registry in profiles/ is the closed set of encoders a build can use.
-// How a description is built from flat statements is not the encoder's
-// business: that is Definition.NewDescription, data on the profile.
+// Building a description is not the encoder's business: callers construct
+// the profile's type themselves.
 type DescriptionEncoder interface {
 	// Check returns why d is not a description this encoder takes: a
 	// description of another type. It runs before validation and before

@@ -15,28 +15,25 @@ import (
 	"path/filepath"
 
 	"github.com/ugent-library/sip-creator/build"
-	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Reader reads input folders as one profile: the description constructor
-// it holds says which vocabulary the rows of a description.csv are in,
-// and each Read walks one folder with it. check and create both construct
-// it with the profile's Definition.NewDescription, so they read a folder
-// the same way.
+// Reader reads input folders as one profile: the vocabulary it holds says
+// what the rows of a description.csv mean, and each Read walks one folder
+// with it. check and create both construct it with the profile's
+// vocabulary, so they read a folder the same way.
 type Reader struct {
-	newDescription func([]sip.Term) sip.Description
+	vocabulary Vocabulary
 }
 
-// New returns a reader whose rows are given meaning by newDescription: it
-// builds the profile's description from the flat statements a
-// description.csv decodes to, and that description carries the
-// vocabulary's rules (Validate, ValidateRequired), which the reader runs
-// and reports as violations. The terms it receives are decoded for syntax
-// only; which keys exist and what a term may say are the description's
-// own rules. Like build.New, it validates nothing: Read refuses a nil
-// constructor.
-func New(newDescription func(terms []sip.Term) sip.Description) *Reader {
-	return &Reader{newDescription: newDescription}
+// New returns a reader whose rows are given meaning by vocabulary: it
+// builds the profile's description from the rows a description.csv
+// decodes to, and that description carries the profile's rules (Validate,
+// ValidateRequired), which the reader runs and reports as violations. The
+// rows reach the vocabulary decoded for syntax only; which keys exist and
+// what a row may say are the vocabulary's and the description's own rules.
+// Like build.New, it validates nothing: Read refuses a nil vocabulary.
+func New(vocabulary Vocabulary) *Reader {
+	return &Reader{vocabulary: vocabulary}
 }
 
 // Read walks and validates the folder at root against the input
@@ -45,8 +42,8 @@ func New(newDescription func(terms []sip.Term) sip.Description) *Reader {
 // Violations error; when the error is non-nil the returned source package is
 // incomplete and must not be built.
 func (r *Reader) Read(root string) (*build.SourcePackage, error) {
-	if r.newDescription == nil {
-		return nil, errors.New("no description constructor: construct the reader with the profile's Definition.NewDescription, which says what the rows of description.csv mean")
+	if r.vocabulary == nil {
+		return nil, errors.New("no vocabulary: construct the reader with the profile's vocabulary, which says what the rows of description.csv mean")
 	}
 	abs, err := filepath.Abs(root)
 	if err != nil {
@@ -60,7 +57,7 @@ func (r *Reader) Read(root string) (*build.SourcePackage, error) {
 		return nil, fmt.Errorf("input folder %s is not a directory", root)
 	}
 
-	d := &directory{root: abs, newDescription: r.newDescription}
+	d := &directory{root: abs, vocabulary: r.vocabulary}
 	m := d.read()
 	if len(d.violations) > 0 {
 		return m, d.violations

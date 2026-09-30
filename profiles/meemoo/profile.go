@@ -9,9 +9,8 @@ import (
 // on the E-ARK SIP profile of its era, writing dc+schema.xml from Terms.
 // The registry in profiles/ hands it out under the name "basic".
 var Definition = build.Definition{
-	Name:           "basic",
-	Encoder:        dcschema{},
-	NewDescription: func(terms []sip.Term) sip.Description { return Terms(terms) },
+	Name:    "basic",
+	Encoder: dcschema{},
 	// meemoo identifies the submitting organization by its OR-id
 	// (meemoo SIP 1.2, metsHdr agent note).
 	RequireSubmitterORID: true,

@@ -13,10 +13,6 @@ import (
 var Definition = build.Definition{
 	Name:    "eark-mods",
 	Encoder: mods{},
-	// Flat statements build a record without items: the items are a second
-	// flat table, and how a transport hands them over is settled with the
-	// CLI's items.csv (eark-mods plan, S4).
-	NewDescription: func(terms []sip.Term) sip.Description { return Record{Terms: terms} },
 	// Named after the MODS document it holds.
 	DescriptiveName: "mods.xml",
 	// No PREMIS, as for eark: RODA drops package PREMIS that does not

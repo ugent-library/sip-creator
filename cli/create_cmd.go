@@ -25,7 +25,7 @@ var createCmd = &cobra.Command{
 	Args:         cobra.ExactArgs(2),
 	SilenceUsage: true, // a bad input folder is not a usage error
 	RunE: func(cmd *cobra.Command, args []string) error {
-		def, err := resolveProfile(cmd)
+		def, vocabulary, err := resolveProfile(cmd)
 		if err != nil {
 			return err
 		}
@@ -63,7 +63,7 @@ var createCmd = &cobra.Command{
 			contentCategory = cfg.ContentCategory
 		}
 
-		source, err := input.New(def.NewDescription).Read(args[0])
+		source, err := input.New(vocabulary).Read(args[0])
 		if err != nil {
 			return fmt.Errorf("input folder %s does not conform to the input specification:\n%w", args[0], err)
 		}

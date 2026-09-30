@@ -9,17 +9,16 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/characterization"
-	"github.com/ugent-library/sip-creator/sip"
 	"golang.org/x/text/unicode/norm"
 )
 
 // directory is the input folder under inspection: the root all messages and
 // report keys are relative to, the findings collected so far, and the
-// constructor that gives the rows of a description.csv their meaning.
+// vocabulary that gives the rows of a description.csv their meaning.
 type directory struct {
-	root           string
-	violations     Violations
-	newDescription func([]sip.Term) sip.Description
+	root       string
+	violations Violations
+	vocabulary Vocabulary
 }
 
 // Reserved top-level names. Reserved names inside a representation are

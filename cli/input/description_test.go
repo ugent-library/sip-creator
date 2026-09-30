@@ -1,12 +1,15 @@
 package input
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 // readCSV runs Read over a minimal flat tree carrying the given
@@ -210,12 +213,38 @@ func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 	assertViolation(t, err, `unknown key "license"`)
 }
 
-// Without a description constructor the reader cannot say what the rows
-// mean; it is refused before the folder is touched.
-func TestReadRequiresAConstructor(t *testing.T) {
+// Without a vocabulary the reader cannot say what the rows mean; it is
+// refused before the folder is touched.
+func TestReadRequiresAVocabulary(t *testing.T) {
 	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "scan.tiff": "x"})
 	_, err := New(nil).Read(root)
-	if err == nil || !strings.Contains(err.Error(), "no description constructor") {
-		t.Fatalf("want the missing constructor refused, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "no vocabulary") {
+		t.Fatalf("want the missing vocabulary refused, got %v", err)
 	}
+}
+
+// A vocabulary's own findings are reported at the row's line, or against
+// the file when they concern no row, next to the description's rules.
+func TestVocabularyFindingsNameTheLine(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"description.csv": "key,value\nidentifier,ID-1\ntitle,T\n",
+		"scan.tiff":       "x",
+	})
+	_, err := New(placesNothing{}).Read(root)
+	assertViolation(t, err, "description.csv line 3: no place for title")
+	assertViolation(t, err, "description.csv: nothing fits")
+	assertViolation(t, err, "identifier is required")
+}
+
+// placesNothing is a vocabulary that refuses every row at its line, adds
+// one finding about the file, and returns an empty eark description, so
+// the description's own required-keys rule still runs on the result.
+type placesNothing struct{}
+
+func (placesNothing) Description(rows []Row, _ []ItemRow) (sip.Description, []Finding) {
+	findings := []Finding{{Err: errors.New("nothing fits")}}
+	for _, r := range rows {
+		findings = append(findings, Finding{Line: r.Line, Err: fmt.Errorf("no place for %s", r.Key)})
+	}
+	return eark.Terms(nil), findings
 }

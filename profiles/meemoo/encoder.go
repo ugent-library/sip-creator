@@ -13,8 +13,7 @@ import (
 
 // dcschema is the encoder for the dc+schema document as the engine sees
 // it: it accepts Terms, writes them with Encode, and swaps the entity
-// identifier in. Building Terms from flat statements is the Definition's
-// NewDescription, not the encoder's.
+// identifier in.
 type dcschema struct{}
 
 // IdentifierSwapper is optional to the engine, so a drift in Swap's

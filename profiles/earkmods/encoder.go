@@ -12,8 +12,7 @@ import (
 )
 
 // mods is the encoder for the MODS document as the engine sees it: it
-// accepts Record and writes it with Encode; building a Record from flat
-// statements is the Definition's NewDescription. It never swaps: mods.xml
+// accepts Record and writes it with Encode. It never swaps: mods.xml
 // keeps the producer's identifier, the catalogue number the ingesting
 // repository indexes and operators search by (ADR-0012).
 type mods struct{}

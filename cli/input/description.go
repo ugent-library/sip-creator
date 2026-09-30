@@ -8,13 +8,14 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// decodeDescription decodes the descriptive rows file at src into the profile's
-// description, collecting a violation per broken rule. src is "" when the
-// level has no rows file: the package level needs one, a representation
-// may have none. The row syntax (header, two columns, key[lang]) is the
-// file's own; what a term may say, the cross-row rules and what a
-// package-level description must state are the profile's, run once on the
-// finished list. The library runs the same methods again as the contract
+// decodeDescription decodes the descriptive rows file at src into the
+// profile's description, collecting a violation per broken rule. src is ""
+// when the level has no rows file: the package level needs one, a
+// representation may have none. The row syntax (header, two columns,
+// key[lang]) is the file's own and is checked here; what a key means is
+// the vocabulary's; what the finished description may say and what a
+// package-level one must state are the description's own rules, run once
+// on the result. The library runs the same methods again as the contract
 // before a build; these calls report, so check and create agree.
 func (d *directory) decodeDescription(src string, packageLevel bool) sip.Description {
 	if src == "" {
@@ -30,8 +31,7 @@ func (d *directory) decodeDescription(src string, packageLevel bool) sip.Descrip
 		return nil
 	}
 
-	var terms []sip.Term
-	var lines []int // lines[i] is the line terms[i] was read from
+	var rows []Row
 	headerSeen := false
 	for {
 		row, err := cr.Read()
@@ -65,35 +65,42 @@ func (d *directory) decodeDescription(src string, packageLevel bool) sip.Descrip
 		if !ok {
 			continue
 		}
-		terms = append(terms, sip.Term{Key: key, Lang: lang, Value: row[1]})
-		lines = append(lines, line)
+		rows = append(rows, Row{Key: key, Lang: lang, Value: row[1], Line: line})
 	}
 
-	// A finding about one term names it by position, which the lines
-	// gathered above turn back into the row's line; a cross-row finding
-	// names the key and language, which locates the rows in a keyed file.
-	description := d.newDescription(terms)
-	errs := findings(description.Validate())
+	description, misplaced := d.vocabulary.Description(rows, nil) // no items.csv is read yet
+	for _, f := range misplaced {
+		if f.Line > 0 {
+			d.violate("%s line %d: %v", rel, f.Line, f.Err)
+			continue
+		}
+		d.violate("%s: %v", rel, f.Err)
+	}
+
+	// A finding about one term names it by position, which the rows turn
+	// back into the row's line; a cross-row finding names the key and
+	// language, which locates the rows in a keyed file.
+	errs := flatten(description.Validate())
 	if packageLevel {
-		errs = append(errs, findings(description.ValidateRequired())...)
+		errs = append(errs, flatten(description.ValidateRequired())...)
 	}
 	for _, err := range errs {
 		var te *sip.TermError
-		if errors.As(err, &te) {
-			d.violate("%s line %d: %v", rel, lines[te.Index], te.Err)
+		if errors.As(err, &te) && te.Index < len(rows) {
+			d.violate("%s line %d: %v", rel, rows[te.Index].Line, te.Err)
 			continue
 		}
 		d.violate("%s: %v", rel, err)
 	}
-	if len(terms) == 0 {
+	if len(rows) == 0 {
 		return nil
 	}
 	return description
 }
 
-// findings flattens a joined error into its parts, so each finding is
+// flatten splits a joined error into its parts, so each finding is
 // reported as its own violation.
-func findings(err error) []error {
+func flatten(err error) []error {
 	if err == nil {
 		return nil
 	}
@@ -103,7 +110,7 @@ func findings(err error) []error {
 	}
 	var out []error
 	for _, e := range joined.Unwrap() {
-		out = append(out, findings(e)...)
+		out = append(out, flatten(e)...)
 	}
 	return out
 }

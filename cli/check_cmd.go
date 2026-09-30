@@ -24,12 +24,12 @@ var checkCmd = &cobra.Command{
 	Args:         cobra.ExactArgs(1),
 	SilenceUsage: true, // findings are the output, not a usage error
 	RunE: func(cmd *cobra.Command, args []string) error {
-		def, err := resolveProfile(cmd)
+		_, vocabulary, err := resolveProfile(cmd)
 		if err != nil {
 			return err
 		}
 
-		source, err := input.New(def.NewDescription).Read(args[0])
+		source, err := input.New(vocabulary).Read(args[0])
 		if err != nil {
 			if v, ok := errors.AsType[input.Violations](err); ok {
 				for _, line := range v {

@@ -70,19 +70,3 @@ func TestRegistryEntriesNameAnEncoder(t *testing.T) {
 		}
 	}
 }
-
-// Every profile's NewDescription builds what its encoder's Check accepts:
-// the CLI hands decoded rows to the one, and the engine runs the other on
-// the result. A profile without the function could not read a folder.
-func TestRegistryProfilesBuildWhatTheyCheck(t *testing.T) {
-	for _, name := range Names() {
-		def, _ := Get(name)
-		if def.NewDescription == nil {
-			t.Errorf("profile %q names no NewDescription", name)
-			continue
-		}
-		if err := def.Encoder.Check(def.NewDescription(nil)); err != nil {
-			t.Errorf("profile %q: Check refuses what NewDescription built: %v", name, err)
-		}
-	}
-}

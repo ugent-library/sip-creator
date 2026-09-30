@@ -10,13 +10,38 @@ import (
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/sip"
 )
+
+// meemooRows and earkRows are the tests' vocabularies for the two flat
+// profiles: the rows as stated, wrapped as the profile's terms. The CLI's
+// own vocabularies in cli/input/vocabulary import this package, so its
+// tests cannot use them.
+type meemooRows struct{}
+
+func (meemooRows) Description(rows []Row, _ []ItemRow) (sip.Description, []Finding) {
+	return meemoo.Terms(terms(rows)), nil
+}
+
+type earkRows struct{}
+
+func (earkRows) Description(rows []Row, _ []ItemRow) (sip.Description, []Finding) {
+	return eark.Terms(terms(rows)), nil
+}
+
+func terms(rows []Row) []sip.Term {
+	out := make([]sip.Term, len(rows))
+	for i, r := range rows {
+		out[i] = sip.Term{Key: r.Key, Lang: r.Lang, Value: r.Value}
+	}
+	return out
+}
 
 // The readers the tests share, one per profile: a folder reads as basic
 // unless a test is about the eark vocabulary.
 var (
-	basicReader = New(meemoo.Definition.NewDescription)
-	earkReader  = New(eark.Definition.NewDescription)
+	basicReader = New(meemooRows{})
+	earkReader  = New(earkRows{})
 )
 
 // minimalCSV is the smallest description.csv that passes check: meemoo's

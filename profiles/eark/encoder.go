@@ -12,8 +12,7 @@ import (
 )
 
 // simpledc is the encoder for the simpledc document as the engine sees it:
-// it accepts Terms and writes them with Encode; building Terms from flat
-// statements is the Definition's NewDescription. It never swaps: dc.xml
+// it accepts Terms and writes them with Encode. It never swaps: dc.xml
 // keeps the producer's identifier, because CSIP has no rule tying it to
 // the package identifier and the ingesting catalogue indexes dc.xml, so
 // operators find the package by the identifier they know (ADR-0012).

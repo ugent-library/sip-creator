@@ -1,13 +1,16 @@
 # Plan: the descriptive model follows its standard, and supplied documents return for the eark profiles
 
-*Status: **S1 in progress** (2026-09-30). Drafted on the branch
+*Status: **S2 done, S3 next** (2026-09-30). Drafted on the branch
 `descriptive-model` from the review of 2026-09-30 that closed the
 [eark-mods plan](../archive/eark-mods.md) after its S3, with
 [ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)
-recording the decision. The library's descriptive model is still the flat
-statement list of ADR-0015; the CLI still hands rows to
-`Definition.NewDescription`; no supplied document is accepted anywhere.
-Update this line as steps land.*
+recording the decision. The reader takes an `input.Vocabulary`, the
+profiles' vocabularies live in `cli/input/vocabulary`, and
+`build.Definition` has no constructor for a transport; both DC profiles
+validate VALID with 0 warnings and compare identical to their reference
+copies. The library's descriptive model is still the flat statement list
+of ADR-0015; no supplied document is accepted anywhere. Update this line
+as steps land.*
 
 ## Context
 
@@ -112,7 +115,7 @@ A pure move of the row-to-description step from the library to the CLI.
 The model stays the flat statement list, so this step is a refactor and
 both comparisons stay clean.
 
-- [ ] **The adapter interface.** In `cli/input`, a one-method interface
+- [x] **The adapter interface.** In `cli/input`, a one-method interface
       named for what it does: it gives the decoded rows of one level their
       meaning and returns the profile's description plus findings, each
       with the row's line. It takes the rows the reader decoded (key,
@@ -123,25 +126,47 @@ both comparisons stay clean.
       `[lang]` shape, no prefixed keys. It keeps running `Validate` and
       `ValidateRequired` on the result and mapping a `*sip.TermError` to a
       line; a finding that is not a term error is printed with the file
-      name.
-- [ ] **Three adapters.** `cli/input/meemoo`, `cli/input/eark` and
+      name. (Landed as `input.Vocabulary` with `Row`, `ItemRow` and
+      `Finding` in `cli/input/vocabulary.go`; the name is the input
+      specification's word for what the profile decides about the rows.
+      `cli/profile.go` resolves the vocabulary next to the definition, so
+      the commands change once. The reader's tests keep two small test
+      vocabularies of their own: they call an unexported function, so
+      they stay internal, and the CLI's vocabularies import the reader.)
+- [x] **Three adapters.** `cli/input/meemoo`, `cli/input/eark` and
       `cli/input/earkmods`, each importing its profile package and, for
       now, wrapping the rows as the profile's `NewDescription` did. The
       earkmods adapter reports item rows as unsupported until S3 gives the
-      record its fields.
-- [ ] **The profile table.** `cli/profile.go` resolves `--profile` to the
+      record its fields. (Landed as one package, `cli/input/vocabulary`,
+      with the types `Meemoo`, `Eark` and `EarkMods`: three packages named
+      after the profiles would each have imported a profile package of
+      the same name under an alias, and the pairing of names to
+      vocabularies is one table either way. The package is the one CLI
+      package importing the profile packages for descriptive metadata.
+      Item rows are one finding about the file under every profile for
+      now, never dropped.)
+- [x] **The profile table.** `cli/profile.go` resolves `--profile` to the
       definition and the adapter; `check` and `create` construct the
       reader with `input.New(adapter)`. `build.Definition.NewDescription`
       goes, with its field doc and the registry test that called it; that
       test moves to the CLI, asserting each adapter builds what its
-      profile's `Check` accepts.
-- [ ] **Docs.** `CLAUDE.md`: the system shape's input paragraph (the reader
+      profile's `Check` accepts. (Landed as `vocabulary.For(name)`, keyed
+      by the definitions' own names; the moved test also pins that every
+      registered profile has a vocabulary and that rows keep their order.)
+- [x] **Docs.** `CLAUDE.md`: the system shape's input paragraph (the reader
       takes the profile's adapter; the generic reader imports no profile
       package, the adapters do). Design doc: the CLI/library boundary and
       the input contract paragraph. ADR-0018's note. Commit `Changed: the
-      CLI's adapters build a profile's description from rows`.
-- [ ] **Acceptance.** `go test ./...`; both profiles VALID; both
-      comparisons clean.
+      CLI's vocabularies build a profile's description from
+      description.csv rows`. (The design doc's `cli/` bullet and the test
+      inventories in both files name `cli/input/vocabulary` too; the
+      encoder comments that named the constructor lost that sentence.)
+- [x] **Acceptance.** `go test ./...`; both profiles VALID; both
+      comparisons clean. (Run 2026-09-30 with `CSIP_CMD` pointing at the
+      commons-ip 2.11.2 jar on host Java 27, the jar fetched from the
+      release URL the validator Dockerfile pins and checked against its
+      sha256; basic passed=132 and eark passed=129 with 28 skipped, the
+      same counts as the reference captures.)
 
 ### S3: the typed MODS record
 
