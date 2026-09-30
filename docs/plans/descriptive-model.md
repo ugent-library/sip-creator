@@ -1,6 +1,6 @@
 # Plan: the descriptive model follows its standard, and supplied documents return for the eark profiles
 
-*Status: **S3 done, S4 withdrawn, S5 next** (2026-09-30). Drafted on the branch
+*Status: **S5 done, S6 next** (2026-09-30; S4 withdrawn). Drafted on the branch
 `descriptive-model` from the review of 2026-09-30 that closed the
 [eark-mods plan](../archive/eark-mods.md) after its S3, with
 [ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)
@@ -271,7 +271,7 @@ it in the docs. Docs only, no code.
       open questions (one identifier or several, the constant sets, the
       CSV keys for new elements). Commit `Added: ADR-0022 and the
       mods-coverage plan; the library is a reference implementation`.
-- [ ] **UGent as the example, not the rule.** The comments in
+- [x] **UGent as the example, not the rule.** The comments in
       `profiles/earkmods` that name the Alma MMS ID and "the owner of the
       repository side" describe the record's local identifier and give
       UGent's as the example. `CLAUDE.md`'s audience section names other
@@ -283,7 +283,9 @@ it in the docs. Docs only, no code.
       `build.New`). Design doc: the CLI/library boundary section states
       the aim and names the eark profiles' RODA choices as such. Commit
       `Changed: docs state the reference-implementation aim and the
-      bring-your-own-profile route`.
+      bring-your-own-profile route`. (The constant `mmsIDType` is
+      `localIdentifierType` now, the one code change: its old name was the
+      UGent word for a MODS value.)
 
 ### S6: supplied documents in the library
 
@@ -365,9 +367,11 @@ Carried over from the eark-mods plan's S6.
 
 ## Open questions
 
-- **The `type` attribute on `mods:identifier`** for the MMS ID: one
-  constant, decided by the owner of the repository side, changed in one
-  place (carried over).
+- **The `type` attribute on `mods:identifier`**: one constant, `local`,
+  the value MODS suggests for an identifier local to the describing
+  institution's system. It becomes the caller's choice from a closed set
+  in the [mods-coverage plan](mods-coverage.md)'s first tier (decided
+  2026-09-30; it had been "decided by the owner of the repository side").
 - **Further MODS fields.** Names (personal and corporate, with a relator
   code per role) and dates (`encoding="edtf"`) as fields on the record,
   each with a template line, an adapter key and a spec line; supplied with

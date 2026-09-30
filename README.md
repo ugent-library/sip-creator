@@ -12,6 +12,12 @@ Meemoo profiles building SIPs conforming to
 [Meemoo's SIP Specification](https://developer.meemoo.be/docs/diginstroom/sip/) for
 ingest into the Flemish heritage archive.
 
+The library is written to be usable by other institutions as it stands, as a reference
+implementation of E-ARK SIP packaging: the profiles in this repository are reference
+implementations, and an institution with its own descriptive standard brings its own
+profile (see [Bringing your own profile](#bringing-your-own-profile)). UGent Library's
+usage in the examples is the example, not the rule.
+
 :warning: **This is an experimental package** :warning:
 
 ## Features
@@ -203,6 +209,21 @@ pkg, err := builder.Build(&build.SourcePackage{
 	// Representations as above.
 })
 ```
+
+#### Bringing your own profile
+
+The three profiles above are reference implementations of one route, and the engine
+imports none of them. An institution with its own descriptive standard writes a package
+that exports three things: a description type implementing `sip.Description` (its
+`Validate` and `ValidateRequired` are the rules of your standard), an encoder implementing
+`build.DescriptionEncoder` (the type check, the document written from a `text/template`,
+the bundled XSDs the document points at), and a `build.Definition` naming the encoder, the
+document's file name and the METS values (`sip.MetsDeclaration`: profile URL, content
+typing, `MDTYPE`). Hand that definition to `build.New` as above. The registry in `profiles/`
+is the CLI's list of what `--profile` can name; a library caller's package need not join
+it. Where your profile would decide an attribute value for the caller, make it a typed
+constant set the caller picks from, so two callers making the same choice emit the same
+document (ADR-0022).
 
 The full API is on [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator);
 the domain model and build lifecycle are described in

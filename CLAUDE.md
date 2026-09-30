@@ -14,7 +14,7 @@ Keep the dependency footprint small and boring. All XML is generated with Go `te
 
 ## Audience
 
-SIP Creator serves digital-preservation staff at UGent Library preparing SIPs for meemoo ingest. Downstream consumers are meemoo's ingest pipeline, CSIP validators (commons-ip / RODA), and the future archivists and systems that will read the preserved metadata decades from now.
+SIP Creator serves digital-preservation staff at UGent Library preparing SIPs for meemoo ingest and for UGent's RODA instance. It is written to be usable by other institutions as it stands and to read as a reference implementation of E-ARK SIP packaging ([ADR-0022](docs/decisions/0022-reference-implementation-bring-your-own-profile.md)): the profiles in this repository are reference implementations, an institution with its own descriptive standard brings its own profile, and UGent's usage in docs and comments is the example, never the rule. Downstream consumers are meemoo's ingest pipeline, CSIP validators (commons-ip / RODA), and the future archivists and systems that will read the preserved metadata decades from now.
 
 Use vocabulary from the meemoo SIP spec and OAIS: SIP, essence, representation, intellectual entity, fixity, descriptive vs. preservation metadata.
 

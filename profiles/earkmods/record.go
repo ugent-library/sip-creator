@@ -21,9 +21,10 @@ import (
 // describes a version of the same content and carries no items. Validate
 // holds the rules on what a record may say.
 type Record struct {
-	// Identifier is the record's catalogue number, an Alma MMS ID at UGent
-	// Library, emitted as a mods:identifier with a fixed type. Empty when
-	// the record states none, which a representation's record may.
+	// Identifier is the record's local identifier, the catalogue number
+	// the describing institution finds it by (at UGent Library an Alma
+	// MMS ID), emitted as a mods:identifier of type local. Empty when the
+	// record states none, which a representation's record may.
 	Identifier string
 	// Titles are the record's titles, one titleInfo/title each, in the
 	// order given. A title's language is emitted as xml:lang.

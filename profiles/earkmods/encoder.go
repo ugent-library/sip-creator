@@ -35,7 +35,7 @@ func (mods) Check(d sip.Description) error {
 // rendered in memory first, so a failed render writes nothing.
 func (mods) Encode(w io.Writer, d sip.Description, schemas string) error {
 	var buf bytes.Buffer
-	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemas, mmsIDType}); err != nil {
+	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemas, localIdentifierType}); err != nil {
 		return err
 	}
 	_, err := w.Write(buf.Bytes())
@@ -49,13 +49,14 @@ func (mods) Schemas() []string {
 	return []string{"mods-3-7.xsd"}
 }
 
-// mmsIDType is the type attribute on the mods:identifier the record's
-// identifier emits: the catalogue number, an Alma MMS ID at UGent Library.
-// MODS leaves the type vocabulary open; "local" is the value its own list
-// suggests for a system-internal identifier. The owner of the repository
-// side settles the final value (descriptive-model plan, open question),
-// and this constant is the one place it changes.
-const mmsIDType = "local"
+// localIdentifierType is the type attribute on the mods:identifier the
+// record's identifier emits. MODS leaves the type vocabulary open; "local"
+// is the value its own list suggests for an identifier local to the
+// describing institution's system, such as an Alma MMS ID at UGent
+// Library. The type becomes the caller's choice from a closed set with
+// the mods-coverage plan; until then this constant is the one place it
+// lives.
+const localIdentifierType = "local"
 
 // modsTemplate renders a record field by field: the identifier when the
 // record states one, one titleInfo per title, and the items as one

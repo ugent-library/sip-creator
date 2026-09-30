@@ -58,7 +58,7 @@ func TestEncode(t *testing.T) {
 		`<mods:mods xmlns:mods="http://www.loc.gov/mods/v3"`,
 		`version="3.7"`,
 		`xsi:schemaLocation="http://www.loc.gov/mods/v3 ../../schemas/mods-3-7.xsd"`,
-		`<mods:identifier type="` + mmsIDType + `">990001234560471</mods:identifier>`,
+		`<mods:identifier type="` + localIdentifierType + `">990001234560471</mods:identifier>`,
 		"<mods:titleInfo xml:lang=\"nl\">\n    <mods:title>Fotoalbum Gent 1913</mods:title>\n  </mods:titleInfo>",
 		`<mods:titleInfo xml:lang="en">`,
 		// no language tag, no xml:lang; producer values escaped
