@@ -1,6 +1,6 @@
 # Plan: the descriptive model follows its standard, and supplied documents return for the eark profiles
 
-*Status: **S3 done, S4 next** (2026-09-30). Drafted on the branch
+*Status: **S3 done, S4 withdrawn, S5 next** (2026-09-30). Drafted on the branch
 `descriptive-model` from the review of 2026-09-30 that closed the
 [eark-mods plan](../archive/eark-mods.md) after its S3, with
 [ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)
@@ -90,7 +90,7 @@ Rules, all MUST violations collected by `check`:
 
 ## Execution steps
 
-Library first, output unchanged until S7 captures the eark-mods reference.
+Library first, output unchanged until S8 captures the eark-mods reference.
 Every step ends with `go test ./...` green, `./build.sh basic` and
 `./build.sh eark` VALID with 0 warnings, and the structural comparison in
 scripts/reference-diff.sh clean for both against their reference copies.
@@ -231,12 +231,61 @@ child table is the flat-to-rich device the CSV should not grow
 ([ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)):
 the rows carry flat statements about the level's entity and nothing else,
 and a record's copies reach the package through the library's record, as
-the ingest system supplies them, or through a supplied `mods.xml` (S5,
-S6). `Record.Items`, its rules and the `copyInformation` rendering stay in
+the ingest system supplies them, or through a supplied `mods.xml` (S6,
+S7). `Record.Items`, its rules and the `copyInformation` rendering stay in
 the library. The input specification's MODS keys under `eark-mods` land
-with S6's docs. ADR-0015's twelfth decision and ADR-0016 carry the note.
+with S7's docs. ADR-0015's twelfth decision and ADR-0016 carry the note.
 
-### S5: supplied documents in the library
+### S5: the library as a reference implementation
+
+Added 2026-09-30 in the review of S3. The library serves UGent Library
+first, but it should be usable by other institutions as it stands and
+read as a reference implementation of E-ARK packaging with meemoo's and
+RODA's profiles layered on: an institution with a different descriptive
+world brings its own profile. That route exists since ADR-0018 to 0020
+(`build.Definition` and `build.DescriptionEncoder` are exported and
+`build.New` takes any definition), but no document says so. The same
+review decided that the eark-mods profile, read that way, is plain E-ARK
+with a MODS 3.7 writer, and that the writer should cover the standard's
+top-level elements in MODS's own words, in tiers. That is a plan of its
+own, [mods-coverage](mods-coverage.md), which starts after this plan
+ships the document route (S6 to S8); this step records the aim and states
+it in the docs. Docs only, no code.
+
+- [x] **Decision record.** [ADR-0022](../decisions/0022-reference-implementation-bring-your-own-profile.md),
+      one page: the library is a reference implementation others can use;
+      the in-tree profiles are reference implementations of the encoder
+      interface and the definition, and an institution brings its own as
+      a package handed to `build.New`, outside the registry, which is the
+      CLI's list; where a profile would decide an attribute value for the
+      caller, the value is a typed constant set the caller picks from,
+      closed like the CSV vocabulary; the eark-mods profile is plain E-ARK
+      with a MODS writer that speaks MODS; the eark profiles' choices that
+      are RODA's (no PREMIS, the representation type in the content
+      typing) are named as the reference's choices for RODA rather than
+      E-ARK's rules.
+- [x] **The coverage plan.** [mods-coverage](mods-coverage.md), drafted as
+      the parked plan: the element set in three tiers, the common
+      attributes in and out, `relatedItem` recursive, `extension` out,
+      the identifier's type as the first choice a caller makes, and the
+      open questions (one identifier or several, the constant sets, the
+      CSV keys for new elements). Commit `Added: ADR-0022 and the
+      mods-coverage plan; the library is a reference implementation`.
+- [ ] **UGent as the example, not the rule.** The comments in
+      `profiles/earkmods` that name the Alma MMS ID and "the owner of the
+      repository side" describe the record's local identifier and give
+      UGent's as the example. `CLAUDE.md`'s audience section names other
+      institutions and the reference-implementation aim. README: the
+      introduction states the aim, and the library section gains a
+      paragraph on bringing your own profile (a description type
+      implementing `sip.Description`, an encoder implementing
+      `build.DescriptionEncoder`, an exported `build.Definition`, handed to
+      `build.New`). Design doc: the CLI/library boundary section states
+      the aim and names the eark profiles' RODA choices as such. Commit
+      `Changed: docs state the reference-implementation aim and the
+      bring-your-own-profile route`.
+
+### S6: supplied documents in the library
 
 - [ ] **`build.Document`.** A finished descriptive document supplied as a
       file: its path, and after `Validate` its root element. `Validate`
@@ -261,7 +310,7 @@ with S6's docs. ADR-0015's twelfth decision and ADR-0016 carry the note.
       eark profiles`.
 - [ ] **Acceptance.** As S2.
 
-### S6: supplied documents in the folder
+### S7: supplied documents in the folder
 
 - [ ] **File names and rules.** The adapter names the document it accepts
       (`dc.xml`, `mods.xml`, or none). The reader treats that name as
@@ -273,7 +322,7 @@ with S6's docs. ADR-0015's twelfth decision and ADR-0016 carry the note.
       dc.xml and mods.xml in the input folder`.
 - [ ] **Acceptance.** As S2.
 
-### S7: eark-mods acceptance
+### S8: eark-mods acceptance
 
 Carried over from the eark-mods plan's S6.
 
@@ -284,7 +333,7 @@ Carried over from the eark-mods plan's S6.
       whose representation carries a `description.csv` with a `title[nl]`,
       so the acceptance run exercises the document route and the rows
       route in one package. (Revised 2026-09-30 with the withdrawal of
-      `items.csv`; needs S5 and S6 first.)
+      `items.csv`; needs S6 and S7 first.)
 - [ ] **XML catalog.** `scripts/schema-catalog.xml` rewriting the two
       loc.gov URLs the MODS schema imports
       (`http://www.loc.gov/standards/xlink/xlink.xsd`,
@@ -303,7 +352,7 @@ Carried over from the eark-mods plan's S6.
       Commit `Added: eark-mods fixture, XML catalog and xmllint pass in
       build.sh`.
 
-### S8: closing docs
+### S9: closing docs
 
 - [ ] README (three profiles, both routes); design doc (status line,
       package layout, validation section naming the xmllint pass);
@@ -328,6 +377,13 @@ Carried over from the eark-mods plan's S6.
   per-level hook, so a caller who puts items on a representation's record
   gets them rendered there; the CLI refuses `items.csv` inside a
   representation directory. Left as is (carried over from 2026-09-29).
+- **The eark profiles' RODA choices.** `eark` and `eark-mods` emit no
+  PREMIS, because RODA drops package PREMIS without agents or events, and
+  carry the representation type in the content typing, because RODA reads
+  it there (ADR-0013). Neither is an E-ARK rule. A generic E-ARK consumer
+  may want PREMIS. Whether those choices become data a caller sets on the
+  definition, or a fourth profile, is decided when such a consumer
+  appears; S5 names them as the reference's choices for RODA.
 - **A malformed language tag on a MODS title has no line.** The tag's
   shape is the record's rule (`Validate`), and the record names the title
   by position ("title 2"), which the reader prints with the file name but
