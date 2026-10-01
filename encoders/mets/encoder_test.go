@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ugent-library/sip-creator/encoders/xmldoc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -75,5 +76,48 @@ func TestDmdSecTyping(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Every namespace xsi:schemaLocation pairs with a schema is one the
+// document declares, spelled exactly: namespace names compare character by
+// character, so a hint for https://dilcis.eu/... does not apply to the
+// https://DILCIS.eu/... namespace that CSIP and the SIP specification use.
+func TestSchemaLocationNamesDeclaredNamespaces(t *testing.T) {
+	pkg, rep := descriptiveGraph(t, sip.MetsDeclaration{DescriptiveMDType: "DC"})
+	documents := map[string]func(io.Writer) error{
+		"package":        func(w io.Writer) error { return EncodePackage(w, pkg) },
+		"representation": func(w io.Writer) error { return EncodeRepresentation(w, rep) },
+	}
+	for name, encode := range documents {
+		var buf bytes.Buffer
+		if err := encode(&buf); err != nil {
+			t.Fatalf("%s METS: %v", name, err)
+		}
+		root, err := xmldoc.Root(&buf)
+		if err != nil {
+			t.Fatalf("%s METS: %v", name, err)
+		}
+
+		declared := map[string]bool{}
+		var schemaLocation string
+		for _, a := range root.Attr {
+			switch {
+			case a.Name.Space == "xmlns", a.Name.Space == "" && a.Name.Local == "xmlns":
+				declared[a.Value] = true
+			case a.Name.Space == "http://www.w3.org/2001/XMLSchema-instance" && a.Name.Local == "schemaLocation":
+				schemaLocation = a.Value
+			}
+		}
+
+		pairs := strings.Fields(schemaLocation)
+		if len(pairs) == 0 || len(pairs)%2 != 0 {
+			t.Fatalf("%s METS xsi:schemaLocation %q is not namespace/schema pairs", name, schemaLocation)
+		}
+		for i := 0; i < len(pairs); i += 2 {
+			if !declared[pairs[i]] {
+				t.Errorf("%s METS xsi:schemaLocation names %s, which the document does not declare", name, pairs[i])
+			}
+		}
 	}
 }

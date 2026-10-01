@@ -485,6 +485,8 @@ func TestSourcePackageValidate(t *testing.T) {
 		}, "title is required"},
 		{"no representations", func(c *build.SourcePackage) { c.Representations = nil }, "at least one version"},
 		{"bad name", func(c *build.SourcePackage) { c.Representations[0].Name = "master copy" }, "may only contain"},
+		{"dot name", func(c *build.SourcePackage) { c.Representations[0].Name = "." }, "outside representations/"},
+		{"dot-dot name", func(c *build.SourcePackage) { c.Representations[0].Name = ".." }, "outside representations/"},
 		{"xml-unsafe label", func(c *build.SourcePackage) { c.Representations[0].Label = `Master "scan"` }, "cannot be emitted"},
 		{"xml-unsafe type", func(c *build.SourcePackage) { c.Representations[0].Type = "a<b" }, "cannot be emitted"},
 		{"duplicate label", func(c *build.SourcePackage) {
@@ -531,7 +533,7 @@ func TestSourcePackageValidate(t *testing.T) {
 	}
 
 	if err := valid(t).Validate(); err != nil {
-		t.Fatalf("valid config rejected: %v", err)
+		t.Fatalf("valid source package rejected: %v", err)
 	}
 }
 
@@ -587,11 +589,10 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	}
 }
 
-// identifierTerm returns the value of the identifier term of any world's
-// description ("" when absent): what the meemoo swap wrote, or what the
-// eark profiles left alone. No profile package exports an accessor for it;
-// the swap is the meemoo package's own business, and the eark profiles
-// never swap.
+// identifierTerm returns the identifier any world's description states
+// ("" when absent): what the meemoo swap wrote, or what the eark profiles
+// left alone. No profile package exports an accessor for it; the swap is
+// the meemoo package's own business, and the eark profiles never swap.
 func identifierTerm(d sip.Description) string {
 	var terms []sip.Term
 	switch v := d.(type) {
@@ -600,7 +601,7 @@ func identifierTerm(d sip.Description) string {
 	case eark.Terms:
 		terms = v
 	case earkmods.Record:
-		terms = v.Terms
+		return v.Identifier
 	}
 	for _, term := range terms {
 		if term.Key == "identifier" {
@@ -662,10 +663,10 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	}
 }
 
-// The eark profile types each representation METS by its label, in both the
-// TYPE and the CONTENTINFORMATIONTYPE pair; the basic profile keeps the
-// profile declaration unchanged; the package declaration never changes
-// (ADR-0013).
+// The eark profile types each representation METS by its resolved type,
+// in both the TYPE and the CONTENTINFORMATIONTYPE pair; the basic profile
+// keeps the profile declaration unchanged; the package declaration never
+// changes (ADR-0013).
 func TestAssembleRepresentationDeclaration(t *testing.T) {
 	b, in, _ := newTestBuilder(t, earkDef(t))
 	in.Description = identityTerms()
@@ -841,12 +842,12 @@ func TestAssemblePackageIdentifier(t *testing.T) {
 
 // Build refuses invalid input data before any side effect: the negative
 // twin of the embedding-caller contract.
-func TestBuildInvalidConfigWritesNothing(t *testing.T) {
+func TestBuildInvalidSourceWritesNothing(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.Representations = nil
 
 	if _, err := b.Build(in); err == nil {
-		t.Fatal("Build succeeded on an invalid config")
+		t.Fatal("Build succeeded on an invalid source package")
 	}
 	requireEmpty(t, outDir)
 }
@@ -937,7 +938,7 @@ func TestNewRefusesDefinitionWithoutEncoder(t *testing.T) {
 
 // Build enforces what each standard requires of a package-level
 // description. Identity-only terms build a complete eark package; under
-// basic they are refused, and a missing identity is refused under either
+// basic they are refused, and a missing identity is refused under every
 // profile, all before any side effect.
 func TestBuildRequiredPerStandard(t *testing.T) {
 	b, in, _ := newTestBuilder(t, earkDef(t))
@@ -955,7 +956,7 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description is required"},
 		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "identifier", Value: "x"}}, "title is required"},
 		{"eark without an identifier", earkDef(t), eark.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
-		{"eark-mods without a title", earkmodsDef(t), earkmods.Record{Terms: []sip.Term{{Key: "identifier", Value: "x"}}}, "title is required"},
+		{"eark-mods without a title", earkmodsDef(t), earkmods.Record{Identifier: "x"}, "title is required"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

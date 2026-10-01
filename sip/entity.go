@@ -8,18 +8,21 @@ import (
 // Entity is one intellectual entity: the work the package describes. A
 // package has one; sub-entities are not modeled.
 type Entity struct {
-	// Identifier identifies the entity in PREMIS and the emitted
-	// descriptive document (uuid-<uuid>).
+	// Identifier identifies the entity (uuid-<uuid>). It appears in the
+	// package PREMIS document and, under a profile that swaps identifiers,
+	// in the descriptive document; under a profile with neither, the
+	// package does not carry it.
 	Identifier string
 	// AdditionalIdentifiers are extra PREMIS object identifiers, keyed by
 	// type, e.g. MEEMOO-LOCAL-ID.
 	AdditionalIdentifiers map[string]string
 	// Representations are the versions of the content.
 	Representations []*Representation
-	// Description carries the decoded descriptive metadata until the writer
-	// serializes it.
+	// Description is the entity's descriptive metadata: a model the
+	// profile's encoder renders, or a supplied document copied as it is.
 	Description Description
-	// DescriptionFile is the node for the generated descriptive document.
+	// DescriptionFile is the node for the descriptive document in the
+	// package.
 	DescriptionFile *File
 }
 

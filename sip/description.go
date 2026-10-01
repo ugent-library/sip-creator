@@ -2,13 +2,13 @@ package sip
 
 import "fmt"
 
-// Description is the decoded descriptive metadata of an entity or a
-// representation, in whichever descriptive standard the profile writes.
-// Each profile package supplies its own implementation (meemoo.Terms,
-// eark.Terms, earkmods.Record): a list of Term values, or a struct holding
-// one, under the profile's own rules. The profile's descriptive standard
-// knows the concrete type and does everything that needs it, so nothing in
-// sip/ depends on a profile.
+// Description is the descriptive metadata of an entity or a
+// representation, in the descriptive standard the profile writes. Each
+// profile package supplies its own type: meemoo.Terms and eark.Terms are
+// lists of Term values, earkmods.Record is a struct typed by field, and
+// build.DescriptiveDocument is a finished document supplied as a file, for
+// the profiles that accept one. Only the profile package works with the
+// concrete type, so nothing in sip/ depends on a profile.
 type Description interface {
 	// Validate returns every way the description is not a valid one in its
 	// standard, joined into one error: an unknown key, a malformed
@@ -19,21 +19,21 @@ type Description interface {
 	// the encoders trust it.
 	Validate() error
 	// ValidateRequired reports each key the standard requires of a
-	// package-level description that this one does not state: an
-	// identifier and a title at least, whatever the standard. A
-	// representation's description need not state them, which is why
-	// Validate does not include this check.
+	// package-level description that this one does not state, such as an
+	// identifier and a title. A supplied document states what its schema
+	// requires and reports nothing here. A representation's description
+	// need not state them, which is why Validate does not include this
+	// check.
 	ValidateRequired() error
 }
 
 // Term is one descriptive statement: a key from the profile's vocabulary,
-// an optional language tag, and the value. Every flat descriptive
-// standard shares this shape; which keys exist, what element each emits
-// and what rules apply are the profile's own.
+// an optional language tag, and the value. Every descriptive standard
+// that is a flat list of elements shares this shape; the profile decides
+// which keys exist, which element each one emits, and what rules apply.
 type Term struct {
-	// Key names what the statement says, in the vocabulary's own words as
-	// the input specification's table lists them: "title", "created",
-	// "artmedium". It is lowercase and carries no prefix; the profile maps
+	// Key names what the statement says, spelled as the input
+	// specification's table spells it: "title", "created", "artmedium". It is lowercase and carries no prefix; the profile maps
 	// it to the element it emits.
 	Key string
 	// Lang is the value's language tag; empty when unspecified.

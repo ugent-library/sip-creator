@@ -5,7 +5,7 @@ descriptive standard. **Superseded in part** (2026-09-28, later the same
 day): the rows file is `description.csv` under every profile and the
 `--profile` flag, on `check` as on `create`, says which vocabulary it is
 in; the names by standard (`dcschema.csv` and `dc.csv`, shipped in the
-[eark-mods plan](../plans/eark-mods.md)'s S2, and the planned `mods.csv`)
+[eark-mods plan](../archive/eark-mods.md)'s S2, and the planned `mods.csv`)
 and the one-standard-per-folder rule are withdrawn, see the note on the
 naming paragraph below. **Superseded in part by
 [ADR-0017](0017-supplied-descriptive-document-deferred.md)** (2026-09-28):
@@ -13,7 +13,17 @@ the supplied-document route (`dc.xml`, `mods.xml`, the `DescriptiveDocument`
 input, its structural checks and the no-identity rule) is deferred; the
 paragraphs below that describe it record the design for when it returns.
 (Drafted 2026-09-23; agreed in review on 2026-09-15, the items file on
-2026-09-23.)
+2026-09-23.) **Revived in part by
+[ADR-0021](0021-descriptive-model-follows-its-standard.md)** (2026-09-30):
+the supplied document returns for the two eark profiles (`dc.xml`,
+`mods.xml`, one per level) as a second description type behind
+`sip.Description`, not as a path next to the terms; the structural check
+and the no-identity rule below stand, the essence-path mechanics do not.
+`items.csv` is withdrawn: the rows carry flat statements only, and a
+record's copies reach a package through the library's record or a
+supplied `mods.xml`. The CLI no longer hands rows to a `NewDescription`
+on the profile: an adapter per profile on the CLI side builds the
+description.
 
 ## Context
 

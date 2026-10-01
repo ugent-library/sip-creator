@@ -20,7 +20,7 @@ type SourceFile struct {
 	// characterization report is supplied.
 	Key string
 	// Path is the logical path relative to the file's container
-	// (representation data/, documentation/), slash-separated.
+	// (representation data/, documentation/, premis/), slash-separated.
 	Path string
 }
 
@@ -46,7 +46,8 @@ type SourceRepresentation struct {
 	// (identifier, title) is not required here; the package-level
 	// description carries the work's identity. Its concrete type must be
 	// the profile's descriptive standard (meemoo.Terms for meemoo
-	// profiles, eark.Terms for eark, earkmods.Record for eark-mods).
+	// profiles, eark.Terms for eark, earkmods.Record for eark-mods) or,
+	// for the eark profiles, a DescriptiveDocument of that standard.
 	Description sip.Description
 	// Premis optionally supplies received preservation documents about
 	// this representation: copied, never parsed. Each must be a
@@ -75,15 +76,15 @@ func (sr SourceRepresentation) resolvedType() string {
 	return sr.label()
 }
 
-// SourcePackage is one package as the caller supplies it, given as data, not files to
-// parse: descriptive metadata as a decoded Description, characterization
-// as a decoded report, essence and documentation as source paths. The
-// CLI's folder convention (cli/input) is one transport producing these
-// values; embedding systems construct them directly.
+// SourcePackage is one package as the caller supplies it, given as data,
+// not files to parse: descriptive metadata as a Description,
+// characterization as a decoded report, essence and documentation as
+// source paths. The CLI's folder convention (cli/input) is one transport
+// producing these values; embedding systems construct them directly.
 //
-// Build takes ownership of the data: the description may be mutated
-// (a standard that swaps, meemoo's, writes the entity identifier in)
-// during assembly.
+// Build takes ownership of the data: under a profile that swaps
+// identifiers, such as meemoo's, assembly writes the entity identifier
+// into the description.
 type SourcePackage struct {
 	// PackageIdentifier optionally supplies the package identifier instead
 	// of minting one; this is how an update reuses the original package's
@@ -101,7 +102,8 @@ type SourcePackage struct {
 	ContentCategory string
 	// Description is the package-level descriptive metadata. Its concrete
 	// type must be the profile's descriptive standard (meemoo.Terms for
-	// meemoo profiles, eark.Terms for eark, earkmods.Record for eark-mods).
+	// meemoo profiles, eark.Terms for eark, earkmods.Record for eark-mods)
+	// or, for the eark profiles, a DescriptiveDocument of that standard.
 	Description sip.Description
 	// Representations is the content, at least one.
 	Representations []SourceRepresentation
@@ -118,16 +120,22 @@ type SourcePackage struct {
 	Characterization characterization.Report
 }
 
-// nameRx is the POSIX portable filename character set: a name satisfying
-// it is usable verbatim as a directory name, zip entry, METS href, and
-// OBJID on any filesystem, with no percent-encoding machinery.
+// nameRx is the POSIX portable filename character set: a name in it,
+// other than . and .., is usable verbatim as a directory name, zip entry,
+// METS href, and OBJID on any filesystem, with no percent-encoding
+// machinery.
 var nameRx = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 
 // ValidateRepresentationName returns why a representation name cannot be
-// used: empty, or characters outside the portable set.
+// used: empty, characters outside the portable set, or . or .., which name
+// the representations/ directory itself or the package root rather than a
+// directory inside it.
 func ValidateRepresentationName(name string) error {
 	if !nameRx.MatchString(name) {
 		return fmt.Errorf("representation name %q may only contain letters, digits, and . _ -", name)
+	}
+	if name == "." || name == ".." {
+		return fmt.Errorf("representation name %q names a directory outside representations/; choose another name", name)
 	}
 	return nil
 }
@@ -144,7 +152,7 @@ func ValidateAttributeText(value string) error {
 }
 
 // Validate reports the first invariant the input breaks. These are the
-// graph rules every producer must satisfy: the folder convention enforces
+// rules every source package must satisfy: the folder convention enforces
 // them with Violations phrased for the operator before building; embedding
 // callers hit them here. Fail-fast: one error, phrased for the developer.
 func (sp *SourcePackage) Validate() error {
@@ -169,9 +177,9 @@ func (sp *SourcePackage) Validate() error {
 	if sp.Description == nil {
 		return fmt.Errorf("no descriptive metadata supplied")
 	}
-	// The one place the terms rules run before a write; the encoders trust
-	// it. A package-level description must also state what its standard
-	// requires of one (an identifier and a title at least); a
+	// The one place the description's rules run before a write; the
+	// encoders trust it. A package-level description must also state what
+	// its standard requires of one (an identifier and a title at least); a
 	// representation's need not.
 	if err := sp.Description.Validate(); err != nil {
 		return fmt.Errorf("descriptive metadata: %w", err)

@@ -8,17 +8,32 @@ import (
 	"text/template"
 
 	"github.com/ugent-library/sip-creator/build"
+	"github.com/ugent-library/sip-creator/encoders/xmldoc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// mods is the encoder for the MODS document as the engine sees it: it
-// accepts Record and writes it with Encode; building a Record from flat
-// statements is the Definition's NewDescription. It never swaps: mods.xml
-// keeps the producer's identifier, the catalogue number the ingesting
-// repository indexes and operators search by (ADR-0012).
+// mods is the encoder for the MODS document: it accepts Record and writes
+// it with Encode, and says which supplied
+// document is one of its own. It never swaps: mods.xml keeps the
+// producer's identifier, the catalogue number the ingesting repository
+// indexes and operators search by (ADR-0012).
 type mods struct{}
 
-var _ build.DescriptionEncoder = mods{}
+// DescriptiveDocumentChecker is optional to the engine, so a drift in
+// CheckDescriptiveDocument's signature would fail silently; the
+// assertion makes it a build error.
+var (
+	_ build.DescriptionEncoder         = mods{}
+	_ build.DescriptiveDocumentChecker = mods{}
+)
+
+// The namespace and version the template declares and a supplied document
+// must declare. The METS dmdSec declares the document as MODS 3.7, so a
+// document of another version would contradict it.
+const (
+	namespace = "http://www.loc.gov/mods/v3"
+	version   = "3.7"
+)
 
 func (mods) Check(d sip.Description) error {
 	if _, ok := d.(Record); !ok {
@@ -27,16 +42,29 @@ func (mods) Check(d sip.Description) error {
 	return nil
 }
 
-// Encode writes d, which is Record since Check ran before anything else, as
-// a MODS 3.7 document: one complete element per term, order preserved, then
-// the items as one location. schemas is the relative path from the
-// document to the package's schemas/ dir. The record must be valid:
-// Record.Validate is the contract, run by the engine before any write, and
-// Encode does not repeat it. The document is rendered in memory first, so
-// a refused key writes nothing.
-func (mods) Encode(w io.Writer, d sip.Description, schemas string) error {
+// CheckDescriptiveDocument returns why root is not a mods:mods element in the MODS v3
+// namespace declaring the version the package's METS declares.
+func (mods) CheckDescriptiveDocument(root xml.StartElement) error {
+	if root.Name.Space != namespace || root.Name.Local != "mods" {
+		return fmt.Errorf("root element is {%s}%s, expected a mods:mods document in the MODS v3 namespace (%s)", root.Name.Space, root.Name.Local, namespace)
+	}
+	got, ok := xmldoc.Attr(root, "version")
+	switch {
+	case !ok:
+		return fmt.Errorf("the root declares no version; the package declares MODS %s, so the document must carry version=%q", version, version)
+	case got != version:
+		return fmt.Errorf("the root declares version=%q, but the package declares MODS %s", got, version)
+	}
+	return nil
+}
+
+// Encode writes d as a MODS 3.7 document: the identifier when the record
+// states one, one titleInfo per title in the order given, then the items
+// as one location/holdingSimple with one copyInformation each, omitted
+// when there are none.
+func (mods) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
-	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemas}); err != nil {
+	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemasDir, localIdentifierType, namespace, version}); err != nil {
 		return err
 	}
 	_, err := w.Write(buf.Bytes())
@@ -50,25 +78,31 @@ func (mods) Schemas() []string {
 	return []string{"mods-3-7.xsd"}
 }
 
-// modsTemplate renders a record: the "mods" document around one
-// sub-template per element the vocabulary names. The element func renders
-// one of those sub-templates, so it needs the template it belongs to;
-// capturing the local before Parse gives it that without an
-// initialization cycle on the package variable. Every value is escaped;
-// the only raw interpolation is the element's type attribute, a constant
-// from the table. The sub-templates carry no indentation on their first
-// line: the caller indents it, and their later lines indent themselves.
-var modsTemplate = func() *template.Template {
-	var t *template.Template
-	t = template.Must(template.New("").Funcs(template.FuncMap{
-		"element": func(term sip.Term) (string, error) { return renderElement(t, term) },
-		"esc":     escapeXML,
-	}).Parse(`
+// localIdentifierType is the type attribute on the mods:identifier the
+// record's identifier emits. MODS leaves the type vocabulary open; "local"
+// is the value its own list suggests for an identifier local to the
+// describing institution's system, such as an Alma MMS ID at UGent
+// Library. The type becomes the caller's choice from a closed set with
+// the mods-coverage plan; until then this constant is the one place it
+// lives.
+const localIdentifierType = "local"
+
+// modsTemplate renders a record field by field. Every value is escaped;
+// the only raw interpolations are the identifier's type, the namespace
+// and version, all constants, and the schemas path the writer supplies.
+var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
+	"esc": escapeXML,
+}).Parse(`
 {{ define "mods" -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<mods:mods xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.7" xsi:schemaLocation="http://www.loc.gov/mods/v3 {{ .Schemas }}/mods-3-7.xsd">
-{{- range .Record.Terms }}
-  {{ element . }}
+<mods:mods xmlns:mods="{{ .Namespace }}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="{{ .Version }}" xsi:schemaLocation="{{ .Namespace }} {{ .SchemasDir }}/mods-3-7.xsd">
+{{- with .Record.Identifier }}
+  <mods:identifier type="{{ $.IdentifierType }}">{{ esc . }}</mods:identifier>
+{{- end }}
+{{- range .Record.Titles }}
+  <mods:titleInfo{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}>
+    <mods:title>{{ esc .Value }}</mods:title>
+  </mods:titleInfo>
 {{- end }}
 {{- with .Record.Items }}
   <mods:location>
@@ -89,52 +123,22 @@ var modsTemplate = func() *template.Template {
 {{- end }}
 </mods:mods>
 {{ end }}
-
-{{ define "identifier" -}}
-<mods:identifier type="{{ .Row.Type }}">{{ esc .Term.Value }}</mods:identifier>
-{{- end }}
-
-{{ define "titleInfo" -}}
-<mods:titleInfo{{ with .Term.Lang }} xml:lang="{{ esc . }}"{{ end }}>
-    <mods:title>{{ esc .Term.Value }}</mods:title>
-  </mods:titleInfo>
-{{- end }}
 `))
-	return t
-}()
 
-// recordDoc is one MODS document to render: the record plus the relative
-// path from the document's location to the package's bundled schemas/ dir.
+// recordDoc is one MODS document to render: the record, the path of the
+// package's schemas/ directory relative to the document, the type
+// attribute the identifier carries, and the namespace and version the
+// root declares.
 type recordDoc struct {
-	Record  Record
-	Schemas string
-}
-
-// elementData is one term with the vocabulary row it renders through; the
-// row supplies the element's fixed attribute value.
-type elementData struct {
-	Term sip.Term
-	Row  vocabularyRow
-}
-
-// renderElement renders one term as the complete element its key emits,
-// through the sub-template named after that element. It is the template's
-// one guard: only a key the vocabulary lists reaches the output, and an
-// unknown key aborts the render.
-func renderElement(t *template.Template, term sip.Term) (string, error) {
-	row, ok := vocabularyByKey[term.Key]
-	if !ok {
-		return "", fmt.Errorf("unknown key %q: not in the MODS vocabulary", term.Key)
-	}
-	var buf bytes.Buffer
-	if err := t.ExecuteTemplate(&buf, row.Element, elementData{term, row}); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
+	Record         Record
+	SchemasDir     string
+	IdentifierType string
+	Namespace      string
+	Version        string
 }
 
 // escapeXML makes a data value safe as XML character data or a quoted
-// attribute value; terms and items carry arbitrary operator input.
+// attribute value; the record's values are arbitrary producer input.
 func escapeXML(s string) string {
 	var b bytes.Buffer
 	xml.EscapeText(&b, []byte(s)) // never fails on a bytes.Buffer

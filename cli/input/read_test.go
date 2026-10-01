@@ -1,6 +1,7 @@
 package input
 
 import (
+	"encoding/xml"
 	"errors"
 	"os"
 	"path/filepath"
@@ -10,13 +11,45 @@ import (
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/sip"
 )
+
+// meemooVocab and earkVocab are the tests' vocabularies for the two flat
+// profiles: the statements as stated, wrapped as the profile's terms. The
+// CLI's own vocabularies in cli/input/vocabulary import this package, so
+// its tests cannot use them. earkVocab also takes a dc.xml, judged by the
+// eark encoder, so the reader's document rules are tested through it.
+type meemooVocab struct{}
+
+func (meemooVocab) Description(statements []Statement) (sip.Description, []error) {
+	return meemoo.Terms(terms(statements)), nil
+}
+
+type earkVocab struct{}
+
+func (earkVocab) Description(statements []Statement) (sip.Description, []error) {
+	return eark.Terms(terms(statements)), nil
+}
+
+func (earkVocab) DocumentName() string { return "dc.xml" }
+
+func (earkVocab) CheckDocument(root xml.StartElement) error {
+	return eark.Definition.Encoder.(build.DescriptiveDocumentChecker).CheckDescriptiveDocument(root)
+}
+
+func terms(statements []Statement) []sip.Term {
+	out := make([]sip.Term, len(statements))
+	for i, s := range statements {
+		out[i] = sip.Term{Key: s.Key, Lang: s.Lang, Value: s.Value}
+	}
+	return out
+}
 
 // The readers the tests share, one per profile: a folder reads as basic
 // unless a test is about the eark vocabulary.
 var (
-	basicReader = New(meemoo.Definition.NewDescription)
-	earkReader  = New(eark.Definition.NewDescription)
+	basicReader = New(meemooVocab{})
+	earkReader  = New(earkVocab{})
 )
 
 // minimalCSV is the smallest description.csv that passes check: meemoo's

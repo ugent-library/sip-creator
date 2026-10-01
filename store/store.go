@@ -13,7 +13,8 @@ import (
 )
 
 // Store writes a package's files under one root directory. Callers speak
-// package-relative slash paths; the store never reads or deletes.
+// package-relative slash paths; the store never reads or deletes a file
+// in the package.
 type Store struct {
 	root string
 }
@@ -44,9 +45,9 @@ func (s *Store) MkdirAll(rel string) error {
 	return nil
 }
 
-// CopyFile streams src to rel, computing the MD5 and size during the copy
-// so large essence files are never buffered in memory. An existing file is
-// truncated.
+// CopyFile streams src to rel, computing the MD5 during the copy so large
+// essence files are never buffered in memory, and reads the size from the
+// written file. An existing file is truncated.
 func (s *Store) CopyFile(src, rel string) (Info, error) {
 	in, err := os.Open(src)
 	if err != nil {

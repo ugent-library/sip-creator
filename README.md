@@ -7,10 +7,18 @@ A command-line tool and Go library for building Submission Information Packages 
 your content files plus descriptive metadata, rolled into a standards-conformant
 [E-ARK SIP](https://earksip.dilcis.eu/), ready for ingest into any E-ARK compliant archival repositories. 
 
-E-ARK Profiles specialize the output for a particular archive. This project implements the 
-Meemoo profiles building SIPs conforming to
-[Meemoo's SIP Specification](https://developer.meemoo.be/docs/diginstroom/sip/) for
-ingest into the Flemish heritage archive.
+E-ARK profiles specialize the output for a particular archive. This project implements
+three: two plain E-ARK profiles for E-ARK-conformant repositories, with Simple Dublin Core
+or MODS 3.7 as the descriptive metadata, and meemoo's `basic` profile, building SIPs
+conforming to [Meemoo's SIP Specification](https://developer.meemoo.be/docs/diginstroom/sip/)
+for ingest into the Flemish heritage archive. Descriptive metadata reaches the tool as
+flat rows in a CSV or, under the E-ARK profiles, as a finished document.
+
+The library is written to be usable by other institutions as it stands, as a reference
+implementation of E-ARK SIP packaging: the profiles in this repository are reference
+implementations, and an institution with its own descriptive standard brings its own
+profile (see [Bringing your own profile](#bringing-your-own-profile)). UGent Library's
+usage in the examples is the example, not the rule.
 
 :warning: **This is an experimental package** :warning:
 
@@ -24,8 +32,9 @@ ingest into the Flemish heritage archive.
   [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
   built on E-ARK SIP 2.0.4, for ingest into the Flemish heritage archive.
 * Builds a complete package from a plain input folder: your content files plus a simple
-  descriptive rows file (`description.csv`), out comes a SIP with generated METS and
-  PREMIS metadata and natively computed checksums.
+  descriptive rows file (`description.csv`) or, under the eark profiles, a finished
+  `dc.xml` or `mods.xml`, out comes a SIP with generated METS and PREMIS metadata and
+  natively computed checksums.
 * Validates an input folder before building (`check`, with the same `--profile` as
   `create`), reporting every violation at once.
 * Optional PRONOM format identification based on a pre-computed
@@ -177,11 +186,11 @@ pkg, err := builder.Build(&build.SourcePackage{
 })
 ```
 
-The `eark-mods` profile takes a bibliographic record instead of a list of terms: the
-statements about the work, plus the library's physical copies of it as items, each a
-call number with an optional barcode and an optional volume or issue designation. Items
-belong to the package-level record only; a representation is a version of the content,
-never a copy:
+The `eark-mods` profile takes a bibliographic record instead of a list of terms. MODS is
+a tree, so the record is typed by field: its identifier, its titles, and the library's
+physical copies of it as items, each a call number with an optional barcode and an
+optional volume or issue designation. Items belong to the package-level record only; a
+representation is a version of the content, never a copy:
 
 ```go
 import "github.com/ugent-library/sip-creator/profiles/earkmods"
@@ -191,9 +200,9 @@ def, _ := profiles.Get("eark-mods")
 
 pkg, err := builder.Build(&build.SourcePackage{
 	Description: earkmods.Record{
-		Terms: []sip.Term{
-			{Key: "identifier", Value: "990001234560471"},
-			{Key: "title", Lang: "nl", Value: "Correspondentie 1914-1918"},
+		Identifier: "990001234560471",
+		Titles: []earkmods.Title{
+			{Value: "Correspondentie 1914-1918", Lang: "nl"},
 		},
 		Items: []earkmods.Item{
 			{CallNumber: "BIB.HS.001", Barcode: "000012345678"},
@@ -203,6 +212,36 @@ pkg, err := builder.Build(&build.SourcePackage{
 	// Representations as above.
 })
 ```
+
+A record richer than the fields, or one that already exists as a document, travels as a
+supplied file. The two eark profiles accept a `build.DescriptiveDocument` in place of terms or a
+record, copy it into the package as it is after checking that it is well-formed XML with
+the standard's root element (`simpledc` for `eark`, `mods:mods` declaring version 3.7 for
+`eark-mods`), and leave its validity against the schema to the validators downstream. The
+`basic` profile takes terms only, because meemoo's document must carry the entity
+identifier the build mints:
+
+```go
+pkg, err := builder.Build(&build.SourcePackage{
+	Description: build.DescriptiveDocument{Source: "/data/records/990001234560471/mods.xml"},
+	// Representations as above.
+})
+```
+
+#### Bringing your own profile
+
+The three profiles above are reference implementations of one route, and the engine
+imports none of them. An institution with its own descriptive standard writes a package
+that exports three things: a description type implementing `sip.Description` (its
+`Validate` and `ValidateRequired` are the rules of your standard), an encoder implementing
+`build.DescriptionEncoder` (the type check, the document written from a `text/template`,
+the bundled XSDs the document points at), and a `build.Definition` naming the encoder, the
+document's file name and the METS values (`sip.MetsDeclaration`: profile URL, content
+typing, `MDTYPE`). Hand that definition to `build.New` as above. The registry in `profiles/`
+is the CLI's list of what `--profile` can name; a library caller's package need not join
+it. Where your profile would decide an attribute value for the caller, make it a typed
+constant set the caller picks from, so two callers making the same choice emit the same
+document (ADR-0022).
 
 The full API is on [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator);
 the domain model and build lifecycle are described in
@@ -250,7 +289,7 @@ and the optional extras slot in per package or per representation:
 
 ```
 your-input/
-├── description.csv           required: descriptive metadata
+├── description.csv           required: descriptive metadata (or dc.xml / mods.xml, see below)
 ├── representations.csv       optional: a label and type per representation
 ├── siegfried.json            optional: characterization sidecar (see Format characterization)
 ├── documentation/            optional: context material about the package
@@ -261,7 +300,7 @@ your-input/
     ├── master/
     │   ├── scan-001.tif
     │   ├── scan-002.tif
-    │   ├── description.csv   optional: terms that apply to this version only
+    │   ├── description.csv   optional: terms (or a document) for this version only
     │   ├── documentation/    optional
     │   │   └── notes.txt
     │   └── premis/           optional
@@ -275,11 +314,9 @@ The rows file is a two-column `key,value` file with a header row. The profile yo
 to `check` and `create` says which vocabulary the rows are in: under `basic` the keys
 come from meemoo's closed vocabulary of Dublin Core terms plus two schema.org
 properties; under `eark` they are the fifteen Simple Dublin Core elements; under
-`eark-mods` they are the MODS keys, `identifier` and `title` today (the two DC tables
-are in the [input specification](docs/input-spec.md); the MODS table and its items
-file join it with the [eark-mods plan](docs/plans/eark-mods.md)'s next step). Repeat a
-key for multiple values,
-and tag a value's language in square brackets where it matters:
+`eark-mods` they are the MODS keys, `identifier` and `title` (the tables are in the
+[input specification](docs/input-spec.md)). Repeat a key for multiple values, and tag
+a value's language in square brackets where it matters:
 
 ```csv
 key,value
@@ -299,6 +336,15 @@ rights[nl],publiek domein
 are required too (meemoo's basic content profile), as is a Dutch (`[nl]`) entry wherever
 a language-tagged key is used; `check` reports all of these. An unknown key is an error: a
 typo must not silently drop metadata.
+
+Under `eark` and `eark-mods` a finished document can stand in for the rows: `dc.xml` (a
+`simpledc` document) or `mods.xml` (a `mods:mods` document declaring version 3.7), at the
+top level or inside a representation folder, one or the other per level. This is the
+route for a record the flat rows cannot say, such as a MODS record with its physical
+copies. The tool checks that the file is well-formed XML with that root element and
+copies it into the package as it is; validity against the schema stays with the
+validators downstream. Under `basic` there is no document route, because meemoo's
+document must carry the identifier the tool mints.
 
 The optional `representations.csv` gives each representation folder a display
 label and a type (what an ingest system such as RODA shows as the
@@ -320,8 +366,8 @@ package. The full rules are in the
 
 In short:
 
-* **`description.csv`** (required): the descriptive metadata, see the example
-  above.
+* **`description.csv`** (required; under the eark profiles a `dc.xml` or `mods.xml`
+  may stand in for it): the descriptive metadata, see above.
 * **Content**: either flat in the folder (one representation, named after the
   input folder itself), or one folder per version under
   `representations/<your-name>/`. Names are free-form (letters, digits,
@@ -333,8 +379,8 @@ In short:
   material; also per representation, and
   recommended: validators flag its absence as a SHOULD-level warning),
   `premis/` (preservation XML received from a vendor, passed through as-is;
-  also per representation), a per-representation rows file of the same name
-  (e.g. a license that differs between master and access copy), and the
+  also per representation), a per-representation rows file or document of the
+  same name (e.g. a license that differs between master and access copy), and the
   `siegfried.json` characterization sidecar (see Format characterization).
 
 Validate a folder without building anything (no configuration needed):
@@ -392,14 +438,20 @@ This section is for developing SIP Creator itself.
 The scripts below require [Docker](https://www.docker.com/) (runs the commons-ip
 validator and the report server) and `jq`; `build.sh` also needs `sf`
 ([Siegfried](https://github.com/richardlehane/siegfried)) on your `PATH`, because it
-regenerates the input fixture's `siegfried.json` sidecar before building.
+regenerates the input fixture's `siegfried.json` sidecar before building, and `xmllint`
+(part of libxml2, present on macOS and most Linux systems), which checks every
+`mods.xml` in an `eark-mods` package against the bundled MODS schema.
 
 `./build.sh [profile]` (default `basic`) is the local CI loop: it rebuilds, regenerates
 the sample SIP from `tmp/<profile>`, validates the zip with
 [commons-ip](https://github.com/keeps/commons-ip) (dockerized, release jar pinned),
 prints every FAILED check with its messages, and exits non-zero if the package is not
 `VALID`. Each profile validates against the supported E-ARK spec version: `basic`
-(meemoo 1.2) against 2.0.4, `eark` against 2.2.0. Both are expected to report `VALID`.
+(meemoo 1.2) against 2.0.4, `eark` and `eark-mods` against 2.2.0. All three are expected
+to report `VALID`. commons-ip does not validate the descriptive documents the METS points
+at, so the script also runs `xmllint` over every `mods.xml` in the package against the
+MODS 3.7 schema the package ships, offline through the XML catalog in
+`scripts/schema-catalog.xml`, and fails the run when one is not valid.
 
 Each run's validation reports are published to `reports/runs/<timestamp>/`. To browse them
 as HTML (run history, per-check detail, links into the E-ARK specs):

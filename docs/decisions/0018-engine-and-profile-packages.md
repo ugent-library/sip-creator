@@ -112,3 +112,9 @@ building with the real profiles.
   only (`Check`, `Encode`, `Schemas`, the optional swap), and how a
   profile's description is built from flat statements is data the profile
   provides, in line with ADR-0019 and ADR-0020.
+- Note, 2026-09-30: [ADR-0021](0021-descriptive-model-follows-its-standard.md)
+  removes `NewDescription` from `Definition`. Building a description from
+  rows is the CLI's, one adapter per profile under `cli/input` importing
+  its profile package; the library carries no constructor for a transport.
+  The one-way import direction stands: the adapters import the profile
+  packages, never the other way.

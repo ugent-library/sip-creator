@@ -9,16 +9,17 @@ import (
 )
 
 // Config is the builder's wiring: which profile it builds to, where
-// packages land and how the build narrates. What a package is built from
+// packages land and where the build logs. What a package is built from
 // is not configuration; it arrives per build as a SourcePackage.
 type Config struct {
 	// Profile is the definition every package this builder makes is built
-	// to: a registered definition, completed with WithSubmitter. It must
+	// to: a profile package's Definition or the caller's own (ADR-0022),
+	// with the submitting organization added by WithSubmitter. It must
 	// name a descriptive encoder.
 	Profile Definition
 	// Destination is the directory packages are created under.
 	Destination string
-	// Logger narrates the build.
+	// Logger receives the build's progress messages.
 	Logger *slog.Logger
 }
 
@@ -31,12 +32,10 @@ type Builder struct {
 }
 
 // New returns a builder for the config's profile. A profile without a
-// descriptive encoder is refused here, before any build: the encoder's
-// check of each source package is what makes every later type assertion
-// safe.
+// descriptive encoder is refused here, before any build.
 func New(config *Config) (*Builder, error) {
 	if config.Profile.Encoder == nil {
-		return nil, fmt.Errorf("profile %q names no descriptive encoder; use a registered definition", config.Profile.Name)
+		return nil, fmt.Errorf("profile %q names no descriptive encoder; set the definition's Encoder", config.Profile.Name)
 	}
 	return &Builder{
 		profile:     config.Profile,
@@ -49,8 +48,6 @@ func New(config *Config) (*Builder, error) {
 // (no disk writes), then emits it in the canonical order. Failures before
 // the write phase leave no partial package dir behind.
 func (b *Builder) Build(source *SourcePackage) (*sip.Package, error) {
-	// The encoder's check of the source package's descriptions guarantees
-	// every type assertion the encoder makes later.
 	if err := checkDescriptions(b.profile.Encoder, source); err != nil {
 		return nil, fmt.Errorf("profile %q: %w", b.profile.Name, err)
 	}

@@ -10,12 +10,10 @@ var elements = []string{
 	"source", "language", "relation", "coverage", "rights",
 }
 
-// required lists the keys a package-level description must state: the
-// identity every package states whatever the profile (input specification
-// §3), an identifier, which the eark profile keeps in the document as the
-// value operators search by (ADR-0012), and a title, the one name every
-// consumer shows. Plain E-ARK requires nothing more. A representation's
-// description need not state them.
+// required lists the keys a package-level description must state. Every
+// profile requires an identifier and a title (input specification §3).
+// Plain E-ARK requires nothing more. A representation's description need
+// not state them.
 var required = []string{"identifier", "title"}
 
 var elementSet = func() map[string]bool {

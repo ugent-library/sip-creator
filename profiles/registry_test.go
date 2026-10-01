@@ -1,11 +1,19 @@
 package profiles
 
 import (
+	"bytes"
+	"path"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/ugent-library/sip-creator/encoders/mets"
+	"github.com/ugent-library/sip-creator/encoders/xmldoc"
+	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkmods"
+	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/schemas"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 // shipped is the sorted, deduplicated set of XSDs a profile's packages ship:
@@ -57,6 +65,77 @@ func TestRegistrySchemas(t *testing.T) {
 	}
 }
 
+// sampleDescriptions holds one description per profile that its encoder
+// renders; Encode does not run Validate, and an empty description has no
+// key for the template to refuse, so it is enough to render the
+// document's root.
+var sampleDescriptions = map[string]sip.Description{
+	"basic":     meemoo.Terms{},
+	"eark":      eark.Terms{},
+	"eark-mods": earkmods.Record{},
+}
+
+// The schema-location hint of each profile's descriptive document points
+// into the package's schemas/ directory, at files the profile ships: the
+// template names the file and Schemas() lists it, and if the two drift the
+// document points at a file the package does not carry. TestRegistrySchemas
+// pins the other half, that every listed file is bundled.
+func TestRegistryDescriptiveDocumentsPointAtShippedSchemas(t *testing.T) {
+	const schemasDir = "../../schemas"
+	for _, name := range Names() {
+		description, ok := sampleDescriptions[name]
+		if !ok {
+			t.Errorf("profile %q has no sample description for this test", name)
+			continue
+		}
+		def, _ := Get(name)
+		var buf bytes.Buffer
+		if err := def.Encoder.Encode(&buf, description, schemasDir); err != nil {
+			t.Errorf("profile %q: Encode: %v", name, err)
+			continue
+		}
+		locations := schemaLocations(t, buf.Bytes())
+		if len(locations) == 0 {
+			t.Errorf("profile %q: the document hints at no schema", name)
+		}
+		for _, loc := range locations {
+			dir, file := path.Split(loc)
+			if path.Clean(dir) != schemasDir || !slices.Contains(def.Encoder.Schemas(), file) {
+				t.Errorf("profile %q: the document points at %q, want a file under %s/ that Schemas() lists (%v)", name, loc, schemasDir, def.Encoder.Schemas())
+			}
+		}
+	}
+}
+
+const xsiNamespace = "http://www.w3.org/2001/XMLSchema-instance"
+
+// schemaLocations returns the locations the document's root hints at: the
+// second of each namespace–location pair in xsi:schemaLocation, and every
+// entry of xsi:noNamespaceSchemaLocation.
+func schemaLocations(t *testing.T, doc []byte) []string {
+	t.Helper()
+	root, err := xmldoc.Root(bytes.NewReader(doc))
+	if err != nil {
+		t.Fatalf("rendered document: %v", err)
+	}
+	var locations []string
+	for _, a := range root.Attr {
+		if a.Name.Space != xsiNamespace {
+			continue
+		}
+		fields := strings.Fields(a.Value)
+		switch a.Name.Local {
+		case "schemaLocation":
+			for i := 1; i < len(fields); i += 2 {
+				locations = append(locations, fields[i])
+			}
+		case "noNamespaceSchemaLocation":
+			locations = append(locations, fields...)
+		}
+	}
+	return locations
+}
+
 // Every registry entry names a descriptive encoder; the engine refuses a
 // definition without one before any write.
 func TestRegistryEntriesNameAnEncoder(t *testing.T) {
@@ -67,22 +146,6 @@ func TestRegistryEntriesNameAnEncoder(t *testing.T) {
 		}
 		if def.Name != name {
 			t.Errorf("profile %q is registered under Name %q", name, def.Name)
-		}
-	}
-}
-
-// Every profile's NewDescription builds what its encoder's Check accepts:
-// the CLI hands decoded rows to the one, and the engine runs the other on
-// the result. A profile without the function could not read a folder.
-func TestRegistryProfilesBuildWhatTheyCheck(t *testing.T) {
-	for _, name := range Names() {
-		def, _ := Get(name)
-		if def.NewDescription == nil {
-			t.Errorf("profile %q names no NewDescription", name)
-			continue
-		}
-		if err := def.Encoder.Check(def.NewDescription(nil)); err != nil {
-			t.Errorf("profile %q: Check refuses what NewDescription built: %v", name, err)
 		}
 	}
 }

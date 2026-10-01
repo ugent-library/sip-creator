@@ -1,21 +1,20 @@
 # Plan: MODS 3.7 descriptive metadata for the plain E-ARK output
 
-*Status: **S3 done, S4 next** (2026-09-29): the `eark-mods` profile is
-registered on the branch `eark-mods-support` and the library route is
-complete; `check --profile eark-mods` already reads MODS rows, and
-`items.csv` is S4's. Go tests, the structural comparisons of both DC
-profiles against their reference copies, and the commons-ip runs of
-`./build.sh` for both (VALID, 0 warnings) are clean. The supplied-document
-route (decisions 6, 7, 8 and S5) was withdrawn on 2026-09-28 before it was
-committed ([ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md));
-descriptive metadata arrives as terms only. ADR-0015 and ADR-0016 are
-drafted, including the items table (decision 12). On 2026-09-29 the S3,
-S4 and S6 boxes were rewritten against the code after ADR-0018, 0019 and
-0020 (the engine in `build/`, one package per profile, `NewDescription` as
-data on the definition, `build.SourcePackage` as the library's input); the
-context and the decisions above the steps stay as the dated record they
-are. The MODS element list beyond identifier and title is still open and
-does not block S3. Update this line as steps land.*
+*Status: **closed** (2026-09-30). S1 to S3 shipped: the `eark-mods`
+profile is on `main` (the branch `eark-mods-support` was fast-forwarded
+into it on 2026-09-30), with the library route complete and `check
+--profile eark-mods` reading MODS rows. S4 to S6 are superseded: the
+review that opened S4 found the flat statement model straining under
+MODS, and [ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)
+with the [descriptive-model plan](descriptive-model.md) replace
+them, carrying the fixture, XML catalog and xmllint acceptance over. The
+text below is the dated record of the flat-model design as it was built;
+where it disagrees with ADR-0021, that record leads. Last working status,
+2026-09-29: Go tests, the structural comparisons of both DC profiles
+against their reference copies, and the commons-ip runs of `./build.sh`
+for both (VALID, 0 warnings) clean; the supplied-document route withdrawn
+on 2026-09-28 ([ADR-0017](../decisions/0017-supplied-descriptive-document-deferred.md));
+ADR-0015 and ADR-0016 drafted, including the items table (decision 12).*
 
 ## Context
 

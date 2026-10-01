@@ -124,7 +124,7 @@ func TestTermsValidateDuplicateIdentifier(t *testing.T) {
 }
 
 // The identifier swap: read the local identifier first, then replace it
-// with the object identifier. Assemble must follow that order.
+// with the object identifier. Swap must follow that order.
 func TestTermsIdentifierSwap(t *testing.T) {
 	terms := testTerms()
 

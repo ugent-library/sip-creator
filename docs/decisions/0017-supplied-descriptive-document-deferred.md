@@ -1,9 +1,13 @@
 # 0017 — Descriptive metadata arrives as terms only; the supplied-document route is deferred
 
-Status: **Accepted** (2026-09-28). Supersedes in part
+Status: **Superseded by
+[ADR-0021](0021-descriptive-model-follows-its-standard.md)** (2026-09-30):
+the route returns for the two eark profiles as a second description type
+behind `sip.Description`, not as the second input path whose cost this
+record describes. Was Accepted (2026-09-28), superseding in part
 [ADR-0016](0016-descriptive-input-rows-or-supplied-document.md): its
-supplied-document decisions are deferred; its rule that the profile fixes
-the descriptive standard and its file naming stand.
+supplied-document decisions were deferred; its rule that the profile fixes
+the descriptive standard and its file naming stood.
 
 ## Context
 
@@ -79,7 +83,7 @@ descriptive code has one owner for validation.
   first consequence) stand without a route for richer records: a record
   the table cannot express is not packageable until the table grows a row
   for its shape or this route returns. ADR-0015's text says so now.
-- The [eark-mods plan](../plans/eark-mods.md) loses decisions 6, 7 and 8
+- The [eark-mods plan](../archive/eark-mods.md) loses decisions 6, 7 and 8
   and its S5 (CLI supplied documents); S3 loses the MODS document check.
   The xmllint pass in S6 stays, because it validates the emitted
   `mods.xml`.

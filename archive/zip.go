@@ -17,7 +17,7 @@ import (
 type Config struct {
 	// Destination is the directory the zip is written to.
 	Destination string
-	// Logger narrates the zipping.
+	// Logger receives a message per zipped entry.
 	Logger *slog.Logger
 }
 
@@ -25,7 +25,7 @@ type Config struct {
 type Archive struct {
 	// Destination is the directory the zip is written to.
 	Destination string
-	// Logger narrates the zipping.
+	// Logger receives a message per zipped entry.
 	Logger *slog.Logger
 }
 

@@ -2,7 +2,14 @@
 
 Status: **Accepted** (2026-08-20 — shipped the same day with the
 [descriptive-vocabulary plan](../archive/descriptive-vocabulary.md);
-drafted with it).
+drafted with it). **Narrowed by
+[ADR-0021](0021-descriptive-model-follows-its-standard.md)** (2026-09-30):
+the closed key table is the CSV's, held on the CLI side by an adapter per
+profile. Where a standard is flat the key is the model and the profile
+package keeps its table for the template; where it is a tree the library
+holds a typed model and the CLI's table maps keys onto its fields. The
+rule that the CSV never approximates and never drops a key silently
+stands unchanged.
 
 ## Context
 

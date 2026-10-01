@@ -1,14 +1,25 @@
 # 0015 — Descriptive worlds, each with its own terms type: meemoo dc+schema, Simple DC, MODS
 
-Status: **Proposed** (drafted 2026-09-22; the decisions were agreed in
-review on 2026-09-15 with the [eark-mods plan](../plans/eark-mods.md).
-Becomes Accepted when that plan's S3 ships.) **Superseded in part by
+Status: **Accepted** (2026-09-29, when the [eark-mods
+plan](../archive/eark-mods.md)'s S3 shipped; drafted 2026-09-22, the
+decisions agreed in review on 2026-09-15). **Superseded in part by
 [ADR-0018](0018-engine-and-profile-packages.md)** (2026-09-28): the worlds
 live in profile packages under `profiles/` (`profiles/meemoo`,
 `profiles/eark`) rather than under `encoders/`, and the descriptive
 standard is an exported interface on the engine that each profile package
 implements, closed by the registry rather than by an unexported field.
-The worlds themselves, and everything below about them, stand.
+**Revised in part by
+[ADR-0021](0021-descriptive-model-follows-its-standard.md)** (2026-09-30):
+the MODS world's description becomes a typed model with fields, not a
+list of statements where one key emits one complete element, so the
+second decision below and the "one key" consequences are superseded for
+MODS; `sip.Term` stays the statement shape of the two Dublin Core worlds
+only, and the CSV keys and their mapping move to the CLI. The worlds
+themselves, the `Description` interface and the items on the record
+stand; the `items.csv` file of the twelfth decision is withdrawn from the
+CLI (2026-09-30, the same review, before it shipped): the rows carry flat
+statements only, and copies reach a package through the library's record
+or a supplied `mods.xml`.
 
 ## Context
 

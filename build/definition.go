@@ -20,11 +20,6 @@ type Definition struct {
 	// description it accepts. A definition without one is refused before
 	// any write.
 	Encoder DescriptionEncoder
-	// NewDescription builds this profile's description from flat
-	// statements, the type Encoder's Check accepts. It is how a transport
-	// that decodes statements without knowing the standard, such as the
-	// CLI's rows file, builds the description; the engine never calls it.
-	NewDescription func(terms []sip.Term) sip.Description
 	// RequireSubmitterORID requires the submitting organization's meemoo
 	// OR-id, emitted as the agent's IDENTIFICATIONCODE note (meemoo SIP
 	// 1.2, metsHdr); WithSubmitter needs the OR-id when set.
@@ -52,10 +47,8 @@ type Definition struct {
 
 // representationDeclaration returns the declaration a representation's METS
 // document carries: the package's declaration as-is, or, when the profile
-// emits representation types, a copy whose content typing names the resolved
-// type. The type lands in both the TYPE and the CONTENTINFORMATIONTYPE pair
-// because ingest systems disagree on which pair they read as the
-// representation's type (ADR-0013).
+// emits representation types, a copy whose content typing names typ as
+// EmitRepresentationType describes.
 func (d Definition) representationDeclaration(base sip.MetsDeclaration, typ string) *sip.MetsDeclaration {
 	decl := base
 	if d.EmitRepresentationType {

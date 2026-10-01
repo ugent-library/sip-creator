@@ -28,8 +28,9 @@ type MetsDeclaration struct {
 	// DescriptiveMDTypeVersion is the dmdSec mdRef @MDTYPEVERSION, rendered
 	// only when set.
 	DescriptiveMDTypeVersion string
-	// RecordStatus is metsHdr/@RECORDSTATUS (SIP3), rendered only when set:
-	// the E-ARK SIP spec defines an absent status as equal to NEW.
+	// RecordStatus is metsHdr/@RECORDSTATUS (SIP3), rendered in the package
+	// METS only, and only when set: the E-ARK SIP spec defines an absent
+	// status as equal to NEW.
 	RecordStatus RecordStatus
 	// Agents are the metsHdr agent entries.
 	Agents []Agent

@@ -9,21 +9,28 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/characterization"
-	"github.com/ugent-library/sip-creator/sip"
 	"golang.org/x/text/unicode/norm"
 )
 
 // directory is the input folder under inspection: the root all messages and
-// report keys are relative to, the findings collected so far, and the
-// constructor that gives the rows of a description.csv their meaning.
+// report keys are relative to, the findings collected so far, the
+// vocabulary that gives the rows of a description.csv their meaning, and,
+// when the profile takes a supplied document, the DocumentVocabulary that
+// names and judges it.
 type directory struct {
-	root           string
-	violations     Violations
-	newDescription func([]sip.Term) sip.Description
+	root       string
+	violations Violations
+	vocabulary Vocabulary
+	// document names the file reserved for a supplied descriptive document
+	// and judges its root; nil under a profile that takes rows only.
+	document DocumentVocabulary
 }
 
 // Reserved top-level names. Reserved names inside a representation are
-// a subset.
+// a subset. The profile's document name, when it has one, is reserved at
+// both levels too; the vocabulary supplies it (isDocumentName). Every
+// reserved name is ASCII, which NFC normalization never alters, so
+// comparing an unnormalized directory entry name to one is exact.
 const (
 	descriptionName        = "description.csv"
 	representationsName    = "representations"
@@ -40,13 +47,19 @@ func (d *directory) read() *build.SourcePackage {
 	source := &build.SourcePackage{}
 
 	var content []os.DirEntry
-	var description, repsDir, repsCSV string
+	var description, document, repsDir, repsCSV string
 
 	for _, e := range d.readDir(d.root) {
-		// Reserved names are ASCII, which NFC normalization never alters,
-		// so comparing unnormalized names is exact.
 		name := e.Name()
 		src := filepath.Join(d.root, e.Name())
+		if d.isDocumentName(name) {
+			if e.IsDir() {
+				d.violate("%s is a folder; the reserved name is for the supplied descriptive document", name)
+				continue
+			}
+			document = src
+			continue
+		}
 		switch name {
 		case descriptionName:
 			if e.IsDir() {
@@ -89,13 +102,13 @@ func (d *directory) read() *build.SourcePackage {
 		}
 	}
 
-	source.Description = d.decodeDescription(description, true)
+	source.Description = d.description(description, document, true)
 
 	if repsDir != "" {
 		// With a representations/ folder, all content lives inside it;
 		// only the reserved names may sit beside it.
 		for _, e := range content {
-			d.violate("%s: content must live inside representations/ when that folder exists (only documentation/ and premis/ may sit beside it)", e.Name())
+			d.violate("%s: content must live inside representations/ when that folder exists (only the reserved names of the input specification may sit beside it)", e.Name())
 		}
 		source.Representations = d.readRepresentations(repsDir)
 		if repsCSV != "" {
@@ -136,12 +149,18 @@ func (d *directory) readRepresentations(dir string) []build.SourceRepresentation
 
 func (d *directory) readRepresentation(dir, name string) build.SourceRepresentation {
 	rep := build.SourceRepresentation{Name: name}
-	var description string
+	var description, document string
 	for _, e := range d.readDir(dir) {
-		// Reserved names are ASCII, which NFC normalization never alters,
-		// so comparing unnormalized names is exact.
 		name := e.Name()
 		src := filepath.Join(dir, e.Name())
+		if d.isDocumentName(name) {
+			if e.IsDir() {
+				d.violate("%s is a folder; the reserved name is for the supplied descriptive document", d.rel(src))
+				continue
+			}
+			document = src
+			continue
+		}
 		switch name {
 		case descriptionName:
 			if e.IsDir() {
@@ -169,11 +188,18 @@ func (d *directory) readRepresentation(dir, name string) build.SourceRepresentat
 			rep.Files = append(rep.Files, d.newFile(dir, src))
 		}
 	}
-	rep.Description = d.decodeDescription(description, false)
+	rep.Description = d.description(description, document, false)
 	if len(rep.Files) == 0 {
 		d.violate("%s: the representation contains no content files", d.rel(dir))
 	}
 	return rep
+}
+
+// isDocumentName reports whether name is the file name reserved for the
+// profile's supplied descriptive document. Under a profile that takes
+// none, no name is: a dc.xml under basic is content like any other file.
+func (d *directory) isDocumentName(name string) bool {
+	return d.document != nil && name == d.document.DocumentName()
 }
 
 // readFlatRepresentation handles the simple case: no
@@ -214,7 +240,7 @@ func (d *directory) collectFiles(dir string) []build.SourceFile {
 // collectPremisFiles collects a premis/ folder (package- or
 // representation-level, same rule both places) and flags the one
 // transport-level premis rule: premis.xml belongs to the generated
-// document. Content conformance (well-formed premis:premis) is
+// document. Content conformance (a premis:premis document) is
 // deliberately left to assembly.
 func (d *directory) collectPremisFiles(dir string) []build.SourceFile {
 	files := d.collectFiles(dir)
@@ -256,9 +282,8 @@ func (d *directory) newFile(base, src string) build.SourceFile {
 }
 
 // decodeSidecar decodes the optional pre-computed characterization report.
-// Decode strictness is ADR-0009's: a present report must parse; per-entry
-// verification (the MD5 check) stays with the assembler, which knows which
-// entries it needs.
+// A present report must parse (ADR-0009); the assembler verifies each
+// entry's MD5, because only it knows which entries it needs.
 func (d *directory) decodeSidecar(src string) characterization.Report {
 	f, err := os.Open(src)
 	if err != nil {

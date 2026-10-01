@@ -11,15 +11,21 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// simpledc is the encoder for the simpledc document as the engine sees it:
-// it accepts Terms and writes them with Encode; building Terms from flat
-// statements is the Definition's NewDescription. It never swaps: dc.xml
-// keeps the producer's identifier, because CSIP has no rule tying it to
-// the package identifier and the ingesting catalogue indexes dc.xml, so
-// operators find the package by the identifier they know (ADR-0012).
+// simpledc is the encoder for the simpledc document: it accepts Terms and
+// writes them with Encode, and says which supplied document is one of its
+// own. It never swaps: dc.xml keeps the producer's identifier, because
+// CSIP has no rule tying it to the package identifier and the ingesting
+// catalogue indexes dc.xml, so operators find the package by the
+// identifier they know (ADR-0012).
 type simpledc struct{}
 
-var _ build.DescriptionEncoder = simpledc{}
+// DescriptiveDocumentChecker is optional to the engine, so a drift in
+// CheckDescriptiveDocument's signature would fail silently; the
+// assertion makes it a build error.
+var (
+	_ build.DescriptionEncoder         = simpledc{}
+	_ build.DescriptiveDocumentChecker = simpledc{}
+)
 
 func (simpledc) Check(d sip.Description) error {
 	if _, ok := d.(Terms); !ok {
@@ -28,17 +34,23 @@ func (simpledc) Check(d sip.Description) error {
 	return nil
 }
 
-// Encode writes d, which is Terms since Check ran before anything else, as
-// a Simple Dublin Core document (the dc_SimpleDC20021212 shape RODA
-// renders and indexes natively): one unqualified element per term, order
-// preserved, language tags omitted. schemas is the relative path from the
-// document to the package's schemas/ dir. The terms must be valid:
-// Terms.Validate is the contract, run by the engine before any write, and
-// Encode does not repeat it. The document is rendered in memory first, so
-// a refused term writes nothing.
-func (simpledc) Encode(w io.Writer, d sip.Description, schemas string) error {
+// CheckDescriptiveDocument returns why root is not the simpledc element this template
+// emits, without namespace. A document of another shape (an oai_dc
+// wrapper, a MODS record) would make the METS declare a type the file does
+// not have.
+func (simpledc) CheckDescriptiveDocument(root xml.StartElement) error {
+	if root.Name.Space != "" || root.Name.Local != "simpledc" {
+		return fmt.Errorf("root element is {%s}%s, expected a simpledc document without namespace", root.Name.Space, root.Name.Local)
+	}
+	return nil
+}
+
+// Encode writes d as a Simple Dublin Core document (the
+// dc_SimpleDC20021212 shape RODA renders and indexes natively): one
+// unqualified element per term, order preserved, language tags omitted.
+func (simpledc) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
-	if err := simpledcTemplate.ExecuteTemplate(&buf, "simpledc", termsDoc{d.(Terms), schemas}); err != nil {
+	if err := simpledcTemplate.ExecuteTemplate(&buf, "simpledc", termsDoc{d.(Terms), schemasDir}); err != nil {
 		return err
 	}
 	_, err := w.Write(buf.Bytes())
@@ -52,16 +64,15 @@ func (simpledc) Schemas() []string {
 	return []string{"dc.xsd"}
 }
 
-// The template interpolates element names from data. Every value is
-// escaped, and the element name comes from el, which admits only a key
-// naming one of the fifteen.
+// simpledcTemplate escapes every value; element names come from
+// elementName.
 var simpledcTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 	"el":  elementName,
 	"esc": escapeXML,
 }).Parse(`
 {{ define "simpledc" -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<simpledc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{{ .Schemas }}/dc.xsd">
+<simpledc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{{ .SchemasDir }}/dc.xsd">
 {{- range .Terms }}
   <{{ el .Key }}>{{ esc .Value }}</{{ el .Key }}>
 {{- end }}
@@ -69,12 +80,11 @@ var simpledcTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 {{ end }}
 `))
 
-// termsDoc is one descriptive document to render: the terms plus the
-// relative path from the document's location to the package's bundled
-// schemas/ dir.
+// termsDoc is one descriptive document to render: the terms plus the path
+// of the package's schemas/ directory relative to the document.
 type termsDoc struct {
-	Terms   Terms
-	Schemas string
+	Terms      Terms
+	SchemasDir string
 }
 
 // elementName is the element a key emits (in Simple Dublin Core, the key

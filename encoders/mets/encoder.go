@@ -18,8 +18,8 @@ import (
 var Schemas = []string{"mets1_12.xsd", "xlink.xsd", "DILCISExtensionMETS.xsd", "DILCISExtensionSIPMETS.xsd"}
 
 // identifier mints a fresh uuid-<uuid> METS ID. The templates mint shared
-// IDs ($fileGrpID, $SCHEMAID, $DOCID) once, up front, so the fileSec and
-// the structMap that points at it carry the same value.
+// IDs ($fileGrpID, $docGrpID, $SCHEMAID, $DOCID) once, up front, so the
+// fileSec and the structMap that points at it carry the same value.
 func identifier() string {
 	return fmt.Sprintf("uuid-%s", uuid.NewV4().String())
 }
@@ -62,7 +62,7 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
   {{- with .Declaration.OtherContentInformationType }}
   csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"
   {{- end }}
-  xsi:schemaLocation="http://www.loc.gov/METS/ ../../schemas/mets1_12.xsd http://www.w3.org/1999/xlink ../../schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS ../../schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS ../../schemas/DILCISExtensionSIPMETS.xsd">
+  xsi:schemaLocation="http://www.loc.gov/METS/ ../../schemas/mets1_12.xsd http://www.w3.org/1999/xlink ../../schemas/xlink.xsd https://DILCIS.eu/XML/METS/CSIPExtensionMETS ../../schemas/DILCISExtensionMETS.xsd https://DILCIS.eu/XML/METS/SIPExtensionMETS ../../schemas/DILCISExtensionSIPMETS.xsd">
 
   <metsHdr CREATEDATE="{{ now }}" csip:OAISPACKAGETYPE="SIP" />
   {{- with .DescriptionFile }}
@@ -137,7 +137,7 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
   {{- with .Declaration.OtherContentInformationType }}
   csip:OTHERCONTENTINFORMATIONTYPE="{{ . }}"
   {{- end }}
-  xsi:schemaLocation="http://www.loc.gov/METS/ schemas/mets1_12.xsd http://www.w3.org/1999/xlink schemas/xlink.xsd https://dilcis.eu/XML/METS/CSIPExtensionMETS schemas/DILCISExtensionMETS.xsd https://dilcis.eu/XML/METS/SIPExtensionMETS schemas/DILCISExtensionSIPMETS.xsd">
+  xsi:schemaLocation="http://www.loc.gov/METS/ schemas/mets1_12.xsd http://www.w3.org/1999/xlink schemas/xlink.xsd https://DILCIS.eu/XML/METS/CSIPExtensionMETS schemas/DILCISExtensionMETS.xsd https://DILCIS.eu/XML/METS/SIPExtensionMETS schemas/DILCISExtensionSIPMETS.xsd">
 
   <metsHdr CREATEDATE="{{ now }}"{{ with .Declaration.RecordStatus }} RECORDSTATUS="{{ . }}"{{ end }} csip:OAISPACKAGETYPE="SIP">
     {{- range .Declaration.Agents }}

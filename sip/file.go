@@ -10,7 +10,8 @@ import (
 type File struct {
 	// Identifier identifies the file in METS and PREMIS (uuid-<uuid>).
 	Identifier string
-	// Name is the file's basename, emitted as premis:originalName.
+	// Name is the file's basename; for essence, emitted as
+	// premis:originalName.
 	Name string
 	// Checksum, Size, and Created describe the file as written into the
 	// package; the writer back-fills them as the file lands.
@@ -20,8 +21,9 @@ type File struct {
 	// Format is the file's characterization result; nil when no report
 	// was supplied or the report found no match.
 	Format *Format
-	// Source is the absolute path the file is copied from; empty for
-	// generated documents (METS, PREMIS, descriptive).
+	// Source is the absolute path the file is copied from; empty for the
+	// METS and PREMIS documents the build writes and for the descriptive
+	// document, whose source, when supplied, the description carries.
 	Source string
 	// Path is the href relative to the METS document that references the
 	// file: package-relative for package-level files, representation-relative

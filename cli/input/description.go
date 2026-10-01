@@ -8,21 +8,48 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// decodeDescription decodes the descriptive rows file at src into the profile's
-// description, collecting a violation per broken rule. src is "" when the
-// level has no rows file: the package level needs one, a representation
-// may have none. The row syntax (header, two columns, key[lang]) is the
-// file's own; what a term may say, the cross-row rules and what a
-// package-level description must state are the profile's, run once on the
-// finished list. The library runs the same methods again as the contract
-// before a build; these calls report, so check and create agree.
-func (d *directory) decodeDescription(src string, packageLevel bool) sip.Description {
-	if src == "" {
+// description returns the level's description from the one source the
+// folder supplies for it: the rows file, decoded under the vocabulary, or
+// the profile's supplied document, read as it is. Both at one level is a
+// violation: an entity has one description, and the tool does not pick.
+// The package level needs one; a representation may have neither. rows and
+// document are "" when the folder has no such file.
+func (d *directory) description(rows, document string, packageLevel bool) sip.Description {
+	switch {
+	case rows != "" && document != "":
+		described := "representation"
 		if packageLevel {
-			d.violate("descriptive rows are missing: every package folder needs a description.csv describing the content (input specification §3)")
+			described = "package"
 		}
+		d.violate("%s and %s are both present; describe the %s with one of the two, not both (input specification §3)", d.rel(rows), d.rel(document), described)
 		return nil
+	case document != "":
+		return d.readDocument(document)
+	case rows != "":
+		return d.decodeDescription(rows, packageLevel)
+	case packageLevel:
+		d.violateMissingDescription()
 	}
+	return nil
+}
+
+// violateMissingDescription records that the package level describes
+// nothing, naming the file or files the profile accepts.
+func (d *directory) violateMissingDescription() {
+	if d.document == nil {
+		d.violate("descriptive rows are missing: every package folder needs a description.csv describing the content (input specification §3)")
+		return
+	}
+	d.violate("descriptive metadata is missing: every package folder needs a description.csv or a %s describing the content (input specification §3)", d.document.DocumentName())
+}
+
+// decodeDescription decodes the descriptive rows file at src into the
+// profile's description, collecting a violation per broken rule. This
+// function checks the row syntax (header, two columns, key[lang]); the
+// vocabulary decides what a key means; the description's Validate and
+// ValidateRequired, run once on the result, decide what it may say and
+// what a package-level one must state.
+func (d *directory) decodeDescription(src string, packageLevel bool) sip.Description {
 	rel := d.rel(src)
 
 	cr, ok := d.openCSV(src)
@@ -30,8 +57,7 @@ func (d *directory) decodeDescription(src string, packageLevel bool) sip.Descrip
 		return nil
 	}
 
-	var terms []sip.Term
-	var lines []int // lines[i] is the line terms[i] was read from
+	var statements []Statement
 	headerSeen := false
 	for {
 		row, err := cr.Read()
@@ -65,35 +91,40 @@ func (d *directory) decodeDescription(src string, packageLevel bool) sip.Descrip
 		if !ok {
 			continue
 		}
-		terms = append(terms, sip.Term{Key: key, Lang: lang, Value: row[1]})
-		lines = append(lines, line)
+		statements = append(statements, Statement{Key: key, Lang: lang, Value: row[1], Line: line})
 	}
 
-	// A finding about one term names it by position, which the lines
-	// gathered above turn back into the row's line; a cross-row finding
-	// names the key and language, which locates the rows in a keyed file.
-	description := d.newDescription(terms)
-	errs := findings(description.Validate())
+	// A finding about one statement is reported at the row's line: the
+	// vocabulary names the line itself, and the description's rules name
+	// a term's position, which the statements turn back into a line. A
+	// cross-row finding names the key and language, which locates the
+	// rows in a keyed file.
+	description, errs := d.vocabulary.Description(statements)
+	errs = append(errs, flatten(description.Validate())...)
 	if packageLevel {
-		errs = append(errs, findings(description.ValidateRequired())...)
+		errs = append(errs, flatten(description.ValidateRequired())...)
 	}
 	for _, err := range errs {
+		var se *StatementError
 		var te *sip.TermError
-		if errors.As(err, &te) {
-			d.violate("%s line %d: %v", rel, lines[te.Index], te.Err)
-			continue
+		switch {
+		case errors.As(err, &se):
+			d.violate("%s line %d: %v", rel, se.Line, se.Err)
+		case errors.As(err, &te) && te.Index < len(statements):
+			d.violate("%s line %d: %v", rel, statements[te.Index].Line, te.Err)
+		default:
+			d.violate("%s: %v", rel, err)
 		}
-		d.violate("%s: %v", rel, err)
 	}
-	if len(terms) == 0 {
+	if len(statements) == 0 {
 		return nil
 	}
 	return description
 }
 
-// findings flattens a joined error into its parts, so each finding is
+// flatten splits a joined error into its parts, so each finding is
 // reported as its own violation.
-func findings(err error) []error {
+func flatten(err error) []error {
 	if err == nil {
 		return nil
 	}
@@ -103,7 +134,7 @@ func findings(err error) []error {
 	}
 	var out []error
 	for _, e := range joined.Unwrap() {
-		out = append(out, findings(e)...)
+		out = append(out, flatten(e)...)
 	}
 	return out
 }
@@ -117,8 +148,8 @@ func isHeaderRow(row []string) bool {
 // parseKey handles the key *syntax* of the CSV convention (the optional
 // [lang] bracket, no prefixes, case-insensitive spelling) and returns the
 // plain key for the vocabulary to check. Whether the language tag inside
-// the brackets is *valid* is the term's own rule; the decoder only adds
-// the file/line context.
+// the brackets is *valid* is a rule on the term, which Validate checks;
+// the decoder only adds the file and line.
 func (d *directory) parseKey(file string, line int, raw string) (key, lang string, ok bool) {
 	key = raw
 	if i := strings.IndexByte(key, '['); i >= 0 {

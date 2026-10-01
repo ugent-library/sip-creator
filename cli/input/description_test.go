@@ -1,12 +1,15 @@
 package input
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 // readCSV runs Read over a minimal flat tree carrying the given
@@ -23,7 +26,7 @@ func readCSV(t *testing.T, csv string) (*build.SourcePackage, error) {
 
 func TestRowsHappy(t *testing.T) {
 	// BOM, CRLF, RFC 4180 quoting, repeated keys, [lang] tags, a
-	// capitalized key, and the schema.org keys, all in one file.
+	// capitalized key, and a schema.org key, all in one file.
 	csv := "\ufeffkey,value\r\n" +
 		"identifier,BIB.FA.2026.001\r\n" +
 		"Title[nl],Fotoalbum Gent 1913\r\n" +
@@ -210,12 +213,39 @@ func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 	assertViolation(t, err, `unknown key "license"`)
 }
 
-// Without a description constructor the reader cannot say what the rows
-// mean; it is refused before the folder is touched.
-func TestReadRequiresAConstructor(t *testing.T) {
+// Without a vocabulary the reader cannot say what the rows mean; it is
+// refused before the folder is touched.
+func TestReadRequiresAVocabulary(t *testing.T) {
 	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "scan.tiff": "x"})
 	_, err := New(nil).Read(root)
-	if err == nil || !strings.Contains(err.Error(), "no description constructor") {
-		t.Fatalf("want the missing constructor refused, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "no vocabulary") {
+		t.Fatalf("want the missing vocabulary refused, got %v", err)
 	}
+}
+
+// A vocabulary's own errors are reported at the row's line when they are
+// about one statement, or against the file otherwise, next to the
+// description's rules.
+func TestVocabularyErrorsNameTheLine(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"description.csv": "key,value\nidentifier,ID-1\ntitle,T\n",
+		"scan.tiff":       "x",
+	})
+	_, err := New(placesNothing{}).Read(root)
+	assertViolation(t, err, "description.csv line 3: no place for title")
+	assertViolation(t, err, "description.csv: nothing fits")
+	assertViolation(t, err, "identifier is required")
+}
+
+// placesNothing is a vocabulary that refuses every statement at its line,
+// adds one error about the file, and returns an empty eark description, so
+// the description's own required-keys rule still runs on the result.
+type placesNothing struct{}
+
+func (placesNothing) Description(statements []Statement) (sip.Description, []error) {
+	errs := []error{errors.New("nothing fits")}
+	for _, s := range statements {
+		errs = append(errs, &StatementError{Line: s.Line, Err: fmt.Errorf("no place for %s", s.Key)})
+	}
+	return eark.Terms(nil), errs
 }

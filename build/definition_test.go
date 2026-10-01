@@ -45,10 +45,10 @@ func identityTerms() eark.Terms {
 // identityRecord is the same identity in the eark-mods profile's standard,
 // a MODS record without items.
 func identityRecord() earkmods.Record {
-	return earkmods.Record{Terms: []sip.Term{
-		{Key: "identifier", Value: "local-id-001"},
-		{Key: "title", Value: "Catus Testus"},
-	}}
+	return earkmods.Record{
+		Identifier: "local-id-001",
+		Titles:     []earkmods.Title{{Value: "Catus Testus"}},
+	}
 }
 
 // meemooIdentityTerms is the same identity in meemoo's standard: short of
@@ -60,7 +60,7 @@ func meemooIdentityTerms() meemoo.Terms {
 	}
 }
 
-// Cardinality and the Dutch-language rule are meemoo's standard's own, so
+// Cardinality and the Dutch-language rule belong to meemoo's standard, so
 // build.SourcePackage.Validate applies them to meemoo terms at both levels whatever
 // the profile, and never to Simple Dublin Core terms.
 func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {

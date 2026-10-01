@@ -53,6 +53,7 @@ $RECYCLE.BIN/
 tmp/
 basic-uuid/
 eark-uuid/
+eark-mods-uuid/
 bin/
 reports/
 /sip-creator
