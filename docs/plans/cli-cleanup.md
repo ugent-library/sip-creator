@@ -1,6 +1,6 @@
 # Plan: cleaning up the cli package
 
-*Status: **in progress** (2026-10-01). Phase 1.1 to 1.4 done, 1.5 parked; Phase 2 done (2.2 dropped).*
+*Status: **in progress** (2026-10-01). Phase 1.1 to 1.4 done, 1.5 parked; Phase 2 done (2.2 dropped); Phase 3 done (3.2 and 3.3 dropped).*
 
 This plan collects a review of `cli/` and `cli/input/` (including
 `cli/input/vocabulary/`) into small, separate steps. None of the steps changes a
@@ -121,40 +121,35 @@ is one violation.
 
 ## Phase 3: less repetition in the folder walk
 
-### 3.1 One table of reserved names
+### 3.1 One check for the kind of a reserved name
 
-`read()` and `readRepresentation()` in [directory.go](../../cli/input/directory.go)
-repeat the same "X is a folder; the reserved name is for …" checks. The two levels also
-word the same problem differently: the top level prints the entry name, the
-representation level prints `d.rel(src)` (which gives the same text at the top level).
-Replace both with a table and one check:
+*Done (2026-10-01), without the table first proposed.* `read()` and
+`readRepresentation()` in [directory.go](../../cli/input/directory.go) wrote out the
+same "X is a folder; the reserved name is for …" check nine times. Each `case` now
+calls `expectFile(e, src, holds)` or `expectFolder(e, src, holds)`, which hold the two
+messages once.
 
-```go
-type reserved struct {
-	dir   bool   // whether the name must be a folder
-	holds string // what the name is reserved for, for the message
-}
-
-var reservedNames = map[string]reserved{ ... }
-```
-
-Representation folders use the subset of names that applies to them. Messages become
-the same at both levels.
+The first proposal was a table of reserved names (kind, message text, root only) with
+one lookup in front of both switches. It was built and thrown away: the switches stay
+anyway, because each name goes somewhere different, so every name appeared twice
+(table and switch), a reader had to follow four places to see how one name is handled,
+and the file did not get shorter. The wording it was meant to make consistent across
+the two levels already was: at the root, the entry's display path is its name.
 
 ### 3.2 One way to collect content files
 
-`collectFiles(dir)` is `walkContent(dir, dir, …)`; `readFlatRepresentation` and the
-default branch of `readRepresentation` both loop over entries calling
-`walkContent`/`newFile`. One `collectEntries(base string, entries []os.DirEntry)
-[]build.SourceFile` covers all three.
+*Dropped.* The idea was one `collectEntries(base string, entries []os.DirEntry)` for
+`collectFiles`, `readFlatRepresentation` and the default branch of
+`readRepresentation`. `collectFiles` is already a three-line wrapper and the repeated
+loop is four lines; a merged function with two path arguments to tell apart would
+save little and cost the reader more.
 
 ### 3.3 One type for the supplied document
 
-`Eark` and `EarkMods` each implement `DocumentName` and `CheckDocument` as one-line
-calls into `Definition.DescriptiveName` and the encoder's
-`DescriptiveDocumentChecker`. The reader taking no profile definition is deliberate
-and stays. Replace the copies with one unexported type in `cli/input/vocabulary`
-holding the definition, embedded in both vocabularies.
+*Dropped.* The idea was one unexported type, embedded in `Eark` and `EarkMods`, for
+their `DocumentName` and `CheckDocument` methods. Those are two pairs of three-line
+methods; embedding would hide where the methods come from. The question of what
+`DocumentVocabulary` should be called stays in Phase 4.
 
 ## Phase 4: names
 
