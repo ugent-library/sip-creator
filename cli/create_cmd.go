@@ -42,25 +42,9 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("%w (set SIP_SUBMITTER_NAME and SIP_SUBMITTER_OR_ID)", err)
 		}
 
-		// --status and --updates are coupled: an update-class status names
-		// an earlier package, and naming one requires an update-class
-		// status. Strict pairing is CLI policy: the library also accepts an
-		// identifier on a NEW package, for a program that mints identifiers
-		// itself.
-		flagStatus, _ := cmd.Flags().GetString("status")
-		updates, _ := cmd.Flags().GetString("updates")
-		var status sip.RecordStatus
-		if flagStatus != "" {
-			status, err = sip.ParseRecordStatus(flagStatus)
-			if err != nil {
-				return err
-			}
-		}
-		switch {
-		case updates != "" && !status.IsUpdate():
-			return fmt.Errorf("--updates names an earlier package, which needs --status supplement, replacement, version or delete")
-		case updates == "" && status.IsUpdate():
-			return fmt.Errorf("--status %s updates an earlier package; pass its identifier with --updates", flagStatus)
+		status, updates, err := recordStatusFromFlags(cmd)
+		if err != nil {
+			return err
 		}
 		// Content category precedence: flag, then configured default, then
 		// the profile's registry value (an empty value on the source package).
@@ -83,11 +67,6 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		zipper := archive.New(&archive.Config{
-			Destination: args[1],
-			Logger:      logger,
-		})
-
 		// Values that belong to this package rather than to the folder;
 		// left empty, the profile's values apply.
 		source.PackageIdentifier = updates
@@ -99,10 +78,40 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		if noZip, _ := cmd.Flags().GetBool("no-zip"); !noZip {
-			return zipper.Zip(built)
+		if noZip, _ := cmd.Flags().GetBool("no-zip"); noZip {
+			return nil
 		}
-
-		return nil
+		zipper := archive.New(&archive.Config{
+			Destination: args[1],
+			Logger:      logger,
+		})
+		return zipper.Zip(built)
 	},
+}
+
+// recordStatusFromFlags returns the record status given with --status and
+// the identifier given with --updates. The two come as a pair: an update
+// status names an earlier package, and naming one needs an update status.
+// The pairing is CLI policy: the library also accepts an identifier on a
+// new package, for a program that mints identifiers itself.
+func recordStatusFromFlags(cmd *cobra.Command) (sip.RecordStatus, string, error) {
+	statusText, _ := cmd.Flags().GetString("status")
+	updates, _ := cmd.Flags().GetString("updates")
+
+	var status sip.RecordStatus
+	if statusText != "" {
+		var err error
+		status, err = sip.ParseRecordStatus(statusText)
+		if err != nil {
+			return "", "", err
+		}
+	}
+
+	switch {
+	case updates != "" && !status.IsUpdate():
+		return "", "", fmt.Errorf("--updates names an earlier package, which needs --status supplement, replacement, version or delete")
+	case updates == "" && status.IsUpdate():
+		return "", "", fmt.Errorf("--status %s updates an earlier package; pass its identifier with --updates", statusText)
+	}
+	return status, updates, nil
 }
