@@ -2,6 +2,7 @@ package input
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -67,12 +68,10 @@ func (d *directory) applyRepresentations(src string, reps []build.SourceRepresen
 	return ordered
 }
 
-// decodeRepresentations reads the file into rows, checking the file-local
-// rules: a header with a directory column (label and type optional, nothing
-// else), consistent row width, a directory in every row, and label/type
-// values that are safe to emit as METS attributes. Returns decoded=false
-// when the file itself could not be decoded (violations recorded); a
-// decoded file with no data rows returns an empty slice.
+// decodeRepresentations reads the representations.csv at src into rows and
+// records a violation per broken rule. Returns decoded=false when the file
+// cannot be used at all; a usable file with no data rows returns an empty
+// slice.
 func (d *directory) decodeRepresentations(src string) (rows []repRow, decoded bool) {
 	rel := d.rel(src)
 
@@ -81,53 +80,48 @@ func (d *directory) decodeRepresentations(src string) (rows []repRow, decoded bo
 		d.violate("%s: %v", rel, err)
 		return nil, false
 	}
+
+	rows, errs, err := parseRepresentationRows(data)
+	if err != nil {
+		for _, e := range flatten(err) {
+			d.violate("%s: %v", rel, e)
+		}
+		return nil, false
+	}
+	for _, e := range errs {
+		if re, ok := errors.AsType[*rowError](e); ok {
+			d.violate("%s line %d: %v", rel, re.line, re.err)
+			continue
+		}
+		d.violate("%s: %v", rel, e)
+	}
+	return rows, true
+}
+
+// parseRepresentationRows parses the content of a representations.csv: a
+// header naming the columns, then one row per representation directory.
+// The errs are findings in the rows: a *rowError for a row that breaks a
+// rule, or a CSV syntax error, which ends the parse because the reader may
+// not find its place again. A row with a bad label or type is still
+// returned, so matching rows to directories can report on it too. err
+// means the file cannot be used: not UTF-8, empty, or a wrong header, whose
+// problems are joined into it.
+func parseRepresentationRows(data []byte) (rows []repRow, errs []error, err error) {
 	cr, err := newCSVReader(data)
 	if err != nil {
-		d.violate("%s: %v", rel, err)
-		return nil, false
+		return nil, nil, err
 	}
 
 	header, err := cr.Read()
 	if errors.Is(err, io.EOF) {
-		d.violate(`%s: the file is empty; the first row must be the header "directory,label,type"`, rel)
-		return nil, false
+		return nil, nil, errors.New(`the file is empty; the first row must be the header "directory,label,type"`)
 	}
 	if err != nil {
-		d.violate("%s: %v", rel, err)
-		return nil, false
+		return nil, nil, err
 	}
-
-	// Columns are matched by header name, not position; an unknown header
-	// is a violation because a typo would silently drop a column.
-	dirCol, labelCol, typeCol := -1, -1, -1
-	headerOK := true
-	for i, h := range header {
-		var col *int
-		switch strings.ToLower(strings.TrimSpace(h)) {
-		case "directory":
-			col = &dirCol
-		case "label":
-			col = &labelCol
-		case "type":
-			col = &typeCol
-		default:
-			d.violate("%s: unknown column %q in the header; the columns are directory, label, type", rel, h)
-			headerOK = false
-			continue
-		}
-		if *col >= 0 {
-			d.violate("%s: the header names column %q twice", rel, strings.TrimSpace(h))
-			headerOK = false
-			continue
-		}
-		*col = i
-	}
-	if dirCol < 0 && headerOK {
-		d.violate(`%s: the header has no directory column; the first row must be a header like "directory,label,type"`, rel)
-		headerOK = false
-	}
-	if !headerOK {
-		return nil, false
+	cols, err := parseRepresentationsHeader(header)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	cell := func(row []string, col int) string {
@@ -144,38 +138,79 @@ func (d *directory) decodeRepresentations(src string) (rows []repRow, decoded bo
 			break
 		}
 		if err != nil {
-			// The reader may not recover its position after a syntax
-			// error; report it (the csv error names the line) and stop.
-			d.violate("%s: %v", rel, err)
+			errs = append(errs, err) // the csv error names the line
 			break
 		}
 		line, _ := cr.FieldPos(0)
 
 		if len(row) != len(header) {
-			d.violate("%s line %d: expected %d columns per the header, got %d", rel, line, len(header), len(row))
+			errs = append(errs, &rowError{line, fmt.Errorf("expected %d columns per the header, got %d", len(header), len(row))})
 			continue
 		}
 		// A trailing space in a directory name is invisible in the file and
 		// can never match a portable-charset directory, so trim it away.
-		dir := strings.TrimSpace(cell(row, dirCol))
+		dir := strings.TrimSpace(cell(row, cols.dir))
 		if dir == "" {
-			d.violate("%s line %d: the directory cell is empty; every row must name a representation directory", rel, line)
+			errs = append(errs, &rowError{line, errors.New("the directory cell is empty; every row must name a representation directory")})
 			continue
 		}
-		label, kind := cell(row, labelCol), cell(row, typeCol)
-		// Whether a value may be emitted is the library's rule
-		// (build.ValidateAttributeText), so a label is refused the same way
-		// here as in a SourcePackage built directly in Go; the decoder adds
-		// file and line context.
+		label, kind := cell(row, cols.label), cell(row, cols.kind)
+		// Whether a value may be emitted is the library's rule, so a label
+		// is refused here the same way as in a SourcePackage built in Go.
 		if err := build.ValidateAttributeText(label); err != nil {
-			d.violate("%s line %d: label: %v", rel, line, err)
+			errs = append(errs, &rowError{line, fmt.Errorf("label: %w", err)})
 		}
 		if err := build.ValidateAttributeText(kind); err != nil {
-			d.violate("%s line %d: type: %v", rel, line, err)
+			errs = append(errs, &rowError{line, fmt.Errorf("type: %w", err)})
 		}
-		// Keep the row even when a value is bad: matching and coverage
-		// findings should still surface (collect-all).
 		rows = append(rows, repRow{line: line, dir: dir, label: label, kind: kind})
 	}
-	return rows, true
+	return rows, errs, nil
 }
+
+// repColumns holds the position of each column in a representations.csv
+// row; -1 for a column the header leaves out.
+type repColumns struct {
+	dir, label, kind int
+}
+
+// parseRepresentationsHeader finds the columns by name, not position. An
+// unknown name is an error, because a typo would silently drop a column.
+// All of the header's problems are joined into the error.
+func parseRepresentationsHeader(header []string) (repColumns, error) {
+	cols := repColumns{dir: -1, label: -1, kind: -1}
+	var errs []error
+	for i, h := range header {
+		var col *int
+		switch strings.ToLower(strings.TrimSpace(h)) {
+		case "directory":
+			col = &cols.dir
+		case "label":
+			col = &cols.label
+		case "type":
+			col = &cols.kind
+		default:
+			errs = append(errs, fmt.Errorf("unknown column %q in the header; the columns are directory, label, type", h))
+			continue
+		}
+		if *col >= 0 {
+			errs = append(errs, fmt.Errorf("the header names column %q twice", strings.TrimSpace(h)))
+			continue
+		}
+		*col = i
+	}
+	if cols.dir < 0 && len(errs) == 0 {
+		errs = append(errs, errors.New(`the header has no directory column; the first row must be a header like "directory,label,type"`))
+	}
+	return cols, errors.Join(errs...)
+}
+
+// rowError is a finding about one row of a representations.csv.
+type rowError struct {
+	line int
+	err  error
+}
+
+func (e *rowError) Error() string { return fmt.Sprintf("line %d: %v", e.line, e.err) }
+
+func (e *rowError) Unwrap() error { return e.err }
