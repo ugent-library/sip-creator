@@ -6,7 +6,7 @@ into it on 2026-09-30), with the library route complete and `check
 --profile eark-mods` reading MODS rows. S4 to S6 are superseded: the
 review that opened S4 found the flat statement model straining under
 MODS, and [ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)
-with the [descriptive-model plan](../plans/descriptive-model.md) replace
+with the [descriptive-model plan](descriptive-model.md) replace
 them, carrying the fixture, XML catalog and xmllint acceptance over. The
 text below is the dated record of the flat-model design as it was built;
 where it disagrees with ADR-0021, that record leads. Last working status,

@@ -1,6 +1,6 @@
 # SIP Creator input specification
 
-Status: **Current** (2026-10-01). This is the input contract the tool enforces. Implemented by the [input-convention plan](archive/input-convention.md) with [ADR-0010](decisions/0010-config-over-self-describing-input.md); the §3 vocabulary by the [descriptive-vocabulary plan](archive/descriptive-vocabulary.md) with [ADR-0011](decisions/0011-closed-descriptive-vocabulary.md); the supplied document of §3 by the [descriptive-model plan](plans/descriptive-model.md) with [ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md).
+Status: **Current** (2026-10-01). This is the input contract the tool enforces. Implemented by the [input-convention plan](archive/input-convention.md) with [ADR-0010](decisions/0010-config-over-self-describing-input.md); the §3 vocabulary by the [descriptive-vocabulary plan](archive/descriptive-vocabulary.md) with [ADR-0011](decisions/0011-closed-descriptive-vocabulary.md); the supplied document of §3 by the [descriptive-model plan](archive/descriptive-model.md) with [ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md).
 
 This document describes how to prepare a folder so that the SIP Creator **CLI** can turn it into an E-ARK submission package. It is written for the people preparing material; the section [Mapping to the SIP](#7-mapping-to-the-sip-informative-for-specialists) at the end is for specialists and explains how each rule lands in the E-ARK CSIP/SIP structure.
 

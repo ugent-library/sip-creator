@@ -47,7 +47,7 @@ Supporting pieces:
 - [docs/TODO.md](docs/TODO.md): open design questions and known defects. Check here first when investigating a bug.
 - [CONFIG.md](CONFIG.md): environment variables. This file is **generated** by envdoc; regenerate with `go generate ./cli`, never hand-edit.
 - External specs: [meemoo SIP spec 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) (stable; 2.x are release candidates), [E-ARK CSIP profile](https://earkcsip.dilcis.eu/), [METS](https://www.loc.gov/standards/mets/) and [PREMIS](https://www.loc.gov/standards/premis/) at loc.gov.
-- Concrete examples: `tmp/basic/` is a sample input tree; `basic-uuid/` is sample generated output. Both are local fixtures, not tracked in git.
+- Concrete examples: `tmp/basic/`, `tmp/eark/` and `tmp/eark-mods/` are sample input trees; `<profile>-uuid/` is sample generated output, and `tmp/reference/` holds the reference copies the structural comparison reads. All are local fixtures, not tracked in git.
 
 ## Non-negotiables
 

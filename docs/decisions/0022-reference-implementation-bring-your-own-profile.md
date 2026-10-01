@@ -1,7 +1,7 @@
 # 0022 — The library is a reference implementation others can use; an institution brings its own profile
 
 Status: **Proposed** (drafted 2026-09-30; agreed in review the same day
-with the [descriptive-model plan](../plans/descriptive-model.md)'s S5.
+with the [descriptive-model plan](../archive/descriptive-model.md)'s S5.
 Becomes Accepted when that step ships.)
 
 ## Context
@@ -73,8 +73,7 @@ wants otherwise appears; the design doc says which choices they are.
 - **Make the registry the extension point**, with profiles registered at
   run time. A library caller needs no registry: it holds its definition
   and hands it to `build.New`. The registry serves the CLI's flag, and a
-  closed list there is what makes an unknown `--profile` value an error
-  that names the available profiles.
+  closed list there is what keeps `--profile` honest.
 - **A model that speaks the caller's domain** (call number, barcode,
   catalogue number) for everyone. Those are UGent's words for MODS
   elements every library uses; another institution would translate twice.

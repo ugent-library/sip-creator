@@ -1,8 +1,8 @@
 # Plan: the descriptive model follows its standard, and supplied documents return for the eark profiles
 
-*Status: **S8 done, S9 next** (2026-10-01; S4 withdrawn). Drafted on the branch
+*Status: **shipped** (2026-10-01; S4 withdrawn). Drafted on the branch
 `descriptive-model` from the review of 2026-09-30 that closed the
-[eark-mods plan](../archive/eark-mods.md) after its S3, with
+[eark-mods plan](eark-mods.md) after its S3, with
 [ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)
 recording the decision. The reader takes an `input.Vocabulary`, the
 profiles' vocabularies live in `cli/input/vocabulary`, `build.Definition`
@@ -16,7 +16,7 @@ under the two eark profiles, and the folder takes the same files at the
 input root and inside each representation directory, one description per
 level. All three profiles validate VALID with 0 warnings, and build.sh
 checks every `mods.xml` in a package against the MODS schema with xmllint.
-Update this line as steps land.*
+Archived with S9; the design doc and ADR-0021 carry what lasts.*
 
 ## Context
 
@@ -257,7 +257,7 @@ world brings its own profile. That route exists since ADR-0018 to 0020
 review decided that the eark-mods profile, read that way, is plain E-ARK
 with a MODS 3.7 writer, and that the writer should cover the standard's
 top-level elements in MODS's own words, in tiers. That is a plan of its
-own, [mods-coverage](mods-coverage.md), which starts after this plan
+own, [mods-coverage](../plans/mods-coverage.md), which starts after this plan
 ships the document route (S6 to S8); this step records the aim and states
 it in the docs. Docs only, no code.
 
@@ -273,7 +273,7 @@ it in the docs. Docs only, no code.
       are RODA's (no PREMIS, the representation type in the content
       typing) are named as the reference's choices for RODA rather than
       E-ARK's rules.
-- [x] **The coverage plan.** [mods-coverage](mods-coverage.md), drafted as
+- [x] **The coverage plan.** [mods-coverage](../plans/mods-coverage.md), drafted as
       the parked plan: the element set in three tiers, the common
       attributes in and out, `relatedItem` recursive, `extension` out,
       the identifier's type as the first choice a caller makes, and the
@@ -443,21 +443,29 @@ Carried over from the eark-mods plan's S6.
 
 ### S9: closing docs
 
-- [ ] README (three profiles, both routes); design doc (status line,
+- [x] README (three profiles, both routes); design doc (status line,
       package layout, validation section naming the xmllint pass);
       `CLAUDE.md` development commands ("all three profiles validate
       VALID"); `docs/TODO.md` (the stale `profiles/descriptive.go` pointer
       in the meemoo 2.x item); ADR-0021 to Accepted with the date; this
       plan's status line to shipped, then the plan moves to
       `docs/archive/`. Commit `Changed: docs for the descriptive model;
-      plan archived`.
+      plan archived`. (The `CLAUDE.md` sentence landed with S8. Also: the
+      README's introduction names the three profiles and both routes; the
+      design doc's fixtures line and known-gaps paragraph, and
+      `CLAUDE.md`'s examples line, name the eark-mods fixture and the
+      reference copies; TODO.md's validator status records the third
+      profile; the links to this plan in the input spec, TODO.md,
+      ADR-0021, ADR-0022, the archived eark-mods plan and the mods-coverage
+      plan follow it to `docs/archive/`, and the mods-coverage plan's
+      status line says its precondition is met.)
 
 ## Open questions
 
 - **The `type` attribute on `mods:identifier`**: one constant, `local`,
   the value MODS suggests for an identifier local to the describing
   institution's system. It becomes the caller's choice from a closed set
-  in the [mods-coverage plan](mods-coverage.md)'s first tier (decided
+  in the [mods-coverage plan](../plans/mods-coverage.md)'s first tier (decided
   2026-09-30; it had been "decided by the owner of the repository side").
 - **Further MODS fields.** Names (personal and corporate, with a relator
   code per role) and dates (`encoding="edtf"`) as fields on the record,

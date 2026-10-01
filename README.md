@@ -7,10 +7,12 @@ A command-line tool and Go library for building Submission Information Packages 
 your content files plus descriptive metadata, rolled into a standards-conformant
 [E-ARK SIP](https://earksip.dilcis.eu/), ready for ingest into any E-ARK compliant archival repositories. 
 
-E-ARK Profiles specialize the output for a particular archive. This project implements the 
-Meemoo profiles building SIPs conforming to
-[Meemoo's SIP Specification](https://developer.meemoo.be/docs/diginstroom/sip/) for
-ingest into the Flemish heritage archive.
+E-ARK profiles specialize the output for a particular archive. This project implements
+three: two plain E-ARK profiles for E-ARK-conformant repositories, with Simple Dublin Core
+or MODS 3.7 as the descriptive metadata, and meemoo's `basic` profile, building SIPs
+conforming to [Meemoo's SIP Specification](https://developer.meemoo.be/docs/diginstroom/sip/)
+for ingest into the Flemish heritage archive. Descriptive metadata reaches the tool as
+flat rows in a CSV or, under the E-ARK profiles, as a finished document.
 
 The library is written to be usable by other institutions as it stands, as a reference
 implementation of E-ARK SIP packaging: the profiles in this repository are reference

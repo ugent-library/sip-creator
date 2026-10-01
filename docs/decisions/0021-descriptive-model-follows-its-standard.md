@@ -1,8 +1,8 @@
 # 0021 — The descriptive model follows its standard; the CSV owns its vocabulary; a supplied document is a second description
 
-Status: **Proposed** (drafted 2026-09-30; agreed in review the same day
-with the [descriptive-model plan](../plans/descriptive-model.md). Becomes
-Accepted when that plan ships.) Supersedes
+Status: **Accepted** (2026-10-01, when the
+[descriptive-model plan](../archive/descriptive-model.md) shipped; drafted
+2026-09-30 and agreed in review the same day with that plan.) Supersedes
 [ADR-0017](0017-supplied-descriptive-document-deferred.md). Revises in part
 [ADR-0011](0011-closed-descriptive-vocabulary.md),
 [ADR-0015](0015-descriptive-worlds-dc-and-mods.md) and

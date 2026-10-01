@@ -1,8 +1,8 @@
 # Plan: MODS 3.7 coverage for the eark-mods profile, in tiers
 
-*Status: **parked** (drafted 2026-09-30). Starts when the
-[descriptive-model plan](descriptive-model.md) has shipped the supplied
-document route (its S6 to S8), so that coverage can grow tier by tier
+*Status: **parked** (drafted 2026-09-30). Its precondition is met: the
+[descriptive-model plan](../archive/descriptive-model.md) shipped the
+supplied document route on 2026-10-01, so coverage can grow tier by tier
 while a record the model cannot yet say travels as a `mods.xml`.
 [ADR-0022](../decisions/0022-reference-implementation-bring-your-own-profile.md)
 records why: the eark-mods profile is plain E-ARK with a MODS 3.7 writer,
