@@ -7,11 +7,18 @@ SIP Creator packages your content files and their descriptive metadata into an
 [E-ARK](https://earksip.dilcis.eu/) Submission Information Package (SIP), ready to hand
 to a digital archive. It is a Go library, and a command-line tool built on it.
 
-Archives differ in what they expect inside a SIP. A profile captures one archive's
+Archives differ in what they expect inside a SIP. A profile captures one set of
 expectations: the specification version, the descriptive metadata standard, and the
-rules your input must meet. Three are included: `eark` (Dublin Core) and `eark-mods`
-(MODS) for E-ARK-conformant repositories, and `basic` for meemoo, the Flemish heritage
-archive (see [Profiles](#profiles)).
+rules your input must meet. Every profile builds an E-ARK SIP. Three are included:
+
+* `eark` describes the content in Simple Dublin Core, for intellectual entities
+  described in general terms;
+* `eark-mods` describes it in MODS, for library material, most likely taken from
+  catalogue records in MARC 21;
+* `basic` follows Meemoo's SIP specification, with Meemoo's own mix of Dublin Core terms
+  and schema.org, for ingest into Meemoo, the Flemish heritage archive.
+
+See [Profiles](#profiles) for what each one requires.
 
 :warning: **This is an experimental package** :warning:
 
@@ -34,7 +41,7 @@ Choose a profile with `--profile` on the command line, or with `profiles.Get` in
 
 | | `eark` | `eark-mods` | `basic` |
 |---|---|---|---|
-| Built for | E-ARK-conformant repositories | E-ARK-conformant repositories | meemoo (hetarchief.be) |
+| Use for | content described in general terms | library material from catalogue records | ingest into Meemoo (hetarchief.be) |
 | Specification | E-ARK SIP 2.2.0 | E-ARK SIP 2.2.0 | meemoo SIP 1.2, on E-ARK SIP 2.0.4 |
 | Descriptive standard | Simple Dublin Core | MODS 3.7 | meemoo's Dublin Core and schema.org |
 | [`description.csv` keys](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) | the 15 Dublin Core elements | `identifier`, `title` | meemoo's vocabulary |
@@ -72,8 +79,8 @@ representation's record; it writes them to that representation's `mods.xml`.
 
 ### `basic`: meemoo SIP 1.2
 
-Builds a SIP conforming to the basic content profile of the
-[meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
+Builds an E-ARK SIP (2.0.4) that also conforms to the basic content profile of the
+[Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
 for ingest into the Flemish heritage archive. `description.csv` takes meemoo's closed
 vocabulary: Dublin Core terms (`created`, `spatial`, `extent`, ...) plus two schema.org
 properties. On top of the four required keys, meemoo requires a Dutch value (`[nl]`)
