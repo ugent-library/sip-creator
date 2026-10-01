@@ -6,7 +6,7 @@
 #
 # Exits non-zero iff the generated package is not VALID, or a mods.xml in it
 # is not valid MODS 3.7. Each profile validates against the E-ARK spec
-# version of its era: basic (meemoo 1.2) against 2.0.4, eark and eark-mods
+# version of its era: basic (Meemoo 1.2) against 2.0.4, eark and eark-mods
 # against 2.2.0 (docs/archive/meemoo-12.md). commons-ip does not validate
 # the descriptive documents the METS points at, so every mods.xml in the
 # package is checked with xmllint against the schema the package ships,

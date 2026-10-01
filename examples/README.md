@@ -5,7 +5,7 @@ One input folder per profile, ready to check or build. Each folder follows the
 
 | Folder | Profile | What it shows |
 |---|---|---|
-| [`basic/`](basic/) | `basic` | `description.csv` with meemoo's keys, in Dutch and English |
+| [`basic/`](basic/) | `basic` | `description.csv` with Meemoo's keys, in Dutch and English |
 | [`eark/`](eark/) | `eark` | `description.csv` with Dublin Core keys, a description of the representation, received PREMIS, `representations.csv` |
 | [`eark-mods/`](eark-mods/) | `eark-mods` | a finished `mods.xml` with two physical copies, plus the same extras as `eark/` |
 

@@ -52,7 +52,7 @@ var (
 	earkReader  = New(earkVocab{})
 )
 
-// minimalCSV is the smallest description.csv that passes check: meemoo's
+// minimalCSV is the smallest description.csv that passes check: Meemoo's
 // basic content profile requires these four keys. minimalDC is its eark
 // counterpart: Simple DC requires identity only.
 const (

@@ -2,7 +2,7 @@
 <!--
   XML catalog for validating a mods.xml offline. The bundled MODS schema
   (schemas/mods-3-7.xsd) imports two schemas by loc.gov URL; this maps each
-  onto the bundled copy, which the METS and meemoo documents ship already,
+  onto the bundled copy, which the METS and Meemoo documents ship already,
   so xmllint runs with -nonet:
 
     XML_CATALOG_FILES=scripts/schema-catalog.xml xmllint -noout -nonet \

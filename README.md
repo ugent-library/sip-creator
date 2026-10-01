@@ -42,13 +42,13 @@ Choose a profile with `--profile` on the command line, or with `profiles.Get` in
 | | `eark` | `eark-mods` | `basic` |
 |---|---|---|---|
 | Use for | content described in general terms | library material from catalogue records | ingest into Meemoo (hetarchief.be) |
-| Specification | E-ARK SIP 2.2.0 | E-ARK SIP 2.2.0 | meemoo SIP 1.2, on E-ARK SIP 2.0.4 |
-| Descriptive standard | Simple Dublin Core | MODS 3.7 | meemoo's Dublin Core and schema.org |
-| [`description.csv` keys](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) | the 15 Dublin Core elements | `identifier`, `title` | meemoo's vocabulary |
+| Specification | E-ARK SIP 2.2.0 | E-ARK SIP 2.2.0 | Meemoo SIP 1.2, on E-ARK SIP 2.0.4 |
+| Descriptive standard | Simple Dublin Core | MODS 3.7 | Meemoo's Dublin Core and schema.org |
+| [`description.csv` keys](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) | the 15 Dublin Core elements | `identifier`, `title` | Meemoo's vocabulary |
 | Required keys | `identifier`, `title` | `identifier`, `title` | `identifier`, `title`, `description`, `created` |
 | [Finished document](docs/input-spec.md#supplying-a-finished-document-eark-and-eark-mods) accepted | `dc.xml` | `mods.xml` | none |
 | Go description type | `eark.Terms` | `earkmods.Record` | `meemoo.Terms` |
-| Submitter | name | name | name and meemoo OR-id |
+| Submitter | name | name | name and Meemoo OR-id |
 | Representation type | written to the METS | written to the METS | ignored |
 | You deliver | the zip | the zip | the package directory, in a BagIt bag |
 
@@ -77,24 +77,24 @@ barcode, volume), comes as a finished `mods.xml`, or in Go as an `earkmods.Recor
 a version of the content, never a copy. The library does not refuse items on a
 representation's record; it writes them to that representation's `mods.xml`.
 
-### `basic`: meemoo SIP 1.2
+### `basic`: Meemoo SIP 1.2
 
 Builds an E-ARK SIP (2.0.4) that also conforms to the basic content profile of the
 [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
-for ingest into the Flemish heritage archive. `description.csv` takes meemoo's closed
+for ingest into the Flemish heritage archive. `description.csv` takes Meemoo's closed
 vocabulary: Dublin Core terms (`created`, `spatial`, `extent`, ...) plus two schema.org
-properties. On top of the four required keys, meemoo requires a Dutch value (`[nl]`)
+properties. On top of the four required keys, Meemoo requires a Dutch value (`[nl]`)
 wherever a language-tagged key is used.
 
-There is no finished-document route: meemoo's document must carry the package identifier
-the tool mints, and the tool does not edit XML. The submitter needs meemoo's OR-id as
+There is no finished-document route: Meemoo's document must carry the package identifier
+the tool mints, and the tool does not edit XML. The submitter needs Meemoo's OR-id as
 well as a name (see [Configuration](#configuration)). A representation's type is
-ignored, because meemoo SIP 1.2 fixes every METS content typing to `OTHER` plus the
+ignored, because Meemoo SIP 1.2 fixes every METS content typing to `OTHER` plus the
 profile URI; its label still becomes `mets/@LABEL`.
 
-meemoo's transfer format wraps the SIP in a BagIt bag, which this tool does not produce.
+Meemoo's transfer format wraps the SIP in a BagIt bag, which this tool does not produce.
 Build a package directory with `--no-zip`, bag that directory with a reference BagIt
-implementation, and follow meemoo's transfer instructions:
+implementation, and follow Meemoo's transfer instructions:
 
 ```
 ./bin/sip-creator create --profile basic --no-zip ./your-input sip-out
@@ -182,7 +182,7 @@ from `.env.example`. All environment variables are documented in
 
 Every package's METS names the organization submitting it, so `create` requires
 `SIP_SUBMITTER_NAME` for every profile. `basic` also requires `SIP_SUBMITTER_OR_ID`, the
-organization's identifier in [meemoo's organization register](https://developer.meemoo.be/),
+organization's identifier in [Meemoo's organization register](https://developer.meemoo.be/),
 emitted as the agent's `IDENTIFICATIONCODE` note. A build refuses to run when a value its
 profile requires is missing, rather than emitting a package that would be rejected at
 ingest:
@@ -340,7 +340,7 @@ def, ok := profiles.Get("eark")
 if !ok {
 	// ...
 }
-// The second argument is the meemoo OR-id, used by basic only.
+// The second argument is the Meemoo OR-id, used by basic only.
 def, err := def.WithSubmitter("Example Organization", "")
 if err != nil {
 	// ...

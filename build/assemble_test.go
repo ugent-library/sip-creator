@@ -31,7 +31,7 @@ func fileMD5(t *testing.T, path string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// testDescription satisfies the strictest registered profile: meemoo's
+// testDescription satisfies the strictest registered profile: Meemoo's
 // four required elements, Dutch entries on the lang-tagged ones. It is the
 // basic profile's input; eark tests swap in identityTerms.
 func testDescription() meemoo.Terms {
@@ -591,9 +591,9 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 }
 
 // identifierTerm returns the identifier any world's description states
-// ("" when absent): what the meemoo swap wrote, or what the eark profiles
+// ("" when absent): what the Meemoo swap wrote, or what the eark profiles
 // left alone. No profile package exports an accessor for it; the swap is
-// the meemoo package's own business, and the eark profiles never swap.
+// the Meemoo package's own business, and the eark profiles never swap.
 func identifierTerm(d sip.Description) string {
 	var terms []sip.Term
 	switch v := d.(type) {
@@ -657,7 +657,7 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 		t.Errorf("description identifier = %q, want the producer's %q", got, "local-id-001")
 	}
 	if _, ok := e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; ok {
-		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; it is a meemoo concept")
+		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; it is a Meemoo concept")
 	}
 	if got := identifierTerm(e.Representations[0].Description); got != "rep-local-1" {
 		t.Errorf("rep descriptive identifier = %q, want the producer's %q", got, "rep-local-1")
@@ -863,7 +863,7 @@ func (otherDescription) ValidateRequired() error { return nil }
 // A description of another standard is refused by the profile's
 // descriptive-standard check before validation and before any side effect,
 // at package and representation level alike: a type no profile writes,
-// meemoo terms handed to eark, Simple DC terms handed to basic or to
+// Meemoo terms handed to eark, Simple DC terms handed to basic or to
 // eark-mods, a MODS record handed to either DC profile.
 func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	cases := []struct {
@@ -873,11 +873,11 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 		want string
 	}{
 		{"unknown type to eark", earkDef(t), otherDescription{}, "eark.Terms"},
-		{"meemoo terms to eark", earkDef(t), testDescription(), "meemoo.Terms, not Simple Dublin Core"},
-		{"simple dc terms to basic", basicDef(t), identityTerms(), "eark.Terms, not meemoo dc+schema"},
+		{"Meemoo terms to eark", earkDef(t), testDescription(), "meemoo.Terms, not Simple Dublin Core"},
+		{"simple dc terms to basic", basicDef(t), identityTerms(), "eark.Terms, not Meemoo dc+schema"},
 		{"simple dc terms to eark-mods", earkmodsDef(t), identityTerms(), "eark.Terms, not a MODS record"},
 		{"record to eark", earkDef(t), identityRecord(), "earkmods.Record, not Simple Dublin Core"},
-		{"record to basic", basicDef(t), identityRecord(), "earkmods.Record, not meemoo dc+schema"},
+		{"record to basic", basicDef(t), identityRecord(), "earkmods.Record, not Meemoo dc+schema"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

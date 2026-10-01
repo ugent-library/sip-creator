@@ -1,7 +1,7 @@
-// Package meemoo is the basic profile: everything the tool knows about
-// meemoo SIP 1.2's basic content profile. Its descriptive standard is the
+// Package Meemoo is the basic profile: everything the tool knows about
+// Meemoo SIP 1.2's basic content profile. Its descriptive standard is the
 // dc+schema document, Dublin Core terms plus schema.org properties in the
-// meemoo namespace, with the profile's required, cardinality and language
+// Meemoo namespace, with the profile's required, cardinality and language
 // rules; its Definition names the rest as data, and the registry in
 // profiles/ hands that out as "basic".
 package meemoo

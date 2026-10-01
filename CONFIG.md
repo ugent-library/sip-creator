@@ -9,10 +9,10 @@ arrives via the siegfried.json sidecar (ADR-0009), not configuration.
 
  - The submitting organization, stamped into every package's METS as a
 CREATOR agent. `create` requires NAME for every profile and OR_ID for
-meemoo profiles.
+Meemoo profiles.
    - `SIP_SUBMITTER_NAME` - Name of the submitting organization, e.g. "Example Organization".
-   - `SIP_SUBMITTER_OR_ID` - The organization's meemoo OR-id (its identifier in meemoo's
-organization register), e.g. "OR-a1b2c3d". Required for meemoo
+   - `SIP_SUBMITTER_OR_ID` - The organization's Meemoo OR-id (its identifier in Meemoo's
+organization register), e.g. "OR-a1b2c3d". Required for Meemoo
 profiles, where it becomes the agent's IDENTIFICATIONCODE note.
  - `SIP_CONTENT_CATEGORY` - Default content category for created packages (mets/@TYPE, CSIP
 content-category vocabulary), e.g. "Photographs – Digital". Empty

@@ -12,7 +12,7 @@ import (
 // DescriptiveDocument is a finished descriptive document supplied as a
 // file, such as a dc.xml or mods.xml prepared elsewhere. The package
 // carries an unchanged copy of it (ADR-0021). The two eark profiles accept
-// one; the basic profile does not, because meemoo's document must carry
+// one; the basic profile does not, because Meemoo's document must carry
 // the entity identifier the build mints, and the tool does not edit XML.
 // The tool checks only that the file parses as XML and that its root
 // element is the profile's standard. Schema validity and content are left

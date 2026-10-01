@@ -28,7 +28,7 @@ func TestSourcePackageEquivalence(t *testing.T) {
 	}
 	discard := slog.New(slog.NewTextHandler(io.Discard, nil))
 
-	// Via the folder convention. The basic profile requires meemoo's four
+	// Via the folder convention. The basic profile requires Meemoo's four
 	// elements, so the file carries more than the convention's minimum.
 	csv := "key,value\n" +
 		"identifier,ID-1\n" +

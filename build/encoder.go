@@ -43,7 +43,7 @@ type DescriptionEncoder interface {
 
 // IdentifierSwapper is the optional part of a DescriptionEncoder whose
 // spec links descriptive and preservation metadata by a shared identifier
-// (meemoo's). Swap replaces the identifier in d with id and returns the
+// (Meemoo's). Swap replaces the identifier in d with id and returns the
 // producer's identifier it replaced; the assembler records that as the
 // entity's MEEMOO-LOCAL-ID. An encoder without it keeps the producer's
 // identifier in the document (ADR-0012).
@@ -56,8 +56,8 @@ type IdentifierSwapper interface {
 // next to its own description type. CheckDescriptiveDocument returns why
 // root, the document's root element, is not the profile's standard:
 // another element or namespace, or a version other than the one the METS
-// declares. An encoder without it takes no supplied document. meemoo's
-// encoder does not implement it, because meemoo's document must carry the
+// declares. An encoder without it takes no supplied document. Meemoo's
+// encoder does not implement it, because Meemoo's document must carry the
 // entity identifier the build mints, which Swap writes into the terms
 // (ADR-0021).
 type DescriptiveDocumentChecker interface {

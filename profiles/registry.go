@@ -2,7 +2,7 @@
 // to. Each profile lives in its own package under profiles/, which holds
 // everything the profile knows about its descriptive metadata (its
 // description type and rules, its template, the XSDs its document points
-// at, and for meemoo and eark the table of keys) next to the
+// at, and for Meemoo and eark the table of keys) next to the
 // build.Definition naming the rest as data. This
 // package only hands definitions out by name; the set is closed here.
 package profiles

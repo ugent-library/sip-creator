@@ -16,7 +16,7 @@ E2–E4 landed in one day; E5's desk-check became the [runbook](../development-r
 
 ## Context: what an "eark" profile is
 
-The meemoo profiles and the eark profile serve **different consumers**. Meemoo SIPs go
+The Meemoo profiles and the eark profile serve **different consumers**. Meemoo SIPs go
 to hetarchief's pipeline (SHACL validation keyed on `OTHERCONTENTINFORMATIONTYPE`);
 plain E-ARK SIPs go to RODA-class CSIP repositories. UGent will submit real E-ARK
 SIPs to a RODA instance it manages. Scope for v1, deliberately kept simple:
@@ -42,7 +42,7 @@ Acceptance has two checks, and they are not the same thing:
 CSIP  (information-package base)
 └── E-ARK SIP  (submission specialization)
     ├── "plain"          ← the eark profile: stops here, adds nothing
-    └── meemoo SIP 2.x   (Flemish heritage specialization)
+    └── Meemoo SIP 2.x   (Flemish heritage specialization)
         ├── basic        ← the existing profile
         └── material-artwork, newspaper, ...   (future)
 ```
@@ -130,7 +130,7 @@ documentation is present.
    id ← rep METS `OBJID` (our directory name), status ORIGINAL; `documentation/`
    and `schemas/` map straight into the AIP.
 
-**Open check (benefits basic, not blocking):** whether meemoo 2.x itself requires
+**Open check (benefits basic, not blocking):** whether Meemoo 2.x itself requires
 the E-ARK SIP profile URL; if yes, basic's SIP2 failure is a one-line registry fix.
 Recorded in [TODO.md](../TODO.md) Known-INVALID.
 
@@ -143,10 +143,10 @@ Recorded in [TODO.md](../TODO.md) Known-INVALID.
   pure data, serializable, declared explicitly by every registry entry; unknown or
   empty family is a build error naming the definition. Internally the family
   resolves to its one behavioral choice: the **descriptive encoder**
-  (meemoo → the existing `Descriptive.Encode` / dc+schema; eark → `metadata.EncodeDC`,
+  (Meemoo → the existing `Descriptive.Encode` / dc+schema; eark → `metadata.EncodeDC`,
   the `"dc"` define corrected to the `dc_SimpleDC20021212` shape).
 - **dmdSec typing becomes data**: `sip.Spec` gains the descriptive `MDTYPE` and
-  `MDTYPEVERSION` values (meemoo: `DC` and empty, byte-identical output because the
+  `MDTYPEVERSION` values (Meemoo: `DC` and empty, byte-identical output because the
   version attribute renders only when set; eark: `DC` / `SimpleDC20021212`).
 - **Documentation**: the input tree gains an optional package-level
   `documentation/` directory; the assembler walks it into `Package.DocumentationFiles`
@@ -189,7 +189,7 @@ Recorded in [TODO.md](../TODO.md) Known-INVALID.
 ## Verification
 
 1. `./build.sh` + `reference-diff.sh`: basic output structurally identical after
-   every step; the meemoo path must not move.
+   every step; the Meemoo path must not move.
 2. `build-eark.sh`: commons-ip reports **VALID** for the eark package (target; the
    loop in E4 iterates until it holds).
 3. Go tests: family dispatch (unknown family errors, nothing written), eark
@@ -203,7 +203,7 @@ Recorded in [TODO.md](../TODO.md) Known-INVALID.
 
 ## Out of scope, recorded
 
-- meemoo SIP 2.1 (parked → [TODO.md](../TODO.md)); submission-agreement fields;
+- Meemoo SIP 2.1 (parked → [TODO.md](../TODO.md)); submission-agreement fields;
   archival-creator/preservation agents; PREMIS in eark packages (revisit with the
   provenance/events work); a local RODA instance; agents-to-organization-config
   extraction (library-embeddability item).

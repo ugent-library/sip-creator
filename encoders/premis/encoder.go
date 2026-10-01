@@ -13,7 +13,7 @@ import (
 
 // Both documents point xsi:schemaLocation at the remote loc.gov PREMIS
 // schema rather than a copy in the package's schemas/ dir, unlike the METS
-// and descriptive documents: meemoo SIP 1.2 requires exactly this value on
+// and descriptive documents: Meemoo SIP 1.2 requires exactly this value on
 // the PREMIS root, at package and representation level ("When used, its
 // value MUST be set to ...").
 var premis = template.Must(template.New("").Parse(`

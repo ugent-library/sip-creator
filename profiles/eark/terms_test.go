@@ -82,7 +82,7 @@ func TestValidateTerm(t *testing.T) {
 		{"valid", sip.Term{Key: "title", Value: "x"}, ""},
 		{"valid with lang", sip.Term{Key: "description", Lang: "nl-BE", Value: "x"}, ""},
 		{"valid coverage", sip.Term{Key: "coverage", Value: "x"}, ""},
-		// a qualified term meemoo's vocabulary has; not Simple DC
+		// a qualified term Meemoo's vocabulary has; not Simple DC
 		{"qualified term", sip.Term{Key: "abstract", Value: "x"}, "unknown key"},
 		{"prefixed", sip.Term{Key: "dcterms:title", Value: "x"}, "unknown key"},
 		{"typo", sip.Term{Key: "titel", Value: "x"}, "unknown key"},

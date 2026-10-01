@@ -92,7 +92,7 @@ func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {
 func (b *Builder) assembleDescriptive(e *sip.Entity, source *SourcePackage) {
 	d := source.Description
 	// A standard that links descriptive and preservation metadata by a
-	// shared identifier (meemoo's) swaps the entity identifier into the
+	// shared identifier (Meemoo's) swaps the entity identifier into the
 	// description, and the producer's identifier it replaces travels as
 	// MEEMOO-LOCAL-ID. Without a swap the document keeps the producer's
 	// identifier as-is (ADR-0012).
@@ -164,7 +164,7 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 // assembleRepresentations turns each supplied representation into a graph
 // node. The producer's name is used verbatim as the directory under
 // representations/ and as the representation METS OBJID: no spec dictates
-// a naming scheme (CSIP requires only that names be unique; meemoo 2.x
+// a naming scheme (CSIP requires only that names be unique; Meemoo 2.x
 // requires the directory name to equal the OBJID, which holds because
 // both come from Name). SourcePackage.Validate has already checked the
 // names. decl is the package's declaration, which each representation's

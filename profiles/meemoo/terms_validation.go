@@ -29,12 +29,12 @@ func validateTerm(t sip.Term) error {
 	return nil
 }
 
-// RequiredLang is the language meemoo requires a value in wherever a
-// language-tagged element appears: Dutch (meemoo SIP 1.2, basic content
+// RequiredLang is the language Meemoo requires a value in wherever a
+// language-tagged element appears: Dutch (Meemoo SIP 1.2, basic content
 // profile).
 const RequiredLang = "nl"
 
-// Validate checks every term, the one-identifier rule, and meemoo's own
+// Validate checks every term, the one-identifier rule, and Meemoo's own
 // rules: the vocabulary's cardinality limits and a Dutch entry wherever a
 // language-tagged element appears. Every finding is reported, joined into
 // one error, so a producer corrects a document in one round; a finding
@@ -62,7 +62,7 @@ func (t Terms) Validate() error {
 }
 
 // validateCardinality reports every term that exceeds its key's
-// cardinality (meemoo's 0..1/1..1 restrictions, counted per language for
+// cardinality (Meemoo's 0..1/1..1 restrictions, counted per language for
 // lang-tagged keys). Findings name the key (and language), which locates
 // the offending rows in a keyed file. A key outside the table has the zero
 // cardinality, many, so an unknown key never adds a false repeat finding

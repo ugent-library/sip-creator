@@ -309,7 +309,7 @@ func (d *directory) decodeSidecar(src string) characterization.Report {
 //
 // os.ReadDir lists lexically, so every file list built over it is in
 // deterministic traversal order. That order carries no meaning (neither
-// CSIP nor meemoo assigns semantics to file order; explicit sequencing is
+// CSIP nor Meemoo assigns semantics to file order; explicit sequencing is
 // a deferred manifest feature), but it must be stable:
 // METS emission and scripts/reference-diff.sh depend on run-to-run identical order.
 func (d *directory) readDir(dir string) []os.DirEntry {

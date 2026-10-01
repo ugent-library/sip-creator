@@ -28,7 +28,7 @@ func ExampleBuilder_Build() {
 	if !ok {
 		log.Fatal("no eark profile")
 	}
-	// The second argument is the meemoo OR-id, used by the basic profile only.
+	// The second argument is the Meemoo OR-id, used by the basic profile only.
 	def, err = def.WithSubmitter("Example Organization", "")
 	if err != nil {
 		log.Fatal(err)

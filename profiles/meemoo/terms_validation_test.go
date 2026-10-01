@@ -102,7 +102,7 @@ func TestTermsValidateReportsEveryTerm(t *testing.T) {
 	}
 }
 
-// A package-level description states meemoo's four required keys; each
+// A package-level description states Meemoo's four required keys; each
 // missing one is a finding naming the key.
 func TestValidateRequired(t *testing.T) {
 	err := (Terms{

@@ -11,7 +11,7 @@ import (
 var Definition = build.Definition{
 	Name:    "eark",
 	Encoder: simpledc{},
-	// Named after the simple-DC document it holds; meemoo's naming
+	// Named after the simple-DC document it holds; Meemoo's naming
 	// convention doesn't apply to the eark profile.
 	DescriptiveName: "dc.xml",
 	// The eark profile emits no PREMIS: RODA drops package PREMIS that

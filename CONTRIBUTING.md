@@ -48,7 +48,7 @@ your own. It:
    because commons-ip does not validate the descriptive documents the METS points at.
 
 It exits non-zero when the package is not `VALID` or a `mods.xml` is not valid MODS. Each
-profile validates against its E-ARK spec version: `basic` (meemoo 1.2) against 2.0.4,
+profile validates against its E-ARK spec version: `basic` (Meemoo 1.2) against 2.0.4,
 `eark` and `eark-mods` against 2.2.0. All three are expected to report `VALID`.
 
 Each run's reports are written to `reports/runs/<timestamp>-<profile>/`. To browse them

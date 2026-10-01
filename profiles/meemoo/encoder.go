@@ -14,7 +14,7 @@ import (
 // dcschema is the encoder for the dc+schema document: it accepts Terms,
 // writes them with Encode, and swaps the entity identifier in. It does not
 // implement DescriptiveDocumentChecker, so the engine refuses a supplied
-// document: meemoo's document must carry the entity identifier the build
+// document: Meemoo's document must carry the entity identifier the build
 // mints, which Swap writes into the terms.
 type dcschema struct{}
 
@@ -27,12 +27,12 @@ var (
 
 func (dcschema) Check(d sip.Description) error {
 	if _, ok := d.(Terms); !ok {
-		return fmt.Errorf("descriptive metadata is %T, not meemoo dc+schema terms (meemoo.Terms)", d)
+		return fmt.Errorf("descriptive metadata is %T, not Meemoo dc+schema terms (meemoo.Terms)", d)
 	}
 	return nil
 }
 
-// Encode writes d as meemoo's dc+schema document: one element per term,
+// Encode writes d as Meemoo's dc+schema document: one element per term,
 // order preserved.
 func (dcschema) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
@@ -44,7 +44,7 @@ func (dcschema) Encode(w io.Writer, d sip.Description, schemasDir string) error 
 }
 
 // Swap replaces the identifier in d with id and returns the producer's
-// identifier it replaced. meemoo SIP 1.2 links dc+schema.xml to the PREMIS
+// identifier it replaced. Meemoo SIP 1.2 links dc+schema.xml to the PREMIS
 // object by a shared UUID: the document carries the entity identifier, and
 // the producer's own identifier travels as a MEEMOO-LOCAL-ID object
 // identifier. The terms hold one identifier slot, so the producer's value
@@ -57,7 +57,7 @@ func (dcschema) Swap(d sip.Description, id string) string {
 }
 
 // Schemas lists the bundled XSD file names the dc+schema document points
-// at, plus what those import by relative path: meemoo's
+// at, plus what those import by relative path: Meemoo's
 // descriptive_basic.xsd imports dc.xsd, dcterms.xsd, edtf.xsd and
 // schema.xsd, and dcterms.xsd imports dcmitype.xsd. xml.xsd ships as
 // well, although every schema here that imports it names the absolute W3C
@@ -107,7 +107,7 @@ func elementName(key string) (string, error) {
 }
 
 // xsiType is the xsi:type the vocabulary declares for the key's element:
-// how the meemoo document types its EDTF dates ("" for untyped elements).
+// how the Meemoo document types its EDTF dates ("" for untyped elements).
 func xsiType(key string) string {
 	return vocabularyByKey[key].XSIType
 }

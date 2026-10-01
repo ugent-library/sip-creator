@@ -60,7 +60,7 @@ func TestRowsHappy(t *testing.T) {
 	}
 	got, ok := pkg.Description.(meemoo.Terms)
 	if !ok || len(got) != len(want) {
-		t.Fatalf("got %T with %d terms, want %d meemoo terms:\n%v", pkg.Description, len(got), len(want), pkg.Description)
+		t.Fatalf("got %T with %d terms, want %d Meemoo terms:\n%v", pkg.Description, len(got), len(want), pkg.Description)
 	}
 	for i, w := range want {
 		if got[i] != w {
@@ -69,7 +69,7 @@ func TestRowsHappy(t *testing.T) {
 	}
 }
 
-// Under the basic profile the rows are meemoo's: a language-tagged key
+// Under the basic profile the rows are Meemoo's: a language-tagged key
 // without a Dutch entry is a violation at check time, not only at build.
 func TestRowsCSVRequiresDutch(t *testing.T) {
 	_, err := readCSV(t, minimalCSV+"abstract[en],A photo album\n")
@@ -200,7 +200,7 @@ func TestRowsProfileDecidesTheVocabulary(t *testing.T) {
 	assertViolation(t, err, `unknown key "coverage"`)
 }
 
-// Under eark only the fifteen Simple DC elements are keys: meemoo's keys
+// Under eark only the fifteen Simple DC elements are keys: Meemoo's keys
 // are unknown there, at both levels.
 func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 	root := writeTree(t, map[string]string{

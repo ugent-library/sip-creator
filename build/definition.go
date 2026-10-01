@@ -20,8 +20,8 @@ type Definition struct {
 	// description it accepts. A definition without one is refused before
 	// any write.
 	Encoder DescriptionEncoder
-	// RequireSubmitterORID requires the submitting organization's meemoo
-	// OR-id, emitted as the agent's IDENTIFICATIONCODE note (meemoo SIP
+	// RequireSubmitterORID requires the submitting organization's Meemoo
+	// OR-id, emitted as the agent's IDENTIFICATIONCODE note (Meemoo SIP
 	// 1.2, metsHdr); WithSubmitter needs the OR-id when set.
 	RequireSubmitterORID bool
 	// DescriptiveName is the emitted filename of the descriptive document
@@ -65,8 +65,8 @@ func (d Definition) representationDeclaration(base sip.MetsDeclaration, typ stri
 // profile data: one profile serves every organization that submits with
 // it, so the profile packages omit the submitter and the organization
 // running the build adds it here.
-// RequireSubmitterORID decides its shape: meemoo requires the
-// organization's OR-id as an IDENTIFICATIONCODE note (meemoo SIP 1.2,
+// RequireSubmitterORID decides its shape: Meemoo requires the
+// organization's OR-id as an IDENTIFICATIONCODE note (Meemoo SIP 1.2,
 // metsHdr); plain E-ARK carries the name alone.
 func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 	if name == "" {
@@ -75,7 +75,7 @@ func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 	agent := sip.Agent{Role: "CREATOR", Type: "ORGANIZATION", Name: name}
 	if d.RequireSubmitterORID {
 		if orID == "" {
-			return Definition{}, fmt.Errorf("profile %q requires the submitting organization's meemoo OR-id", d.Name)
+			return Definition{}, fmt.Errorf("profile %q requires the submitting organization's Meemoo OR-id", d.Name)
 		}
 		agent.Note = orID
 		agent.NoteType = "IDENTIFICATIONCODE"

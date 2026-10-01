@@ -29,7 +29,7 @@ func TestEncode(t *testing.T) {
 		`<metadata xmlns="https://data.hetarchief.be/id/sip/1.2/basic"`,
 		"<dcterms:identifier>example-0001</dcterms:identifier>",
 		`<dcterms:title xml:lang="nl">Fotoalbum 2026</dcterms:title>`,
-		// the meemoo document types its dates as EDTF, as dc+schema does
+		// the Meemoo document types its dates as EDTF, as dc+schema does
 		`<dcterms:created xsi:type="edtf:EDTF-level1">1913</dcterms:created>`,
 		// operator values are arbitrary text and must be escaped
 		"<dcterms:subject xml:lang=\"nl\">R&amp;D &lt;scans&gt;</dcterms:subject>",
@@ -85,7 +85,7 @@ func TestValidateTerm(t *testing.T) {
 		{"valid schema.org key with lang", sip.Term{Key: "artform", Lang: "nl-BE", Value: "x"}, ""},
 		{"valid abstract", sip.Term{Key: "abstract", Value: "x"}, ""},
 		{"typo", sip.Term{Key: "titel", Value: "x"}, "unknown key"},
-		// a real DCMI term meemoo's profile excludes
+		// a real DCMI term Meemoo's profile excludes
 		{"dcterms outside the profile", sip.Term{Key: "accrualpolicy", Value: "x"}, "unknown key"},
 		// schema.org is not an open passthrough
 		{"schema outside the profile", sip.Term{Key: "duration", Value: "x"}, "unknown key"},
@@ -146,7 +146,7 @@ func TestTermsIdentifierSwap(t *testing.T) {
 	}
 }
 
-// Validate applies meemoo's own rules, not only term validity: the table's
+// Validate applies Meemoo's own rules, not only term validity: the table's
 // cardinality limits and a Dutch entry wherever a key is language-tagged,
 // with every finding reported at once and named by key.
 func TestTermsValidateAppliesMeemooRules(t *testing.T) {

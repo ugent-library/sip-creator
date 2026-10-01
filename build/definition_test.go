@@ -51,7 +51,7 @@ func identityRecord() earkmods.Record {
 	}
 }
 
-// meemooIdentityTerms is the same identity in meemoo's standard: short of
+// meemooIdentityTerms is the same identity in Meemoo's standard: short of
 // the four keys the basic profile requires.
 func meemooIdentityTerms() meemoo.Terms {
 	return meemoo.Terms{
@@ -60,8 +60,8 @@ func meemooIdentityTerms() meemoo.Terms {
 	}
 }
 
-// Cardinality and the Dutch-language rule belong to meemoo's standard, so
-// build.SourcePackage.Validate applies them to meemoo terms at both levels whatever
+// Cardinality and the Dutch-language rule belong to Meemoo's standard, so
+// build.SourcePackage.Validate applies them to Meemoo terms at both levels whatever
 // the profile, and never to Simple Dublin Core terms.
 func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {
 	_, in, _ := newTestBuilder(t, basicDef(t))
@@ -119,7 +119,7 @@ func TestWithSubmitterMeemoo(t *testing.T) {
 
 func TestWithSubmitterMeemooRequiresORID(t *testing.T) {
 	if _, err := basicDef(t).WithSubmitter("Example Organization", ""); err == nil {
-		t.Fatal("WithSubmitter() with empty OR-id on a meemoo profile: want error, got nil")
+		t.Fatal("WithSubmitter() with empty OR-id on a Meemoo profile: want error, got nil")
 	}
 }
 
@@ -135,7 +135,7 @@ func TestWithSubmitterEARK(t *testing.T) {
 		t.Fatal(`no "eark" definition registered`)
 	}
 
-	// The OR-id is a meemoo concept; a configured value is ignored here.
+	// The OR-id is a Meemoo concept; a configured value is ignored here.
 	got, err := def.WithSubmitter("Example Organization", "OR-a1b2c3d")
 	if err != nil {
 		t.Fatalf("WithSubmitter() error = %v", err)

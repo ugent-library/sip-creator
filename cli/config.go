@@ -15,12 +15,12 @@ import (
 type config struct {
 	// The submitting organization, stamped into every package's METS as a
 	// CREATOR agent. `create` requires NAME for every profile and OR_ID for
-	// meemoo profiles.
+	// Meemoo profiles.
 	Submitter struct {
 		// Name of the submitting organization, e.g. "Example Organization".
 		Name string `env:"NAME"`
-		// The organization's meemoo OR-id (its identifier in meemoo's
-		// organization register), e.g. "OR-a1b2c3d". Required for meemoo
+		// The organization's Meemoo OR-id (its identifier in Meemoo's
+		// organization register), e.g. "OR-a1b2c3d". Required for Meemoo
 		// profiles, where it becomes the agent's IDENTIFICATIONCODE note.
 		ORID string `env:"OR_ID"`
 	} `envPrefix:"SIP_SUBMITTER_"`

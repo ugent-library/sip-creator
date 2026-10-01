@@ -5,22 +5,22 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Definition is the basic profile: meemoo SIP 1.2's basic content profile
+// Definition is the basic profile: Meemoo SIP 1.2's basic content profile
 // on the E-ARK SIP profile of its era, writing dc+schema.xml from Terms.
 // The registry in profiles/ hands it out under the name "basic".
 var Definition = build.Definition{
 	Name:    "basic",
 	Encoder: dcschema{},
-	// meemoo identifies the submitting organization by its OR-id
-	// (meemoo SIP 1.2, metsHdr agent note).
+	// Meemoo identifies the submitting organization by its OR-id
+	// (Meemoo SIP 1.2, metsHdr agent note).
 	RequireSubmitterORID: true,
-	// The filename meemoo's basic profile expects for the descriptive
+	// The filename Meemoo's basic profile expects for the descriptive
 	// document.
 	DescriptiveName:          "dc+schema.xml",
 	EmitPackagePremis:        true,
 	EmitRepresentationPremis: true,
 	Declaration: sip.MetsDeclaration{
-		// meemoo SIP 1.2, the stable spec (docs/archive/meemoo-12.md):
+		// Meemoo SIP 1.2, the stable spec (docs/archive/meemoo-12.md):
 		// 1.2 requires the unversioned E-ARK SIP profile URL and the
 		// 1.2 profile URI as OTHERCONTENTINFORMATIONTYPE.
 		ProfileURL:                  "https://earksip.dilcis.eu/profile/E-ARK-SIP.xml",

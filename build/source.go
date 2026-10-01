@@ -47,7 +47,7 @@ type SourceRepresentation struct {
 	// Description optionally describes this version only: identity
 	// (identifier, title) is not required here; the package-level
 	// description carries the work's identity. Its concrete type must be
-	// the profile's descriptive standard (meemoo.Terms for meemoo
+	// the profile's descriptive standard (meemoo.Terms for Meemoo
 	// profiles, eark.Terms for eark, earkmods.Record for eark-mods) or,
 	// for the eark profiles, a DescriptiveDocument of that standard.
 	Description sip.Description
@@ -87,7 +87,7 @@ func (sr SourceRepresentation) resolvedType() string {
 // such as in a database, constructs them directly.
 //
 // Build takes ownership of the data: under a profile that swaps
-// identifiers, such as meemoo's, assembly writes the entity identifier
+// identifiers, such as Meemoo's, assembly writes the entity identifier
 // into the description.
 type SourcePackage struct {
 	// PackageIdentifier optionally supplies the package identifier instead
@@ -106,7 +106,7 @@ type SourcePackage struct {
 	ContentCategory string
 	// Description is the package-level descriptive metadata. Its concrete
 	// type must be the profile's descriptive standard (meemoo.Terms for
-	// meemoo profiles, eark.Terms for eark, earkmods.Record for eark-mods)
+	// Meemoo profiles, eark.Terms for eark, earkmods.Record for eark-mods)
 	// or, for the eark profiles, a DescriptiveDocument of that standard.
 	Description sip.Description
 	// Representations is the content, at least one.

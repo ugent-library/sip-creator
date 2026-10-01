@@ -1,7 +1,7 @@
 package meemoo
 
 // cardinality says how often a key may occur in one descriptive document.
-// meemoo counts lang-tagged elements per language: oncePerLanguage allows
+// Meemoo counts lang-tagged elements per language: oncePerLanguage allows
 // title[nl] plus title[en], but not two title[nl] rows. The zero value is
 // many so a key outside the table never trips a false repeat error.
 type cardinality int
@@ -13,21 +13,21 @@ const (
 )
 
 // vocabularyRow is one entry of the descriptive vocabulary. It holds
-// everything the tool knows about one key: the element it emits, meemoo's
+// everything the tool knows about one key: the element it emits, Meemoo's
 // cardinality limit, and the xsi:type the element carries.
 type vocabularyRow struct {
 	Key     string      // the key a term states, as the input specification lists it
 	Element string      // emitted element name
-	Repeat  cardinality // meemoo basic profile cardinality
+	Repeat  cardinality // Meemoo basic profile cardinality
 	XSIType string      // xsi:type on the emitted element; "" for none
 }
 
 // vocabulary is the closed set of supported descriptive keys: the
-// elements of meemoo's SIP 1.2 basic content profile that fit a single
+// elements of Meemoo's SIP 1.2 basic content profile that fit a single
 // key,value row, in the input specification's table order. This table is
 // the metadata model: validation and the template both read from it
 // (ADR-0011), and the element name a key emits is known nowhere else. The
-// Repeat column is meemoo's upper cardinality limit, enforced by Validate.
+// Repeat column is Meemoo's upper cardinality limit, enforced by Validate.
 // Which keys a package-level description must state is the required list
 // below, enforced by ValidateRequired.
 var vocabulary = []vocabularyRow{
@@ -57,8 +57,8 @@ var vocabulary = []vocabularyRow{
 }
 
 // required lists the keys a package-level description must state:
-// meemoo's basic content profile requires an identifier, a title, a
-// description and a creation date (meemoo SIP 1.2, basic profile). The
+// Meemoo's basic content profile requires an identifier, a title, a
+// description and a creation date (Meemoo SIP 1.2, basic profile). The
 // first two are also the identity every package states whatever the
 // profile (input specification §3): the identifier is what the swap
 // overwrites and lifts onto the entity as MEEMOO-LOCAL-ID, the title the
