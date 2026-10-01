@@ -13,11 +13,13 @@ func init() {
 	rootCmd.AddCommand(checkCmd)
 }
 
-// checkCmd validates a folder against every input rule without building
-// anything. It needs no configuration: input rules are independent of
-// installation settings (ADR-0010). It does take the profile, because the
-// profile says which vocabulary description.csv is in; a folder checks
-// out for the profile it will be built with.
+// checkCmd validates a folder against the rules the input reader enforces,
+// without building anything. The checks that only a build runs on file
+// contents (received PREMIS documents, the characterization report against
+// the files) happen in create. It needs no configuration: input rules are
+// independent of installation settings (ADR-0010). It does take the
+// profile, because the profile says which vocabulary description.csv is
+// in; a folder checks out for the profile it will be built with.
 var checkCmd = &cobra.Command{
 	Use:          "check [src]",
 	Short:        "Check an input folder against the input specification without building",

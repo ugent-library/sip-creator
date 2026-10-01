@@ -30,7 +30,8 @@ type Package struct {
 	ReceivedPremisFiles []*File
 	// MetsFile is the node for the generated package METS.
 	MetsFile *File
-	// SchemaFiles are the bundled XSDs, copied into schemas/.
+	// SchemaFiles are the bundled XSDs this package ships, copied into
+	// schemas/.
 	SchemaFiles []*File
 	// DocumentationFiles document the whole package.
 	DocumentationFiles []*File

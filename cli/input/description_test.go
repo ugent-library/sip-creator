@@ -26,7 +26,7 @@ func readCSV(t *testing.T, csv string) (*build.SourcePackage, error) {
 
 func TestRowsHappy(t *testing.T) {
 	// BOM, CRLF, RFC 4180 quoting, repeated keys, [lang] tags, a
-	// capitalized key, and the schema.org keys, all in one file.
+	// capitalized key, and a schema.org key, all in one file.
 	csv := "\ufeffkey,value\r\n" +
 		"identifier,BIB.FA.2026.001\r\n" +
 		"Title[nl],Fotoalbum Gent 1913\r\n" +

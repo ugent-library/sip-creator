@@ -65,8 +65,8 @@ func TestWriteMetadataTruncatesOnRewrite(t *testing.T) {
 	write("a much longer first run of content")
 	info := write("short")
 
-	// A re-run must replace the file, not append to it (the O_APPEND defect
-	// in the old profile primitives).
+	// A re-run must replace the file, not append to it: an earlier version
+	// of the writer opened files with O_APPEND.
 	if got := readFile(t, filepath.Join(root, "METS.xml")); got != "short" {
 		t.Errorf("file content after rewrite = %q, want %q", got, "short")
 	}

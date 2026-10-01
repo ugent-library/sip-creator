@@ -66,8 +66,9 @@ func TestRegistrySchemas(t *testing.T) {
 }
 
 // sampleDescriptions holds one description per profile that its encoder
-// renders; Encode validates nothing, so an empty one is enough to render
-// the document's root.
+// renders; Encode does not run Validate, and an empty description has no
+// key for the template to refuse, so it is enough to render the
+// document's root.
 var sampleDescriptions = map[string]sip.Description{
 	"basic":     meemoo.Terms{},
 	"eark":      eark.Terms{},

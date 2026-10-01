@@ -8,8 +8,10 @@ import (
 // Entity is one intellectual entity: the work the package describes. A
 // package has one; sub-entities are not modeled.
 type Entity struct {
-	// Identifier identifies the entity in PREMIS and the emitted
-	// descriptive document (uuid-<uuid>).
+	// Identifier identifies the entity (uuid-<uuid>). It appears in the
+	// package PREMIS document and, under a profile that swaps identifiers,
+	// in the descriptive document; under a profile with neither, the
+	// package does not carry it.
 	Identifier string
 	// AdditionalIdentifiers are extra PREMIS object identifiers, keyed by
 	// type, e.g. MEEMOO-LOCAL-ID.

@@ -86,8 +86,10 @@ func DecodeSiegfried(r io.Reader) (Report, error) {
 			rec.Format = &sip.Format{FormatRegistry: fr}
 			rec.Mime = m.Mime
 		}
-		// sf records paths as invoked (possibly ./-prefixed, backslashed
-		// on Windows); consumers look up input-relative slash paths.
+		// sf records paths as invoked (possibly ./-prefixed); consumers
+		// look up input-relative slash paths. ToSlash turns backslashes
+		// into slashes only when the tool runs on Windows, so a report
+		// generated on Windows matches no file elsewhere.
 		report[path.Clean(filepath.ToSlash(f.Filename))] = rec
 	}
 	return report, nil

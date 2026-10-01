@@ -18,8 +18,8 @@ import (
 var Schemas = []string{"mets1_12.xsd", "xlink.xsd", "DILCISExtensionMETS.xsd", "DILCISExtensionSIPMETS.xsd"}
 
 // identifier mints a fresh uuid-<uuid> METS ID. The templates mint shared
-// IDs ($fileGrpID, $SCHEMAID, $DOCID) once, up front, so the fileSec and
-// the structMap that points at it carry the same value.
+// IDs ($fileGrpID, $docGrpID, $SCHEMAID, $DOCID) once, up front, so the
+// fileSec and the structMap that points at it carry the same value.
 func identifier() string {
 	return fmt.Sprintf("uuid-%s", uuid.NewV4().String())
 }

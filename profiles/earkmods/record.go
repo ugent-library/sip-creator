@@ -18,8 +18,8 @@ import (
 // Record is the descriptive metadata of one bibliographic record in MODS
 // 3.7: what the record states about the work, field by field, and the
 // physical copies of it. It is what a package describes; a representation
-// describes a version of the same content and carries no items. Validate
-// holds the rules on what a record may say.
+// describes a version of the same content. Validate holds the rules on
+// what a record may say.
 type Record struct {
 	// Identifier is the record's local identifier, the catalogue number
 	// the describing institution finds it by (at UGent Library an Alma
@@ -30,8 +30,9 @@ type Record struct {
 	// order given. A title's language is emitted as xml:lang.
 	Titles []Title
 	// Items are the physical copies of the record, one per copy. Items
-	// describe the package level only (ADR-0015): a copy is never a
-	// representation, so a representation's record carries none.
+	// belong on the package-level record (ADR-0015): a copy is never a
+	// representation. Nothing refuses items on a representation's record;
+	// they are written to that representation's mods.xml.
 	Items []Item
 }
 

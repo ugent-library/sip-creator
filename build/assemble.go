@@ -43,9 +43,10 @@ func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {
 	b.logger.Info("created an intellectual entity", slog.String("id", e.Identifier))
 
 	b.assembleDescriptive(e, source)
-	// The package ships the XSDs its documents point at and nothing else:
-	// what the METS documents reference, and what the descriptive document
-	// references. Each encoder knows its own list.
+	// The package ships the XSDs the METS documents point at and those the
+	// descriptive encoder lists. Each encoder knows its own list. The
+	// descriptive list ships for a supplied document too, whatever that
+	// document's own schema-location hint names.
 	schemaFiles, err := schemaFileNodes(slices.Concat(mets.Schemas, b.profile.Encoder.Schemas()))
 	if err != nil {
 		return nil, fmt.Errorf("profile %q: %w", b.profile.Name, err)
@@ -103,7 +104,7 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, source *SourcePackage) {
 	df := sip.NewFile()
 	df.Name = b.profile.DescriptiveName
 	df.Path = "metadata/descriptive/" + df.Name
-	df.Mime = "text/xml" // generated XML
+	df.Mime = "text/xml" // rendered, or supplied and read as XML
 	e.DescriptionFile = df
 	b.logger.Info("created a descriptive file", slog.String("id", df.Identifier))
 }
@@ -131,8 +132,8 @@ func schemaFileNodes(names []string) ([]*sip.File, error) {
 }
 
 // assembleDocumentationNodes declares graph nodes for documentation files
-// (package and representation level alike), Path relative to the container's
-// documentation/ dir. Unlike essence, documentation needs no characterization
+// (package and representation level alike), each Path relative to its
+// container and under documentation/. Unlike essence, documentation needs no characterization
 // entry (ADR-0009), but a present entry's checksum must match: a mismatch
 // proves the report stale.
 func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars characterization.Report) ([]*sip.File, error) {
@@ -190,7 +191,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 			df := sip.NewFile()
 			df.Name = b.profile.DescriptiveName
 			df.Path = "metadata/descriptive/" + df.Name // rep-relative, per File.Path
-			df.Mime = "text/xml"                        // generated XML
+			df.Mime = "text/xml"                        // rendered, or supplied and read as XML
 			r.DescriptionFile = df
 			b.logger.Info("created a representation descriptive file", slog.String("id", df.Identifier))
 		}
@@ -256,8 +257,8 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 
 // assembleReceivedPremis declares graph nodes for received preservation
 // documents: copied as received, never parsed or merged,
-// but each must actually be a premis:premis document (well-formed, PREMIS 3
-// namespace), because packaging a non-PREMIS file under
+// but each must actually be a premis:premis document (parses as XML,
+// PREMIS 3 namespace), because packaging a non-PREMIS file under
 // metadata/preservation/ would be a false preservation claim. The check
 // applies to every producer, so it lives here, not in the CLI walker alone.
 func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile) ([]*sip.File, error) {

@@ -30,9 +30,10 @@ type DescriptionEncoder interface {
 	Encode(w io.Writer, d sip.Description, schemasDir string) error
 	// Schemas lists the bundled XSD file names the encoded document points
 	// at, plus what those import by relative path. The package ships them
-	// under schemas/ next to the ones the METS documents point at, and
-	// nothing else: an XSD no document references is noise to whoever
-	// reads the package later.
+	// under schemas/ next to the ones the METS documents point at, also
+	// when the description is a supplied document. List nothing else: an
+	// XSD no document references is noise to whoever reads the package
+	// later.
 	Schemas() []string
 }
 

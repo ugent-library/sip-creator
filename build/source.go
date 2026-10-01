@@ -20,7 +20,7 @@ type SourceFile struct {
 	// characterization report is supplied.
 	Key string
 	// Path is the logical path relative to the file's container
-	// (representation data/, documentation/), slash-separated.
+	// (representation data/, documentation/, premis/), slash-separated.
 	Path string
 }
 

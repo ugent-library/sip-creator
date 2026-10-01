@@ -29,8 +29,8 @@ func newLogger() *slog.Logger {
 // Run executes the CLI: it loads .env when present, reads the environment
 // config, and dispatches the root command.
 func Run() {
-	// .env is optional configuration: a missing file is fine (all vars are
-	// optional), a malformed one is an error.
+	// .env is optional: a missing file is fine, a malformed one is an
+	// error. Each command checks the variables it needs.
 	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
 		cobra.CheckErr(err)
 	}

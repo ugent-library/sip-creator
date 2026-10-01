@@ -1,7 +1,7 @@
 // Package xmldoc is the one XML reader the tool has. It reads a whole
 // document and returns its root element, so the checks on documents the
 // tool did not write (received PREMIS files, supplied descriptive
-// documents) share one notion of "well-formed XML with this root".
+// documents) share one notion of "parses as XML, with this root".
 // Deliberately not schema validation, which stays external (ADR-0003);
 // the reader only keeps the tool from packaging something that is not an
 // XML document of the expected kind at all.
@@ -14,10 +14,12 @@ import (
 	"io"
 )
 
-// Root reads r to its end, requiring well-formed XML, and returns the
-// document's root element with its attributes. Input that holds no
-// element at all is "not an XML document"; input that breaks anywhere
-// after its first element is "not well-formed XML".
+// Root reads r to its end and returns the document's first element, the
+// root, with its attributes. It refuses what encoding/xml refuses: bad
+// syntax and unclosed or mismatched tags, reported as "not well-formed
+// XML", and input that holds no element at all, reported as "not an XML
+// document". encoding/xml does not refuse a second top-level element or
+// text after the root, so neither does Root.
 func Root(r io.Reader) (xml.StartElement, error) {
 	dec := xml.NewDecoder(r)
 

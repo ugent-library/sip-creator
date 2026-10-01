@@ -107,7 +107,7 @@ func (d *directory) read() *build.SourcePackage {
 		// With a representations/ folder, all content lives inside it;
 		// only the reserved names may sit beside it.
 		for _, e := range content {
-			d.violate("%s: content must live inside representations/ when that folder exists (only documentation/ and premis/ may sit beside it)", e.Name())
+			d.violate("%s: content must live inside representations/ when that folder exists (only the reserved names of the input specification may sit beside it)", e.Name())
 		}
 		source.Representations = d.readRepresentations(repsDir)
 		if repsCSV != "" {
@@ -241,7 +241,7 @@ func (d *directory) collectFiles(dir string) []build.SourceFile {
 // collectPremisFiles collects a premis/ folder (package- or
 // representation-level, same rule both places) and flags the one
 // transport-level premis rule: premis.xml belongs to the generated
-// document. Content conformance (well-formed premis:premis) is
+// document. Content conformance (a premis:premis document) is
 // deliberately left to assembly.
 func (d *directory) collectPremisFiles(dir string) []build.SourceFile {
 	files := d.collectFiles(dir)

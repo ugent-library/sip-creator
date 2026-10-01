@@ -531,7 +531,7 @@ func TestSourcePackageValidate(t *testing.T) {
 	}
 
 	if err := valid(t).Validate(); err != nil {
-		t.Fatalf("valid config rejected: %v", err)
+		t.Fatalf("valid source package rejected: %v", err)
 	}
 }
 
@@ -661,10 +661,10 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	}
 }
 
-// The eark profile types each representation METS by its label, in both the
-// TYPE and the CONTENTINFORMATIONTYPE pair; the basic profile keeps the
-// profile declaration unchanged; the package declaration never changes
-// (ADR-0013).
+// The eark profile types each representation METS by its resolved type,
+// in both the TYPE and the CONTENTINFORMATIONTYPE pair; the basic profile
+// keeps the profile declaration unchanged; the package declaration never
+// changes (ADR-0013).
 func TestAssembleRepresentationDeclaration(t *testing.T) {
 	b, in, _ := newTestBuilder(t, earkDef(t))
 	in.Description = identityTerms()
@@ -840,12 +840,12 @@ func TestAssemblePackageIdentifier(t *testing.T) {
 
 // Build refuses invalid input data before any side effect: the negative
 // twin of the embedding-caller contract.
-func TestBuildInvalidConfigWritesNothing(t *testing.T) {
+func TestBuildInvalidSourceWritesNothing(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.Representations = nil
 
 	if _, err := b.Build(in); err == nil {
-		t.Fatal("Build succeeded on an invalid config")
+		t.Fatal("Build succeeded on an invalid source package")
 	}
 	requireEmpty(t, outDir)
 }
@@ -936,7 +936,7 @@ func TestNewRefusesDefinitionWithoutEncoder(t *testing.T) {
 
 // Build enforces what each standard requires of a package-level
 // description. Identity-only terms build a complete eark package; under
-// basic they are refused, and a missing identity is refused under either
+// basic they are refused, and a missing identity is refused under every
 // profile, all before any side effect.
 func TestBuildRequiredPerStandard(t *testing.T) {
 	b, in, _ := newTestBuilder(t, earkDef(t))

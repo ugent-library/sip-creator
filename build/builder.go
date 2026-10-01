@@ -13,7 +13,8 @@ import (
 // is not configuration; it arrives per build as a SourcePackage.
 type Config struct {
 	// Profile is the definition every package this builder makes is built
-	// to: a registered definition, completed with WithSubmitter. It must
+	// to: a profile package's Definition or the caller's own (ADR-0022),
+	// with the submitting organization added by WithSubmitter. It must
 	// name a descriptive encoder.
 	Profile Definition
 	// Destination is the directory packages are created under.
@@ -36,7 +37,7 @@ type Builder struct {
 // safe.
 func New(config *Config) (*Builder, error) {
 	if config.Profile.Encoder == nil {
-		return nil, fmt.Errorf("profile %q names no descriptive encoder; use a registered definition", config.Profile.Name)
+		return nil, fmt.Errorf("profile %q names no descriptive encoder; set the definition's Encoder", config.Profile.Name)
 	}
 	return &Builder{
 		profile:     config.Profile,

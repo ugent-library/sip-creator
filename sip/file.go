@@ -10,7 +10,8 @@ import (
 type File struct {
 	// Identifier identifies the file in METS and PREMIS (uuid-<uuid>).
 	Identifier string
-	// Name is the file's basename, emitted as premis:originalName.
+	// Name is the file's basename; for essence, emitted as
+	// premis:originalName.
 	Name string
 	// Checksum, Size, and Created describe the file as written into the
 	// package; the writer back-fills them as the file lands.

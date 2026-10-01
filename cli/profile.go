@@ -13,8 +13,8 @@ import (
 
 // addProfileFlag declares the required --profile flag on cmd. check and
 // create share it: the profile says which vocabulary the folder's
-// description.csv is in, so both read the folder the same way, and check
-// reports exactly what create would.
+// description.csv is in, so both read the folder the same way and report
+// the same input violations.
 func addProfileFlag(cmd *cobra.Command) {
 	cmd.Flags().String("profile", "", "Profile of the SIP (one of: "+strings.Join(profiles.Names(), ", ")+")")
 	_ = cmd.MarkFlagRequired("profile") // only fails for an undeclared flag

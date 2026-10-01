@@ -15,7 +15,7 @@ import (
 // DescriptiveDocumentChecker, the two eark profiles. The basic profile takes none:
 // meemoo's document must carry the entity identifier the build mints, and
 // the tool does not edit XML. The tool checks what the package's integrity
-// needs and nothing more: the file is well-formed XML (Validate) whose root
+// needs and nothing more: the file parses as XML (Validate) and its root
 // element is the profile's standard (the engine reads the root, the
 // profile's CheckDescriptiveDocument judges it). The writer copies the file with the
 // store's streamed copy, fixity computed on the way, as it copies essence.
@@ -29,8 +29,8 @@ type DescriptiveDocument struct {
 var _ sip.Description = DescriptiveDocument{}
 
 // Validate reports why the file is not a document at all: unreadable, or
-// not well-formed XML. Which root element it must have is the profile's
-// rule, checked through its DescriptiveDocumentChecker.
+// not parsable as XML (xmldoc.Root). Which root element it must have is
+// the profile's rule, checked through its DescriptiveDocumentChecker.
 func (d DescriptiveDocument) Validate() error {
 	_, err := d.Root()
 	return err
@@ -41,10 +41,10 @@ func (d DescriptiveDocument) Validate() error {
 // document must state is its schema's business, not the tool's.
 func (DescriptiveDocument) ValidateRequired() error { return nil }
 
-// Root reads the whole file, requiring well-formed XML, and returns its
-// root element for the profile's check of the standard. The file is read
-// again when the writer copies it: descriptive documents are small, and
-// reading twice keeps the type a plain value with nothing cached.
+// Root reads the whole file with xmldoc.Root and returns its root
+// element for the profile's check of the standard. A build reads the
+// file once per check and once more to copy it: descriptive documents are
+// small, and rereading keeps the type a plain value with nothing cached.
 func (d DescriptiveDocument) Root() (xml.StartElement, error) {
 	f, err := os.Open(d.Source)
 	if err != nil {
