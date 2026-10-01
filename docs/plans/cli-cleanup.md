@@ -1,6 +1,6 @@
 # Plan: cleaning up the cli package
 
-*Status: **in progress** (2026-10-01). Phase 1.1 to 1.4 done, 1.5 parked; Phase 2 done (2.2 dropped); Phase 3 done (3.2 and 3.3 dropped).*
+*Status: **in progress** (2026-10-01). Phase 1.1 to 1.4 done, 1.5 parked; Phase 2 done (2.2 dropped); Phase 3 done (3.2 and 3.3 dropped); Phase 4 started with the folder walker and the folder naming (4.1).*
 
 This plan collects a review of `cli/` and `cli/input/` (including
 `cli/input/vocabulary/`) into small, separate steps. None of the steps changes a
@@ -13,13 +13,13 @@ CLI reports or the stream they go to; those are called out per step.
 
 `cli/input` is about 750 lines of non-test code with one job: read a folder into a
 `build.SourcePackage` and collect every problem found on the way. Every file in it
-shares the `*directory` value (the problem list and the display paths). Splitting it
+shares the `*folderWalker` value (the problem list and the display paths). Splitting it
 into packages per component (folder walk, description.csv, representations.csv)
 would mean exporting that collector and the path helper, which adds API surface
 without making the code clearer.
 
-The better move is to make the two CSV decoders pure functions that take an
-`io.Reader` and return values plus errors (Phase 2). That makes them testable without
+The better move is to make the two CSV decoders pure functions that take the file's
+content and return values plus errors (Phase 2). That makes them testable without
 a folder on disk, and if a separate package is ever wanted, the pure parsers can move
 without further changes.
 
@@ -29,20 +29,20 @@ Small changes that fix behavior an operator can see.
 
 ### 1.1 `check` no longer reads configuration
 
-`Run()` loads `.env` and parses the environment config before any command runs
+*Done (2026-10-01).* `Run()` loads `.env` and parses the environment config before any command runs
 ([cli.go](../../cli/cli.go)). A malformed `.env` therefore makes `sip-creator check`
 fail, although [ADR-0010](../decisions/0010-config-over-self-describing-input.md)
 says check needs no configuration. Load `.env` and the config in `create` only.
 
 ### 1.2 Logs go to stderr
 
-`newLogger` writes to `os.Stdout`. Anyone who pipes `create`, or reads the `OK: …`
+*Done (2026-10-01).* `newLogger` writes to `os.Stdout`. Anyone who pipes `create`, or reads the `OK: …`
 line `check` prints to stdout from a script, gets log lines mixed in. Write logs to
 `os.Stderr`.
 
 ### 1.3 One way to print violations
 
-`check` prints one line per violation plus a count; `create` wraps the joined list in
+*Done (2026-10-01).* `check` prints one line per violation plus a count; `create` wraps the joined list in
 `input folder … does not conform to the input specification:`. Add one
 `reportViolations(cmd, src, err) error` and use it in both commands. This changes what
 `create` prints for a bad folder.
@@ -62,21 +62,22 @@ Construct the zipper only when `--no-zip` is not set. Rename `flagStatus` to
 
 ### 1.5 Later, if wanted: no globals
 
-`cfg`, `logger` and `rootCmd` are package globals and commands register in `init()`.
-A `newRootCmd(cfg *config, logger *slog.Logger) *cobra.Command` would let tests run a
-command in-process with their own config. Worth doing once tests for 1.4's flag rules
+`logger` and `rootCmd` are package globals and commands register in `init()` (the
+config stopped being one in 1.1: `create` loads it). A
+`newRootCmd(logger *slog.Logger) *cobra.Command` would let tests run a command
+in-process. Worth doing once tests for 1.4's flag rules
 are wanted; not before.
 
 ## Phase 2: pure CSV parsers
 
 *Done (2026-10-01), except 2.2, which was dropped.*
 
-### 2.1 Parse description.csv without `*directory`
+### 2.1 Parse description.csv without the folder walker
 
 *Done.* `decodeDescription` ([description.go](../../cli/input/description.go)) handled
 CSV syntax, called the vocabulary, ran `Validate`/`ValidateRequired`, and mapped
 errors back to lines. `parseKey` took a file name and line only to report through
-`d.violate`. Now the folder reader only reads the file (`os.ReadFile`); everything
+`violate`. Now the folder walker only reads the file (`os.ReadFile`); everything
 about its content, encoding included, belongs to the parser:
 
 ```go
@@ -97,7 +98,7 @@ handles one shape instead of two. After 2.1 that loop is a three-case switch wit
 comment explaining both shapes; a helper would move the same logic out of sight
 without making it simpler.
 
-### 2.3 Parse representations.csv without `*directory`
+### 2.3 Parse representations.csv without the folder walker
 
 *Done.* Same split for representations.csv
 ([representations.go](../../cli/input/representations.go)):
@@ -110,12 +111,12 @@ func parseRepresentationsHeader(header []string) (repColumns, error)
 A header can have several problems at once; they are joined into the one error, and
 the decoder reports each. Row findings are an unexported `*rowError{line}`;
 `StatementError` stays the vocabularies' type. Matching rows to folders
-(`applyRepresentations`) stays on `directory`, because it needs the folders read.
+(`applyRepresentations`) stays on the folder walker, because it needs the folders read.
 
 ### 2.4 Tests
 
 *Done.* The syntax cases call the parsers with a byte slice. The folder tests keep
-what needs a folder: matching rows to directories, the vocabulary, and how findings
+what needs a folder: matching rows to representation folders, the vocabulary, and how findings
 are reported with the file name and line, plus a test that content that is not UTF-8
 is one violation.
 
@@ -124,7 +125,7 @@ is one violation.
 ### 3.1 One check for the kind of a reserved name
 
 *Done (2026-10-01), without the table first proposed.* `read()` and
-`readRepresentation()` in [directory.go](../../cli/input/directory.go) wrote out the
+`readRepresentation()` in [walker.go](../../cli/input/walker.go) wrote out the
 same "X is a folder; the reserved name is for …" check nine times. Each `case` now
 calls `expectFile(e, src, holds)` or `expectFolder(e, src, holds)`, which hold the two
 messages once.
@@ -153,21 +154,43 @@ methods; embedding would hide where the methods come from. The question of what
 
 ## Phase 4: names
 
-One commit per file or concept, so each diff is easy to read.
+### 4.1 The folder walker, and folder for the input
+
+*Done (2026-10-01).* Three changes that came out of the question what to call the
+`directory` struct, whose name clashed with `expectFolder` and the messages, which say
+"folder":
+
+- **`input.Read(root, vocabulary)` replaces `Reader` and `New`.** `Reader` held only the
+  vocabulary and both callers used it once, on the next line; it was a layer with no
+  job.
+- **The per-read state is a `folderWalker`** in [walker.go](../../cli/input/walker.go),
+  receiver `w`: it walks one input folder into a `build.SourcePackage`, collecting
+  every violation on the way, and `Read` makes one per call. Rejected names: `folder`
+  (the thing walked, not the walk), `reader` (reads as `io.Reader`), `walk` and
+  `inspection` (too short or too abstract). A struct stays, rather than parameters or
+  returned findings, because nearly every function needs the root and the findings
+  list.
+- **Folder for the input, directory for the package.** The representations.csv column
+  is `folder` (a file with a `directory` header is refused; the project is not in use
+  yet), and the input side says "folder" throughout. "Directory" stays for the package
+  the tool writes and for fixed terms. The rule is in CLAUDE.md.
+
+### 4.2 Remaining names
+
+Weigh each row before doing it, as with 3.1 to 3.3: a rename that makes a reader stop
+and look twice is not worth a diff. One commit per file or concept.
 
 | Now | Problem | New name |
 |---|---|---|
-| `directory` | A read in progress with collected problems, not a directory | `folder` |
-| `d.violate(...)` | Reads as if the code is breaking a rule | `d.addViolation(...)` |
-| `d.rel(p)` | Returns "the input folder" for the root: a display name, not a relative path | `d.display(p)` |
+| `w.violate(...)` | Reads as if the code is breaking a rule | `w.addViolation(...)` |
+| `w.rel(p)` | Returns "the input folder" for the root: a display name, not a relative path | `w.display(p)` |
 | `description, document, repsDir, repsCSV` in `read()` | Paths named like the things they point at | `descriptionPath`, `documentPath`, `representationsDir`, `representationsCSV` |
 | `description(rows, document string, packageLevel bool)` | `rows` is a path; the bool is unclear at the call site | `rowsPath`, `documentPath`; a level type or two wrappers |
-| `m := d.read()` in `Read` | Left over from an older name | `source` |
 | `name := e.Name()` in `readRepresentation` | Shadows the `name` parameter | `entry := e.Name()` |
 | `CheckDocument`, `checkDocument` | CLAUDE.md: a function returning an explanatory error is `Validate…` | `ValidateDocumentRoot` |
 | `DocumentVocabulary` | Not a vocabulary; it says the profile accepts a finished document | `SuppliedDocument` |
 | `decodeRepresentations`, `applyRepresentations` | Don't say they are about representations.csv | `parseRepresentationsCSV`, `orderByRepresentationsCSV` |
-| `repRow.kind`, `repRow.dir` | `kind` stands in for `type`; `dir` is short | `typ`, `directory` |
+| `repRow.kind` | `kind` stands in for `type` | `typ` |
 | `placement.repeat cardinality`, `placement.lang` | `repeat` holds a count rule; `lang` is a yes/no | `occurs`, `takesLang` |
 | `decodeSidecar`, `sidecarName` | The file is the Siegfried report | `decodeCharacterization`, `siegfriedName` |
 | `def` in `create` and `resolveProfile` | Too short for a central value | `definition` |
@@ -180,26 +203,18 @@ CLAUDE.md ("System shape", step 1) and `sip-creator-design.md` in the same commi
 Apply the CLAUDE.md rules ("comment the thing, not its callers"; as short as it can
 be). Do this per file, together with or right after that file's Phase 4 renames.
 
-- `Reader` ([package.go](../../cli/input/package.go)) talks about `check` and
-  `create`. Proposed: *"Reader reads input folders under one profile's vocabulary and
-  reports the library's own rules with file and line."*
 - `checkCmd` ([check_cmd.go](../../cli/check_cmd.go)): seven lines down to two:
   *"checkCmd validates an input folder without building. Checks on file contents
   (received PREMIS, the characterization report) run only in create."*
-- `decodeDescription`: the paragraph on who decides what goes away with Phase 2; one
-  sentence per parser.
 - `readDir`: keep the three rules (symbolic links, OS files, names that collide after
   NFC) and "os.ReadDir sorts by name, so traversal order is stable". Drop the mention
   of `scripts/reference-diff.sh`, which names a caller.
 - `Vocabulary.Description` (9 lines), `DocumentVocabulary` (8) and `EarkMods` (11):
-  describe only the contract, not what the reader does with it.
-- "(collect-all)" in directory.go and representations.go: write "so later problems in
-  the folder are still reported".
-- `New validates nothing: Read refuses a nil vocabulary.`: remove the nil check (a nil
-  interface panics on first use, which is fine for a programming error), or move it
-  into `New` with an error return. Either way the comment goes.
+  describe only the contract, not what `Read` does with it. The same goes for the
+  other comments that still say "the reader" for the reading code.
+- "(collect-all)" in walker.go: write "so later problems in the folder are still
+  reported".
 - `vocabulary.go`: rewrap the overlong line in the `checkDocument` comment.
-- `directory` struct: drop the sentence that repeats the `document` field's comment.
 
 ## Phase 6: small cleanups
 
@@ -207,19 +222,15 @@ be). Do this per file, together with or right after that file's Phase 4 renames.
   the root, and if they did they would put an absolute path in `Key`. Remove them.
 - Use `errors.AsType` in `description.go`, as `check_cmd.go` does.
 - Test files: `builder_test.go` tests that a Go-built source package matches the
-  folder; rename it `source_package_test.go`. Move the `TestRepresentationCSV…` tests
-  out of `description_test.go` into `representations_test.go`, and the one test in
-  `directory_test.go` into `read_test.go`.
+  folder; rename it `source_package_test.go`. The `TestRepresentationCSV…` tests in
+  `description_test.go` test a representation's own description.csv, not
+  representations.csv: rename them `TestRepresentationDescription…`. Move the one test
+  in `walker_test.go` into `read_test.go`.
 
 ## Order
 
-1. Phase 1.1 to 1.3: small and visible to operators.
-2. Phase 2: the largest gain in readability and testing.
-3. Phase 3.
-4. Phases 4 and 5 together, file by file.
-5. Phase 6 at any point.
-
-Phase 1.4 can go anywhere; 1.5 only when someone wants tests for the CLI flags.
+Phases 1 to 3 and 4.1 are done. What is left: 4.2 and 5 together, file by file, and
+Phase 6 at any point; 1.5 only when someone wants tests for the CLI flags.
 
 ## When this plan ships
 
