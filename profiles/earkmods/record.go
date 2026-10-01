@@ -131,10 +131,9 @@ func (r Record) Validate() error {
 }
 
 // ValidateRequired reports what a package-level record must state and
-// this one does not: an identifier, the record's catalogue number, which
-// the eark profiles keep in the document as the value operators search by
-// (ADR-0012), and a title, the one name every consumer shows. A
-// representation's record need not state them.
+// this one does not: an identifier and a title, as every profile requires
+// (input specification §3). A representation's record need not state
+// them.
 func (r Record) ValidateRequired() error {
 	var errs []error
 	if r.Identifier == "" {
