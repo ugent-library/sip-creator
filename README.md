@@ -278,11 +278,11 @@ XML with the root element the profile expects, and copies it as it is.
 
 #### `representations.csv`
 
-Gives each representation folder a display label and a type. `directory` is required; an
+Gives each representation folder a display label and a type. `folder` is required; an
 empty `label` means the folder name, an empty `type` means the label:
 
 ```csv
-directory,label,type
+folder,label,type
 master,Master scan (TIFF),archival
 access,Access copy (JPEG),access
 ```

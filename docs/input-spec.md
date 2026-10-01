@@ -62,13 +62,13 @@ A *representation* is one version of the content: the archival master scans are 
 A folder name makes a good machine name but not always a good display name or type. An optional `representations.csv` at the top level, next to `description.csv`, gives each representation a label (its human-readable name in the generated metadata) and a type (what an ingest system such as RODA shows as the representation's kind):
 
 ```csv
-directory,label,type
+folder,label,type
 master,Master scan (TIFF),archival
 access,Access copy (PDF),access
 ```
 
-- MUST be UTF-8 with a header row naming its columns. The accepted columns, in any order, are `directory` (required), `label`, and `type` (each optional; header matching is case-insensitive, so a spreadsheet's `Directory` works too). An unknown or repeated column name MUST be an error: a typo must not silently drop a column. A UTF-8 BOM, CRLF line endings, and RFC 4180 quoting are accepted, as for `description.csv`.
-- `directory` names a folder directly under `representations/` by its bare name (`master`, not a path). Every row MUST match an existing folder, no two rows may name the same folder, and every folder MUST have a row. A folder without a row is an error, never an exclusion: silently dropping content from the package is the one thing this file must never cause. To leave material out, move it out of the input folder.
+- MUST be UTF-8 with a header row naming its columns. The accepted columns, in any order, are `folder` (required), `label`, and `type` (each optional; header matching is case-insensitive, so a spreadsheet's `Folder` works too). An unknown or repeated column name MUST be an error: a typo must not silently drop a column. A UTF-8 BOM, CRLF line endings, and RFC 4180 quoting are accepted, as for `description.csv`.
+- `folder` names a folder directly under `representations/` by its bare name (`master`, not a path). Every row MUST match an existing folder, no two rows may name the same folder, and every folder MUST have a row. A folder without a row is an error, never an exclusion: silently dropping content from the package is the one thing this file must never cause. To leave material out, move it out of the input folder.
 - An empty `label` cell means the folder name; an empty `type` cell means the label. A file listing only folder names changes nothing about the output.
 - `label` and `type` values are emitted into the package's XML verbatim, so the characters `< > & "` MUST be an error.
 - The rows' order is the order the representations take in the package.

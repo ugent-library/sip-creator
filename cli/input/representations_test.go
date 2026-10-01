@@ -18,7 +18,7 @@ func twoRepTree() map[string]string {
 
 func TestRepresentationsCSV(t *testing.T) {
 	tree := twoRepTree()
-	tree["representations.csv"] = "directory,label,type\nmaster,Master scan,archival\naccess,,\n"
+	tree["representations.csv"] = "folder,label,type\nmaster,Master scan,archival\naccess,,\n"
 	root := writeTree(t, tree)
 
 	pkg, err := Read(root, meemooVocab{})
@@ -30,7 +30,7 @@ func TestRepresentationsCSV(t *testing.T) {
 	}
 
 	// Row order becomes packaging order: master listed first wins over the
-	// lexical directory order that put access first.
+	// lexical folder order that put access first.
 	master, access := pkg.Representations[0], pkg.Representations[1]
 	if master.Name != "master" || access.Name != "access" {
 		t.Fatalf("order = %q, %q; want the CSV row order master, access", master.Name, access.Name)
@@ -47,16 +47,16 @@ func TestRepresentationsCSV(t *testing.T) {
 
 // Columns are found by name: reordered, capitalized (spreadsheet tools
 // capitalize) and left out are all fine. The BOM spreadsheet tools write
-// must not hide the header, and spaces around a directory are dropped.
+// must not hide the header, and spaces around a folder name are dropped.
 func TestParseRepresentationRows(t *testing.T) {
-	data := "\ufeffType,Directory\narchival, master \naccess-copy,access\n"
+	data := "\ufeffType,Folder\narchival, master \naccess-copy,access\n"
 	rows, errs, err := parseRepresentationRows([]byte(data))
 	if err != nil || len(errs) > 0 {
 		t.Fatalf("parseRepresentationRows: err %v, findings %v", err, errs)
 	}
 	want := []repRow{
-		{line: 2, dir: "master", kind: "archival"},
-		{line: 3, dir: "access", kind: "access-copy"},
+		{line: 2, folder: "master", kind: "archival"},
+		{line: 3, folder: "access", kind: "access-copy"},
 	}
 	if len(rows) != len(want) {
 		t.Fatalf("got %d rows, want %d: %+v", len(rows), len(want), rows)
@@ -77,10 +77,10 @@ func TestParseRepresentationRowsUnusableFile(t *testing.T) {
 		want []string // substrings of the joined error
 	}{
 		{"empty file", "", []string{"the file is empty"}},
-		{"not utf-8", "directory\n\xff\n", []string{"not valid UTF-8"}},
-		{"unknown column", "directory,colour\nmaster,red\n", []string{`unknown column "colour"`}},
-		{"no directory column", "label,type\na,b\n", []string{"no directory column"}},
-		{"duplicate column", "directory,directory\nmaster,master\n", []string{`column "directory" twice`}},
+		{"not utf-8", "folder\n\xff\n", []string{"not valid UTF-8"}},
+		{"unknown column", "folder,colour\nmaster,red\n", []string{`unknown column "colour"`}},
+		{"no folder column", "label,type\na,b\n", []string{"no folder column"}},
+		{"duplicate column", "folder,folder\nmaster,master\n", []string{`column "folder" twice`}},
 		{"every header problem", "colour,label,label\na,b,c\n", []string{`unknown column "colour"`, `column "label" twice`}},
 	}
 	for _, tt := range tests {
@@ -106,13 +106,13 @@ func TestParseRepresentationRowsFindings(t *testing.T) {
 		want     string // substring of the finding
 		wantRows int    // rows still returned
 	}{
-		{"row width", "directory,label\nmaster\n", 2, "expected 2 columns", 0},
-		{"empty directory cell", "directory,label\n ,Master scan\n", 2, "directory cell is empty", 0},
-		// A row with a bad value is kept, so matching it to a directory
+		{"row width", "folder,label\nmaster\n", 2, "expected 2 columns", 0},
+		{"empty folder cell", "folder,label\n ,Master scan\n", 2, "folder cell is empty", 0},
+		// A row with a bad value is kept, so matching it to a folder
 		// still reports on it.
-		{"xml-unsafe label", "directory,label\nmaster,\"Master \"\"scan\"\"\"\n", 2, "label:", 1},
-		{"xml-unsafe type", "directory,type\nmaster,a&b\n", 2, "type:", 1},
-		{"broken quote", "directory,label\nmaster,\"open\n", 0, "extraneous or missing", 0},
+		{"xml-unsafe label", "folder,label\nmaster,\"Master \"\"scan\"\"\"\n", 2, "label:", 1},
+		{"xml-unsafe type", "folder,type\nmaster,a&b\n", 2, "type:", 1},
+		{"broken quote", "folder,label\nmaster,\"open\n", 0, "extraneous or missing", 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -141,12 +141,12 @@ func TestRepresentationsCSVViolations(t *testing.T) {
 		csv  string
 		want string
 	}{
-		{"unknown header column", "directory,colour,directory\nmaster,red,x\naccess,blue,y\n", `representations.csv: unknown column "colour"`},
-		{"duplicate header column", "directory,colour,directory\nmaster,red,x\naccess,blue,y\n", `representations.csv: the header names column "directory" twice`},
-		{"row finding at its line", "directory,label\n,Master scan\naccess,\n", "representations.csv line 2: the directory cell is empty"},
-		{"no data rows", "directory,label,type\n", "no rows"},
-		{"unmatched row", "directory\nmaster\naccess\npreservation\n", "no directory representations/preservation"},
-		{"duplicate directory row", "directory\nmaster\naccess\nmaster\n", "already has a row"},
+		{"unknown header column", "folder,colour,folder\nmaster,red,x\naccess,blue,y\n", `representations.csv: unknown column "colour"`},
+		{"duplicate header column", "folder,colour,folder\nmaster,red,x\naccess,blue,y\n", `representations.csv: the header names column "folder" twice`},
+		{"row finding at its line", "folder,label\n,Master scan\naccess,\n", "representations.csv line 2: the folder cell is empty"},
+		{"no data rows", "folder,label,type\n", "no rows"},
+		{"unmatched row", "folder\nmaster\naccess\npreservation\n", "no folder representations/preservation"},
+		{"duplicate folder row", "folder\nmaster\naccess\nmaster\n", "already has a row"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -158,9 +158,9 @@ func TestRepresentationsCSVViolations(t *testing.T) {
 	}
 }
 
-func TestRepresentationsCSVUncoveredDirectory(t *testing.T) {
+func TestRepresentationsCSVUncoveredFolder(t *testing.T) {
 	tree := twoRepTree()
-	tree["representations.csv"] = "directory\nmaster\n"
+	tree["representations.csv"] = "folder\nmaster\n"
 	_, err := Read(writeTree(t, tree), meemooVocab{})
 	assertViolation(t, err, "representations/access is not listed")
 }
@@ -169,7 +169,7 @@ func TestRepresentationsCSVRequiresRepresentationsFolder(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv":     minimalCSV,
 		"scan.tiff":           "a",
-		"representations.csv": "directory\nx\n",
+		"representations.csv": "folder\nx\n",
 	})
 	_, err := Read(root, meemooVocab{})
 	assertViolation(t, err, "requires a representations/ folder")
@@ -182,16 +182,16 @@ func TestRepresentationsCSVMustBeAFile(t *testing.T) {
 	assertViolation(t, err, "representations.csv is a folder")
 }
 
-// A Directory-only CSV listing every directory in lexical order is a no-op:
-// the read result equals the no-CSV read.
-func TestRepresentationsCSVDirectoryOnlyIsANoop(t *testing.T) {
+// A CSV with only the folder column, listing every folder in lexical
+// order, is a no-op: the read result equals the no-CSV read.
+func TestRepresentationsCSVFolderOnlyIsANoop(t *testing.T) {
 	plain, err := Read(writeTree(t, twoRepTree()), meemooVocab{})
 	if err != nil {
 		t.Fatalf("Read without CSV: %v", err)
 	}
 
 	tree := twoRepTree()
-	tree["representations.csv"] = "directory\naccess\nmaster\n"
+	tree["representations.csv"] = "folder\naccess\nmaster\n"
 	withCSV, err := Read(writeTree(t, tree), meemooVocab{})
 	if err != nil {
 		t.Fatalf("Read with CSV: %v", err)
