@@ -23,8 +23,9 @@ var (
 	}
 )
 
+// newLogger logs to stderr, so stdout carries only a command's output.
 func newLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(os.Stdout, nil))
+	return slog.New(slog.NewTextHandler(os.Stderr, nil))
 }
 
 // Run executes the CLI. Configuration is read by the commands that need
