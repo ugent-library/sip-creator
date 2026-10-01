@@ -126,8 +126,8 @@ import (
 )
 
 def, _ := profiles.Get("eark")
-// The second argument is the meemoo OR-id: required by meemoo profiles,
-// ignored by plain E-ARK ones.
+// The second argument is the meemoo OR-id: required by the basic
+// profile, ignored by the plain E-ARK ones.
 def, err := def.WithSubmitter("Universiteitsbibliotheek Gent", "")
 if err != nil {
 	// ...
@@ -215,7 +215,7 @@ pkg, err := builder.Build(&build.SourcePackage{
 
 A record richer than the fields, or one that already exists as a document, travels as a
 supplied file. The two eark profiles accept a `build.DescriptiveDocument` in place of terms or a
-record, copy it into the package as it is after checking that it is well-formed XML with
+record, copy it into the package as it is after checking that it parses as XML with
 the standard's root element (`simpledc` for `eark`, `mods:mods` declaring version 3.7 for
 `eark-mods`), and leave its validity against the schema to the validators downstream. The
 `basic` profile takes terms only, because meemoo's document must carry the entity
@@ -232,12 +232,20 @@ pkg, err := builder.Build(&build.SourcePackage{
 
 The three profiles above are reference implementations of one route, and the engine
 imports none of them. An institution with its own descriptive standard writes a package
-that exports three things: a description type implementing `sip.Description` (its
-`Validate` and `ValidateRequired` are the rules of your standard), an encoder implementing
-`build.DescriptionEncoder` (the type check, the document written from a `text/template`,
-the bundled XSDs the document points at), and a `build.Definition` naming the encoder, the
-document's file name and the METS values (`sip.MetsDeclaration`: profile URL, content
-typing, `MDTYPE`). Hand that definition to `build.New` as above. The registry in `profiles/`
+with three parts:
+
+* a description type implementing `sip.Description`, whose `Validate` and
+  `ValidateRequired` are the rules of your standard;
+* an encoder implementing `build.DescriptionEncoder`: the type check, the code that
+  writes the document (the profiles here use `text/template`), and the list of XSDs
+  the document points at;
+* an exported `build.Definition` naming the encoder, the document's file name and the
+  METS values (`sip.MetsDeclaration`: profile URL, content typing, `MDTYPE`). The
+  encoder type itself can stay unexported.
+
+Hand that definition to `build.New` as above. The XSDs an encoder lists must be ones
+this repository bundles in `schemas/`: the build refuses any other name, so a standard
+whose schema is not bundled needs its XSD added there first. The registry in `profiles/`
 is the CLI's list of what `--profile` can name; a library caller's package need not join
 it. Where your profile would decide an attribute value for the caller, make it a typed
 constant set the caller picks from, so two callers making the same choice emit the same
@@ -256,13 +264,13 @@ representation's type; empty means the `Label`.
 
 What `Type` does depends on the profile:
 
-* The **eark profile** declares each representation's resolved type in that
+* The **eark and eark-mods profiles** declare each representation's resolved type in that
   representation's METS content typing (`TYPE="Other"` with `csip:OTHERTYPE`,
   and `csip:CONTENTINFORMATIONTYPE="OTHER"` with
   `csip:OTHERCONTENTINFORMATIONTYPE`). Ingest systems read one of those pairs
   as the representation's type: RODA v5.7.0 and later shows the value in the
   Type column of the AIP's representations.
-* The **meemoo profiles ignore `Type`**: meemoo SIP 1.2 fixes every METS
+* The **basic profile ignores `Type`**: meemoo SIP 1.2 fixes every METS
   content typing to `OTHER` plus the profile URI
   (`https://data.hetarchief.be/id/sip/1.2/basic`), so the spec leaves no
   attribute for a producer-chosen type. `Label` still becomes `mets/@LABEL`.
@@ -316,7 +324,9 @@ come from meemoo's closed vocabulary of Dublin Core terms plus two schema.org
 properties; under `eark` they are the fifteen Simple Dublin Core elements; under
 `eark-mods` they are the MODS keys, `identifier` and `title` (the tables are in the
 [input specification](docs/input-spec.md)). Repeat a key for multiple values, and tag
-a value's language in square brackets where it matters:
+a value's language in square brackets where it matters. This example is for `basic`:
+`created`, `spatial` and `extent` are meemoo keys, and `eark` refuses them as unknown
+(its Simple Dublin Core elements are `date`, `coverage` and `format`):
 
 ```csv
 key,value
@@ -341,7 +351,7 @@ Under `eark` and `eark-mods` a finished document can stand in for the rows: `dc.
 `simpledc` document) or `mods.xml` (a `mods:mods` document declaring version 3.7), at the
 top level or inside a representation folder, one or the other per level. This is the
 route for a record the flat rows cannot say, such as a MODS record with its physical
-copies. The tool checks that the file is well-formed XML with that root element and
+copies. The tool checks that the file parses as XML with that root element and
 copies it into the package as it is; validity against the schema stays with the
 validators downstream. Under `basic` there is no document route, because meemoo's
 document must carry the identifier the tool mints.
@@ -386,7 +396,7 @@ In short:
 Validate a folder without building anything (no configuration needed):
 
 ```
-./bin/sip-creator check ./your-input
+./bin/sip-creator check --profile eark ./your-input
 ```
 
 It reports every violation at once, in plain language.
@@ -401,7 +411,7 @@ from `.env.example`). All environment variables are documented in
 
 Every package's METS names the organization submitting it, so `SIP_SUBMITTER_NAME` is
 required for **every** profile — including `eark`, which builds with the name alone.
-Meemoo profiles (`basic`) additionally require `SIP_SUBMITTER_OR_ID` — the organization's
+The meemoo profile (`basic`) additionally requires `SIP_SUBMITTER_OR_ID` — the organization's
 identifier in [Meemoo's organization register](https://developer.meemoo.be/) — which is
 emitted as the agent's `IDENTIFICATIONCODE` note (Meemoo SIP 1.2); other profiles ignore
 it. A build refuses to run when a value its profile requires is missing, rather than
