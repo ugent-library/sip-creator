@@ -47,14 +47,14 @@ func (simpledc) CheckDescriptiveDocument(root xml.StartElement) error {
 // Encode writes d, which is Terms since Check ran before anything else, as
 // a Simple Dublin Core document (the dc_SimpleDC20021212 shape RODA
 // renders and indexes natively): one unqualified element per term, order
-// preserved, language tags omitted. schemas is the relative path from the
-// document to the package's schemas/ dir. The terms must be valid:
+// preserved, language tags omitted. schemasDir is the path of the package's
+// schemas/ directory relative to the document. The terms must be valid:
 // Terms.Validate is the contract, run by the engine before any write, and
 // Encode does not repeat it. The document is rendered in memory first, so
 // a refused term writes nothing.
-func (simpledc) Encode(w io.Writer, d sip.Description, schemas string) error {
+func (simpledc) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
-	if err := simpledcTemplate.ExecuteTemplate(&buf, "simpledc", termsDoc{d.(Terms), schemas}); err != nil {
+	if err := simpledcTemplate.ExecuteTemplate(&buf, "simpledc", termsDoc{d.(Terms), schemasDir}); err != nil {
 		return err
 	}
 	_, err := w.Write(buf.Bytes())
@@ -77,7 +77,7 @@ var simpledcTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 }).Parse(`
 {{ define "simpledc" -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<simpledc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{{ .Schemas }}/dc.xsd">
+<simpledc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{{ .SchemasDir }}/dc.xsd">
 {{- range .Terms }}
   <{{ el .Key }}>{{ esc .Value }}</{{ el .Key }}>
 {{- end }}
@@ -85,12 +85,11 @@ var simpledcTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 {{ end }}
 `))
 
-// termsDoc is one descriptive document to render: the terms plus the
-// relative path from the document's location to the package's bundled
-// schemas/ dir.
+// termsDoc is one descriptive document to render: the terms plus the path
+// of the package's schemas/ directory relative to the document.
 type termsDoc struct {
-	Terms   Terms
-	Schemas string
+	Terms      Terms
+	SchemasDir string
 }
 
 // elementName is the element a key emits (in Simple Dublin Core, the key

@@ -22,10 +22,12 @@ type DescriptionEncoder interface {
 	// any write, and guarantees the type assertions the encoder's other
 	// methods make.
 	Check(d sip.Description) error
-	// Encode writes d as the profile's descriptive document. schemas is
-	// the relative path from the document being written to the package's
-	// schemas/ dir; only the writer knows where a document lands.
-	Encode(w io.Writer, d sip.Description, schemas string) error
+	// Encode writes d as the profile's descriptive document. schemasDir is
+	// the path of the package's schemas/ directory relative to the document
+	// being written, for the document's schema-location hint; only the
+	// writer knows where a document lands. Which XSD file the hint names is
+	// the encoder's own, and Schemas lists it.
+	Encode(w io.Writer, d sip.Description, schemasDir string) error
 	// Schemas lists the bundled XSD file names the encoded document points
 	// at, plus what those import by relative path. The package ships them
 	// under schemas/ next to the ones the METS documents point at, and

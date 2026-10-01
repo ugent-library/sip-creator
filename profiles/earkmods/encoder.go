@@ -59,14 +59,14 @@ func (mods) CheckDescriptiveDocument(root xml.StartElement) error {
 
 // Encode writes d, which is Record since Check ran before anything else, as
 // a MODS 3.7 document: the identifier when the record states one, the
-// titles in the order given, then the items as one location. schemas is
-// the relative path from the document to the package's schemas/ dir. The
-// record must be valid: Record.Validate is the contract, run by the engine
-// before any write, and Encode does not repeat it. The document is
+// titles in the order given, then the items as one location. schemasDir is
+// the path of the package's schemas/ directory relative to the document.
+// The record must be valid: Record.Validate is the contract, run by the
+// engine before any write, and Encode does not repeat it. The document is
 // rendered in memory first, so a failed render writes nothing.
-func (mods) Encode(w io.Writer, d sip.Description, schemas string) error {
+func (mods) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
-	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemas, localIdentifierType, namespace, version}); err != nil {
+	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemasDir, localIdentifierType, namespace, version}); err != nil {
 		return err
 	}
 	_, err := w.Write(buf.Bytes())
@@ -100,7 +100,7 @@ var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 }).Parse(`
 {{ define "mods" -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<mods:mods xmlns:mods="{{ .Namespace }}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="{{ .Version }}" xsi:schemaLocation="{{ .Namespace }} {{ .Schemas }}/mods-3-7.xsd">
+<mods:mods xmlns:mods="{{ .Namespace }}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="{{ .Version }}" xsi:schemaLocation="{{ .Namespace }} {{ .SchemasDir }}/mods-3-7.xsd">
 {{- with .Record.Identifier }}
   <mods:identifier type="{{ $.IdentifierType }}">{{ esc . }}</mods:identifier>
 {{- end }}
@@ -130,13 +130,13 @@ var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 {{ end }}
 `))
 
-// recordDoc is one MODS document to render: the record, the relative path
-// from the document's location to the package's bundled schemas/ dir, the
-// type attribute the identifier carries, and the namespace and version
-// the root declares.
+// recordDoc is one MODS document to render: the record, the path of the
+// package's schemas/ directory relative to the document, the type
+// attribute the identifier carries, and the namespace and version the
+// root declares.
 type recordDoc struct {
 	Record         Record
-	Schemas        string
+	SchemasDir     string
 	IdentifierType string
 	Namespace      string
 	Version        string

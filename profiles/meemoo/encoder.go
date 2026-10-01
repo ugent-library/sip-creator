@@ -34,13 +34,13 @@ func (dcschema) Check(d sip.Description) error {
 
 // Encode writes d, which is Terms since Check ran before anything else, as
 // meemoo's dc+schema document: one element per term, order preserved.
-// schemas is the relative path from the document to the package's
-// schemas/ dir. The terms must be valid: Terms.Validate is the contract,
+// schemasDir is the path of the package's schemas/ directory relative to
+// the document. The terms must be valid: Terms.Validate is the contract,
 // run by the engine before any write, and Encode does not repeat it. The
 // document is rendered in memory first, so a refused term writes nothing.
-func (dcschema) Encode(w io.Writer, d sip.Description, schemas string) error {
+func (dcschema) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
-	if err := termsTemplate.ExecuteTemplate(&buf, "dcschema", termsDoc{d.(Terms), schemas}); err != nil {
+	if err := termsTemplate.ExecuteTemplate(&buf, "dcschema", termsDoc{d.(Terms), schemasDir}); err != nil {
 		return err
 	}
 	_, err := w.Write(buf.Bytes())
@@ -83,7 +83,7 @@ var termsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:edtf="http://id.loc.gov/datatypes/edtf/"
   xmlns:schema="https://schema.org/"
-  xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic {{ .Schemas }}/descriptive_basic.xsd">
+  xsi:schemaLocation="https://data.hetarchief.be/id/sip/1.2/basic {{ .SchemasDir }}/descriptive_basic.xsd">
 {{- range .Terms }}
   <{{ el .Key }}{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}{{ with xsitype .Key }} xsi:type="{{ . }}"{{ end }}>{{ esc .Value }}</{{ el .Key }}>
 {{- end }}
@@ -91,12 +91,11 @@ var termsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 {{ end }}
 `))
 
-// termsDoc is one descriptive document to render: the terms plus the
-// relative path from the document's location to the package's bundled
-// schemas/ dir.
+// termsDoc is one descriptive document to render: the terms plus the path
+// of the package's schemas/ directory relative to the document.
 type termsDoc struct {
-	Terms   Terms
-	Schemas string
+	Terms      Terms
+	SchemasDir string
 }
 
 // elementName is the element a key emits, and the template's one guard:

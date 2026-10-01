@@ -11,14 +11,14 @@ import (
 	"github.com/ugent-library/sip-creator/store"
 )
 
-// The package's schemas/ dir as seen from a descriptive document, which the
-// encoders write into their schema-location hints: from a package-level
-// document (metadata/descriptive/*.xml) and from a representation-level one
-// (representations/<name>/metadata/descriptive/*.xml). Only the writer knows
-// where a document lands, so the paths live here.
+// The path of the package's schemas/ directory relative to a descriptive
+// document, which the encoders write into their schema-location hints: from
+// a package-level document (metadata/descriptive/*.xml) and from a
+// representation-level one (representations/<name>/metadata/descriptive/*.xml).
+// Only the writer knows where a document lands, so the paths live here.
 const (
-	packageSchemas        = "../../schemas"
-	representationSchemas = "../../../../schemas"
+	schemasDirFromPackage        = "../../schemas"
+	schemasDirFromRepresentation = "../../../../schemas"
 )
 
 // write emits pkg to disk in dependency order, back-filling fixity on File
@@ -40,7 +40,7 @@ func (b *Builder) write(st *store.Store, pkg *sip.Package) error {
 	if err := b.writeEssence(st, pkg); err != nil {
 		return err
 	}
-	if err := b.writeDescription(st, "", pkg.Root.DescriptionFile, pkg.Root.Description, packageSchemas); err != nil {
+	if err := b.writeDescription(st, "", pkg.Root.DescriptionFile, pkg.Root.Description, schemasDirFromPackage); err != nil {
 		return err
 	}
 	if err := b.writeRepresentationMetadata(st, pkg); err != nil {
@@ -127,17 +127,17 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 // for a representation), and back-fills the node with the fixity of the
 // bytes written. A supplied document is copied as it is with the store's
 // streamed copy, fixity computed on the way as for essence; a model is
-// rendered by the profile's encoder. schemas is the relative path from the
-// document to the package's schemas/ dir, which only a rendered document
-// uses; a supplied one keeps its own schema-location hint.
-func (b *Builder) writeDescription(st *store.Store, base string, df *sip.File, d sip.Description, schemas string) error {
+// rendered by the profile's encoder. schemasDir is the path of the package's
+// schemas/ directory relative to the document, which only a rendered
+// document uses; a supplied one keeps its own schema-location hint.
+func (b *Builder) writeDescription(st *store.Store, base string, df *sip.File, d sip.Description, schemasDir string) error {
 	var info store.Info
 	var err error
 	if doc, ok := d.(DescriptiveDocument); ok {
 		info, err = st.CopyFile(doc.Source, base+df.Path)
 	} else {
 		info, err = st.WriteMetadata(base+df.Path, func(w io.Writer) error {
-			return b.profile.Encoder.Encode(w, d, schemas)
+			return b.profile.Encoder.Encode(w, d, schemasDir)
 		})
 	}
 	if err != nil {
@@ -156,7 +156,7 @@ func (b *Builder) writeRepresentationMetadata(st *store.Store, pkg *sip.Package)
 			if err := st.MkdirAll(base + "metadata/descriptive"); err != nil {
 				return err
 			}
-			if err := b.writeDescription(st, base, df, r.Description, representationSchemas); err != nil {
+			if err := b.writeDescription(st, base, df, r.Description, schemasDirFromRepresentation); err != nil {
 				return err
 			}
 		}
