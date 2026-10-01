@@ -120,16 +120,22 @@ type SourcePackage struct {
 	Characterization characterization.Report
 }
 
-// nameRx is the POSIX portable filename character set: a name satisfying
-// it is usable verbatim as a directory name, zip entry, METS href, and
-// OBJID on any filesystem, with no percent-encoding machinery.
+// nameRx is the POSIX portable filename character set: a name in it,
+// other than . and .., is usable verbatim as a directory name, zip entry,
+// METS href, and OBJID on any filesystem, with no percent-encoding
+// machinery.
 var nameRx = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 
 // ValidateRepresentationName returns why a representation name cannot be
-// used: empty, or characters outside the portable set.
+// used: empty, characters outside the portable set, or . or .., which name
+// the representations/ directory itself or the package root rather than a
+// directory inside it.
 func ValidateRepresentationName(name string) error {
 	if !nameRx.MatchString(name) {
 		return fmt.Errorf("representation name %q may only contain letters, digits, and . _ -", name)
+	}
+	if name == "." || name == ".." {
+		return fmt.Errorf("representation name %q names a directory outside representations/; choose another name", name)
 	}
 	return nil
 }

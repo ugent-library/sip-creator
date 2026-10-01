@@ -485,6 +485,8 @@ func TestSourcePackageValidate(t *testing.T) {
 		}, "title is required"},
 		{"no representations", func(c *build.SourcePackage) { c.Representations = nil }, "at least one version"},
 		{"bad name", func(c *build.SourcePackage) { c.Representations[0].Name = "master copy" }, "may only contain"},
+		{"dot name", func(c *build.SourcePackage) { c.Representations[0].Name = "." }, "outside representations/"},
+		{"dot-dot name", func(c *build.SourcePackage) { c.Representations[0].Name = ".." }, "outside representations/"},
 		{"xml-unsafe label", func(c *build.SourcePackage) { c.Representations[0].Label = `Master "scan"` }, "cannot be emitted"},
 		{"xml-unsafe type", func(c *build.SourcePackage) { c.Representations[0].Type = "a<b" }, "cannot be emitted"},
 		{"duplicate label", func(c *build.SourcePackage) {
