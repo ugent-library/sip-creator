@@ -1,6 +1,6 @@
 # Plan: cleaning up the cli package
 
-*Status: **in progress** (2026-10-01). Phase 1.1 to 1.4 done, 1.5 parked; Phase 2 done (2.2 dropped); Phase 3 done (3.2 and 3.3 dropped); Phase 4 started with the folder walker and the folder naming (4.1).*
+*Status: **in progress** (2026-10-01). Phase 1.1 to 1.4 done, 1.5 parked; Phase 2 done (2.2 dropped); Phase 3 done (3.2 and 3.3 dropped); Phase 4 done (4.1, and 4.2 with most rows dropped).*
 
 This plan collects a review of `cli/` and `cli/input/` (including
 `cli/input/vocabulary/`) into small, separate steps. None of the steps changes a
@@ -177,31 +177,50 @@ methods; embedding would hide where the methods come from. The question of what
 
 ### 4.2 Remaining names
 
-Weigh each row before doing it, as with 3.1 to 3.3: a rename that makes a reader stop
-and look twice is not worth a diff. One commit per file or concept.
+*Done (2026-10-01): three rows done, one moved to `docs/TODO.md`, the rest dropped.*
+Each row was weighed before any diff, as with 3.1 to 3.3: a rename that makes a reader
+stop and look twice is not worth doing.
 
-| Now | Problem | New name |
-|---|---|---|
-| `w.violate(...)` | Reads as if the code is breaking a rule | `w.addViolation(...)` |
-| `w.rel(p)` | Returns "the input folder" for the root: a display name, not a relative path | `w.display(p)` |
-| `description, document, repsDir, repsCSV` in `read()` | Paths named like the things they point at | `descriptionPath`, `documentPath`, `representationsDir`, `representationsCSV` |
-| `description(rows, document string, packageLevel bool)` | `rows` is a path; the bool is unclear at the call site | `rowsPath`, `documentPath`; a level type or two wrappers |
-| `name := e.Name()` in `readRepresentation` | Shadows the `name` parameter | `entry := e.Name()` |
-| `CheckDocument`, `checkDocument` | CLAUDE.md: a function returning an explanatory error is `Validate…` | `ValidateDocumentRoot` |
-| `DocumentVocabulary` | Not a vocabulary; it says the profile accepts a finished document | `SuppliedDocument` |
-| `decodeRepresentations`, `applyRepresentations` | Don't say they are about representations.csv | `parseRepresentationsCSV`, `orderByRepresentationsCSV` |
-| `repRow.kind` | `kind` stands in for `type` | `typ` |
-| `placement.repeat cardinality`, `placement.lang` | `repeat` holds a count rule; `lang` is a yes/no | `occurs`, `takesLang` |
-| `decodeSidecar`, `sidecarName` | The file is the Siegfried report | `decodeCharacterization`, `siegfriedName` |
-| `def` in `create` and `resolveProfile` | Too short for a central value | `definition` |
+Done:
 
-Renaming the exported `DocumentVocabulary` and `CheckDocument` means updating
-CLAUDE.md ("System shape", step 1) and `sip-creator-design.md` in the same commit.
+- **Path variables.** `description`, `document`, `repsDir`, `repsCSV` in `read()` and
+  `readRepresentation()`, and the `rows`, `document` parameters of `description(...)`,
+  held paths but read like the things they point at, next to `source.Description` and
+  the `description` method. Now `descriptionPath`, `documentPath`,
+  `representationsPath`, `representationsCSVPath` and `rowsPath`. The `packageLevel`
+  bool stays: two call sites, each in a function whose level is obvious.
+- **`name` shadowing in `readRepresentation`.** The parameter is now `repName`, so the
+  loop's `name := e.Name()` no longer hides it. Go's `shadow` analyzer found no other
+  case where one name means two things; the remaining reports are the ordinary
+  `if err := …; err != nil` pattern.
+- **`placement.lang`, `placement.repeat`** in `earkmods.go` are `takesLang` and
+  `occurs`: `!key.lang` read like a language value next to `s.Lang`.
+
+Moved to `docs/TODO.md`:
+
+- **`CheckDocument` → `Validate…`.** CLAUDE.md's naming rule applies, but
+  `CheckDocument` passes through to the library's `CheckDescriptiveDocument`, which
+  breaks the same rule. Renaming only the CLI side would leave a `Validate` calling a
+  `Check`; renaming both changes the library's API.
+
+Dropped:
+
+- **`violate` → `addViolation`, `rel` → `display`:** about 80 call sites for little
+  gain; one call shows what each does.
+- **`DocumentVocabulary` → `SuppliedDocument`:** reads as the document itself, next to
+  `build.DescriptiveDocument`. The wider question of what to call the vocabularies is
+  in `docs/TODO.md`.
+- **`decodeRepresentations`, `applyRepresentations`:** they live in
+  `representations.go`, and `parse…` now names the pure parsers.
+- **`repRow.kind` → `typ`:** `kind` is the usual stand-in for the keyword `type`.
+- **`decodeSidecar`, `sidecarName`:** "sidecar" is the project's word for the
+  report (ADR-0009, CLAUDE.md, the README).
+- **`def` → `definition`:** clear in context.
 
 ## Phase 5: comments
 
 Apply the CLAUDE.md rules ("comment the thing, not its callers"; as short as it can
-be). Do this per file, together with or right after that file's Phase 4 renames.
+be). Do this per file.
 
 - `checkCmd` ([check_cmd.go](../../cli/check_cmd.go)): seven lines down to two:
   *"checkCmd validates an input folder without building. Checks on file contents
@@ -229,8 +248,8 @@ be). Do this per file, together with or right after that file's Phase 4 renames.
 
 ## Order
 
-Phases 1 to 3 and 4.1 are done. What is left: 4.2 and 5 together, file by file, and
-Phase 6 at any point; 1.5 only when someone wants tests for the CLI flags.
+Phases 1 to 4 are done. What is left: Phase 5 file by file, Phase 6 at any point;
+1.5 only when someone wants tests for the CLI flags.
 
 ## When this plan ships
 
