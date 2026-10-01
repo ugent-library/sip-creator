@@ -413,9 +413,9 @@ the command-line tool does (see [Format characterization](#format-characterizati
 
 ### Bringing your own profile
 
-The three profiles above are reference implementations of one route, and the engine
-imports none of them. An institution with its own descriptive standard writes a package
-with three parts:
+The three profiles above are written the same way a profile of your own would be, and
+the engine imports none of them. An institution with its own descriptive standard writes
+a Go package with three parts:
 
 * a description type implementing `sip.Description`, whose `Validate` and
   `ValidateRequired` are the rules of your standard;
@@ -428,11 +428,14 @@ with three parts:
 
 Hand that definition to `build.New` as above. The XSDs an encoder lists must be ones
 this repository bundles in `schemas/`: the build refuses any other name, so a standard
-whose schema is not bundled needs its XSD added there first. The registry in `profiles/`
-is the CLI's list of what `--profile` can name; a library caller's package need not join
-it. When your profile has a value the caller should choose, such as the `type` of a MODS
-identifier, offer a fixed set of typed constants rather than free text, so two callers
-making the same choice write the same document (ADR-0022).
+whose schema is not bundled needs its XSD added there first. Your package does not need
+to be added to the registry in `profiles/`: the registry only lists the names `--profile`
+accepts on the command line, and `build.New` takes any definition.
+
+When your profile leaves a value to the program that builds the description, such as the
+`type` of a MODS identifier, offer a fixed set of typed constants rather than free text.
+Two programs that make the same choice then write the same value into the document
+(ADR-0022).
 
 ## Contributing
 
