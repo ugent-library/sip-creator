@@ -58,7 +58,7 @@ const (
 const validPremis = `<?xml version="1.0"?><premis:premis xmlns:premis="http://www.loc.gov/premis/v3" version="3.0"><premis:event/></premis:premis>`
 
 // writeTree builds an input folder from slash paths: a key ending in "/"
-// creates an empty directory, anything else a file with the given content.
+// creates an empty folder, anything else a file with the given content.
 func writeTree(t *testing.T, files map[string]string) string {
 	t.Helper()
 	root := t.TempDir()
@@ -134,7 +134,7 @@ func TestReadFlat(t *testing.T) {
 		t.Errorf("flat name = %q, want the folder name %q", rep.Name, filepath.Base(root))
 	}
 
-	// Deterministic traversal order (lexical per directory); the order
+	// Deterministic traversal order (lexical per folder); the order
 	// carries no semantics, but it must be stable run to run.
 	want := []string{"0001.tiff", "0002.tiff", "0010.tiff", "sub/0003.tiff"}
 	got := paths(rep.Files)

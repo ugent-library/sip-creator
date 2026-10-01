@@ -135,7 +135,7 @@ library underneath. It reads the submitting organization from the environment.
 
 ### Creating a package
 
-Assuming you have data in a `./your-input` directory (prepared as described under
+Assuming you have data in a `./your-input` folder (prepared as described under
 [Input folder](#input-folder)) which you want to convert into a SIP package stored in a
 `sip-out` directory (with the submitting organization set, see
 [Configuration](#configuration)):

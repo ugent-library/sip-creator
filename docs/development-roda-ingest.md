@@ -15,7 +15,7 @@ and should be checked against the instance's RODA version on first use.*
 
 The **zip is the deliverable** (`<dest-dir>/uuid-<uuid>.zip`): RODA ingests
 zips directly; no bagging for RODA (bags are Meemoo's envelope, [ADR-0008](decisions/0008-bag-layer-out-of-scope.md)).
-Include a `documentation/` directory in the source: it satisfies CSIPSTR16 and
+Include a `documentation/` folder in the source: it satisfies CSIPSTR16 and
 maps into the AIP.
 
 ## 2. Pre-flight

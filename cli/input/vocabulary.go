@@ -29,7 +29,7 @@ type Vocabulary interface {
 // DocumentVocabulary is the optional part of a Vocabulary whose profile
 // takes a finished document of its standard in place of the rows, as the
 // two eark profiles do. The reader reserves the file name it gives, at the
-// input root and inside each representation directory, reads that file's
+// input root and inside each representation folder, reads that file's
 // root element, and asks whether that root is the profile's standard. A
 // vocabulary without it takes rows only, and no file name is reserved for
 // a document: a dc.xml under such a profile is content like any other

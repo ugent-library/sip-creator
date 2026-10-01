@@ -39,7 +39,7 @@ func Read(root string, vocabulary Vocabulary) (*build.SourcePackage, error) {
 		return nil, fmt.Errorf("input folder: %w", err)
 	}
 	if !info.IsDir() {
-		return nil, fmt.Errorf("input folder %s is not a directory", root)
+		return nil, fmt.Errorf("input folder %s is a file, not a folder", root)
 	}
 
 	w := &folderWalker{root: abs, vocabulary: vocabulary}
