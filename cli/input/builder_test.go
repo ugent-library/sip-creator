@@ -39,7 +39,7 @@ func TestSourcePackageEquivalence(t *testing.T) {
 		"description.csv":                  csv,
 		"representations/master/scan.tiff": "essence bytes",
 	})
-	pkg, err := basicReader.Read(root)
+	pkg, err := Read(root, meemooVocab{})
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestSourcePackageRepresentationWithoutDescriptive(t *testing.T) {
 		"representations/access/scan.jpg":        "access bytes",
 		"representations/master/scan.tiff":       "master bytes",
 	})
-	in, err := basicReader.Read(root)
+	in, err := Read(root, meemooVocab{})
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}

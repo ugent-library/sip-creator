@@ -30,7 +30,7 @@ var checkCmd = &cobra.Command{
 			return err
 		}
 
-		source, err := input.New(vocabulary).Read(args[0])
+		source, err := input.Read(args[0], vocabulary)
 		if err != nil {
 			return reportViolations(cmd, args[0], err)
 		}

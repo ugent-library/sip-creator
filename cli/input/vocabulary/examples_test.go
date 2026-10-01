@@ -22,7 +22,7 @@ func TestExamplesBuild(t *testing.T) {
 			if !ok {
 				t.Fatalf("profile %q has no vocabulary", name)
 			}
-			source, err := input.New(vocab).Read(filepath.Join("..", "..", "..", "examples", name))
+			source, err := input.Read(filepath.Join("..", "..", "..", "examples", name), vocab)
 			if err != nil {
 				t.Fatalf("reading the example: %v", err)
 			}

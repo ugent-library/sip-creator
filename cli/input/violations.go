@@ -16,6 +16,6 @@ func (v Violations) Error() string {
 	return strings.Join(v, "\n")
 }
 
-func (d *directory) violate(format string, args ...any) {
-	d.violations = append(d.violations, fmt.Sprintf(format, args...))
+func (w *folderWalker) violate(format string, args ...any) {
+	w.violations = append(w.violations, fmt.Sprintf(format, args...))
 }

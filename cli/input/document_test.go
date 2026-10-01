@@ -27,7 +27,7 @@ func TestDocumentAtRoot(t *testing.T) {
 		"dc.xml":    validDC,
 		"scan.tiff": "x",
 	})
-	pkg, err := earkReader.Read(root)
+	pkg, err := Read(root, earkVocab{})
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestDocumentInRepresentation(t *testing.T) {
 		"representations/master/scan.tiff": "x",
 		"representations/master/dc.xml":    validDC,
 	})
-	pkg, err := earkReader.Read(root)
+	pkg, err := Read(root, earkVocab{})
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestDocumentAndRowsTogether(t *testing.T) {
 		"representations/master/description.csv": "key,value\ntitle,T\n",
 		"representations/master/dc.xml":          validDC,
 	})
-	_, err := earkReader.Read(root)
+	_, err := Read(root, earkVocab{})
 	assertViolation(t, err, "description.csv and dc.xml are both present; describe the package")
 	assertViolation(t, err, "representations/master/description.csv and representations/master/dc.xml are both present; describe the representation")
 }
@@ -81,9 +81,9 @@ func TestDocumentAndRowsTogether(t *testing.T) {
 // a profile that takes a document; under one that takes rows only it names
 // the rows file alone.
 func TestDocumentOrRowsRequired(t *testing.T) {
-	_, err := earkReader.Read(writeTree(t, map[string]string{"scan.tiff": "x"}))
+	_, err := Read(writeTree(t, map[string]string{"scan.tiff": "x"}), earkVocab{})
 	assertViolation(t, err, "needs a description.csv or a dc.xml")
-	_, err = basicReader.Read(writeTree(t, map[string]string{"scan.tiff": "x"}))
+	_, err = Read(writeTree(t, map[string]string{"scan.tiff": "x"}), meemooVocab{})
 	assertViolation(t, err, "needs a description.csv describing")
 }
 
@@ -103,7 +103,7 @@ func TestDocumentViolations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := earkReader.Read(writeTree(t, map[string]string{"dc.xml": tt.doc, "scan.tiff": "x"}))
+			_, err := Read(writeTree(t, map[string]string{"dc.xml": tt.doc, "scan.tiff": "x"}), earkVocab{})
 			assertViolation(t, err, tt.want)
 		})
 	}
@@ -117,7 +117,7 @@ func TestDocumentIsAFolder(t *testing.T) {
 		"representations/master/scan.tiff": "x",
 		"representations/master/dc.xml/":   "",
 	})
-	_, err := earkReader.Read(root)
+	_, err := Read(root, earkVocab{})
 	assertViolation(t, err, "dc.xml is a folder")
 	assertViolation(t, err, "representations/master/dc.xml is a folder")
 }
@@ -126,11 +126,11 @@ func TestDocumentIsAFolder(t *testing.T) {
 // dc.xml under basic is content like any other file, as is a mods.xml
 // under eark, another standard's document.
 func TestDocumentNameIsContentElsewhere(t *testing.T) {
-	pkg, err := basicReader.Read(writeTree(t, map[string]string{
+	pkg, err := Read(writeTree(t, map[string]string{
 		"description.csv": minimalCSV,
 		"dc.xml":          validDC,
 		"scan.tiff":       "x",
-	}))
+	}), meemooVocab{})
 	if err != nil {
 		t.Fatalf("Read under basic: %v", err)
 	}
@@ -138,11 +138,11 @@ func TestDocumentNameIsContentElsewhere(t *testing.T) {
 		t.Errorf("content under basic = %v, want dc.xml packaged as content", got)
 	}
 
-	pkg, err = earkReader.Read(writeTree(t, map[string]string{
+	pkg, err = Read(writeTree(t, map[string]string{
 		"description.csv": minimalDC,
 		"mods.xml":        validMODS,
 		"scan.tiff":       "x",
-	}))
+	}), earkVocab{})
 	if err != nil {
 		t.Fatalf("Read under eark: %v", err)
 	}
@@ -155,7 +155,7 @@ func TestDocumentNameIsContentElsewhere(t *testing.T) {
 // copies the file the reader pointed at, byte for byte.
 func TestDocumentBuilds(t *testing.T) {
 	root := writeTree(t, map[string]string{"dc.xml": validDC, "scan.tiff": "x"})
-	source, err := earkReader.Read(root)
+	source, err := Read(root, earkVocab{})
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}

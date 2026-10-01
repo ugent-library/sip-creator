@@ -21,7 +21,7 @@ func TestRepresentationsCSV(t *testing.T) {
 	tree["representations.csv"] = "directory,label,type\nmaster,Master scan,archival\naccess,,\n"
 	root := writeTree(t, tree)
 
-	pkg, err := basicReader.Read(root)
+	pkg, err := Read(root, meemooVocab{})
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestRepresentationsCSVViolations(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			tree := twoRepTree()
 			tree["representations.csv"] = c.csv
-			_, err := basicReader.Read(writeTree(t, tree))
+			_, err := Read(writeTree(t, tree), meemooVocab{})
 			assertViolation(t, err, c.want)
 		})
 	}
@@ -161,7 +161,7 @@ func TestRepresentationsCSVViolations(t *testing.T) {
 func TestRepresentationsCSVUncoveredDirectory(t *testing.T) {
 	tree := twoRepTree()
 	tree["representations.csv"] = "directory\nmaster\n"
-	_, err := basicReader.Read(writeTree(t, tree))
+	_, err := Read(writeTree(t, tree), meemooVocab{})
 	assertViolation(t, err, "representations/access is not listed")
 }
 
@@ -171,28 +171,28 @@ func TestRepresentationsCSVRequiresRepresentationsFolder(t *testing.T) {
 		"scan.tiff":           "a",
 		"representations.csv": "directory\nx\n",
 	})
-	_, err := basicReader.Read(root)
+	_, err := Read(root, meemooVocab{})
 	assertViolation(t, err, "requires a representations/ folder")
 }
 
 func TestRepresentationsCSVMustBeAFile(t *testing.T) {
 	tree := twoRepTree()
 	tree["representations.csv/"] = ""
-	_, err := basicReader.Read(writeTree(t, tree))
+	_, err := Read(writeTree(t, tree), meemooVocab{})
 	assertViolation(t, err, "representations.csv is a folder")
 }
 
 // A Directory-only CSV listing every directory in lexical order is a no-op:
 // the read result equals the no-CSV read.
 func TestRepresentationsCSVDirectoryOnlyIsANoop(t *testing.T) {
-	plain, err := basicReader.Read(writeTree(t, twoRepTree()))
+	plain, err := Read(writeTree(t, twoRepTree()), meemooVocab{})
 	if err != nil {
 		t.Fatalf("Read without CSV: %v", err)
 	}
 
 	tree := twoRepTree()
 	tree["representations.csv"] = "directory\naccess\nmaster\n"
-	withCSV, err := basicReader.Read(writeTree(t, tree))
+	withCSV, err := Read(writeTree(t, tree), meemooVocab{})
 	if err != nil {
 		t.Fatalf("Read with CSV: %v", err)
 	}

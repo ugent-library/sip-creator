@@ -22,14 +22,14 @@ type repRow struct {
 // (input-spec.md): every row must match a directory, every directory must be
 // covered by a row, and the row order becomes the packaging order. Empty
 // cells stay empty: build.SourceRepresentation resolves the defaults.
-func (d *directory) applyRepresentations(src string, reps []build.SourceRepresentation) []build.SourceRepresentation {
-	rel := d.rel(src)
-	rows, decoded := d.decodeRepresentations(src)
+func (w *folderWalker) applyRepresentations(src string, reps []build.SourceRepresentation) []build.SourceRepresentation {
+	rel := w.rel(src)
+	rows, decoded := w.decodeRepresentations(src)
 	if !decoded {
 		return reps
 	}
 	if len(rows) == 0 {
-		d.violate("%s: the file has no rows; list every representation directory, or delete the file", rel)
+		w.violate("%s: the file has no rows; list every representation directory, or delete the file", rel)
 		return reps
 	}
 
@@ -42,13 +42,13 @@ func (d *directory) applyRepresentations(src string, reps []build.SourceRepresen
 	var ordered []build.SourceRepresentation
 	for _, row := range rows {
 		if prev, ok := covered[row.dir]; ok {
-			d.violate("%s line %d: directory %q already has a row (line %d)", rel, row.line, row.dir, prev)
+			w.violate("%s line %d: directory %q already has a row (line %d)", rel, row.line, row.dir, prev)
 			continue
 		}
 		covered[row.dir] = row.line
 		i, ok := byName[row.dir]
 		if !ok {
-			d.violate("%s line %d: there is no directory representations/%s; every row must name an existing representation directory", rel, row.line, row.dir)
+			w.violate("%s line %d: there is no directory representations/%s; every row must name an existing representation directory", rel, row.line, row.dir)
 			continue
 		}
 		rep := reps[i]
@@ -61,7 +61,7 @@ func (d *directory) applyRepresentations(src string, reps []build.SourceRepresen
 	// would silently drop content from the package.
 	for _, rep := range reps {
 		if _, ok := covered[rep.Name]; !ok {
-			d.violate("representations/%s is not listed in %s; add a row for it, or remove the directory", rep.Name, rel)
+			w.violate("representations/%s is not listed in %s; add a row for it, or remove the directory", rep.Name, rel)
 			ordered = append(ordered, rep)
 		}
 	}
@@ -72,28 +72,28 @@ func (d *directory) applyRepresentations(src string, reps []build.SourceRepresen
 // records a violation per broken rule. Returns decoded=false when the file
 // cannot be used at all; a usable file with no data rows returns an empty
 // slice.
-func (d *directory) decodeRepresentations(src string) (rows []repRow, decoded bool) {
-	rel := d.rel(src)
+func (w *folderWalker) decodeRepresentations(src string) (rows []repRow, decoded bool) {
+	rel := w.rel(src)
 
 	data, err := os.ReadFile(src)
 	if err != nil {
-		d.violate("%s: %v", rel, err)
+		w.violate("%s: %v", rel, err)
 		return nil, false
 	}
 
 	rows, errs, err := parseRepresentationRows(data)
 	if err != nil {
 		for _, e := range flatten(err) {
-			d.violate("%s: %v", rel, e)
+			w.violate("%s: %v", rel, e)
 		}
 		return nil, false
 	}
 	for _, e := range errs {
 		if re, ok := errors.AsType[*rowError](e); ok {
-			d.violate("%s line %d: %v", rel, re.line, re.err)
+			w.violate("%s line %d: %v", rel, re.line, re.err)
 			continue
 		}
-		d.violate("%s: %v", rel, e)
+		w.violate("%s: %v", rel, e)
 	}
 	return rows, true
 }

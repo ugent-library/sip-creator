@@ -13,23 +13,23 @@ import (
 // as XML (xmldoc.Root) with the profile's standard as its root, which the
 // vocabulary judges. Nothing else in the document is checked (ADR-0003):
 // schema validity is left to the validators downstream.
-func (d *directory) readDocument(src string) sip.Description {
-	rel := d.rel(src)
+func (w *folderWalker) readDocument(src string) sip.Description {
+	rel := w.rel(src)
 
 	f, err := os.Open(src)
 	if err != nil {
-		d.violate("%s: %v", rel, err)
+		w.violate("%s: %v", rel, err)
 		return nil
 	}
 	defer f.Close()
 
 	root, err := xmldoc.Root(f)
 	if err != nil {
-		d.violate("%s: %v", rel, err)
+		w.violate("%s: %v", rel, err)
 		return nil
 	}
-	if err := d.document.CheckDocument(root); err != nil {
-		d.violate("%s: %v", rel, err)
+	if err := w.document.CheckDocument(root); err != nil {
+		w.violate("%s: %v", rel, err)
 	}
 	return build.DescriptiveDocument{Source: src}
 }

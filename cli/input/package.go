@@ -17,32 +17,18 @@ import (
 	"github.com/ugent-library/sip-creator/build"
 )
 
-// Reader reads input folders as one profile: the vocabulary it holds says
-// what the rows of a description.csv mean, and each Read walks one folder
-// with it. check and create both construct it with the profile's
-// vocabulary, so they read a folder the same way. Where the library has a
-// rule for what the reader reads (a description's Validate and
-// ValidateRequired, the encoder's check of a supplied document's root),
-// the reader runs that same rule and reports its findings with file and
-// line, so check finds them before create's build would refuse them.
-type Reader struct {
-	vocabulary Vocabulary
-}
-
-// New returns a reader whose rows are given meaning by vocabulary. New
-// validates nothing: Read refuses a nil vocabulary.
-func New(vocabulary Vocabulary) *Reader {
-	return &Reader{vocabulary: vocabulary}
-}
-
 // Read walks and validates the folder at root against the input
-// specification and returns the source package it holds, the value the builder
-// takes. Every MUST violation is collected and returned together as a
-// Violations error; when the error is non-nil the returned source package is
-// incomplete and must not be built.
-func (r *Reader) Read(root string) (*build.SourcePackage, error) {
-	if r.vocabulary == nil {
-		return nil, errors.New("no vocabulary: construct the reader with the profile's vocabulary, which says what the rows of description.csv mean")
+// specification and returns the source package it holds, the value the
+// builder takes. vocabulary is the profile's: it says what the rows of a
+// description.csv mean. Where the library has a rule for what Read reads
+// (a description's Validate and ValidateRequired, the encoder's check of a
+// supplied document's root), Read runs that same rule and reports its
+// findings with file and line. Every MUST violation is collected and
+// returned together as a Violations error; when the error is non-nil the
+// returned source package is incomplete and must not be built.
+func Read(root string, vocabulary Vocabulary) (*build.SourcePackage, error) {
+	if vocabulary == nil {
+		return nil, errors.New("no vocabulary: pass the profile's vocabulary, which says what the rows of description.csv mean")
 	}
 	abs, err := filepath.Abs(root)
 	if err != nil {
@@ -56,14 +42,14 @@ func (r *Reader) Read(root string) (*build.SourcePackage, error) {
 		return nil, fmt.Errorf("input folder %s is not a directory", root)
 	}
 
-	d := &directory{root: abs, vocabulary: r.vocabulary}
+	w := &folderWalker{root: abs, vocabulary: vocabulary}
 	// A vocabulary whose profile takes a supplied document says so by
 	// implementing DocumentVocabulary; under any other, no file name is
 	// the document's.
-	d.document, _ = r.vocabulary.(DocumentVocabulary)
-	m := d.read()
-	if len(d.violations) > 0 {
-		return m, d.violations
+	w.document, _ = vocabulary.(DocumentVocabulary)
+	source := w.read()
+	if len(w.violations) > 0 {
+		return source, w.violations
 	}
-	return m, nil
+	return source, nil
 }
