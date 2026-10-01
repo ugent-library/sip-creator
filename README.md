@@ -99,7 +99,7 @@ bagit.py --md5 sip-out/uuid-<uuid>/
 This project requires [Go](https://go.dev/dl/) 1.27 or later; there are no prebuilt
 binaries while the tool is experimental.
 
-Install the CLI directly from the module (the binary lands in
+Install the command-line tool directly from the module (the binary lands in
 `$(go env GOPATH)/bin` as `sip-creator`; make sure that directory is on your `PATH`):
 
 ```sh
@@ -115,14 +115,23 @@ cd sip-creator
 go build -o bin/sip-creator .
 ```
 
-## How to use
+To use the library in your own Go program:
 
-### As a command-line tool
+```sh
+go get github.com/ugent-library/sip-creator
+```
 
-Assuming you have data in a `./your-input` directory (prepared as described under Input
-below) which you want to convert into a SIP package stored in a `sip-out` directory
-(`create` also needs the submitting organization set in the environment, see
-Configuration below):
+## Command-line tool
+
+The `sip-creator` command builds a package from an input folder you prepare, using the
+library underneath. It reads the submitting organization from the environment.
+
+### Creating a package
+
+Assuming you have data in a `./your-input` directory (prepared as described under
+[Input folder](#input-folder)) which you want to convert into a SIP package stored in a
+`sip-out` directory (with the submitting organization set, see
+[Configuration](#configuration)):
 
 ```
 ./bin/sip-creator create --profile eark ./your-input sip-out
@@ -143,170 +152,39 @@ Further flags:
   (`mets/@OBJID`).
 * `--no-zip` to skip zipping when the package directory itself is what you need.
 
-To check a folder without building anything, pass the same profile. `check` does not
-need the `SIP_SUBMITTER_*` variables, but like every command it reads `.env` when
-present and stops on a malformed one:
+What you deliver depends on the profile: the zip for `eark` and `eark-mods`, a bagged
+package directory for `basic` (see [Profiles](#profiles)).
+
+### Checking an input folder
+
+To check a folder without building anything, pass the same profile. `check` reports
+every violation at once, in plain language. It does not need the `SIP_SUBMITTER_*`
+variables, but like every command it reads `.env` when present and stops on a malformed
+one:
 
 ```
 ./bin/sip-creator check --profile eark ./your-input
 ```
 
-What you deliver depends on the profile: the zip for `eark` and `eark-mods`, a bagged
-package directory for `basic` (see [Profiles](#profiles)).
+### Configuration
 
-### As a Go library
+Configuration is read from the environment. A `.env` file is loaded when present; start
+from `.env.example`. All environment variables are documented in
+[CONFIG.md](CONFIG.md).
 
-The input folder is a CLI convention. The library takes the same source package as plain
-Go values and reads no environment variables:
+Every package's METS names the organization submitting it, so `create` requires
+`SIP_SUBMITTER_NAME` for every profile. `basic` also requires `SIP_SUBMITTER_OR_ID`, the
+organization's identifier in [meemoo's organization register](https://developer.meemoo.be/),
+emitted as the agent's `IDENTIFICATIONCODE` note. A build refuses to run when a value its
+profile requires is missing, rather than emitting a package that would be rejected at
+ingest:
 
-* the submitting organization is added to the profile with `WithSubmitter`;
-* the destination directory and the logger go in `build.Config`;
-* the descriptive metadata and the content files go in `build.SourcePackage`.
-
-Resolve a profile, attach the submitter, and hand `Build` your descriptive terms and
-content files:
-
-```go
-import (
-	"log/slog"
-
-	"github.com/ugent-library/sip-creator/build"
-	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/eark"
-	"github.com/ugent-library/sip-creator/sip"
-)
-
-def, _ := profiles.Get("eark")
-// The second argument is the meemoo OR-id, used by basic only.
-def, err := def.WithSubmitter("Universiteitsbibliotheek Gent", "")
-if err != nil {
-	// ...
-}
-
-builder, err := build.New(&build.Config{
-	Profile:     def,
-	Destination: "./out",
-	Logger:      slog.Default(),
-})
-if err != nil {
-	// ...
-}
-
-pkg, err := builder.Build(&build.SourcePackage{
-	// The description's type belongs to the profile (see Profiles).
-	Description: eark.Terms{
-		{Key: "identifier", Value: "inv.2024.001"},
-		{Key: "title", Value: "Correspondentie 1914-1918"},
-		{Key: "description", Value: "Brieven uit de collectie."},
-		{Key: "date", Value: "1914/1918"},
-	},
-	Representations: []build.SourceRepresentation{{
-		Name: "master",
-		Files: []build.SourceFile{
-			{Source: "/data/scans/page-001.tif", Path: "page-001.tif"},
-		},
-	}},
-})
+```
+SIP_SUBMITTER_NAME="Universiteitsbibliotheek Gent"
+SIP_SUBMITTER_OR_ID="OR-a1b2c3d"
 ```
 
-`Build` validates the source package against the profile's rules, then writes the complete
-package directory under `Destination` and returns the built package. Zipping is a separate
-step (the `archive` package). A builder is constructed once per profile; the values that
-change per package go in the `SourcePackage`. The example above builds a new package with
-the profile's METS values. Three fields override them per package: `PackageIdentifier`
-and `RecordStatus` for an update of an earlier package, and `ContentCategory`:
-
-```go
-pkg, err := builder.Build(&build.SourcePackage{
-	// The identifier of the package this one updates becomes this package's
-	// mets/@OBJID; an update-class status requires it. RecordStatus is
-	// metsHdr/@RECORDSTATUS in the SIP3 vocabulary (the sip.RecordStatus
-	// constants) and ContentCategory is mets/@TYPE, the CSIP content
-	// category. Empty means the profile's value, which for the status the
-	// E-ARK SIP spec reads as NEW.
-	PackageIdentifier: "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e",
-	RecordStatus:      sip.RecordStatusReplacement,
-	ContentCategory:   "Textual works – Print",
-	// Description and Representations as above.
-})
-```
-
-The `eark-mods` profile takes an `earkmods.Record` instead of a list of terms: an
-identifier, titles, and physical copies as items, each a call number with an optional
-barcode and an optional volume or issue designation:
-
-```go
-import "github.com/ugent-library/sip-creator/profiles/earkmods"
-
-def, _ := profiles.Get("eark-mods")
-// WithSubmitter and build.New as above.
-
-pkg, err := builder.Build(&build.SourcePackage{
-	Description: earkmods.Record{
-		Identifier: "990001234560471",
-		Titles: []earkmods.Title{
-			{Value: "Correspondentie 1914-1918", Lang: "nl"},
-		},
-		Items: []earkmods.Item{
-			{CallNumber: "BIB.HS.001", Barcode: "000012345678"},
-			{CallNumber: "BIB.HS.002", Enumeration: "deel 2"},
-		},
-	},
-	// Representations as above.
-})
-```
-
-A record that already exists as a document travels as a file: profiles that accept a
-finished document (see [Profiles](#profiles)) take a `build.DescriptiveDocument` in place
-of terms or a record. What the tool checks and how it copies the file is described under
-[Input](#input):
-
-```go
-pkg, err := builder.Build(&build.SourcePackage{
-	Description: build.DescriptiveDocument{Source: "/data/records/990001234560471/mods.xml"},
-	// Representations as above.
-})
-```
-
-#### Bringing your own profile
-
-The three profiles above are reference implementations of one route, and the engine
-imports none of them. An institution with its own descriptive standard writes a package
-with three parts:
-
-* a description type implementing `sip.Description`, whose `Validate` and
-  `ValidateRequired` are the rules of your standard;
-* an encoder implementing `build.DescriptionEncoder`: the type check, the code that
-  writes the document (the profiles here use `text/template`), and the list of XSDs
-  the document points at;
-* an exported `build.Definition` naming the encoder, the document's file name and the
-  METS values (`sip.MetsDeclaration`: profile URL, content typing, `MDTYPE`). The
-  encoder type itself can stay unexported.
-
-Hand that definition to `build.New` as above. The XSDs an encoder lists must be ones
-this repository bundles in `schemas/`: the build refuses any other name, so a standard
-whose schema is not bundled needs its XSD added there first. The registry in `profiles/`
-is the CLI's list of what `--profile` can name; a library caller's package need not join
-it. When your profile has a value the caller should choose, such as the `type` of a MODS
-identifier, offer a fixed set of typed constants rather than free text, so two callers
-making the same choice write the same document (ADR-0022).
-
-The full API is on [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator);
-the domain model and build lifecycle are described in
-[docs/sip-creator-design.md](docs/sip-creator-design.md).
-
-#### Representation labels and types
-
-Besides the required `Name` (the directory under `representations/`), each
-representation takes two optional fields. `Label` is the display name, emitted
-as the representation METS `mets/@LABEL`; empty means the `Name`. `Type` is the
-representation's type; empty means the `Label`. Whether the type reaches the METS
-depends on the profile (see [Profiles](#profiles)).
-
-On the CLI the same fields come from the optional `representations.csv`
-(see [Input](#input) below).
-
-## Input
+### Input folder
 
 One folder is one package. The smallest valid input is a descriptive rows file,
 `description.csv`, plus your content files, flat in one folder (they become the
@@ -397,31 +275,10 @@ access,Access copy (JPEG),access
 
 When the file is present it must be complete: every row must match a folder
 and every folder must have a row, so nothing can silently drop out of the
-package. The full rules are in the
-[input specification](docs/input-spec.md). Run `check` (see
-[As a command-line tool](#as-a-command-line-tool)) to test a folder against them: it
-reports every violation at once, in plain language.
+package. The full rules are in the [input specification](docs/input-spec.md); run
+[`check`](#checking-an-input-folder) to test a folder against them.
 
-## Configuration
-
-Configuration is read from the environment. A `.env` file is loaded when present; start
-from `.env.example`. All environment variables are documented in
-[CONFIG.md](CONFIG.md).
-
-**Submitting organization** (required for `create`)
-
-Every package's METS names the organization submitting it, so `SIP_SUBMITTER_NAME` is
-required for every profile. `basic` also requires `SIP_SUBMITTER_OR_ID`, the
-organization's identifier in [meemoo's organization register](https://developer.meemoo.be/),
-emitted as the agent's `IDENTIFICATIONCODE` note. A build refuses to run when a value its profile requires is missing, rather than
-emitting a package that would be rejected at ingest:
-
-```
-SIP_SUBMITTER_NAME="Universiteitsbibliotheek Gent"
-SIP_SUBMITTER_OR_ID="OR-a1b2c3d"
-```
-
-**Format characterization** (optional; this is input, not configuration)
+#### Format characterization
 
 Format info comes from a pre-computed
 [Siegfried](https://github.com/richardlehane/siegfried) report placed next to your
@@ -438,6 +295,174 @@ Without a `siegfried.json` the build succeeds with no format info (`premis:forma
 SHOULD; checksums and sizes are always computed natively). When the sidecar is present it
 is strictly verified: a malformed report, an essence file missing from it, a report made
 without `-hash md5`, or a file changed since the report was generated aborts the build.
+
+## Go library
+
+The command-line tool is one program built on this library. In your own program you
+supply as Go values what the tool reads from the input folder and the environment, and
+the library reads no environment variables:
+
+* the submitting organization is added to the profile with `WithSubmitter`;
+* the destination directory and the logger go in `build.Config`;
+* the descriptive metadata and the content files go in `build.SourcePackage`.
+
+The full API is on [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator);
+the domain model and build lifecycle are described in
+[docs/sip-creator-design.md](docs/sip-creator-design.md).
+
+### Building a package
+
+Resolve a profile, attach the submitter, and hand `Build` your descriptive terms and
+content files:
+
+```go
+import (
+	"log/slog"
+
+	"github.com/ugent-library/sip-creator/build"
+	"github.com/ugent-library/sip-creator/profiles"
+	"github.com/ugent-library/sip-creator/profiles/eark"
+)
+
+def, _ := profiles.Get("eark")
+// The second argument is the meemoo OR-id, used by basic only.
+def, err := def.WithSubmitter("Universiteitsbibliotheek Gent", "")
+if err != nil {
+	// ...
+}
+
+builder, err := build.New(&build.Config{
+	Profile:     def,
+	Destination: "./out",
+	Logger:      slog.Default(),
+})
+if err != nil {
+	// ...
+}
+
+pkg, err := builder.Build(&build.SourcePackage{
+	// The description's type belongs to the profile (see Profiles).
+	Description: eark.Terms{
+		{Key: "identifier", Value: "inv.2024.001"},
+		{Key: "title", Value: "Correspondentie 1914-1918"},
+		{Key: "description", Value: "Brieven uit de collectie."},
+		{Key: "date", Value: "1914/1918"},
+	},
+	Representations: []build.SourceRepresentation{{
+		Name: "master",
+		Files: []build.SourceFile{
+			{Source: "/data/scans/page-001.tif", Path: "page-001.tif"},
+		},
+	}},
+})
+```
+
+`Build` validates the source package against the profile's rules, then writes the complete
+package directory under `Destination` and returns the built package. Zipping is a separate
+step (the `archive` package). A builder is constructed once per profile; the values that
+change per package go in the `SourcePackage`. Besides the description and the
+representations, it takes `Documentation` and `Premis` files, the library's form of the
+input folder's `documentation/` and `premis/`.
+
+### Descriptive metadata
+
+The `eark-mods` profile takes an `earkmods.Record` instead of a list of terms: an
+identifier, titles, and physical copies as items, each a call number with an optional
+barcode and an optional volume or issue designation:
+
+```go
+import "github.com/ugent-library/sip-creator/profiles/earkmods"
+
+def, _ := profiles.Get("eark-mods")
+// WithSubmitter and build.New as above.
+
+pkg, err := builder.Build(&build.SourcePackage{
+	Description: earkmods.Record{
+		Identifier: "990001234560471",
+		Titles: []earkmods.Title{
+			{Value: "Correspondentie 1914-1918", Lang: "nl"},
+		},
+		Items: []earkmods.Item{
+			{CallNumber: "BIB.HS.001", Barcode: "000012345678"},
+			{CallNumber: "BIB.HS.002", Enumeration: "deel 2"},
+		},
+	},
+	// Representations as above.
+})
+```
+
+A record that already exists as a document travels as a file: profiles that accept a
+finished document (see [Profiles](#profiles)) take a `build.DescriptiveDocument` in place
+of terms or a record. The library checks and copies it the same way the command-line
+tool does (see [Input folder](#input-folder)):
+
+```go
+pkg, err := builder.Build(&build.SourcePackage{
+	Description: build.DescriptiveDocument{Source: "/data/records/990001234560471/mods.xml"},
+	// Representations as above.
+})
+```
+
+### Representation labels and types
+
+Besides the required `Name` (the directory under `representations/`), each
+representation takes two optional fields. `Label` is the display name, emitted
+as the representation METS `mets/@LABEL`; empty means the `Name`. `Type` is the
+representation's type; empty means the `Label`. Whether the type reaches the METS
+depends on the profile (see [Profiles](#profiles)). These are the fields the
+command-line tool fills from `representations.csv`.
+
+### Updating an earlier package
+
+The example above builds a new package with the profile's METS values. Three fields
+override them per package: `PackageIdentifier` and `RecordStatus` for an update of an
+earlier package, and `ContentCategory`:
+
+```go
+import "github.com/ugent-library/sip-creator/sip"
+
+pkg, err := builder.Build(&build.SourcePackage{
+	// The identifier of the package this one updates becomes this package's
+	// mets/@OBJID; an update-class status requires it. RecordStatus is
+	// metsHdr/@RECORDSTATUS in the SIP3 vocabulary (the sip.RecordStatus
+	// constants) and ContentCategory is mets/@TYPE, the CSIP content
+	// category. Empty means the profile's value, which for the status the
+	// E-ARK SIP spec reads as NEW.
+	PackageIdentifier: "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e",
+	RecordStatus:      sip.RecordStatusReplacement,
+	ContentCategory:   "Textual works – Print",
+	// Description and Representations as above.
+})
+```
+
+### Format characterization
+
+Set `Characterization` on the `SourcePackage` to add format info. Decode a Siegfried
+report with `characterization.DecodeSiegfried`; the library verifies it as strictly as
+the command-line tool does (see [Format characterization](#format-characterization)).
+
+### Bringing your own profile
+
+The three profiles above are reference implementations of one route, and the engine
+imports none of them. An institution with its own descriptive standard writes a package
+with three parts:
+
+* a description type implementing `sip.Description`, whose `Validate` and
+  `ValidateRequired` are the rules of your standard;
+* an encoder implementing `build.DescriptionEncoder`: the type check, the code that
+  writes the document (the profiles here use `text/template`), and the list of XSDs
+  the document points at;
+* an exported `build.Definition` naming the encoder, the document's file name and the
+  METS values (`sip.MetsDeclaration`: profile URL, content typing, `MDTYPE`). The
+  encoder type itself can stay unexported.
+
+Hand that definition to `build.New` as above. The XSDs an encoder lists must be ones
+this repository bundles in `schemas/`: the build refuses any other name, so a standard
+whose schema is not bundled needs its XSD added there first. The registry in `profiles/`
+is the CLI's list of what `--profile` can name; a library caller's package need not join
+it. When your profile has a value the caller should choose, such as the `type` of a MODS
+identifier, offer a fixed set of typed constants rather than free text, so two callers
+making the same choice write the same document (ADR-0022).
 
 ## Development
 
