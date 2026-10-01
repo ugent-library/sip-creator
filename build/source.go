@@ -24,8 +24,10 @@ type SourceFile struct {
 	Path string
 }
 
-// SourceRepresentation is one version of the content, as the caller
-// supplies it.
+// SourceRepresentation is one version of the content, such as a
+// preservation master or an access copy, as it is handed to Builder.Build:
+// its name and label, its files on disk and, optionally, a description of
+// this version only.
 type SourceRepresentation struct {
 	// Name is the package-side name: the directory under representations/
 	// and the representation METS OBJID. Required; must satisfy
@@ -58,8 +60,9 @@ type SourceRepresentation struct {
 }
 
 // label resolves the display label: Label, or Name when empty. The cascade
-// lives here, in the library, so the CLI's representations.csv and an
-// embedding caller's direct SourcePackage get identical defaulting.
+// lives here, in the library, so a representation gets the same label
+// whether it comes from the CLI's representations.csv or from a
+// SourcePackage built directly in Go.
 func (sr SourceRepresentation) label() string {
 	if sr.Label != "" {
 		return sr.Label
@@ -76,11 +79,12 @@ func (sr SourceRepresentation) resolvedType() string {
 	return sr.label()
 }
 
-// SourcePackage is one package as the caller supplies it, given as data,
-// not files to parse: descriptive metadata as a Description,
+// SourcePackage is one package as it is handed to Builder.Build, given as
+// data, not files to parse: descriptive metadata as a Description,
 // characterization as a decoded report, essence and documentation as
-// source paths. The CLI's folder convention (cli/input) is one transport
-// producing these values; embedding systems construct them directly.
+// source paths. The CLI's input folder (cli/input) is one way to produce
+// these values; a program that keeps its content and metadata elsewhere,
+// such as in a database, constructs them directly.
 //
 // Build takes ownership of the data: under a profile that swaps
 // identifiers, such as meemoo's, assembly writes the entity identifier
@@ -151,10 +155,11 @@ func ValidateAttributeText(value string) error {
 	return nil
 }
 
-// Validate reports the first invariant the input breaks. These are the
-// rules every source package must satisfy: the folder convention enforces
-// them with Violations phrased for the operator before building; embedding
-// callers hit them here. Fail-fast: one error, phrased for the developer.
+// Validate reports the first rule the source package breaks. These are the
+// rules every source package must satisfy, however it was made. The CLI's
+// input reader checks the same rules on the input folder first and reports
+// every violation with its file and line; a SourcePackage built directly
+// in Go meets them here. Fail-fast: one error, phrased for the developer.
 func (sp *SourcePackage) Validate() error {
 	if sp.PackageIdentifier != "" {
 		if err := sip.ValidateIdentifier(sp.PackageIdentifier); err != nil {
@@ -166,8 +171,9 @@ func (sp *SourcePackage) Validate() error {
 	}
 	// An update-class status names an earlier package by reusing its
 	// identifier; without one the package claims to update something it
-	// does not name. The reverse is allowed: an identifier on a NEW package
-	// may be one a caller minted upstream.
+	// does not name. The reverse is allowed: a NEW package may carry an
+	// identifier minted before the build, for instance by a system that
+	// registers a package before building it.
 	if sp.RecordStatus.IsUpdate() && sp.PackageIdentifier == "" {
 		return fmt.Errorf("record status %s updates an earlier package, so PackageIdentifier must carry that package's identifier", sp.RecordStatus)
 	}

@@ -52,8 +52,8 @@ const (
 )
 
 // ParseRecordStatus maps text written in any case onto the vocabulary, or
-// returns why it cannot. It is the way from an operator's or a caller's
-// string to a RecordStatus.
+// returns why it cannot. It is the way from a status written as text, such
+// as the CLI's --status flag, to a RecordStatus.
 func ParseRecordStatus(text string) (RecordStatus, error) {
 	s := RecordStatus(strings.ToUpper(text))
 	if !s.IsValid() {

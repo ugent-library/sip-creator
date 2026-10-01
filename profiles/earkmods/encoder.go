@@ -82,9 +82,9 @@ func (mods) Schemas() []string {
 // record's identifier emits. MODS leaves the type vocabulary open; "local"
 // is the value its own list suggests for an identifier local to the
 // describing institution's system, such as a record number in a
-// library catalogue. The type becomes the caller's choice from a closed set with
-// the mods-coverage plan; until then this constant is the one place it
-// lives.
+// library catalogue. With the mods-coverage plan the type becomes a choice
+// per record from a closed set; until then this constant is the one place
+// it lives.
 const localIdentifierType = "local"
 
 // modsTemplate renders a record field by field. Every value is escaped;

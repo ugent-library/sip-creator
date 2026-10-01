@@ -18,8 +18,9 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// assemble builds the complete package graph from the caller-supplied
-// source package without writing anything to disk: every File node is created
+// assemble builds the complete package graph from the source package,
+// which Build has already validated, without writing anything to disk:
+// every File node is created
 // here with its Path declared, and the writer later back-fills fixity as
 // it emits.
 func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {

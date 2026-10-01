@@ -13,9 +13,10 @@ import (
 // is not configuration; it arrives per build as a SourcePackage.
 type Config struct {
 	// Profile is the definition every package this builder makes is built
-	// to: a profile package's Definition or the caller's own (ADR-0022),
-	// with the submitting organization added by WithSubmitter. It must
-	// name a descriptive encoder.
+	// to: one of this module's profiles (see profiles.Get) or one written
+	// for another descriptive standard (ADR-0022), with the submitting
+	// organization added by WithSubmitter. It must name a descriptive
+	// encoder.
 	Profile Definition
 	// Destination is the directory packages are created under.
 	Destination string
@@ -23,8 +24,9 @@ type Config struct {
 	Logger *slog.Logger
 }
 
-// Builder builds SIP packages to one profile from caller-supplied
-// SourcePackage values. It reads no input tree; callers deliver the data.
+// Builder builds SIP packages to one profile. It reads no input folder and
+// no environment: everything one package is built from arrives in the
+// SourcePackage handed to Build.
 type Builder struct {
 	profile     Definition
 	destination string

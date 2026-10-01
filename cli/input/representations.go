@@ -156,8 +156,10 @@ func (d *directory) decodeRepresentations(src string) (rows []repRow, decoded bo
 			continue
 		}
 		label, kind := cell(row, labelCol), cell(row, typeCol)
-		// Whether a value may be emitted is the library's rule, the same
-		// one an embedding caller hits; the decoder adds file/line context.
+		// Whether a value may be emitted is the library's rule
+		// (build.ValidateAttributeText), so a label is refused the same way
+		// here as in a SourcePackage built directly in Go; the decoder adds
+		// file and line context.
 		if err := build.ValidateAttributeText(label); err != nil {
 			d.violate("%s line %d: label: %v", rel, line, err)
 		}

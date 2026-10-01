@@ -14,7 +14,8 @@ type Description interface {
 	// standard, joined into one error: an unknown key, a malformed
 	// language tag, an empty value, or a rule of the standard itself such
 	// as a cardinality limit. A finding about one term is a *TermError, so
-	// a caller that decoded the terms from rows can point at the row. It
+	// code that decoded the terms from rows, such as the CLI's input
+	// reader, can point at the row. It
 	// is the one contract a description must meet before it is written;
 	// the encoders trust it.
 	Validate() error

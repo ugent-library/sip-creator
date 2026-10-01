@@ -62,7 +62,9 @@ func (d Definition) representationDeclaration(base sip.MetsDeclaration, typ stri
 
 // WithSubmitter returns a copy of the definition whose METS agents include
 // the submitting organization. The submitter is operator identity, not
-// profile data, so the profile packages omit it and the caller supplies it.
+// profile data: one profile serves every organization that submits with
+// it, so the profile packages omit the submitter and the organization
+// running the build adds it here.
 // RequireSubmitterORID decides its shape: meemoo requires the
 // organization's OR-id as an IDENTIFICATIONCODE note (meemoo SIP 1.2,
 // metsHdr); plain E-ARK carries the name alone.

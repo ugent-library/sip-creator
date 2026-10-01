@@ -13,10 +13,10 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// The embedding-caller contract: a hand-constructed build.SourcePackage, with
-// no description.csv or siegfried.json anywhere on disk, must build the same
-// package graph the folder convention produces. The folder is one
-// transport, not the API.
+// A build.SourcePackage built directly in Go, with no description.csv or
+// siegfried.json anywhere on disk, must build the same package graph as
+// the input folder produces. The folder is one way to supply a package,
+// not the API.
 func TestSourcePackageEquivalence(t *testing.T) {
 	def, ok := profiles.Get("basic")
 	if !ok {

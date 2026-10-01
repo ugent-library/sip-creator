@@ -13,9 +13,11 @@ import (
 // writes the document for it. Each profile package under profiles/
 // implements it for its own description type, so everything that needs the
 // concrete type stays there and the engine speaks sip.Description only. A
-// caller with its own profile implements it too (ADR-0022).
-// Callers construct the description themselves; the encoder only checks
-// and writes it.
+// profile written outside this module, for another descriptive standard,
+// implements it the same way (ADR-0022). The encoder never builds a
+// description: it arrives in the SourcePackage already built, as a value
+// of the encoder's description type, and the encoder only checks and
+// writes it.
 type DescriptionEncoder interface {
 	// Check returns why d is not a description this encoder takes: a
 	// description of another type. It runs before validation and before

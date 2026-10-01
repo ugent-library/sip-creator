@@ -9,8 +9,8 @@ import (
 // Package is one assembled SIP: the graph of entities, representations,
 // and file nodes the writer emits. The graph checks nothing itself: the
 // assembler keeps its invariants (identifiers minted, paths declared, a
-// mime type on every node), and build.SourcePackage validates what a
-// caller supplies before assembly (ADR-0019).
+// mime type on every node), and build.SourcePackage is validated before
+// the graph is assembled from it (ADR-0019).
 type Package struct {
 	// Location is the package directory on disk: the destination dir
 	// joined with the identifier.
@@ -54,8 +54,8 @@ func (p *Package) DescriptiveFiles() []*File {
 	return []*File{p.Root.DescriptionFile}
 }
 
-// NewPackage roots a package under baseDir. A caller-supplied identifier
-// is reused as the package identifier (how an update keeps the original's
+// NewPackage roots a package under baseDir. A non-empty identifier is
+// reused as the package identifier (how an update keeps the original's
 // mets/@OBJID); empty means mint a fresh one.
 func NewPackage(baseDir, identifier string) *Package {
 	if identifier == "" {

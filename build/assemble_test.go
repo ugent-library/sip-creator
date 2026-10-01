@@ -460,8 +460,9 @@ func TestAssembleDocumentation(t *testing.T) {
 	}
 }
 
-// build.SourcePackage.Validate is the embedding-caller guardrail: the graph rules the
-// folder convention enforces with Violations, re-checked for every producer.
+// build.SourcePackage.Validate holds the rules for a source package however
+// it was made: the rules the CLI's input reader reports as violations,
+// checked again for a SourcePackage built directly in Go.
 func TestSourcePackageValidate(t *testing.T) {
 	valid := func(t *testing.T) *build.SourcePackage {
 		_, in, _ := newTestBuilder(t, basicDef(t))
@@ -840,8 +841,8 @@ func TestAssemblePackageIdentifier(t *testing.T) {
 	}
 }
 
-// Build refuses invalid input data before any side effect: the negative
-// twin of the embedding-caller contract.
+// Build refuses invalid input data before any side effect: a SourcePackage
+// built directly in Go that breaks a rule leaves nothing on disk.
 func TestBuildInvalidSourceWritesNothing(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.Representations = nil
