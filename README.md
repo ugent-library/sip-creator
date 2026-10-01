@@ -5,7 +5,7 @@
 
 A command-line tool and Go library for building Submission Information Packages (SIPs):
 your content files plus descriptive metadata, rolled into a standards-conformant
-[E-ARK SIP](https://earksip.dilcis.eu/), ready for ingest into any E-ARK compliant archival repositories. 
+[E-ARK SIP](https://earksip.dilcis.eu/), ready for ingest into any E-ARK-conformant repository.
 
 E-ARK profiles specialize the output for a particular archive. This project implements
 three: two plain E-ARK profiles for E-ARK-conformant repositories, with Simple Dublin Core
@@ -82,14 +82,16 @@ Further flags:
 * `--content-category` sets the package's content category (`mets/@TYPE`,
   CSIP vocabulary), overriding `SIP_CONTENT_CATEGORY` and the profile default.
 * `--status` sets the record status (SIP3 vocabulary: `new`, `supplement`,
-  `replacement`, `test`, `version`, `delete`; omitted means `new`). A status
+  `replacement`, `test`, `version`, `delete`). Without it the METS carries no
+  status, which the E-ARK SIP specification reads as `new`. A status
   that updates an earlier package requires `--updates <identifier>`: the
   original package's identifier is reused as this package's identifier
   (`mets/@OBJID`).
 * `--no-zip` to skip zipping when the package directory itself is what you need.
 
-To check a folder without building anything, pass the same profile; `check` needs no
-configuration:
+To check a folder without building anything, pass the same profile. `check` does not
+need the `SIP_SUBMITTER_*` variables, but like every command it reads `.env` when
+present and stops on a malformed one:
 
 ```
 ./bin/sip-creator check --profile eark ./your-input
@@ -99,9 +101,9 @@ configuration:
 is the deliverable; ingest it directly.
 
 **Delivering to Meemoo (basic profile):** meemoo's transfer format wraps the SIP in a
-BagIt bag — an envelope this tool deliberately does not produce. Use `--no-zip` to
-create a package directory. Then, bag the package *directory* with a reference BagIt implementation.
-Finally, follow meemoo's transfer instructions:
+BagIt bag, an envelope this tool deliberately does not produce. Use `--no-zip` to
+create a package directory, bag that *directory* with a reference BagIt
+implementation, and then follow meemoo's transfer instructions:
 
 ```
 ./bin/sip-creator create --profile basic --no-zip ./your-input sip-out
@@ -110,10 +112,15 @@ bagit.py --md5 sip-out/uuid-<uuid>/
 
 ### As a Go library
 
-The input folder is a CLI convention; the library takes the same source package as plain Go
-values, and no environment variables are involved: the submitter is data on the profile,
-the destination and logger are configuration. Resolve a profile, attach the submitter,
-and hand `Build` your descriptive terms and content files:
+The input folder is a CLI convention. The library takes the same source package as plain
+Go values and reads no environment variables:
+
+* the submitting organization is added to the profile with `WithSubmitter`;
+* the destination directory and the logger go in `build.Config`;
+* the descriptive metadata and the content files go in `build.SourcePackage`.
+
+Resolve a profile, attach the submitter, and hand `Build` your descriptive terms and
+content files:
 
 ```go
 import (
@@ -165,11 +172,10 @@ pkg, err := builder.Build(&build.SourcePackage{
 
 `Build` validates the source package against the profile's rules, then writes the complete
 package directory under `Destination` and returns the built package. Zipping is a separate
-step (the `archive` package). A builder is constructed once per profile; what varies per
-package rides on the `SourcePackage`. The example above builds a new package with the
-profile's METS values. Three values are the package's own to set: an update of an earlier
-package reuses that package's identifier and says how it updates it, and the content
-category overrides the profile's:
+step (the `archive` package). A builder is constructed once per profile; the values that
+change per package go in the `SourcePackage`. The example above builds a new package with
+the profile's METS values. Three fields override them per package: `PackageIdentifier`
+and `RecordStatus` for an update of an earlier package, and `ContentCategory`:
 
 ```go
 pkg, err := builder.Build(&build.SourcePackage{
@@ -189,8 +195,9 @@ pkg, err := builder.Build(&build.SourcePackage{
 The `eark-mods` profile takes a bibliographic record instead of a list of terms. MODS is
 a tree, so the record is typed by field: its identifier, its titles, and the library's
 physical copies of it as items, each a call number with an optional barcode and an
-optional volume or issue designation. Items belong to the package-level record only; a
-representation is a version of the content, never a copy:
+optional volume or issue designation. Items belong on the package-level record, because
+a representation is a version of the content, never a copy. The library does not refuse
+items on a representation's record; it writes them to that representation's `mods.xml`:
 
 ```go
 import "github.com/ugent-library/sip-creator/profiles/earkmods"
@@ -214,12 +221,9 @@ pkg, err := builder.Build(&build.SourcePackage{
 ```
 
 A record richer than the fields, or one that already exists as a document, travels as a
-supplied file. The two eark profiles accept a `build.DescriptiveDocument` in place of terms or a
-record, copy it into the package as it is after checking that it parses as XML with
-the standard's root element (`simpledc` for `eark`, `mods:mods` declaring version 3.7 for
-`eark-mods`), and leave its validity against the schema to the validators downstream. The
-`basic` profile takes terms only, because meemoo's document must carry the entity
-identifier the build mints:
+supplied file: the two eark profiles accept a `build.DescriptiveDocument` in place of
+terms or a record; the `basic` profile takes terms only. What the tool checks and how it
+copies the file is described under [Input](#input):
 
 ```go
 pkg, err := builder.Build(&build.SourcePackage{
@@ -247,9 +251,9 @@ Hand that definition to `build.New` as above. The XSDs an encoder lists must be 
 this repository bundles in `schemas/`: the build refuses any other name, so a standard
 whose schema is not bundled needs its XSD added there first. The registry in `profiles/`
 is the CLI's list of what `--profile` can name; a library caller's package need not join
-it. Where your profile would decide an attribute value for the caller, make it a typed
-constant set the caller picks from, so two callers making the same choice emit the same
-document (ADR-0022).
+it. When your profile has a value the caller should choose, such as the `type` of a MODS
+identifier, offer a fixed set of typed constants rather than free text, so two callers
+making the same choice write the same document (ADR-0022).
 
 The full API is on [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator);
 the domain model and build lifecycle are described in
@@ -318,6 +322,14 @@ your-input/
         └── scan-002.jpg
 ```
 
+Representation folder names may use letters, digits and `._-`, and are used as-is: the
+folder name becomes the representation's folder name inside the SIP and, unless
+`representations.csv` says otherwise, its label and type in the metadata. In the flat
+case the representation is named after the input folder itself. A representation's own
+`description.csv` describes that version only, such as a license that differs between
+master and access copy. `documentation/` is recommended: validators warn (a CSIP SHOULD)
+when a package has none.
+
 The rows file is a two-column `key,value` file with a header row. The profile you pass
 to `check` and `create` says which vocabulary the rows are in: under `basic` the keys
 come from meemoo's closed vocabulary of Dublin Core terms plus two schema.org
@@ -372,49 +384,24 @@ access,Access copy (JPEG),access
 When the file is present it must be complete: every row must match a folder
 and every folder must have a row, so nothing can silently drop out of the
 package. The full rules are in the
-[input specification](docs/input-spec.md).
-
-In short:
-
-* **`description.csv`** (required; under the eark profiles a `dc.xml` or `mods.xml`
-  may stand in for it): the descriptive metadata, see above.
-* **Content**: either flat in the folder (one representation, named after the
-  input folder itself), or one folder per version under
-  `representations/<your-name>/`. Names are free-form (letters, digits,
-  `._-`) and are used as-is: your folder name becomes the representation's
-  folder name inside the generated SIP and, by default, its human-readable
-  name and type in the metadata.
-* **Optional**: `representations.csv` (a label and type per representation,
-  see the example above), `documentation/` (context
-  material; also per representation, and
-  recommended: validators flag its absence as a SHOULD-level warning),
-  `premis/` (preservation XML received from a vendor, passed through as-is;
-  also per representation), a per-representation rows file or document of the
-  same name (e.g. a license that differs between master and access copy), and the
-  `siegfried.json` characterization sidecar (see Format characterization).
-
-Validate a folder without building anything (no configuration needed):
-
-```
-./bin/sip-creator check --profile eark ./your-input
-```
-
-It reports every violation at once, in plain language.
+[input specification](docs/input-spec.md). Run `check` (see
+[As a command-line tool](#as-a-command-line-tool)) to test a folder against them: it
+reports every violation at once, in plain language.
 
 ## Configuration
 
-Configuration is read from the environment (a `.env` file is loaded when present — start
-from `.env.example`). All environment variables are documented in
+Configuration is read from the environment. A `.env` file is loaded when present; start
+from `.env.example`. All environment variables are documented in
 [CONFIG.md](CONFIG.md).
 
 **Submitting organization** (required for `create`)
 
 Every package's METS names the organization submitting it, so `SIP_SUBMITTER_NAME` is
-required for **every** profile — including `eark`, which builds with the name alone.
-The meemoo profile (`basic`) additionally requires `SIP_SUBMITTER_OR_ID` — the organization's
-identifier in [Meemoo's organization register](https://developer.meemoo.be/) — which is
-emitted as the agent's `IDENTIFICATIONCODE` note (Meemoo SIP 1.2); other profiles ignore
-it. A build refuses to run when a value its profile requires is missing, rather than
+required for **every** profile, including `eark`, which builds with the name alone.
+The meemoo profile (`basic`) also requires `SIP_SUBMITTER_OR_ID`, the organization's
+identifier in [Meemoo's organization register](https://developer.meemoo.be/). It is
+emitted as the agent's `IDENTIFICATIONCODE` note (Meemoo SIP 1.2); the other profiles
+ignore it. A build refuses to run when a value its profile requires is missing, rather than
 emitting a package that would be rejected at ingest:
 
 ```
@@ -422,16 +409,17 @@ SIP_SUBMITTER_NAME="Universiteitsbibliotheek Gent"
 SIP_SUBMITTER_OR_ID="OR-a1b2c3d"
 ```
 
-**Format characterization** (optional, input — not configuration)
+**Format characterization** (optional; this is input, not configuration)
 
 Format info comes from a pre-computed
 [Siegfried](https://github.com/richardlehane/siegfried) report placed next to your
 input; the tool itself never runs Siegfried. Install Siegfried if you want format info
 in your packages, generate the report **from the input root**, and the build picks it
-up by name:
+up by name. Capture the report before writing it, so sf never scans its own
+half-written output:
 
 ```sh
-cd ./your-input && sf -hash md5 -json . > siegfried.json
+cd ./your-input && report="$(sf -hash md5 -json .)" && printf '%s\n' "$report" > siegfried.json
 ```
 
 Without a `siegfried.json` the build succeeds with no format info (`premis:format` is a
@@ -445,8 +433,11 @@ This section is for developing SIP Creator itself.
 
 `go test ./...` runs the Go test suite.
 
-The scripts below require [Docker](https://www.docker.com/) (runs the commons-ip
-validator and the report server) and `jq`; `build.sh` also needs `sf`
+The scripts below require `jq`, and [Docker](https://www.docker.com/) for the commons-ip
+validator and the report server. To run commons-ip on a local Java instead of in Docker,
+set `CSIP_CMD` to the command, for example
+`CSIP_CMD="java -jar commons-ip2-cli-2.11.2.jar" ./build.sh eark`, using the jar version
+that `docker/validator/Dockerfile` pins. `build.sh` also needs `sf`
 ([Siegfried](https://github.com/richardlehane/siegfried)) on your `PATH`, because it
 regenerates the input fixture's `siegfried.json` sidecar before building, and `xmllint`
 (part of libxml2, present on macOS and most Linux systems), which checks every
@@ -463,7 +454,7 @@ at, so the script also runs `xmllint` over every `mods.xml` in the package again
 MODS 3.7 schema the package ships, offline through the XML catalog in
 `scripts/schema-catalog.xml`, and fails the run when one is not valid.
 
-Each run's validation reports are published to `reports/runs/<timestamp>/`. To browse them
+Each run's validation reports are published to `reports/runs/<timestamp>-<profile>/`. To browse them
 as HTML (run history, per-check detail, links into the E-ARK specs):
 
 ```
@@ -471,7 +462,7 @@ docker compose up -d reports
 open http://localhost:8080
 ```
 
-`./scripts/validate.sh <sip.zip|sip-dir>...` validates any package standalone — including
+`./scripts/validate.sh <sip.zip|sip-dir>...` validates any package standalone, including
 an unzipped package directory when debugging structure.
 
 ## Documentation
