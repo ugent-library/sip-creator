@@ -1,6 +1,6 @@
 # Plan: cleaning up the cli package
 
-*Status: **proposed** (2026-10-01). Nothing implemented yet.*
+*Status: **in progress** (2026-10-01). Phase 1.1 to 1.4 done; 1.5 parked.*
 
 This plan collects a review of `cli/` and `cli/input/` (including
 `cli/input/vocabulary/`) into small, separate steps. None of the steps changes a
@@ -49,11 +49,13 @@ line `check` prints to stdout from a script, gets log lines mixed in. Write logs
 
 ### 1.4 Shorter `create`
 
-`createCmd.RunE` resolves the profile, fills the submitter, pairs `--status` with
-`--updates`, picks the content category, reads the folder, builds and zips. Pull out:
+*Done (2026-10-01).*
 
-- `recordStatusFromFlags(cmd) (sip.RecordStatus, string, error)` for the pairing rule;
-- `contentCategory(cmd) string` for the flag, then env, then profile order.
+`createCmd.RunE` resolves the profile, fills the submitter, pairs `--status` with
+`--updates`, picks the content category, reads the folder, builds and zips. Pull out
+`recordStatusFromFlags(cmd) (sip.RecordStatus, string, error)` for the pairing rule,
+the one piece of flag policy in `create`. The content category stays inline: four
+lines with one caller read better in place than behind a function.
 
 Construct the zipper only when `--no-zip` is not set. Rename `flagStatus` to
 `statusText`.
