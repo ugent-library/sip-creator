@@ -44,29 +44,29 @@ func (w *folderWalker) read() *build.SourcePackage {
 	source := &build.SourcePackage{}
 
 	var content []os.DirEntry
-	var description, document, repsDir, repsCSV string
+	var descriptionPath, documentPath, representationsPath, representationsCSVPath string
 
 	for _, e := range w.readDir(w.root) {
 		name := e.Name()
 		src := filepath.Join(w.root, e.Name())
 		if w.isDocumentName(name) {
 			if w.expectFile(e, src, "the supplied descriptive document") {
-				document = src
+				documentPath = src
 			}
 			continue
 		}
 		switch name {
 		case descriptionName:
 			if w.expectFile(e, src, "the descriptive rows file") {
-				description = src
+				descriptionPath = src
 			}
 		case representationsName:
 			if w.expectFolder(e, src, "the folder of representations") {
-				repsDir = src
+				representationsPath = src
 			}
 		case representationsCSVName:
 			if w.expectFile(e, src, "the representations file") {
-				repsCSV = src
+				representationsCSVPath = src
 			}
 		case documentationName:
 			if w.expectFolder(e, src, "a folder") {
@@ -85,20 +85,20 @@ func (w *folderWalker) read() *build.SourcePackage {
 		}
 	}
 
-	source.Description = w.description(description, document, true)
+	source.Description = w.description(descriptionPath, documentPath, true)
 
-	if repsDir != "" {
+	if representationsPath != "" {
 		// With a representations/ folder, all content lives inside it;
 		// only the reserved names may sit beside it.
 		for _, e := range content {
 			w.violate("%s: content must live inside representations/ when that folder exists (only the reserved names of the input specification may sit beside it)", e.Name())
 		}
-		source.Representations = w.readRepresentations(repsDir)
-		if repsCSV != "" {
-			source.Representations = w.applyRepresentations(repsCSV, source.Representations)
+		source.Representations = w.readRepresentations(representationsPath)
+		if representationsCSVPath != "" {
+			source.Representations = w.applyRepresentations(representationsCSVPath, source.Representations)
 		}
 	} else {
-		if repsCSV != "" {
+		if representationsCSVPath != "" {
 			w.violate("representations.csv requires a representations/ folder; a flat folder is one representation named after the folder itself")
 		}
 		source.Representations = []build.SourceRepresentation{w.readFlatRepresentation(content)}
@@ -132,20 +132,20 @@ func (w *folderWalker) readRepresentations(dir string) []build.SourceRepresentat
 
 func (w *folderWalker) readRepresentation(dir, name string) build.SourceRepresentation {
 	rep := build.SourceRepresentation{Name: name}
-	var description, document string
+	var descriptionPath, documentPath string
 	for _, e := range w.readDir(dir) {
 		name := e.Name()
 		src := filepath.Join(dir, e.Name())
 		if w.isDocumentName(name) {
 			if w.expectFile(e, src, "the supplied descriptive document") {
-				document = src
+				documentPath = src
 			}
 			continue
 		}
 		switch name {
 		case descriptionName:
 			if w.expectFile(e, src, "the descriptive rows file") {
-				description = src
+				descriptionPath = src
 			}
 		case documentationName:
 			if w.expectFolder(e, src, "a folder") {
@@ -163,7 +163,7 @@ func (w *folderWalker) readRepresentation(dir, name string) build.SourceRepresen
 			rep.Files = append(rep.Files, w.newFile(dir, src))
 		}
 	}
-	rep.Description = w.description(description, document, false)
+	rep.Description = w.description(descriptionPath, documentPath, false)
 	if len(rep.Files) == 0 {
 		w.violate("%s: the representation contains no content files", w.rel(dir))
 	}

@@ -14,21 +14,21 @@ import (
 // folder supplies for it: the rows file, decoded under the vocabulary, or
 // the profile's supplied document, read as it is. Both at one level is a
 // violation: an entity has one description, and the tool does not pick.
-// The package level needs one; a representation may have neither. rows and
-// document are "" when the folder has no such file.
-func (w *folderWalker) description(rows, document string, packageLevel bool) sip.Description {
+// The package level needs one; a representation may have neither.
+// rowsPath and documentPath are "" when the folder has no such file.
+func (w *folderWalker) description(rowsPath, documentPath string, packageLevel bool) sip.Description {
 	switch {
-	case rows != "" && document != "":
+	case rowsPath != "" && documentPath != "":
 		described := "representation"
 		if packageLevel {
 			described = "package"
 		}
-		w.violate("%s and %s are both present; describe the %s with one of the two, not both (input specification §3)", w.rel(rows), w.rel(document), described)
+		w.violate("%s and %s are both present; describe the %s with one of the two, not both (input specification §3)", w.rel(rowsPath), w.rel(documentPath), described)
 		return nil
-	case document != "":
-		return w.readDocument(document)
-	case rows != "":
-		return w.decodeDescription(rows, packageLevel)
+	case documentPath != "":
+		return w.readDocument(documentPath)
+	case rowsPath != "":
+		return w.decodeDescription(rowsPath, packageLevel)
 	case packageLevel:
 		w.violateMissingDescription()
 	}
