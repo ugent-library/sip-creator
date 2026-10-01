@@ -181,7 +181,7 @@ profile requires is missing, rather than emitting a package that would be reject
 ingest:
 
 ```
-SIP_SUBMITTER_NAME="Universiteitsbibliotheek Gent"
+SIP_SUBMITTER_NAME="Example Organization"
 SIP_SUBMITTER_OR_ID="OR-a1b2c3d"
 ```
 
@@ -245,26 +245,26 @@ the profile (see [Profiles](#profiles)). The smallest valid file per profile:
 
 ```csv
 key,value
-identifier,inv.2024.001
-title,Correspondentie 1914-1918
+identifier,example-0001
+title,Example photograph
 ```
 
 `eark-mods`:
 
 ```csv
 key,value
-identifier,990001234560471
-title[nl],Correspondentie 1914-1918
+identifier,example-0001
+title[en],Example book
 ```
 
 `basic`:
 
 ```csv
 key,value
-identifier,BIB.FA.2026.001
-title[nl],Fotoalbum Gent 1913
-description[nl],Album met 48 zwart-witfoto's van de Gentse binnenstad
-created,1913
+identifier,example-0001
+title[nl],Voorbeeldfoto
+description[nl],Een voorbeeldpakket met één afbeelding.
+created,2026-01-15
 ```
 
 A finished document replaces the file at the same level. The tool checks only that it is
@@ -328,7 +328,7 @@ import (
 
 def, _ := profiles.Get("eark")
 // The second argument is the meemoo OR-id, used by basic only.
-def, err := def.WithSubmitter("Universiteitsbibliotheek Gent", "")
+def, err := def.WithSubmitter("Example Organization", "")
 if err != nil {
 	// ...
 }
@@ -345,10 +345,10 @@ if err != nil {
 pkg, err := builder.Build(&build.SourcePackage{
 	// The description's type belongs to the profile (see Profiles).
 	Description: eark.Terms{
-		{Key: "identifier", Value: "inv.2024.001"},
-		{Key: "title", Value: "Correspondentie 1914-1918"},
-		{Key: "description", Value: "Brieven uit de collectie."},
-		{Key: "date", Value: "1914/1918"},
+		{Key: "identifier", Value: "example-0001"},
+		{Key: "title", Value: "Example photograph"},
+		{Key: "description", Value: "An example package with one image."},
+		{Key: "date", Value: "2026-01-15"},
 	},
 	Representations: []build.SourceRepresentation{{
 		Name: "master",
@@ -380,13 +380,13 @@ def, _ := profiles.Get("eark-mods")
 
 pkg, err := builder.Build(&build.SourcePackage{
 	Description: earkmods.Record{
-		Identifier: "990001234560471",
+		Identifier: "example-0001",
 		Titles: []earkmods.Title{
-			{Value: "Correspondentie 1914-1918", Lang: "nl"},
+			{Value: "Example book", Lang: "en"},
 		},
 		Items: []earkmods.Item{
-			{CallNumber: "BIB.HS.001", Barcode: "000012345678"},
-			{CallNumber: "BIB.HS.002", Enumeration: "deel 2"},
+			{CallNumber: "EX.0001", Barcode: "0000000001"},
+			{CallNumber: "EX.0002", Enumeration: "vol. 2"},
 		},
 	},
 	// Representations as above.
@@ -400,7 +400,7 @@ tool does (see [Input folder](#input-folder)):
 
 ```go
 pkg, err := builder.Build(&build.SourcePackage{
-	Description: build.DescriptiveDocument{Source: "/data/records/990001234560471/mods.xml"},
+	Description: build.DescriptiveDocument{Source: "/data/records/example-0001/mods.xml"},
 	// Representations as above.
 })
 ```

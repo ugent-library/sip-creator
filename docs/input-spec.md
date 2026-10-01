@@ -15,7 +15,7 @@ This spec describes the CLI's input convention only. The underlying library expo
 One folder = one package. In the simplest case:
 
 ```
-fotoalbum-gent-1913/
+example-0001/
 ├── description.csv       ← describes the content (the only file you write)
 └── ... your files ...
 ```
@@ -23,7 +23,7 @@ fotoalbum-gent-1913/
 With multiple versions of the content and extras:
 
 ```
-fotoalbum-gent-1913/
+example-0001/
 ├── description.csv
 ├── representations.csv   ← optional: a label and type per representation
 ├── representations/
@@ -126,15 +126,15 @@ Example:
 
 ```csv
 key,value
-identifier,BIB.FA.2026.001
-title[nl],Fotoalbum Gent 1913
-description[nl],Album met 48 zwart-witfoto's van de Gentse binnenstad
-created,1913
-creator,Edmond Sacré
-subject[nl],stadsgezichten
-subject[nl],wereldtentoonstellingen
-spatial[nl],Gent
-extent[nl],48 foto's
+identifier,example-0001
+title[nl],Voorbeeldfoto
+title[en],Example photograph
+description[nl],Een voorbeeldpakket met één afbeelding.
+created,2026-01-15
+creator,Example Studio
+subject[nl],voorbeelden
+subject[nl],fotografie
+extent[nl],1 foto
 rights[nl],publiek domein
 ```
 
@@ -175,7 +175,7 @@ Digitization vendors and lab equipment sometimes deliver preservation metadata a
 Rules:
 
 - Files here MUST be well-formed XML whose root is a `premis:premis` element in the PREMIS 3 namespace, and SHOULD be schema-valid PREMIS 3.0. The tool checks the former at build time and leaves schema validation to the external validators, like all content validation. They are included in the package as received: not parsed, edited, or merged.
-- Because these files cannot know the identifiers the tool generates, they SHOULD identify their subject using local identifiers built from your `identifier` and the representation name (e.g. `BIB.FA.2026.001-master`), so a future reader can correlate them with the generated preservation metadata.
+- Because these files cannot know the identifiers the tool generates, they SHOULD identify their subject using local identifiers built from your `identifier` and the representation name (e.g. `example-0001-master`), so a future reader can correlate them with the generated preservation metadata.
 
 ## 6. What comes from configuration and the command line
 

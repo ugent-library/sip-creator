@@ -17,7 +17,7 @@ type config struct {
 	// CREATOR agent. `create` requires NAME for every profile and OR_ID for
 	// meemoo profiles.
 	Submitter struct {
-		// Name of the submitting organization, e.g. "Universiteitsbibliotheek Gent".
+		// Name of the submitting organization, e.g. "Example Organization".
 		Name string `env:"NAME"`
 		// The organization's meemoo OR-id (its identifier in meemoo's
 		// organization register), e.g. "OR-a1b2c3d". Required for meemoo
