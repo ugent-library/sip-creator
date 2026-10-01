@@ -104,7 +104,7 @@ var (
 	}
 )
 
-// In the flat worlds the statements become the profile's terms as stated,
+// Under basic and eark the statements become the profile's terms unchanged,
 // in statement order, so a term error's index names the row.
 func TestStatementsBecomeTermsInOrder(t *testing.T) {
 	tests := []struct {

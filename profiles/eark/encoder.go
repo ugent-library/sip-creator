@@ -11,16 +11,17 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// simpledc is the encoder for the simpledc document as the engine sees it:
-// it accepts Terms and writes them with Encode, and says which supplied
-// document is one of its own. It never swaps: dc.xml keeps the producer's
-// identifier, because CSIP has no rule tying it to the package identifier
-// and the ingesting catalogue indexes dc.xml, so operators find the
-// package by the identifier they know (ADR-0012).
+// simpledc is the encoder for the simpledc document: it accepts Terms and
+// writes them with Encode, and says which supplied document is one of its
+// own. It never swaps: dc.xml keeps the producer's identifier, because
+// CSIP has no rule tying it to the package identifier and the ingesting
+// catalogue indexes dc.xml, so operators find the package by the
+// identifier they know (ADR-0012).
 type simpledc struct{}
 
-// DescriptiveDocumentChecker is optional to the engine, so a drift in CheckDescriptiveDocument's
-// signature would fail silently; the assertion makes it a build error.
+// DescriptiveDocumentChecker is optional to the engine, so a drift in
+// CheckDescriptiveDocument's signature would fail silently; the
+// assertion makes it a build error.
 var (
 	_ build.DescriptionEncoder         = simpledc{}
 	_ build.DescriptiveDocumentChecker = simpledc{}

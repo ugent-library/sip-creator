@@ -44,11 +44,11 @@ func (d *directory) violateMissingDescription() {
 }
 
 // decodeDescription decodes the descriptive rows file at src into the
-// profile's description, collecting a violation per broken rule. The row
-// syntax (header, two columns, key[lang]) is the file's own and is checked
-// here; what a key means is the vocabulary's; what the finished
-// description may say and what a package-level one must state are the
-// description's own rules, run once on the result.
+// profile's description, collecting a violation per broken rule. This
+// function checks the row syntax (header, two columns, key[lang]); the
+// vocabulary decides what a key means; the description's Validate and
+// ValidateRequired, run once on the result, decide what it may say and
+// what a package-level one must state.
 func (d *directory) decodeDescription(src string, packageLevel bool) sip.Description {
 	rel := d.rel(src)
 
@@ -148,8 +148,8 @@ func isHeaderRow(row []string) bool {
 // parseKey handles the key *syntax* of the CSV convention (the optional
 // [lang] bracket, no prefixes, case-insensitive spelling) and returns the
 // plain key for the vocabulary to check. Whether the language tag inside
-// the brackets is *valid* is the term's own rule; the decoder only adds
-// the file/line context.
+// the brackets is *valid* is a rule on the term, which Validate checks;
+// the decoder only adds the file and line.
 func (d *directory) parseKey(file string, line int, raw string) (key, lang string, ok bool) {
 	key = raw
 	if i := strings.IndexByte(key, '['); i >= 0 {

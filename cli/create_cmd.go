@@ -82,8 +82,8 @@ var createCmd = &cobra.Command{
 			Logger:      logger,
 		})
 
-		// The values that are this package's own, next to what the folder
-		// supplied: the profile carries the defaults.
+		// Values that belong to this package rather than to the folder;
+		// left empty, the profile's values apply.
 		source.PackageIdentifier = updates
 		source.RecordStatus = status
 		source.ContentCategory = contentCategory

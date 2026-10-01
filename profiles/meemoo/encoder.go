@@ -11,11 +11,11 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// dcschema is the encoder for the dc+schema document as the engine sees
-// it: it accepts Terms, writes them with Encode, and swaps the entity
-// identifier in. It is no DescriptiveDocumentChecker: meemoo's document must carry
-// the entity identifier the build mints, which Swap writes into terms, so
-// a supplied document has no place here and the engine refuses one.
+// dcschema is the encoder for the dc+schema document: it accepts Terms,
+// writes them with Encode, and swaps the entity identifier in. It does not
+// implement DescriptiveDocumentChecker, so the engine refuses a supplied
+// document: meemoo's document must carry the entity identifier the build
+// mints, which Swap writes into the terms.
 type dcschema struct{}
 
 // IdentifierSwapper is optional to the engine, so a drift in Swap's

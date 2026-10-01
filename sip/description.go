@@ -3,14 +3,12 @@ package sip
 import "fmt"
 
 // Description is the descriptive metadata of an entity or a
-// representation, in whichever descriptive standard the profile writes.
-// Each profile package supplies its own implementation (meemoo.Terms,
-// eark.Terms, earkmods.Record): a list of Term values where the standard
-// is a flat list, a struct typed by field where it is a tree, under the
-// profile's own rules. build.DescriptiveDocument, a finished document supplied as a
-// file, is one more, for the profiles whose encoder accepts it. The
-// profile's descriptive standard knows the concrete type and does
-// everything that needs it, so nothing in sip/ depends on a profile.
+// representation, in the descriptive standard the profile writes. Each
+// profile package supplies its own type: meemoo.Terms and eark.Terms are
+// lists of Term values, earkmods.Record is a struct typed by field, and
+// build.DescriptiveDocument is a finished document supplied as a file, for
+// the profiles that accept one. Only the profile package works with the
+// concrete type, so nothing in sip/ depends on a profile.
 type Description interface {
 	// Validate returns every way the description is not a valid one in its
 	// standard, joined into one error: an unknown key, a malformed
@@ -30,13 +28,12 @@ type Description interface {
 }
 
 // Term is one descriptive statement: a key from the profile's vocabulary,
-// an optional language tag, and the value. Every flat descriptive
-// standard shares this shape; which keys exist, what element each emits
-// and what rules apply are the profile's own.
+// an optional language tag, and the value. Every descriptive standard
+// that is a flat list of elements shares this shape; the profile decides
+// which keys exist, which element each one emits, and what rules apply.
 type Term struct {
-	// Key names what the statement says, in the vocabulary's own words as
-	// the input specification's table lists them: "title", "created",
-	// "artmedium". It is lowercase and carries no prefix; the profile maps
+	// Key names what the statement says, spelled as the input
+	// specification's table spells it: "title", "created", "artmedium". It is lowercase and carries no prefix; the profile maps
 	// it to the element it emits.
 	Key string
 	// Lang is the value's language tag; empty when unspecified.

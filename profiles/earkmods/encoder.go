@@ -12,23 +12,24 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// mods is the encoder for the MODS document as the engine sees it: it
-// accepts Record and writes it with Encode, and says which supplied
+// mods is the encoder for the MODS document: it accepts Record and writes
+// it with Encode, and says which supplied
 // document is one of its own. It never swaps: mods.xml keeps the
 // producer's identifier, the catalogue number the ingesting repository
 // indexes and operators search by (ADR-0012).
 type mods struct{}
 
-// DescriptiveDocumentChecker is optional to the engine, so a drift in CheckDescriptiveDocument's
-// signature would fail silently; the assertion makes it a build error.
+// DescriptiveDocumentChecker is optional to the engine, so a drift in
+// CheckDescriptiveDocument's signature would fail silently; the
+// assertion makes it a build error.
 var (
 	_ build.DescriptionEncoder         = mods{}
 	_ build.DescriptiveDocumentChecker = mods{}
 )
 
 // The namespace and version the template declares and a supplied document
-// must declare: the METS types the document MODS 3.7, so a document of
-// another version would make the METS lie.
+// must declare. The METS dmdSec declares the document as MODS 3.7, so a
+// document of another version would contradict it.
 const (
 	namespace = "http://www.loc.gov/mods/v3"
 	version   = "3.7"

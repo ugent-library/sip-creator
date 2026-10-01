@@ -45,8 +45,9 @@ func checkDocument(def build.Definition, root xml.StartElement) error {
 	return checker.CheckDescriptiveDocument(root)
 }
 
-// terms turns statements into the terms a flat world's description is a
-// list of, in statement order, so a term error's index names the row.
+// terms turns statements into terms, for the profiles whose description is
+// a list of them, in statement order, so a term error's index names the
+// row.
 func terms(statements []input.Statement) []sip.Term {
 	out := make([]sip.Term, len(statements))
 	for i, s := range statements {

@@ -30,9 +30,10 @@ type Vocabulary interface {
 // takes a finished document of its standard in place of the rows, as the
 // two eark profiles do. The reader reserves the file name it gives, at the
 // input root and inside each representation directory, reads that file's
-// root element, and asks whether the root is the profile's. A vocabulary
-// without it takes rows only, and no file name is reserved for a document:
-// a dc.xml under such a profile is content like any other file.
+// root element, and asks whether that root is the profile's standard. A
+// vocabulary without it takes rows only, and no file name is reserved for
+// a document: a dc.xml under such a profile is content like any other
+// file.
 type DocumentVocabulary interface {
 	// DocumentName is the file name of the supplied document, dc.xml or
 	// mods.xml: the name the package gives the document too.
@@ -47,7 +48,7 @@ type DocumentVocabulary interface {
 // Statement is one row of a description.csv: one thing the folder states
 // about the described entity, as a key, an optional language tag and a
 // value, with the line it was read from. The reader checks the row's
-// syntax only; what the key means is the vocabulary's.
+// syntax only; the vocabulary decides what the key means.
 type Statement struct {
 	// Key is the plain vocabulary key as the first column spells it,
 	// lowercased, without the language tag.

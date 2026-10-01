@@ -9,10 +9,10 @@ import (
 )
 
 // Eark is the eark profile's vocabulary: the fifteen Simple Dublin Core
-// elements, the table in profiles/eark. The document is a flat list, so a
-// key is the model: the statements become eark.Terms as stated, and which
-// keys exist and what a statement may say are the terms' own rules, run
-// by the reader on the result. A finished dc.xml may stand in for the rows.
+// elements, the table in profiles/eark. Each statement becomes one term of
+// eark.Terms unchanged; the terms' Validate, which the reader runs on the
+// result, decides which keys exist and what a statement may say. A
+// finished dc.xml may stand in for the rows.
 type Eark struct{}
 
 var _ input.DocumentVocabulary = Eark{}

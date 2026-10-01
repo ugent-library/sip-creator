@@ -60,7 +60,7 @@ func meemooIdentityTerms() meemoo.Terms {
 	}
 }
 
-// Cardinality and the Dutch-language rule are meemoo's standard's own, so
+// Cardinality and the Dutch-language rule belong to meemoo's standard, so
 // build.SourcePackage.Validate applies them to meemoo terms at both levels whatever
 // the profile, and never to Simple Dublin Core terms.
 func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {

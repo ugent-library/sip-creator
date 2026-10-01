@@ -9,18 +9,14 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// DescriptiveDocument is a finished descriptive document supplied as a file, a dc.xml
-// or mods.xml prepared elsewhere, copied into the package as it is
-// (ADR-0021). It is a Description for the profiles whose encoder is also a
-// DescriptiveDocumentChecker, the two eark profiles. The basic profile takes none:
-// meemoo's document must carry the entity identifier the build mints, and
-// the tool does not edit XML. The tool checks what the package's integrity
-// needs and nothing more: the file parses as XML (Validate) and its root
-// element is the profile's standard (the engine reads the root, the
-// profile's CheckDescriptiveDocument judges it). The writer copies the file with the
-// store's streamed copy, fixity computed on the way, as it copies essence.
-// Validity against the schema and the document's content are the
-// producer's, and the validators downstream check them (ADR-0003).
+// DescriptiveDocument is a finished descriptive document supplied as a
+// file, such as a dc.xml or mods.xml prepared elsewhere. The package
+// carries an unchanged copy of it (ADR-0021). The two eark profiles accept
+// one; the basic profile does not, because meemoo's document must carry
+// the entity identifier the build mints, and the tool does not edit XML.
+// The tool checks only that the file parses as XML and that its root
+// element is the profile's standard. Schema validity and content are left
+// to the producer and to the validators downstream (ADR-0003).
 type DescriptiveDocument struct {
 	// Source is the absolute path of the file on disk.
 	Source string
@@ -36,9 +32,9 @@ func (d DescriptiveDocument) Validate() error {
 	return err
 }
 
-// ValidateRequired trusts the document. Nothing in the profiles that
-// accept one reads an identifier or a title back out of it, and what a
-// document must state is its schema's business, not the tool's.
+// ValidateRequired reports nothing: no profile that accepts a document
+// reads an identifier or a title from it, and the document's schema says
+// what it must state.
 func (DescriptiveDocument) ValidateRequired() error { return nil }
 
 // Root reads the whole file with xmldoc.Root and returns its root

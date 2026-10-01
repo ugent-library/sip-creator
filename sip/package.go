@@ -7,10 +7,10 @@ import (
 )
 
 // Package is one assembled SIP: the graph of entities, representations,
-// and file nodes the writer emits. The graph checks nothing itself: its
-// invariants (identifiers minted, paths declared, a mime type on every
-// node) are the assembler's to keep, and what a caller supplies is
-// validated before assembly on build.SourcePackage (ADR-0019).
+// and file nodes the writer emits. The graph checks nothing itself: the
+// assembler keeps its invariants (identifiers minted, paths declared, a
+// mime type on every node), and build.SourcePackage validates what a
+// caller supplies before assembly (ADR-0019).
 type Package struct {
 	// Location is the package directory on disk: the destination dir
 	// joined with the identifier.

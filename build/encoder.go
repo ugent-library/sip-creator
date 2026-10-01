@@ -14,8 +14,8 @@ import (
 // implements it for its own description type, so everything that needs the
 // concrete type stays there and the engine speaks sip.Description only. A
 // caller with its own profile implements it too (ADR-0022).
-// Building a description is not the encoder's business: callers construct
-// the profile's type themselves.
+// Callers construct the description themselves; the encoder only checks
+// and writes it.
 type DescriptionEncoder interface {
 	// Check returns why d is not a description this encoder takes: a
 	// description of another type. It runs before validation and before
@@ -49,14 +49,15 @@ type IdentifierSwapper interface {
 	Swap(d sip.Description, id string) (local string)
 }
 
-// DescriptiveDocumentChecker is the optional part of a DescriptionEncoder whose
-// profile takes a supplied descriptive document (DescriptiveDocument) next to its own
-// description type. CheckDescriptiveDocument returns why root, the document's root
-// element as the engine read it, is not the profile's standard: another
-// element or namespace, or a version other than the one the METS declares.
-// An encoder without it takes no supplied document; meemoo's is one,
-// because its document must carry the entity identifier the build mints,
-// which Swap writes into terms (ADR-0021).
+// DescriptiveDocumentChecker is the optional part of a DescriptionEncoder
+// whose profile takes a supplied descriptive document (DescriptiveDocument)
+// next to its own description type. CheckDescriptiveDocument returns why
+// root, the document's root element, is not the profile's standard:
+// another element or namespace, or a version other than the one the METS
+// declares. An encoder without it takes no supplied document. meemoo's
+// encoder does not implement it, because meemoo's document must carry the
+// entity identifier the build mints, which Swap writes into the terms
+// (ADR-0021).
 type DescriptiveDocumentChecker interface {
 	CheckDescriptiveDocument(root xml.StartElement) error
 }

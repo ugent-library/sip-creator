@@ -26,10 +26,9 @@ func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {
 	pkg := sip.NewPackage(b.destination, source.PackageIdentifier)
 	b.logger.Info("created a new package", slog.String("id", pkg.Identifier))
 
-	// The package's declaration starts from the profile's and takes the
-	// values that are this package's own: its record status and content
-	// category. A copy, so the graph never points into the builder's
-	// profile.
+	// The package's declaration is a copy of the profile's, with the record
+	// status and content category the source package supplies. A copy, so
+	// the graph never points into the builder's profile.
 	decl := b.profile.Declaration
 	if source.RecordStatus != "" {
 		decl.RecordStatus = source.RecordStatus
@@ -162,14 +161,13 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 }
 
 // assembleRepresentations turns each supplied representation into a graph
-// node. The package-side name (the directory under representations/ and the
-// rep METS OBJID) is the producer's name, used verbatim: no spec dictates a
-// naming scheme (CSIP requires only uniqueness, and meemoo 2.x only that the
-// dir name equal the rep METS OBJID, which setting both from Name satisfies
-// for free), and SourcePackage.Validate has already checked every name for
-// uniqueness and the portable character set. Label and type resolve along
-// the defaulting cascade (name → label → type). decl is the package's
-// declaration, which each representation's own declaration starts from.
+// node. The producer's name is used verbatim as the directory under
+// representations/ and as the representation METS OBJID: no spec dictates
+// a naming scheme (CSIP requires only that names be unique; meemoo 2.x
+// requires the directory name to equal the OBJID, which holds because
+// both come from Name). SourcePackage.Validate has already checked the
+// names. decl is the package's declaration, which each representation's
+// declaration starts from.
 func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaration, source *SourcePackage) error {
 	for _, sr := range source.Representations {
 		r := sip.NewRepresentation(sr.Name)
@@ -285,10 +283,10 @@ func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile)
 	return files, nil
 }
 
-// essenceRecord looks up the file's record and enforces ADR-0009's
-// strictness: every essence file must be present in the report, error-free,
-// and its checksum must match the bytes on disk; a stale format claim in
-// preservation metadata is worse than none.
+// essenceRecord looks up the file's record and refuses it unless it is
+// present, error-free, and its checksum matches the bytes on disk
+// (ADR-0009): a stale format claim in preservation metadata is worse than
+// none.
 func (b *Builder) essenceRecord(chars characterization.Report, src SourceFile) (characterization.Record, error) {
 	rec, ok := chars[src.Key]
 	if !ok {
@@ -318,8 +316,8 @@ func sampleKey(chars characterization.Report) string {
 	return fmt.Sprintf("%q", keys[0])
 }
 
-// verifyReportMD5 checks the report's checksum for src: the MD5 is
-// what ties a record to the bytes it describes (the staleness defense).
+// verifyReportMD5 checks that the report's checksum for src matches the
+// file: the MD5 proves the record still describes these bytes.
 func verifyReportMD5(src string, rec characterization.Record) error {
 	sum, err := md5File(src)
 	if err != nil {

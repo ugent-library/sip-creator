@@ -156,8 +156,8 @@ func TestBuildSuppliedDocumentOnRepresentation(t *testing.T) {
 // A document the profile cannot take is refused before any write: another
 // standard's root, a MODS version other than the declared one, a version
 // missing, a malformed file, a missing file, and any document at all under
-// basic, whose encoder is no DescriptiveDocumentChecker because its document needs
-// the swap.
+// basic, whose encoder does not implement DescriptiveDocumentChecker
+// because its document needs the swap.
 func TestBuildRefusesWrongDocument(t *testing.T) {
 	dir := t.TempDir()
 	cases := []struct {

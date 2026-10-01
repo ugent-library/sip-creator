@@ -14,8 +14,9 @@ import (
 
 // directory is the input folder under inspection: the root all messages and
 // report keys are relative to, the findings collected so far, the
-// vocabulary that gives the rows of a description.csv their meaning, and
-// its document side when the profile takes a supplied document.
+// vocabulary that gives the rows of a description.csv their meaning, and,
+// when the profile takes a supplied document, the DocumentVocabulary that
+// names and judges it.
 type directory struct {
 	root       string
 	violations Violations
@@ -281,9 +282,8 @@ func (d *directory) newFile(base, src string) build.SourceFile {
 }
 
 // decodeSidecar decodes the optional pre-computed characterization report.
-// Decode strictness is ADR-0009's: a present report must parse; per-entry
-// verification (the MD5 check) stays with the assembler, which knows which
-// entries it needs.
+// A present report must parse (ADR-0009); the assembler verifies each
+// entry's MD5, because only it knows which entries it needs.
 func (d *directory) decodeSidecar(src string) characterization.Report {
 	f, err := os.Open(src)
 	if err != nil {

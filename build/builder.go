@@ -9,7 +9,7 @@ import (
 )
 
 // Config is the builder's wiring: which profile it builds to, where
-// packages land and how the build narrates. What a package is built from
+// packages land and where the build logs. What a package is built from
 // is not configuration; it arrives per build as a SourcePackage.
 type Config struct {
 	// Profile is the definition every package this builder makes is built
@@ -19,7 +19,7 @@ type Config struct {
 	Profile Definition
 	// Destination is the directory packages are created under.
 	Destination string
-	// Logger narrates the build.
+	// Logger receives the build's progress messages.
 	Logger *slog.Logger
 }
 

@@ -76,15 +76,15 @@ func (sr SourceRepresentation) resolvedType() string {
 	return sr.label()
 }
 
-// SourcePackage is one package as the caller supplies it, given as data, not files to
-// parse: descriptive metadata as a decoded Description, characterization
-// as a decoded report, essence and documentation as source paths. The
-// CLI's folder convention (cli/input) is one transport producing these
-// values; embedding systems construct them directly.
+// SourcePackage is one package as the caller supplies it, given as data,
+// not files to parse: descriptive metadata as a Description,
+// characterization as a decoded report, essence and documentation as
+// source paths. The CLI's folder convention (cli/input) is one transport
+// producing these values; embedding systems construct them directly.
 //
-// Build takes ownership of the data: the description may be mutated
-// (a standard that swaps, meemoo's, writes the entity identifier in)
-// during assembly.
+// Build takes ownership of the data: under a profile that swaps
+// identifiers, such as meemoo's, assembly writes the entity identifier
+// into the description.
 type SourcePackage struct {
 	// PackageIdentifier optionally supplies the package identifier instead
 	// of minting one; this is how an update reuses the original package's
