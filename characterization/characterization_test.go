@@ -101,19 +101,24 @@ func TestDecodeSiegfriedWrongShape(t *testing.T) {
 }
 
 // sf records paths as invoked; keys must come out input-relative and clean.
+// A report generated on Windows carries backslashes, and must match the
+// same files when the tool runs on macOS or Linux.
 func TestDecodeSiegfriedKeyNormalization(t *testing.T) {
 	report, err := DecodeSiegfried(strings.NewReader(`{
 		"siegfried": "1.11.0",
 		"files": [
-			{"filename": "./representation_1//cat.jpg", "filesize": 1, "errors": "", "md5": "ab", "matches": []}
+			{"filename": "./representation_1//cat.jpg", "filesize": 1, "errors": "", "md5": "ab", "matches": []},
+			{"filename": ".\\representations\\master\\dog.jpg", "filesize": 1, "errors": "", "md5": "cd", "matches": []}
 		]
 	}`))
 	if err != nil {
 		t.Fatalf("DecodeSiegfried: %v", err)
 	}
 
-	if _, ok := report["representation_1/cat.jpg"]; !ok {
-		t.Errorf("normalized key missing, keys: %v", keys(report))
+	for _, key := range []string{"representation_1/cat.jpg", "representations/master/dog.jpg"} {
+		if _, ok := report[key]; !ok {
+			t.Errorf("normalized key %q missing, keys: %v", key, keys(report))
+		}
 	}
 }
 

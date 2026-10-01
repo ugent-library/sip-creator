@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"io"
 	"path"
-	"path/filepath"
+	"strings"
 
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -86,11 +86,13 @@ func DecodeSiegfried(r io.Reader) (Report, error) {
 			rec.Format = &sip.Format{FormatRegistry: fr}
 			rec.Mime = m.Mime
 		}
-		// sf records paths as invoked (possibly ./-prefixed); consumers
-		// look up input-relative slash paths. ToSlash turns backslashes
-		// into slashes only when the tool runs on Windows, so a report
-		// generated on Windows matches no file elsewhere.
-		report[path.Clean(filepath.ToSlash(f.Filename))] = rec
+		// sf records paths as invoked (possibly ./-prefixed, with
+		// backslashes when sf ran on Windows); consumers look up
+		// input-relative slash paths. Backslashes become slashes whatever
+		// the platform the tool runs on, so a report generated on Windows
+		// matches the files on macOS or Linux; a file name that itself
+		// contains a backslash then matches no entry.
+		report[path.Clean(strings.ReplaceAll(f.Filename, `\`, "/"))] = rec
 	}
 	return report, nil
 }
