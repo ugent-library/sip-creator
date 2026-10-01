@@ -138,7 +138,8 @@ Assuming you have data in a `./your-input` directory (prepared as described unde
 ```
 
 This writes the package directory `sip-out/uuid-<uuid>/` and zips it (uncompressed) to
-`sip-out/uuid-<uuid>.zip`.
+`sip-out/uuid-<uuid>.zip`. To try it before preparing your own input, build one of the
+[example folders](examples/): `./bin/sip-creator create --profile eark examples/eark sip-out`.
 
 Further flags:
 
@@ -230,6 +231,8 @@ Everything else is content. A representation folder can hold its own `descriptio
 (or document), `documentation/` and `premis/`, about that version only. Representation
 folder names may use letters, digits and `._-`; in the simple case the representation is
 named after the input folder.
+
+[examples/](examples/) has a complete input folder for each profile.
 
 #### `description.csv`
 

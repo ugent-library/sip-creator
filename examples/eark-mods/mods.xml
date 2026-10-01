@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mods:mods xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.7" xsi:schemaLocation="http://www.loc.gov/mods/v3 ../../schemas/mods-3-7.xsd">
+  <mods:identifier type="local">example-0001</mods:identifier>
+  <mods:titleInfo xml:lang="en">
+    <mods:title>Example book</mods:title>
+  </mods:titleInfo>
+  <mods:location>
+    <mods:holdingSimple>
+      <mods:copyInformation>
+        <mods:shelfLocator>EX.0001</mods:shelfLocator>
+        <mods:itemIdentifier type="barcode">0000000001</mods:itemIdentifier>
+      </mods:copyInformation>
+      <mods:copyInformation>
+        <mods:shelfLocator>EX.0002</mods:shelfLocator>
+        <mods:enumerationAndChronology>vol. 2</mods:enumerationAndChronology>
+      </mods:copyInformation>
+    </mods:holdingSimple>
+  </mods:location>
+</mods:mods>

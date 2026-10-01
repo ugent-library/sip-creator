@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<premis:premis xmlns:premis="http://www.loc.gov/premis/v3" version="3.0">
+  <premis:event>
+    <premis:eventIdentifier>
+      <premis:eventIdentifierType>local</premis:eventIdentifierType>
+      <premis:eventIdentifierValue>example-event-0001</premis:eventIdentifierValue>
+    </premis:eventIdentifier>
+    <premis:eventType>digitization</premis:eventType>
+    <premis:eventDateTime>2026-01-15T09:30:00</premis:eventDateTime>
+  </premis:event>
+</premis:premis>

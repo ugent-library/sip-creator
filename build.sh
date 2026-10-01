@@ -2,7 +2,7 @@
 # Local CI loop: rebuild, regenerate the sample SIP for a profile, validate
 # with commons-ip, publish the HTML report (serve it: docker compose up -d reports).
 #
-# usage: build.sh [profile]    (default: basic)
+# usage: build.sh [profile] [input]    (default: basic, examples/<profile>)
 #
 # Exits non-zero iff the generated package is not VALID, or a mods.xml in it
 # is not valid MODS 3.7. Each profile validates against the E-ARK spec
@@ -12,20 +12,19 @@
 # package is checked with xmllint against the schema the package ships,
 # offline through scripts/schema-catalog.xml (docs/input-spec.md §3).
 #
-# Input fixture: ./tmp/<profile> (untracked). The eark fixture is the basic
-# one plus an optional documentation/ directory (recommended: CSIPSTR16 is a
-# SHOULD, and package-level documentation satisfies it). The eark-mods
-# fixture is the eark one with a supplied mods.xml in place of the root
-# description.csv and MODS keys in the representation's rows.
+# The input is copied to tmp/build/<profile> and built from there, because
+# the siegfried.json sidecar is written next to the input on every run and
+# examples/ is tracked in git.
 # Requires: go, docker, jq, xmllint. Siegfried (sf) on PATH is recommended:
-# the fixture's siegfried.json sidecar is regenerated each run: the
-# assembler verifies its MD5s against the source bytes, so a stale sidecar
-# is a hard build failure by design (ADR-0009).
+# the copy's siegfried.json sidecar is generated each run: the assembler
+# verifies its MD5s against the source bytes, so a stale sidecar is a hard
+# build failure by design (ADR-0009).
 set -euo pipefail
 cd "$(dirname "$0")"
 
 PROFILE="${1:-basic}"
-SRC="tmp/$PROFILE"
+INPUT="${2:-examples/$PROFILE}"
+SRC="tmp/build/$PROFILE"
 OUT="$PROFILE-uuid"
 
 case "$PROFILE" in
@@ -37,14 +36,20 @@ case "$PROFILE" in
         ;;
 esac
 
-if [ ! -d "$SRC" ]; then
-    echo "missing input fixture $SRC; create it, e.g.:" >&2
-    echo "  cp -R tmp/basic $SRC" >&2
-    echo "  mkdir $SRC/documentation && echo 'sample documentation' > $SRC/documentation/README.txt" >&2
+if [ ! -d "$INPUT" ]; then
+    echo "missing input folder $INPUT" >&2
+    exit 2
+fi
+if [ "$(cd "$INPUT" && pwd)" = "$PWD/$SRC" ]; then
+    echo "input folder $INPUT is the build copy $SRC, which each run deletes; pass another folder" >&2
     exit 2
 fi
 
-# Refresh the fixture's characterization sidecar (ADR-0009). Capture first,
+rm -rf "$SRC"
+mkdir -p "$(dirname "$SRC")"
+cp -R "$INPUT" "$SRC"
+
+# Generate the copy's characterization sidecar (ADR-0009). Capture first,
 # write after: sf must never scan its own half-written output.
 if command -v sf >/dev/null; then
     report="$(cd "$SRC" && sf -hash md5 -json .)"

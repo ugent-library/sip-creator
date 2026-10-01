@@ -1,0 +1,48 @@
+package vocabulary
+
+import (
+	"io"
+	"log/slog"
+	"path/filepath"
+	"testing"
+
+	"github.com/ugent-library/sip-creator/build"
+	"github.com/ugent-library/sip-creator/cli/input"
+	"github.com/ugent-library/sip-creator/profiles"
+)
+
+// Every registered profile has an example input folder under examples/,
+// and it builds. The examples are what producers copy and what build.sh
+// validates, so a rule change that breaks one must fail here first. The
+// examples carry no siegfried.json, so the build needs no sf.
+func TestExamplesBuild(t *testing.T) {
+	for _, name := range profiles.Names() {
+		t.Run(name, func(t *testing.T) {
+			vocab, ok := For(name)
+			if !ok {
+				t.Fatalf("profile %q has no vocabulary", name)
+			}
+			source, err := input.New(vocab).Read(filepath.Join("..", "..", "..", "examples", name))
+			if err != nil {
+				t.Fatalf("reading the example: %v", err)
+			}
+
+			def, _ := profiles.Get(name)
+			def, err = def.WithSubmitter("Example Organization", "OR-0000000")
+			if err != nil {
+				t.Fatalf("WithSubmitter() error = %v", err)
+			}
+			builder, err := build.New(&build.Config{
+				Profile:     def,
+				Destination: t.TempDir(),
+				Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
+			})
+			if err != nil {
+				t.Fatalf("build.New() error = %v", err)
+			}
+			if _, err := builder.Build(source); err != nil {
+				t.Fatalf("Build() error = %v", err)
+			}
+		})
+	}
+}

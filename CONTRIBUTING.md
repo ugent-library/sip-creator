@@ -10,7 +10,7 @@ the [README](README.md).
   * `jq`;
   * [Docker](https://www.docker.com/), for the commons-ip validator and the report server;
   * `sf` ([Siegfried](https://github.com/richardlehane/siegfried)) on your `PATH`,
-    because `build.sh` regenerates the input fixture's `siegfried.json` before building;
+    because `build.sh` generates a `siegfried.json` for the input before building;
   * `xmllint` (part of libxml2, present on macOS and most Linux systems), which checks
     every `mods.xml` in an `eark-mods` package against the bundled MODS schema.
 
@@ -27,14 +27,20 @@ CSIP_CMD="java -jar commons-ip2-cli-2.11.2.jar" ./build.sh eark
 go test ./...
 ```
 
-The Go tests need none of the tools above: no Docker, no `sf`, no `.env`.
+The Go tests need none of the tools above: no Docker, no `sf`, no `.env`. They include
+a build of every folder in [examples/](examples/), so a change that makes an example
+invalid fails the tests.
 
 ## Validating generated packages
 
-`./build.sh [profile]` (default `basic`) is the local CI loop. It:
+`./build.sh [profile] [input]` is the local CI loop. The profile defaults to `basic` and
+the input to [`examples/<profile>`](examples/); pass another input folder to validate
+your own. It:
 
 1. rebuilds the binary;
-2. regenerates the sample SIP from `tmp/<profile>`;
+2. copies the input to `tmp/build/<profile>`, generates its `siegfried.json` there, and
+   builds the package into `<profile>-uuid/`, so the input folder itself is never
+   changed;
 3. validates the zip with [commons-ip](https://github.com/keeps/commons-ip), printing
    every failed check with its messages;
 4. runs `xmllint` over every `mods.xml` in the package against the MODS 3.7 schema the

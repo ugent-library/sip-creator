@@ -135,7 +135,7 @@ The CLI's input contract is the convention-based folder defined in [input-spec.m
 
 `cli/input` enforces the contract, collecting every MUST violation into one report phrased for the operator; the `check` command runs that validation standalone. The same rules that hold for the *graph* rather than the folder (descriptive validity, identity and requiredness, received-PREMIS conformance, characterization checksum verification) are enforced again in the builder for every producer: the folder is one transport onto `build.SourcePackage`, not the API.
 
-`tmp/basic/`, `tmp/eark/` and `tmp/eark-mods/` are sample inputs; `<profile>-uuid/` is the generated output, and `tmp/reference/` holds the reference copy of each profile's package that `scripts/reference-diff.sh` compares against. All are local fixtures, not tracked in git.
+`examples/basic/`, `examples/eark/` and `examples/eark-mods/` are the sample inputs, tracked in git and built by a Go test in `cli/input/vocabulary`. `build.sh` copies one to `tmp/build/<profile>` and builds from the copy, because it writes `siegfried.json` next to the input. `<profile>-uuid/` is the generated output, and `tmp/reference/` holds the reference copy of each profile's package that `scripts/reference-diff.sh` compares against; both are local, not tracked in git.
 
 ## Validation
 
