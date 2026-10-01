@@ -463,43 +463,10 @@ it. When your profile has a value the caller should choose, such as the `type` o
 identifier, offer a fixed set of typed constants rather than free text, so two callers
 making the same choice write the same document (ADR-0022).
 
-## Development
+## Contributing
 
-This section is for developing SIP Creator itself.
-
-`go test ./...` runs the Go test suite.
-
-The scripts below require `jq`, and [Docker](https://www.docker.com/) for the commons-ip
-validator and the report server. To run commons-ip on a local Java instead of in Docker,
-set `CSIP_CMD` to the command, for example
-`CSIP_CMD="java -jar commons-ip2-cli-2.11.2.jar" ./build.sh eark`, using the jar version
-that `docker/validator/Dockerfile` pins. `build.sh` also needs `sf`
-([Siegfried](https://github.com/richardlehane/siegfried)) on your `PATH`, because it
-regenerates the input fixture's `siegfried.json` sidecar before building, and `xmllint`
-(part of libxml2, present on macOS and most Linux systems), which checks every
-`mods.xml` in an `eark-mods` package against the bundled MODS schema.
-
-`./build.sh [profile]` (default `basic`) is the local CI loop: it rebuilds, regenerates
-the sample SIP from `tmp/<profile>`, validates the zip with
-[commons-ip](https://github.com/keeps/commons-ip) (dockerized, release jar pinned),
-prints every FAILED check with its messages, and exits non-zero if the package is not
-`VALID`. Each profile validates against the supported E-ARK spec version: `basic`
-(meemoo 1.2) against 2.0.4, `eark` and `eark-mods` against 2.2.0. All three are expected
-to report `VALID`. commons-ip does not validate the descriptive documents the METS points
-at, so the script also runs `xmllint` over every `mods.xml` in the package against the
-MODS 3.7 schema the package ships, offline through the XML catalog in
-`scripts/schema-catalog.xml`, and fails the run when one is not valid.
-
-Each run's validation reports are published to `reports/runs/<timestamp>-<profile>/`. To browse them
-as HTML (run history, per-check detail, links into the E-ARK specs):
-
-```
-docker compose up -d reports
-open http://localhost:8080
-```
-
-`./scripts/validate.sh <sip.zip|sip-dir>...` validates any package standalone, including
-an unzipped package directory when debugging structure.
+Tests, validation scripts and conventions for working on SIP Creator itself are in
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentation
 
