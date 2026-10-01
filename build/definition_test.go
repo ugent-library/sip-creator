@@ -96,7 +96,7 @@ func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {
 func TestWithSubmitterMeemoo(t *testing.T) {
 	def := basicDef(t)
 
-	got, err := def.WithSubmitter("Universiteitsbibliotheek Gent", "OR-a1b2c3d")
+	got, err := def.WithSubmitter("Example Organization", "OR-a1b2c3d")
 	if err != nil {
 		t.Fatalf("WithSubmitter() error = %v", err)
 	}
@@ -109,7 +109,7 @@ func TestWithSubmitterMeemoo(t *testing.T) {
 	if sub.Role != "CREATOR" || sub.Type != "ORGANIZATION" {
 		t.Errorf("submitter agent role/type = %q/%q, want CREATOR/ORGANIZATION", sub.Role, sub.Type)
 	}
-	if sub.Name != "Universiteitsbibliotheek Gent" {
+	if sub.Name != "Example Organization" {
 		t.Errorf("submitter name = %q", sub.Name)
 	}
 	if sub.Note != "OR-a1b2c3d" || sub.NoteType != "IDENTIFICATIONCODE" {
@@ -118,7 +118,7 @@ func TestWithSubmitterMeemoo(t *testing.T) {
 }
 
 func TestWithSubmitterMeemooRequiresORID(t *testing.T) {
-	if _, err := basicDef(t).WithSubmitter("Universiteitsbibliotheek Gent", ""); err == nil {
+	if _, err := basicDef(t).WithSubmitter("Example Organization", ""); err == nil {
 		t.Fatal("WithSubmitter() with empty OR-id on a meemoo profile: want error, got nil")
 	}
 }
@@ -136,13 +136,13 @@ func TestWithSubmitterEARK(t *testing.T) {
 	}
 
 	// The OR-id is a meemoo concept; a configured value is ignored here.
-	got, err := def.WithSubmitter("Universiteitsbibliotheek Gent", "OR-a1b2c3d")
+	got, err := def.WithSubmitter("Example Organization", "OR-a1b2c3d")
 	if err != nil {
 		t.Fatalf("WithSubmitter() error = %v", err)
 	}
 
 	sub := got.Declaration.Agents[len(got.Declaration.Agents)-1]
-	if sub.Name != "Universiteitsbibliotheek Gent" {
+	if sub.Name != "Example Organization" {
 		t.Errorf("submitter name = %q", sub.Name)
 	}
 	if sub.Note != "" || sub.NoteType != "" {
@@ -153,7 +153,7 @@ func TestWithSubmitterEARK(t *testing.T) {
 func TestWithSubmitterLeavesRegistryUntouched(t *testing.T) {
 	before := len(basicDef(t).Declaration.Agents)
 
-	if _, err := basicDef(t).WithSubmitter("Universiteitsbibliotheek Gent", "OR-a1b2c3d"); err != nil {
+	if _, err := basicDef(t).WithSubmitter("Example Organization", "OR-a1b2c3d"); err != nil {
 		t.Fatalf("WithSubmitter() error = %v", err)
 	}
 

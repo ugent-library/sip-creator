@@ -28,14 +28,14 @@ func TestRowsHappy(t *testing.T) {
 	// BOM, CRLF, RFC 4180 quoting, repeated keys, [lang] tags, a
 	// capitalized key, and a schema.org key, all in one file.
 	csv := "\ufeffkey,value\r\n" +
-		"identifier,BIB.FA.2026.001\r\n" +
-		"Title[nl],Fotoalbum Gent 1913\r\n" +
+		"identifier,example-0001\r\n" +
+		"Title[nl],Fotoalbum 2026\r\n" +
 		"description[nl],\"Album met 48 foto's, zwart-wit\"\r\n" +
 		"created,1913\r\n" +
-		"subject[nl],stadsgezichten\r\n" +
-		"subject[nl],wereldtentoonstellingen\r\n" +
-		"ispartof,Collectie Sacré\r\n" +
-		"rightsholder,Universiteitsbibliotheek Gent\r\n" +
+		"subject[nl],voorbeelden\r\n" +
+		"subject[nl],fotografie\r\n" +
+		"ispartof,Collectie Één\r\n" +
+		"rightsholder,Example Organization\r\n" +
 		"abstract[nl],Een fotoalbum\r\n" +
 		"abstract[en],A photo album\r\n" +
 		"artmedium[nl],zilvergelatinedruk\r\n"
@@ -46,14 +46,14 @@ func TestRowsHappy(t *testing.T) {
 	}
 
 	want := meemoo.Terms{
-		{Key: "identifier", Value: "BIB.FA.2026.001"},
-		{Key: "title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
+		{Key: "identifier", Value: "example-0001"},
+		{Key: "title", Lang: "nl", Value: "Fotoalbum 2026"},
 		{Key: "description", Lang: "nl", Value: "Album met 48 foto's, zwart-wit"},
 		{Key: "created", Value: "1913"},
-		{Key: "subject", Lang: "nl", Value: "stadsgezichten"},
-		{Key: "subject", Lang: "nl", Value: "wereldtentoonstellingen"},
-		{Key: "ispartof", Value: "Collectie Sacré"},
-		{Key: "rightsholder", Value: "Universiteitsbibliotheek Gent"},
+		{Key: "subject", Lang: "nl", Value: "voorbeelden"},
+		{Key: "subject", Lang: "nl", Value: "fotografie"},
+		{Key: "ispartof", Value: "Collectie Één"},
+		{Key: "rightsholder", Value: "Example Organization"},
 		{Key: "abstract", Lang: "nl", Value: "Een fotoalbum"},
 		{Key: "abstract", Lang: "en", Value: "A photo album"},
 		{Key: "artmedium", Lang: "nl", Value: "zilvergelatinedruk"},

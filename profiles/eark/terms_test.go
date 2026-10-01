@@ -12,7 +12,7 @@ import (
 func testTerms() Terms {
 	return Terms{
 		{Key: "identifier", Value: "uuid-x"},
-		{Key: "title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
+		{Key: "title", Lang: "nl", Value: "Fotoalbum 2026"},
 		{Key: "date", Value: "1913"},
 		{Key: "format", Value: "48 foto's"},
 		{Key: "subject", Value: "R&D <scans>"},
@@ -31,7 +31,7 @@ func TestEncode(t *testing.T) {
 		`xsi:noNamespaceSchemaLocation="../../schemas/dc.xsd"`,
 		"<identifier>uuid-x</identifier>",
 		// language tags are accepted but not emitted
-		"<title>Fotoalbum Gent 1913</title>",
+		"<title>Fotoalbum 2026</title>",
 		"<date>1913</date>",
 		// operator values are arbitrary text and must be escaped
 		"<format>48 foto&#39;s</format>",

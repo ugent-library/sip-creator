@@ -81,8 +81,8 @@ func (mods) Schemas() []string {
 // localIdentifierType is the type attribute on the mods:identifier the
 // record's identifier emits. MODS leaves the type vocabulary open; "local"
 // is the value its own list suggests for an identifier local to the
-// describing institution's system, such as an Alma MMS ID at UGent
-// Library. The type becomes the caller's choice from a closed set with
+// describing institution's system, such as a record number in a
+// library catalogue. The type becomes the caller's choice from a closed set with
 // the mods-coverage plan; until then this constant is the one place it
 // lives.
 const localIdentifierType = "local"

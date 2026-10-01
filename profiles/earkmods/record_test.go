@@ -10,14 +10,14 @@ import (
 // with a call number alone.
 func testRecord() Record {
 	return Record{
-		Identifier: "990001234560471",
+		Identifier: "example-0001",
 		Titles: []Title{
-			{Value: "Fotoalbum Gent 1913", Lang: "nl"},
-			{Value: "Photo album Ghent 1913", Lang: "en"},
+			{Value: "Fotoalbum 2026", Lang: "nl"},
+			{Value: "Photo album 2026", Lang: "en"},
 		},
 		Items: []Item{
-			{CallNumber: "BIB.FA.001", Barcode: "000000123", Enumeration: "vol. 3 (1913)"},
-			{CallNumber: "BIB.FA.002"},
+			{CallNumber: "EX.0001", Barcode: "000000123", Enumeration: "vol. 3 (1913)"},
+			{CallNumber: "EX.0002"},
 		},
 	}
 }

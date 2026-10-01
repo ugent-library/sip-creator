@@ -20,22 +20,22 @@ func encode(t *testing.T, r Record, schemasDir string) string {
 // change leaves the output unchanged.
 const goldenDocument = `<?xml version='1.0' encoding='UTF-8'?>
 <mods:mods xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.7" xsi:schemaLocation="http://www.loc.gov/mods/v3 ../../schemas/mods-3-7.xsd">
-  <mods:identifier type="local">990001234560471</mods:identifier>
+  <mods:identifier type="local">example-0001</mods:identifier>
   <mods:titleInfo xml:lang="nl">
-    <mods:title>Fotoalbum Gent 1913</mods:title>
+    <mods:title>Fotoalbum 2026</mods:title>
   </mods:titleInfo>
   <mods:titleInfo xml:lang="en">
-    <mods:title>Photo album Ghent 1913</mods:title>
+    <mods:title>Photo album 2026</mods:title>
   </mods:titleInfo>
   <mods:location>
     <mods:holdingSimple>
       <mods:copyInformation>
-        <mods:shelfLocator>BIB.FA.001</mods:shelfLocator>
+        <mods:shelfLocator>EX.0001</mods:shelfLocator>
         <mods:enumerationAndChronology>vol. 3 (1913)</mods:enumerationAndChronology>
         <mods:itemIdentifier type="barcode">000000123</mods:itemIdentifier>
       </mods:copyInformation>
       <mods:copyInformation>
-        <mods:shelfLocator>BIB.FA.002</mods:shelfLocator>
+        <mods:shelfLocator>EX.0002</mods:shelfLocator>
       </mods:copyInformation>
     </mods:holdingSimple>
   </mods:location>
@@ -58,17 +58,17 @@ func TestEncode(t *testing.T) {
 		`<mods:mods xmlns:mods="http://www.loc.gov/mods/v3"`,
 		`version="3.7"`,
 		`xsi:schemaLocation="http://www.loc.gov/mods/v3 ../../schemas/mods-3-7.xsd"`,
-		`<mods:identifier type="` + localIdentifierType + `">990001234560471</mods:identifier>`,
-		"<mods:titleInfo xml:lang=\"nl\">\n    <mods:title>Fotoalbum Gent 1913</mods:title>\n  </mods:titleInfo>",
+		`<mods:identifier type="` + localIdentifierType + `">example-0001</mods:identifier>`,
+		"<mods:titleInfo xml:lang=\"nl\">\n    <mods:title>Fotoalbum 2026</mods:title>\n  </mods:titleInfo>",
 		`<mods:titleInfo xml:lang="en">`,
 		// no language tag, no xml:lang; producer values escaped
 		"<mods:titleInfo>\n    <mods:title>R&amp;D &lt;scans&gt; &#39;quote&#39;</mods:title>",
 		// the items as one location, one copyInformation per item
 		"<mods:location>\n    <mods:holdingSimple>",
-		`<mods:shelfLocator>BIB.FA.001</mods:shelfLocator>`,
+		`<mods:shelfLocator>EX.0001</mods:shelfLocator>`,
 		`<mods:enumerationAndChronology>vol. 3 (1913)</mods:enumerationAndChronology>`,
 		`<mods:itemIdentifier type="barcode">000000123</mods:itemIdentifier>`,
-		`<mods:shelfLocator>BIB.FA.002</mods:shelfLocator>`,
+		`<mods:shelfLocator>EX.0002</mods:shelfLocator>`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %s\n%s", want, out)

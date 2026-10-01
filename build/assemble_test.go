@@ -979,7 +979,7 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 func TestBuildEarkMods(t *testing.T) {
 	b, in, _ := newTestBuilder(t, earkmodsDef(t))
 	rec := identityRecord()
-	rec.Items = []earkmods.Item{{CallNumber: "BIB.FA.001", Barcode: "000000123"}}
+	rec.Items = []earkmods.Item{{CallNumber: "EX.0001", Barcode: "000000123"}}
 	in.Description = rec
 
 	pkg, err := b.Build(in)

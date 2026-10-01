@@ -14,15 +14,15 @@ import (
 const (
 	simpleDCDocument = `<?xml version='1.0' encoding='UTF-8'?>
 <simpledc xmlns:dc="http://purl.org/dc/elements/1.1/">
-  <title>Correspondentie 1914-1918</title>
-  <identifier>inv.2024.001</identifier>
+  <title>Example book</title>
+  <identifier>example-0001</identifier>
 </simpledc>
 `
 	modsDocument = `<?xml version='1.0' encoding='UTF-8'?>
 <mods:mods xmlns:mods="http://www.loc.gov/mods/v3" version="3.7">
-  <mods:identifier type="local">990001234560471</mods:identifier>
-  <mods:titleInfo><mods:title>Correspondentie 1914-1918</mods:title></mods:titleInfo>
-  <mods:name type="personal"><mods:namePart>Sacré, Edmond</mods:namePart></mods:name>
+  <mods:identifier type="local">example-0001</mods:identifier>
+  <mods:titleInfo><mods:title>Example book</mods:title></mods:titleInfo>
+  <mods:name type="personal"><mods:namePart>Doe, Jane</mods:namePart></mods:name>
 </mods:mods>
 `
 	modsOldVersion    = `<mods:mods xmlns:mods="http://www.loc.gov/mods/v3" version="3.6"><mods:titleInfo><mods:title>x</mods:title></mods:titleInfo></mods:mods>`

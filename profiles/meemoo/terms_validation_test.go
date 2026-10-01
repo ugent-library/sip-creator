@@ -153,7 +153,7 @@ func TestValidateRequiredLang(t *testing.T) {
 			{Key: "title", Lang: "nl", Value: "Kat"},
 		}, "nl", ""},
 		{"untagged values carry no rule", Terms{
-			{Key: "creator", Value: "Edmond Sacré"},
+			{Key: "creator", Value: "Jane Doe"},
 		}, "nl", ""},
 	}
 	for _, tt := range tests {

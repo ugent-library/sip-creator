@@ -10,8 +10,8 @@ import (
 
 func testTerms() Terms {
 	return Terms{
-		{Key: "identifier", Value: "BIB.FA.2026.001"},
-		{Key: "title", Lang: "nl", Value: "Fotoalbum Gent 1913"},
+		{Key: "identifier", Value: "example-0001"},
+		{Key: "title", Lang: "nl", Value: "Fotoalbum 2026"},
 		{Key: "created", Value: "1913"},
 		{Key: "subject", Lang: "nl", Value: "R&D <scans>"},
 		{Key: "artmedium", Lang: "nl", Value: "zilvergelatinedruk"},
@@ -27,8 +27,8 @@ func TestEncode(t *testing.T) {
 
 	for _, want := range []string{
 		`<metadata xmlns="https://data.hetarchief.be/id/sip/1.2/basic"`,
-		"<dcterms:identifier>BIB.FA.2026.001</dcterms:identifier>",
-		`<dcterms:title xml:lang="nl">Fotoalbum Gent 1913</dcterms:title>`,
+		"<dcterms:identifier>example-0001</dcterms:identifier>",
+		`<dcterms:title xml:lang="nl">Fotoalbum 2026</dcterms:title>`,
 		// the meemoo document types its dates as EDTF, as dc+schema does
 		`<dcterms:created xsi:type="edtf:EDTF-level1">1913</dcterms:created>`,
 		// operator values are arbitrary text and must be escaped
@@ -128,7 +128,7 @@ func TestTermsValidateDuplicateIdentifier(t *testing.T) {
 func TestTermsIdentifierSwap(t *testing.T) {
 	terms := testTerms()
 
-	if got := terms.localIdentifier(); got != "BIB.FA.2026.001" {
+	if got := terms.localIdentifier(); got != "example-0001" {
 		t.Fatalf("localIdentifier = %q", got)
 	}
 

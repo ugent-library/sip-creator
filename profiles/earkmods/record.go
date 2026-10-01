@@ -22,8 +22,8 @@ import (
 // what a record may say.
 type Record struct {
 	// Identifier is the record's local identifier, the catalogue number
-	// the describing institution finds it by (at UGent Library an Alma
-	// MMS ID), emitted as a mods:identifier of type local. Empty when the
+	// the describing institution finds it by (in a library, the record
+	// number in its catalogue), emitted as a mods:identifier of type local. Empty when the
 	// record states none, which a representation's record may.
 	Identifier string
 	// Titles are the record's titles, one titleInfo/title each, in the
