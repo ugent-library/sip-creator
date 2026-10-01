@@ -73,7 +73,7 @@ access,Access copy (PDF),access
 - `label` and `type` values are emitted into the package's XML verbatim, so the characters `< > & "` MUST be an error.
 - The rows' order is the order the representations take in the package.
 - The file requires a `representations/` folder: in the simple flat case there is one representation named after the input folder, and a `representations.csv` MUST be an error.
-- The type reaches the output only in profiles that declare representation types (the `eark` profile; [ADR-0013](decisions/0013-representation-type-from-label.md)). Meemoo profiles fix their representation typing to the meemoo profile URI, so `type` has no effect there; `label` is emitted for every profile.
+- The type reaches the output only in profiles that declare representation types (the `eark` and `eark-mods` profiles; [ADR-0013](decisions/0013-representation-type-from-label.md)). Meemoo profiles fix their representation typing to the meemoo profile URI, so `type` has no effect there; `label` is emitted for every profile.
 
 ## 3. Descriptive metadata: `description.csv`, or a supplied document
 
@@ -202,7 +202,7 @@ Deliberate trade-off: because organization details come from configuration, an i
 | input | E-ARK SIP location |
 |---|---|
 | representation folders (or the flat single-representation case) | `representations/<name>/data/`, METS fileSec + structMap |
-| `representations.csv` `label` / `type` | representation METS `mets/@LABEL`; in the eark profile the type lands in `TYPE="Other"`+`csip:OTHERTYPE` and `CONTENTINFORMATIONTYPE="OTHER"`+`csip:OTHERCONTENTINFORMATIONTYPE` ([ADR-0013](decisions/0013-representation-type-from-label.md)) |
+| `representations.csv` `label` / `type` | representation METS `mets/@LABEL`; in the eark profiles the type lands in `TYPE="Other"`+`csip:OTHERTYPE` and `CONTENTINFORMATIONTYPE="OTHER"`+`csip:OTHERCONTENTINFORMATIONTYPE` ([ADR-0013](decisions/0013-representation-type-from-label.md)) |
 | file order (stable, no semantics) | document order within the representation structMap; METS `ORDER` attributes are the real sequencing mechanism, deferred with the manifest (§8) |
 | `documentation/` (package and representation level) | `documentation/` folders, conformant per CSIPSTR16; METS fileSec `USE="DOCUMENTATION"` |
 | `description.csv` keys under `basic` | the meemoo table's elements, mapped as `dcterms:*` (`identifier`→`dcterms:identifier`, `rightsholder`→`dcterms:rightsHolder`, `ispartof`→`dcterms:isPartOf`, the rest 1:1) and `schema:*` (`artmedium`→`schema:artMedium`, `artform`→`schema:artform`), in `metadata/descriptive/dc+schema.xml`, METS dmdSec |
