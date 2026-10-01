@@ -16,10 +16,11 @@ type Entity struct {
 	AdditionalIdentifiers map[string]string
 	// Representations are the versions of the content.
 	Representations []*Representation
-	// Description carries the decoded descriptive metadata until the writer
-	// serializes it.
+	// Description is the entity's descriptive metadata: a model the
+	// profile's encoder renders, or a supplied document copied as it is.
 	Description Description
-	// DescriptionFile is the node for the generated descriptive document.
+	// DescriptionFile is the node for the descriptive document in the
+	// package.
 	DescriptionFile *File
 }
 

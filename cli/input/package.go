@@ -31,7 +31,7 @@ type Reader struct {
 // ValidateRequired), which the reader runs and reports as violations. The
 // rows reach the vocabulary decoded for syntax only; which keys exist and
 // what a row may say are the vocabulary's and the description's own rules.
-// Like build.New, it validates nothing: Read refuses a nil vocabulary.
+// New validates nothing: Read refuses a nil vocabulary.
 func New(vocabulary Vocabulary) *Reader {
 	return &Reader{vocabulary: vocabulary}
 }

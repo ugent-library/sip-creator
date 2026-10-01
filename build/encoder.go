@@ -11,9 +11,9 @@ import (
 // DescriptionEncoder is what a profile plugs into the engine for its
 // descriptive metadata: which description type it accepts and how it
 // writes the document for it. Each profile package under profiles/
-// implements it for its own terms type, so everything that needs the
-// concrete type stays there and the engine speaks sip.Description only.
-// The registry in profiles/ is the closed set of encoders a build can use.
+// implements it for its own description type, so everything that needs the
+// concrete type stays there and the engine speaks sip.Description only. A
+// caller with its own profile implements it too (ADR-0022).
 // Building a description is not the encoder's business: callers construct
 // the profile's type themselves.
 type DescriptionEncoder interface {

@@ -27,8 +27,8 @@ type Representation struct {
 	// (e.g. a license that differs between master and access copy);
 	// the work's identity stays on the Entity.
 	Description Description
-	// DescriptionFile is the node for the generated descriptive document;
-	// nil when Description is nil.
+	// DescriptionFile is the node for the descriptive document in the
+	// package; nil when Description is nil.
 	DescriptionFile *File
 	// PremisFile is the generated preservation document; nil when the
 	// profile emits none.

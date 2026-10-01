@@ -146,7 +146,7 @@ func ValidateAttributeText(value string) error {
 }
 
 // Validate reports the first invariant the input breaks. These are the
-// graph rules every producer must satisfy: the folder convention enforces
+// rules every source package must satisfy: the folder convention enforces
 // them with Violations phrased for the operator before building; embedding
 // callers hit them here. Fail-fast: one error, phrased for the developer.
 func (sp *SourcePackage) Validate() error {
@@ -171,9 +171,9 @@ func (sp *SourcePackage) Validate() error {
 	if sp.Description == nil {
 		return fmt.Errorf("no descriptive metadata supplied")
 	}
-	// The one place the terms rules run before a write; the encoders trust
-	// it. A package-level description must also state what its standard
-	// requires of one (an identifier and a title at least); a
+	// The one place the description's rules run before a write; the
+	// encoders trust it. A package-level description must also state what
+	// its standard requires of one (an identifier and a title at least); a
 	// representation's need not.
 	if err := sp.Description.Validate(); err != nil {
 		return fmt.Errorf("descriptive metadata: %w", err)
