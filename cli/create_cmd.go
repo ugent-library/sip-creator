@@ -25,6 +25,11 @@ var createCmd = &cobra.Command{
 	Args:         cobra.ExactArgs(2),
 	SilenceUsage: true, // a bad input folder is not a usage error
 	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
 		def, vocabulary, err := resolveProfile(cmd)
 		if err != nil {
 			return err

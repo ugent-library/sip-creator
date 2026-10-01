@@ -166,9 +166,8 @@ package directory for `basic` (see [Profiles](#profiles)).
 ### Checking an input folder
 
 To check a folder without building anything, pass the same profile. `check` reports
-every violation at once, in plain language. It does not need the `SIP_SUBMITTER_*`
-variables, but like every command it reads `.env` when present and stops on a malformed
-one:
+every violation at once, in plain language. It reads no configuration: no `.env` and no
+environment variables:
 
 ```
 ./bin/sip-creator check --profile eark ./your-input

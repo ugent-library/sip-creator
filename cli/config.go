@@ -1,9 +1,12 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/caarlos0/env/v11"
+	"github.com/joho/godotenv"
 )
 
 //go:generate go run github.com/g4s8/envdoc@v0.2.4 --output ../CONFIG.md --all
@@ -31,7 +34,12 @@ type config struct {
 	ContentCategory string `env:"SIP_CONTENT_CATEGORY"`
 }
 
-func configFromEnv() (*config, error) {
+// loadConfig reads .env when present and then the environment. A missing
+// .env is fine, a malformed one is an error.
+func loadConfig() (*config, error) {
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("load .env: %w", err)
+	}
 	c := &config{}
 	if err := env.Parse(c); err != nil {
 		return nil, fmt.Errorf("parse environment config: %w", err)

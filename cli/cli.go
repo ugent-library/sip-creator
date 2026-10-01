@@ -5,16 +5,13 @@
 package cli
 
 import (
-	"errors"
 	"log/slog"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
 
 var (
-	cfg    *config
 	logger *slog.Logger
 
 	rootCmd = &cobra.Command{
@@ -30,19 +27,9 @@ func newLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(os.Stdout, nil))
 }
 
-// Run executes the CLI: it loads .env when present, reads the environment
-// config, and dispatches the root command.
+// Run executes the CLI. Configuration is read by the commands that need
+// it, so check runs without it (ADR-0010).
 func Run() {
-	// .env is optional: a missing file is fine, a malformed one is an
-	// error. Each command checks the variables it needs.
-	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
-		cobra.CheckErr(err)
-	}
-
-	var err error
-	cfg, err = configFromEnv()
-	cobra.CheckErr(err)
-
 	logger = newLogger()
 
 	cobra.CheckErr(rootCmd.Execute())
