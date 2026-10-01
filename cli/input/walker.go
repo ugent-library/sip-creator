@@ -130,8 +130,8 @@ func (w *folderWalker) readRepresentations(dir string) []build.SourceRepresentat
 	return reps
 }
 
-func (w *folderWalker) readRepresentation(dir, name string) build.SourceRepresentation {
-	rep := build.SourceRepresentation{Name: name}
+func (w *folderWalker) readRepresentation(dir, repName string) build.SourceRepresentation {
+	rep := build.SourceRepresentation{Name: repName}
 	var descriptionPath, documentPath string
 	for _, e := range w.readDir(dir) {
 		name := e.Name()
