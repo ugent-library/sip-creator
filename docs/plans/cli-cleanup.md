@@ -1,6 +1,6 @@
 # Plan: cleaning up the cli package
 
-*Status: **in progress** (2026-10-01). Phase 1.1 to 1.4 done; 1.5 parked.*
+*Status: **in progress** (2026-10-01). Phase 1.1 to 1.4 done, 1.5 parked; Phase 2 done (2.2 dropped).*
 
 This plan collects a review of `cli/` and `cli/input/` (including
 `cli/input/vocabulary/`) into small, separate steps. None of the steps changes a
@@ -69,46 +69,55 @@ are wanted; not before.
 
 ## Phase 2: pure CSV parsers
 
+*Done (2026-10-01), except 2.2, which was dropped.*
+
 ### 2.1 Parse description.csv without `*directory`
 
-`decodeDescription` ([description.go](../../cli/input/description.go)) handles CSV
-syntax, calls the vocabulary, runs `Validate`/`ValidateRequired`, and maps errors back
-to lines. `parseKey` takes a file name and line only to report through `d.violate`.
-Target shape:
+*Done.* `decodeDescription` ([description.go](../../cli/input/description.go)) handled
+CSV syntax, called the vocabulary, ran `Validate`/`ValidateRequired`, and mapped
+errors back to lines. `parseKey` took a file name and line only to report through
+`d.violate`. Now the folder reader only reads the file (`os.ReadFile`); everything
+about its content, encoding included, belongs to the parser:
 
 ```go
-func parseStatements(r io.Reader) ([]Statement, []error) // header, two columns, key[lang]
+func newCSVReader(data []byte) (*csv.Reader, error)                // csv.go: BOM, UTF-8, any row width
+func parseStatements(data []byte) ([]Statement, []error, error)    // header, two columns, key[lang]
 func parseKey(raw string) (key, lang string, err error)
 ```
 
-`directory` opens the file (the UTF-8 and BOM rules in `openCSV` stay), calls the
-parser, passes the statements to the vocabulary, and adds the file name to each error.
+`parseStatements` returns its findings in the rows separately from an error meaning
+the content cannot be read as CSV at all. The decoder stops on the second, so content
+that is not UTF-8 is one violation instead of also tripping the required-keys rules.
 
 ### 2.2 One error shape for a finding about a row
 
-Vocabularies report `*StatementError{Line}`; the description's rules report
-`*sip.TermError{Index}`, which the decoder turns into a line through
-`statements[te.Index].Line` with a bounds check. `TermError` belongs to the library and
-stays. Convert it in one helper next to the decoder (`lineOf(err, statements)`) so the
-reporting loop handles one shape.
+*Dropped.* The idea was to convert `*sip.TermError{Index}` into a line in a
+`lineOf(err, statements)` helper, so the reporting loop in `decodeDescription`
+handles one shape instead of two. After 2.1 that loop is a three-case switch with a
+comment explaining both shapes; a helper would move the same logic out of sight
+without making it simpler.
 
 ### 2.3 Parse representations.csv without `*directory`
 
-Same treatment for `decodeRepresentations`
+*Done.* Same split for representations.csv
 ([representations.go](../../cli/input/representations.go)):
 
 ```go
-func parseRepresentationRows(r io.Reader) ([]repRow, []error)
+func parseRepresentationRows(data []byte) ([]repRow, []error, error)
+func parseRepresentationsHeader(header []string) (repColumns, error)
 ```
 
-Matching rows to folders (`applyRepresentations`) stays on `directory`, because it
-needs the folders read.
+A header can have several problems at once; they are joined into the one error, and
+the decoder reports each. Row findings are an unexported `*rowError{line}`;
+`StatementError` stays the vocabularies' type. Matching rows to folders
+(`applyRepresentations`) stays on `directory`, because it needs the folders read.
 
 ### 2.4 Tests
 
-Move the syntax cases in `description_test.go` and `representations_test.go` to call
-the parsers with a `strings.Reader`. Keep the folder-based tests that check how
-problems are reported with the file name.
+*Done.* The syntax cases call the parsers with a byte slice. The folder tests keep
+what needs a folder: matching rows to directories, the vocabulary, and how findings
+are reported with the file name and line, plus a test that content that is not UTF-8
+is one violation.
 
 ## Phase 3: less repetition in the folder walk
 
