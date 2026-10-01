@@ -70,6 +70,8 @@ Update the docs in the same change as the code:
   [CONFIG.md](CONFIG.md), which is never edited by hand;
 * changed usage or input requirements: [README.md](README.md) and
   [docs/input-spec.md](docs/input-spec.md);
+* changed library usage: the runnable examples in
+  [build/example_test.go](build/example_test.go), which pkg.go.dev shows;
 * a changed design: [docs/sip-creator-design.md](docs/sip-creator-design.md), and an ADR
   in [docs/decisions/](docs/decisions/) when the change records a decision;
 * a resolved item: remove it from [docs/TODO.md](docs/TODO.md).

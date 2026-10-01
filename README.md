@@ -308,8 +308,11 @@ the library reads no environment variables:
 * the destination directory and the logger go in `build.Config`;
 * the descriptive metadata and the content files go in `build.SourcePackage`.
 
-The full API is on [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator);
-the domain model and build lifecycle are described in
+The full API is on [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator).
+Runnable examples for each case below are in [build/example_test.go](build/example_test.go);
+`go test` runs them, and pkg.go.dev shows them with the
+[build package](https://pkg.go.dev/github.com/ugent-library/sip-creator/build#pkg-examples).
+The domain model and build lifecycle are described in
 [docs/sip-creator-design.md](docs/sip-creator-design.md).
 
 ### Building a package
@@ -326,7 +329,10 @@ import (
 	"github.com/ugent-library/sip-creator/profiles/eark"
 )
 
-def, _ := profiles.Get("eark")
+def, ok := profiles.Get("eark")
+if !ok {
+	// ...
+}
 // The second argument is the meemoo OR-id, used by basic only.
 def, err := def.WithSubmitter("Example Organization", "")
 if err != nil {
@@ -370,40 +376,13 @@ input folder's `documentation/` and `premis/`.
 
 The `eark-mods` profile takes an `earkmods.Record` instead of a list of terms: an
 identifier, titles, and physical copies as items, each a call number with an optional
-barcode and an optional volume or issue designation:
-
-```go
-import "github.com/ugent-library/sip-creator/profiles/earkmods"
-
-def, _ := profiles.Get("eark-mods")
-// WithSubmitter and build.New as above.
-
-pkg, err := builder.Build(&build.SourcePackage{
-	Description: earkmods.Record{
-		Identifier: "example-0001",
-		Titles: []earkmods.Title{
-			{Value: "Example book", Lang: "en"},
-		},
-		Items: []earkmods.Item{
-			{CallNumber: "EX.0001", Barcode: "0000000001"},
-			{CallNumber: "EX.0002", Enumeration: "vol. 2"},
-		},
-	},
-	// Representations as above.
-})
-```
+barcode and an optional volume or issue designation (example: `ExampleBuilder_Build_mods`).
 
 A record that already exists as a document travels as a file: profiles that accept a
 finished document (see [Profiles](#profiles)) take a `build.DescriptiveDocument` in place
-of terms or a record. The library checks and copies it the same way the command-line
-tool does (see [Input folder](#input-folder)):
-
-```go
-pkg, err := builder.Build(&build.SourcePackage{
-	Description: build.DescriptiveDocument{Source: "/data/records/example-0001/mods.xml"},
-	// Representations as above.
-})
-```
+of terms or a record, naming the file in its `Source` field. The library checks and
+copies it the same way the command-line tool does (see [Input folder](#input-folder);
+example: `ExampleDescriptiveDocument`).
 
 ### Representation labels and types
 
@@ -417,25 +396,14 @@ command-line tool fills from `representations.csv`.
 ### Updating an earlier package
 
 The example above builds a new package with the profile's METS values. Three fields
-override them per package: `PackageIdentifier` and `RecordStatus` for an update of an
-earlier package, and `ContentCategory`:
+on the `SourcePackage` override them per package (example: `ExampleBuilder_Build_update`):
 
-```go
-import "github.com/ugent-library/sip-creator/sip"
-
-pkg, err := builder.Build(&build.SourcePackage{
-	// The identifier of the package this one updates becomes this package's
-	// mets/@OBJID; an update-class status requires it. RecordStatus is
-	// metsHdr/@RECORDSTATUS in the SIP3 vocabulary (the sip.RecordStatus
-	// constants) and ContentCategory is mets/@TYPE, the CSIP content
-	// category. Empty means the profile's value, which for the status the
-	// E-ARK SIP spec reads as NEW.
-	PackageIdentifier: "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e",
-	RecordStatus:      sip.RecordStatusReplacement,
-	ContentCategory:   "Textual works – Print",
-	// Description and Representations as above.
-})
-```
+* `PackageIdentifier`: the identifier of the package this one updates, reused as this
+  package's `mets/@OBJID`. A status that updates an earlier package requires it.
+* `RecordStatus`: `metsHdr/@RECORDSTATUS`, one of the `sip.RecordStatus` constants (the
+  SIP3 vocabulary). Without it the METS carries no status, which the E-ARK SIP
+  specification reads as new.
+* `ContentCategory`: `mets/@TYPE`, the CSIP content category.
 
 ### Format characterization
 
