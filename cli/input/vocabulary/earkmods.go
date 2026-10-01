@@ -29,9 +29,9 @@ var _ input.DocumentVocabulary = EarkMods{}
 // goes in the record, whether the key takes a language tag, and how often
 // it may occur.
 type placement struct {
-	fill   func(*earkmods.Record, input.Statement)
-	lang   bool
-	repeat cardinality
+	fill      func(*earkmods.Record, input.Statement)
+	takesLang bool
+	occurs    cardinality
 }
 
 // cardinality says how often a key may occur in one description.csv.
@@ -45,14 +45,14 @@ const (
 var modsKeys = map[string]placement{
 	"identifier": {
 		fill:   func(r *earkmods.Record, s input.Statement) { r.Identifier = s.Value },
-		repeat: once,
+		occurs: once,
 	},
 	"title": {
 		fill: func(r *earkmods.Record, s input.Statement) {
 			r.Titles = append(r.Titles, earkmods.Title{Value: s.Value, Lang: s.Lang})
 		},
-		lang:   true,
-		repeat: oncePerLanguage,
+		takesLang: true,
+		occurs:    oncePerLanguage,
 	},
 }
 
@@ -68,7 +68,7 @@ func (EarkMods) Description(statements []input.Statement) (sip.Description, []er
 			errs = append(errs, &input.StatementError{Line: s.Line, Err: fmt.Errorf("unknown key %q: not in the MODS vocabulary; see the supported keys in the input specification", s.Key)})
 			continue
 		}
-		if s.Lang != "" && !key.lang {
+		if s.Lang != "" && !key.takesLang {
 			errs = append(errs, &input.StatementError{Line: s.Line, Err: fmt.Errorf("%s takes no language tag", s.Key)})
 			continue
 		}
@@ -79,13 +79,13 @@ func (EarkMods) Description(statements []input.Statement) (sip.Description, []er
 		// "\x00" cannot appear in a key, so per-language entries never
 		// collide with the plain key entries.
 		entry := s.Key
-		if key.repeat == oncePerLanguage {
+		if key.occurs == oncePerLanguage {
 			entry += "\x00" + s.Lang
 		}
 		if line, seen := first[entry]; seen {
 			var err error
 			switch {
-			case key.repeat == once:
+			case key.occurs == once:
 				err = fmt.Errorf("%s appears more than once (first on line %d); give exactly one value", s.Key, line)
 			case s.Lang == "":
 				err = fmt.Errorf("%s appears more than once (first on line %d); repeat it only with distinct language tags (%s[nl], %s[en])", s.Key, line, s.Key, s.Key)
