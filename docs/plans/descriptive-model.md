@@ -1,6 +1,6 @@
 # Plan: the descriptive model follows its standard, and supplied documents return for the eark profiles
 
-*Status: **S7 done, S8 next** (2026-10-01; S4 withdrawn). Drafted on the branch
+*Status: **S8 done, S9 next** (2026-10-01; S4 withdrawn). Drafted on the branch
 `descriptive-model` from the review of 2026-09-30 that closed the
 [eark-mods plan](../archive/eark-mods.md) after its S3, with
 [ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)
@@ -14,7 +14,9 @@ review of S3, 2026-09-30): the rows carry flat statements only. The
 library accepts a supplied `dc.xml` or `mods.xml` as a `build.DescriptiveDocument`
 under the two eark profiles, and the folder takes the same files at the
 input root and inside each representation directory, one description per
-level. Update this line as steps land.*
+level. All three profiles validate VALID with 0 warnings, and build.sh
+checks every `mods.xml` in a package against the MODS schema with xmllint.
+Update this line as steps land.*
 
 ## Context
 
@@ -393,31 +395,51 @@ it in the docs. Docs only, no code.
 
 Carried over from the eark-mods plan's S6.
 
-- [ ] **Fixture.** `tmp/eark-mods/`: a copy of `tmp/eark` (its
+- [x] **Fixture.** `tmp/eark-mods/`: a copy of `tmp/eark` (its
       `documentation/` included, which keeps CSIPSTR16 satisfied) whose
       package-level description is a supplied `mods.xml` carrying an
       identifier, a title and two copies, one with an enumeration, and
       whose representation carries a `description.csv` with a `title[nl]`,
       so the acceptance run exercises the document route and the rows
       route in one package. (Revised 2026-09-30 with the withdrawal of
-      `items.csv`; needs S6 and S7 first.)
-- [ ] **XML catalog.** `scripts/schema-catalog.xml` rewriting the two
+      `items.csv`; needs S6 and S7 first.) (Landed as planned; the
+      representation's rows lost the `rights` key the eark fixture has,
+      which the MODS vocabulary does not know. The fixture is local, like
+      the others; build.sh's missing-fixture hint describes it.)
+- [x] **XML catalog.** `scripts/schema-catalog.xml` rewriting the two
       loc.gov URLs the MODS schema imports
       (`http://www.loc.gov/standards/xlink/xlink.xsd`,
       `http://www.loc.gov/mods/xml.xsd`) onto the bundled copies in
-      `schemas/`, so xmllint runs with `--nonet`.
-- [ ] **build.sh.** An explicit `eark-mods` case (E-ARK 2.2.0); after
+      `schemas/`, so xmllint runs with `--nonet`. (Two `uri` entries,
+      resolved relative to the catalog file; the bundled xlink.xsd imports
+      nothing further, so two suffice. Without the catalog xmllint under
+      `--nonet` cannot load the imports and the schema fails to compile,
+      exit 5, so the catalog is doing the work; an invalid document fails
+      through it with exit 3.)
+- [x] **build.sh.** An explicit `eark-mods` case (E-ARK 2.2.0); after
       `create`, `xmllint --noout --nonet --schema <pkg>/schemas/mods-3-7.xsd`
       over every `mods.xml` in the package with `XML_CATALOG_FILES`
       pointing at the catalog, a failure exiting non-zero like an INVALID
       package. xmllint joins the documented requirements in the script
-      header, README and `CLAUDE.md`.
-- [ ] **Run it.** `./build.sh eark-mods` VALID with 0 warnings and the
+      header, README and `CLAUDE.md`. (An explicit case per profile, an
+      unknown name refused. Every `mods.xml` found in the package is
+      validated against the package's own copy of the schema, the result
+      folded into the exit status next to the validator's, so an invalid
+      document fails the run the way an INVALID package does and the
+      report is still published. `CLAUDE.md`'s development line now says
+      all three profiles validate VALID, so S9 can skip that sentence.)
+- [x] **Run it.** `./build.sh eark-mods` VALID with 0 warnings and the
       xmllint pass clean; the package METS `dmdSec` read by hand
       (`MDTYPE="MODS" MDTYPEVERSION="3.7"`). Capture the package as
       `tmp/reference/eark-mods/pkg` and note it in `tmp/reference/README.md`.
       Commit `Added: eark-mods fixture, XML catalog and xmllint pass in
-      build.sh`.
+      build.sh`. (Run 2026-10-01 with commons-ip 2.11.2 on host Java: VALID
+      with 0 warnings, passed=129, skipped=28; both `mods.xml` files
+      validate, the supplied one byte-identical to the fixture's; both METS
+      files type the document `MDTYPE="MODS" MDTYPEVERSION="3.7"`. basic
+      and eark re-run through the changed script: VALID as before and
+      structurally identical to their reference copies. Captured and
+      noted.)
 
 ### S9: closing docs
 

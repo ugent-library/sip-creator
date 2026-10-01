@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  XML catalog for validating a mods.xml offline. The bundled MODS schema
+  (schemas/mods-3-7.xsd) imports two schemas by loc.gov URL; this maps each
+  onto the bundled copy, which the METS and meemoo documents ship already,
+  so xmllint runs with -nonet:
+
+    XML_CATALOG_FILES=scripts/schema-catalog.xml xmllint -noout -nonet \
+        -schema <pkg>/schemas/mods-3-7.xsd <pkg>/metadata/descriptive/mods.xml
+
+  build.sh runs this over every mods.xml in an eark-mods package.
+-->
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+  <uri name="http://www.loc.gov/mods/xml.xsd" uri="../schemas/xml.xsd"/>
+  <uri name="http://www.loc.gov/standards/xlink/xlink.xsd" uri="../schemas/xlink.xsd"/>
+</catalog>
