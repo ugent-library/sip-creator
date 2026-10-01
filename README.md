@@ -3,42 +3,96 @@
 
 # SIP Creator
 
-A command-line tool and Go library for building Submission Information Packages (SIPs):
-your content files plus descriptive metadata, rolled into a standards-conformant
-[E-ARK SIP](https://earksip.dilcis.eu/), ready for ingest into any E-ARK-conformant repository.
+SIP Creator packages your content files and their descriptive metadata into an
+[E-ARK](https://earksip.dilcis.eu/) Submission Information Package (SIP), ready to hand
+to a digital archive. It is a Go library, and a command-line tool built on it.
 
-E-ARK profiles specialize the output for a particular archive. This project implements
-three: two plain E-ARK profiles for E-ARK-conformant repositories, with Simple Dublin Core
-or MODS 3.7 as the descriptive metadata, and meemoo's `basic` profile, building SIPs
-conforming to [Meemoo's SIP Specification](https://developer.meemoo.be/docs/diginstroom/sip/)
-for ingest into the Flemish heritage archive. Descriptive metadata reaches the tool as
-flat rows in a CSV or, under the E-ARK profiles, as a finished document.
-
-The library is written to be usable by other institutions as it stands, as a reference
-implementation of E-ARK SIP packaging: the profiles in this repository are reference
-implementations, and an institution with its own descriptive standard brings its own
-profile (see [Bringing your own profile](#bringing-your-own-profile)). UGent Library's
-usage in the examples is the example, not the rule.
+Archives differ in what they expect inside a SIP. A profile captures one archive's
+expectations: the specification version, the descriptive metadata standard, and the
+rules your input must meet. Three are included: `eark` (Dublin Core) and `eark-mods`
+(MODS) for E-ARK-conformant repositories, and `basic` for meemoo, the Flemish heritage
+archive (see [Profiles](#profiles)).
 
 :warning: **This is an experimental package** :warning:
 
 ## Features
 
-* Implements three profiles, selected with `--profile`: `eark` builds a plain
-  [E-ARK SIP](https://earksip.dilcis.eu/) 2.2.0 for E-ARK-conformant repositories with
-  Simple Dublin Core descriptive metadata; `eark-mods` builds the same package with
-  [MODS 3.7](https://www.loc.gov/standards/mods/) descriptive metadata for bibliographic
-  records; `basic` builds a SIP conforming to the
-  [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
-  built on E-ARK SIP 2.0.4, for ingest into the Flemish heritage archive.
 * Builds a complete package from a plain input folder: your content files plus a simple
-  descriptive rows file (`description.csv`) or, under the eark profiles, a finished
-  `dc.xml` or `mods.xml`, out comes a SIP with generated METS and PREMIS metadata and
+  descriptive rows file (`description.csv`) or, where the profile allows it, a finished
+  descriptive document. Out comes a SIP with generated METS and PREMIS metadata and
   natively computed checksums.
 * Validates an input folder before building (`check`, with the same `--profile` as
   `create`), reporting every violation at once.
 * Optional PRONOM format identification based on a pre-computed
   [Siegfried](https://github.com/richardlehane/siegfried) report (see Format characterization).
+* Profiles of your own for other archives or descriptive standards (see
+  [Bringing your own profile](#bringing-your-own-profile)).
+
+## Profiles
+
+Choose a profile with `--profile` on the command line, or with `profiles.Get` in Go.
+
+| | `eark` | `eark-mods` | `basic` |
+|---|---|---|---|
+| Built for | E-ARK-conformant repositories | E-ARK-conformant repositories | meemoo (hetarchief.be) |
+| Specification | E-ARK SIP 2.2.0 | E-ARK SIP 2.2.0 | meemoo SIP 1.2, on E-ARK SIP 2.0.4 |
+| Descriptive standard | Simple Dublin Core | MODS 3.7 | meemoo's Dublin Core and schema.org |
+| [`description.csv` keys](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) | the 15 Dublin Core elements | `identifier`, `title` | meemoo's vocabulary |
+| Required keys | `identifier`, `title` | `identifier`, `title` | `identifier`, `title`, `description`, `created` |
+| [Finished document](docs/input-spec.md#supplying-a-finished-document-eark-and-eark-mods) accepted | `dc.xml` | `mods.xml` | none |
+| Go description type | `eark.Terms` | `earkmods.Record` | `meemoo.Terms` |
+| Submitter | name | name | name and meemoo OR-id |
+| Representation type | written to the METS | written to the METS | ignored |
+| You deliver | the zip | the zip | the package directory, in a BagIt bag |
+
+### `eark`: E-ARK with Dublin Core
+
+Builds a plain [E-ARK SIP](https://earksip.dilcis.eu/) 2.2.0 with a Simple Dublin Core
+document (`dc.xml`) as its descriptive metadata. `description.csv` takes the fifteen
+Dublin Core elements (`title`, `creator`, `date`, `coverage`, ...) as keys. A language
+tag on a key is accepted but not written into the document.
+
+Each representation's type goes into that representation's METS content typing
+(`csip:OTHERTYPE` and `csip:OTHERCONTENTINFORMATIONTYPE`); RODA v5.7.0 and later shows it
+in the Type column of the AIP's representations. The zip the tool writes is the
+deliverable: ingest it as it is.
+
+### `eark-mods`: E-ARK with MODS
+
+The same package as `eark`, with a [MODS 3.7](https://www.loc.gov/standards/mods/)
+document (`mods.xml`) for bibliographic records. Everything except the descriptive
+metadata works as under `eark`.
+
+MODS is a tree, so `description.csv` holds only `identifier` and `title`. A richer
+record, such as one listing the library's physical copies of the work (call number,
+barcode, volume), comes as a finished `mods.xml`, or in Go as an `earkmods.Record` with
+`Items`. Physical copies belong on the package-level record, because a representation is
+a version of the content, never a copy. The library does not refuse items on a
+representation's record; it writes them to that representation's `mods.xml`.
+
+### `basic`: meemoo SIP 1.2
+
+Builds a SIP conforming to the basic content profile of the
+[meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
+for ingest into the Flemish heritage archive. `description.csv` takes meemoo's closed
+vocabulary: Dublin Core terms (`created`, `spatial`, `extent`, ...) plus two schema.org
+properties. On top of the four required keys, meemoo requires a Dutch value (`[nl]`)
+wherever a language-tagged key is used.
+
+There is no finished-document route: meemoo's document must carry the package identifier
+the tool mints, and the tool does not edit XML. The submitter needs meemoo's OR-id as
+well as a name (see [Configuration](#configuration)). A representation's type is
+ignored, because meemoo SIP 1.2 fixes every METS content typing to `OTHER` plus the
+profile URI; its label still becomes `mets/@LABEL`.
+
+meemoo's transfer format wraps the SIP in a BagIt bag, which this tool does not produce.
+Build a package directory with `--no-zip`, bag that directory with a reference BagIt
+implementation, and follow meemoo's transfer instructions:
+
+```
+./bin/sip-creator create --profile basic --no-zip ./your-input sip-out
+bagit.py --md5 sip-out/uuid-<uuid>/
+```
 
 ## Installation
 
@@ -97,18 +151,8 @@ present and stops on a malformed one:
 ./bin/sip-creator check --profile eark ./your-input
 ```
 
-**Delivering to an E-ARK-conformant repository (eark and eark-mods profiles):** the zip
-is the deliverable; ingest it directly.
-
-**Delivering to Meemoo (basic profile):** meemoo's transfer format wraps the SIP in a
-BagIt bag, an envelope this tool deliberately does not produce. Use `--no-zip` to
-create a package directory, bag that *directory* with a reference BagIt
-implementation, and then follow meemoo's transfer instructions:
-
-```
-./bin/sip-creator create --profile basic --no-zip ./your-input sip-out
-bagit.py --md5 sip-out/uuid-<uuid>/
-```
+What you deliver depends on the profile: the zip for `eark` and `eark-mods`, a bagged
+package directory for `basic` (see [Profiles](#profiles)).
 
 ### As a Go library
 
@@ -133,8 +177,7 @@ import (
 )
 
 def, _ := profiles.Get("eark")
-// The second argument is the meemoo OR-id: required by the basic
-// profile, ignored by the plain E-ARK ones.
+// The second argument is the meemoo OR-id, used by basic only.
 def, err := def.WithSubmitter("Universiteitsbibliotheek Gent", "")
 if err != nil {
 	// ...
@@ -150,11 +193,7 @@ if err != nil {
 }
 
 pkg, err := builder.Build(&build.SourcePackage{
-	// Each profile package owns its description type: the eark profile
-	// writes Simple Dublin Core from eark.Terms, the basic profile meemoo's
-	// dc+schema document from meemoo.Terms (both lists of sip.Term, keyed
-	// by the plain keys of the input specification's tables), and the
-	// eark-mods profile MODS 3.7 from an earkmods.Record (below).
+	// The description's type belongs to the profile (see Profiles).
 	Description: eark.Terms{
 		{Key: "identifier", Value: "inv.2024.001"},
 		{Key: "title", Value: "Correspondentie 1914-1918"},
@@ -192,12 +231,9 @@ pkg, err := builder.Build(&build.SourcePackage{
 })
 ```
 
-The `eark-mods` profile takes a bibliographic record instead of a list of terms. MODS is
-a tree, so the record is typed by field: its identifier, its titles, and the library's
-physical copies of it as items, each a call number with an optional barcode and an
-optional volume or issue designation. Items belong on the package-level record, because
-a representation is a version of the content, never a copy. The library does not refuse
-items on a representation's record; it writes them to that representation's `mods.xml`:
+The `eark-mods` profile takes an `earkmods.Record` instead of a list of terms: an
+identifier, titles, and physical copies as items, each a call number with an optional
+barcode and an optional volume or issue designation:
 
 ```go
 import "github.com/ugent-library/sip-creator/profiles/earkmods"
@@ -220,10 +256,10 @@ pkg, err := builder.Build(&build.SourcePackage{
 })
 ```
 
-A record richer than the fields, or one that already exists as a document, travels as a
-supplied file: the two eark profiles accept a `build.DescriptiveDocument` in place of
-terms or a record; the `basic` profile takes terms only. What the tool checks and how it
-copies the file is described under [Input](#input):
+A record that already exists as a document travels as a file: profiles that accept a
+finished document (see [Profiles](#profiles)) take a `build.DescriptiveDocument` in place
+of terms or a record. What the tool checks and how it copies the file is described under
+[Input](#input):
 
 ```go
 pkg, err := builder.Build(&build.SourcePackage{
@@ -264,20 +300,8 @@ the domain model and build lifecycle are described in
 Besides the required `Name` (the directory under `representations/`), each
 representation takes two optional fields. `Label` is the display name, emitted
 as the representation METS `mets/@LABEL`; empty means the `Name`. `Type` is the
-representation's type; empty means the `Label`.
-
-What `Type` does depends on the profile:
-
-* The **eark and eark-mods profiles** declare each representation's resolved type in that
-  representation's METS content typing (`TYPE="Other"` with `csip:OTHERTYPE`,
-  and `csip:CONTENTINFORMATIONTYPE="OTHER"` with
-  `csip:OTHERCONTENTINFORMATIONTYPE`). Ingest systems read one of those pairs
-  as the representation's type: RODA v5.7.0 and later shows the value in the
-  Type column of the AIP's representations.
-* The **basic profile ignores `Type`**: meemoo SIP 1.2 fixes every METS
-  content typing to `OTHER` plus the profile URI
-  (`https://data.hetarchief.be/id/sip/1.2/basic`), so the spec leaves no
-  attribute for a producer-chosen type. `Label` still becomes `mets/@LABEL`.
+representation's type; empty means the `Label`. Whether the type reaches the METS
+depends on the profile (see [Profiles](#profiles)).
 
 On the CLI the same fields come from the optional `representations.csv`
 (see [Input](#input) below).
@@ -331,14 +355,10 @@ master and access copy. `documentation/` is recommended: validators warn (a CSIP
 when a package has none.
 
 The rows file is a two-column `key,value` file with a header row. The profile you pass
-to `check` and `create` says which vocabulary the rows are in: under `basic` the keys
-come from meemoo's closed vocabulary of Dublin Core terms plus two schema.org
-properties; under `eark` they are the fifteen Simple Dublin Core elements; under
-`eark-mods` they are the MODS keys, `identifier` and `title` (the tables are in the
+to `check` and `create` decides which keys are allowed and which are required (see
+[Profiles](#profiles); the full key tables are in the
 [input specification](docs/input-spec.md)). Repeat a key for multiple values, and tag
-a value's language in square brackets where it matters. This example is for `basic`:
-`created`, `spatial` and `extent` are meemoo keys, and `eark` refuses them as unknown
-(its Simple Dublin Core elements are `date`, `coverage` and `format`):
+a value's language in square brackets where it matters. This example uses `basic` keys:
 
 ```csv
 key,value
@@ -354,19 +374,13 @@ extent[nl],48 foto's
 rights[nl],publiek domein
 ```
 
-`identifier` and `title` are always required. Under `basic`, `description` and `created`
-are required too (meemoo's basic content profile), as is a Dutch (`[nl]`) entry wherever
-a language-tagged key is used; `check` reports all of these. An unknown key is an error: a
-typo must not silently drop metadata.
+`check` reports a missing required key. An unknown key is an error: a typo must not
+silently drop metadata.
 
-Under `eark` and `eark-mods` a finished document can stand in for the rows: `dc.xml` (a
-`simpledc` document) or `mods.xml` (a `mods:mods` document declaring version 3.7), at the
-top level or inside a representation folder, one or the other per level. This is the
-route for a record the flat rows cannot say, such as a MODS record with its physical
-copies. The tool checks that the file parses as XML with that root element and
-copies it into the package as it is; validity against the schema stays with the
-validators downstream. Under `basic` there is no document route, because meemoo's
-document must carry the identifier the tool mints.
+Where the profile accepts a finished document, it can stand in for the rows, at the top
+level or inside a representation folder, one or the other per level. The tool checks
+that the file parses as XML with the root element the profile expects and copies it into
+the package as it is; validity against the schema stays with the validators downstream.
 
 The optional `representations.csv` gives each representation folder a display
 label and a type (what an ingest system such as RODA shows as the
@@ -397,11 +411,9 @@ from `.env.example`. All environment variables are documented in
 **Submitting organization** (required for `create`)
 
 Every package's METS names the organization submitting it, so `SIP_SUBMITTER_NAME` is
-required for **every** profile, including `eark`, which builds with the name alone.
-The meemoo profile (`basic`) also requires `SIP_SUBMITTER_OR_ID`, the organization's
-identifier in [Meemoo's organization register](https://developer.meemoo.be/). It is
-emitted as the agent's `IDENTIFICATIONCODE` note (Meemoo SIP 1.2); the other profiles
-ignore it. A build refuses to run when a value its profile requires is missing, rather than
+required for every profile. `basic` also requires `SIP_SUBMITTER_OR_ID`, the
+organization's identifier in [meemoo's organization register](https://developer.meemoo.be/),
+emitted as the agent's `IDENTIFICATIONCODE` note. A build refuses to run when a value its profile requires is missing, rather than
 emitting a package that would be rejected at ingest:
 
 ```
