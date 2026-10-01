@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -33,13 +32,7 @@ var checkCmd = &cobra.Command{
 
 		source, err := input.New(vocabulary).Read(args[0])
 		if err != nil {
-			if v, ok := errors.AsType[input.Violations](err); ok {
-				for _, line := range v {
-					fmt.Fprintln(cmd.ErrOrStderr(), line)
-				}
-				return fmt.Errorf("%s: %d problem(s) found", args[0], len(v))
-			}
-			return err
+			return reportViolations(cmd, args[0], err)
 		}
 
 		files := 0

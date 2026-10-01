@@ -71,7 +71,7 @@ var createCmd = &cobra.Command{
 
 		source, err := input.New(vocabulary).Read(args[0])
 		if err != nil {
-			return fmt.Errorf("input folder %s does not conform to the input specification:\n%w", args[0], err)
+			return reportViolations(cmd, args[0], err)
 		}
 
 		builder, err := build.New(&build.Config{
