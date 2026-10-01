@@ -186,9 +186,8 @@ SIP_SUBMITTER_OR_ID="OR-a1b2c3d"
 
 ### Input folder
 
-One folder is one package. The smallest valid input is a descriptive rows file,
-`description.csv`, plus your content files, flat in one folder (they become the
-package's single representation):
+One folder is one package. The smallest valid input is a `description.csv` plus your
+content files, which become the package's single representation:
 
 ```
 your-input/
@@ -197,75 +196,81 @@ your-input/
 └── scan-002.tif
 ```
 
-When the content comes in multiple versions (for instance, a preservation master and an
-access copy), each version gets its own folder under `representations/`,
-and the optional extras slot in per package or per representation:
+When the content comes in several versions, such as a preservation master and an access
+copy, each version gets its own folder under `representations/`:
 
 ```
 your-input/
-├── description.csv           required: descriptive metadata (or dc.xml / mods.xml, see below)
-├── representations.csv       optional: a label and type per representation
-├── siegfried.json            optional: characterization sidecar (see Format characterization)
-├── documentation/            optional: context material about the package
-│   └── README.txt
-├── premis/                   optional: received preservation XML, passed through as-is
-│   └── vendor-events.xml
+├── description.csv
+├── representations.csv
+├── siegfried.json
+├── documentation/
+├── premis/
 └── representations/
     ├── master/
     │   ├── scan-001.tif
-    │   ├── scan-002.tif
-    │   ├── description.csv   optional: terms (or a document) for this version only
-    │   ├── documentation/    optional
-    │   │   └── notes.txt
-    │   └── premis/           optional
-    │       └── scanner-events.xml
+    │   ├── description.csv
+    │   ├── documentation/
+    │   └── premis/
     └── access/
-        ├── scan-001.jpg
-        └── scan-002.jpg
+        └── scan-001.jpg
 ```
 
-Representation folder names may use letters, digits and `._-`, and are used as-is: the
-folder name becomes the representation's folder name inside the SIP and, unless
-`representations.csv` says otherwise, its label and type in the metadata. In the flat
-case the representation is named after the input folder itself. A representation's own
-`description.csv` describes that version only, such as a license that differs between
-master and access copy. `documentation/` is recommended: validators warn (a CSIP SHOULD)
-when a package has none.
+| Name | Required | What it holds | Rules |
+|---|---|---|---|
+| `description.csv` | yes, or the profile's document | descriptive metadata as `key,value` rows | [§3](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) |
+| `dc.xml`, `mods.xml` | instead of `description.csv`, where the profile accepts one | a finished descriptive document | [§3](docs/input-spec.md#supplying-a-finished-document-eark-and-eark-mods) |
+| `representations/<name>/` | no | one folder per version of the content | [§2](docs/input-spec.md#2-content-files-and-representations) |
+| `representations.csv` | no | a label and type per representation folder | [§2](docs/input-spec.md#representationscsv-labels-and-types-optional) |
+| `documentation/` | no, recommended | context material; validators warn without it | [§4](docs/input-spec.md#4-documentation) |
+| `premis/` | no | received preservation XML, copied as it is | [§5](docs/input-spec.md#5-received-preservation-files-premis) |
+| `siegfried.json` | no | a format characterization report | [below](#format-characterization) |
 
-The rows file is a two-column `key,value` file with a header row. The profile you pass
-to `check` and `create` decides which keys are allowed and which are required (see
-[Profiles](#profiles); the full key tables are in the
-[input specification](docs/input-spec.md)). Repeat a key for multiple values, and tag
-a value's language in square brackets where it matters. This example uses `basic` keys:
+Everything else is content. A representation folder can hold its own `description.csv`
+(or document), `documentation/` and `premis/`, about that version only. Representation
+folder names may use letters, digits and `._-`; in the simple case the representation is
+named after the input folder.
+
+#### `description.csv`
+
+A two-column file with a `key,value` header row. Repeat a key for more values, and add a
+language in square brackets where it matters (`title[nl]`). An unknown key is an error, so
+a typo cannot silently drop metadata. Which keys exist and which are required depends on
+the profile (see [Profiles](#profiles)). The smallest valid file per profile:
+
+`eark`:
 
 ```csv
 key,value
-identifier,BIB.FA.XXXX.XXX
+identifier,inv.2024.001
+title,Correspondentie 1914-1918
+```
+
+`eark-mods`:
+
+```csv
+key,value
+identifier,990001234560471
+title[nl],Correspondentie 1914-1918
+```
+
+`basic`:
+
+```csv
+key,value
+identifier,BIB.FA.2026.001
 title[nl],Fotoalbum Gent 1913
 description[nl],Album met 48 zwart-witfoto's van de Gentse binnenstad
 created,1913
-creator,Onbekend
-subject[nl],stadsgezichten
-subject[nl],wereldtentoonstellingen
-spatial[nl],Gent
-extent[nl],48 foto's
-rights[nl],publiek domein
 ```
 
-`check` reports a missing required key. An unknown key is an error: a typo must not
-silently drop metadata.
+A finished document replaces the file at the same level. The tool checks only that it is
+XML with the root element the profile expects, and copies it as it is.
 
-Where the profile accepts a finished document, it can stand in for the rows, at the top
-level or inside a representation folder, one or the other per level. The tool checks
-that the file parses as XML with the root element the profile expects and copies it into
-the package as it is; validity against the schema stays with the validators downstream.
+#### `representations.csv`
 
-The optional `representations.csv` gives each representation folder a display
-label and a type (what an ingest system such as RODA shows as the
-representation's kind) when the folder names alone don't say it. It is a
-table with a `directory,label,type` header row; `directory` names a folder
-under `representations/` and is required, the other two columns are optional
-(an empty `label` means the folder name, an empty `type` means the label):
+Gives each representation folder a display label and a type. `directory` is required; an
+empty `label` means the folder name, an empty `type` means the label:
 
 ```csv
 directory,label,type
@@ -273,28 +278,22 @@ master,Master scan (TIFF),archival
 access,Access copy (JPEG),access
 ```
 
-When the file is present it must be complete: every row must match a folder
-and every folder must have a row, so nothing can silently drop out of the
-package. The full rules are in the [input specification](docs/input-spec.md); run
-[`check`](#checking-an-input-folder) to test a folder against them.
+When the file is present, every folder must have a row and every row must match a
+folder, so no content can silently drop out of the package.
 
 #### Format characterization
 
-Format info comes from a pre-computed
-[Siegfried](https://github.com/richardlehane/siegfried) report placed next to your
-input; the tool itself never runs Siegfried. Install Siegfried if you want format info
-in your packages, generate the report **from the input root**, and the build picks it
-up by name. Capture the report before writing it, so sf never scans its own
-half-written output:
+The tool adds format info (PRONOM identifiers) from a Siegfried report in
+`siegfried.json`; it never runs Siegfried itself. Generate the report from the input
+root, capturing it before writing so `sf` does not scan its own half-written output:
 
 ```sh
 cd ./your-input && report="$(sf -hash md5 -json .)" && printf '%s\n' "$report" > siegfried.json
 ```
 
-Without a `siegfried.json` the build succeeds with no format info (`premis:format` is a
-SHOULD; checksums and sizes are always computed natively). When the sidecar is present it
-is strictly verified: a malformed report, an essence file missing from it, a report made
-without `-hash md5`, or a file changed since the report was generated aborts the build.
+Without the report, the package has no format info; checksums and sizes are always
+computed. With it, the build stops when the report is malformed, made without
+`-hash md5`, misses a content file, or no longer matches a file's checksum.
 
 ## Go library
 
