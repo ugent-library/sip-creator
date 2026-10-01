@@ -1,6 +1,7 @@
 package input
 
 import (
+	"encoding/xml"
 	"fmt"
 
 	"github.com/ugent-library/sip-creator/sip"
@@ -23,6 +24,24 @@ type Vocabulary interface {
 	// description is a list of terms it keeps the statements' order, so a
 	// *sip.TermError from Validate names the statement at that position.
 	Description(statements []Statement) (sip.Description, []error)
+}
+
+// DocumentVocabulary is the optional part of a Vocabulary whose profile
+// takes a finished document of its standard in place of the rows, as the
+// two eark profiles do. The reader reserves the file name it gives, at the
+// input root and inside each representation directory, reads that file's
+// root element, and asks whether the root is the profile's. A vocabulary
+// without it takes rows only, and no file name is reserved for a document:
+// a dc.xml under such a profile is content like any other file.
+type DocumentVocabulary interface {
+	// DocumentName is the file name of the supplied document, dc.xml or
+	// mods.xml: the name the package gives the document too.
+	DocumentName() string
+	// CheckDocument returns why root, the document's root element, is not
+	// the profile's standard: another element or namespace, or a version
+	// other than the one the package declares. It is the judgement the
+	// engine makes before a build, so check refuses what create would.
+	CheckDocument(root xml.StartElement) error
 }
 
 // Statement is one row of a description.csv: one thing the folder states

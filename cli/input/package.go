@@ -58,6 +58,10 @@ func (r *Reader) Read(root string) (*build.SourcePackage, error) {
 	}
 
 	d := &directory{root: abs, vocabulary: r.vocabulary}
+	// A vocabulary whose profile takes a supplied document says so by
+	// implementing DocumentVocabulary; under any other, no file name is
+	// the document's.
+	d.document, _ = r.vocabulary.(DocumentVocabulary)
 	m := d.read()
 	if len(d.violations) > 0 {
 		return m, d.violations

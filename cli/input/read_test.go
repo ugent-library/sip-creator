@@ -1,6 +1,7 @@
 package input
 
 import (
+	"encoding/xml"
 	"errors"
 	"os"
 	"path/filepath"
@@ -16,7 +17,8 @@ import (
 // meemooVocab and earkVocab are the tests' vocabularies for the two flat
 // profiles: the statements as stated, wrapped as the profile's terms. The
 // CLI's own vocabularies in cli/input/vocabulary import this package, so
-// its tests cannot use them.
+// its tests cannot use them. earkVocab also takes a dc.xml, judged by the
+// eark encoder, so the reader's document rules are tested through it.
 type meemooVocab struct{}
 
 func (meemooVocab) Description(statements []Statement) (sip.Description, []error) {
@@ -27,6 +29,12 @@ type earkVocab struct{}
 
 func (earkVocab) Description(statements []Statement) (sip.Description, []error) {
 	return eark.Terms(terms(statements)), nil
+}
+
+func (earkVocab) DocumentName() string { return "dc.xml" }
+
+func (earkVocab) CheckDocument(root xml.StartElement) error {
+	return eark.Definition.Encoder.(build.DescriptiveDocumentChecker).CheckDescriptiveDocument(root)
 }
 
 func terms(statements []Statement) []sip.Term {

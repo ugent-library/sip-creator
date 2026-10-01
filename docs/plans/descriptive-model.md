@@ -1,6 +1,6 @@
 # Plan: the descriptive model follows its standard, and supplied documents return for the eark profiles
 
-*Status: **S6 done, S7 next** (2026-09-30; S4 withdrawn). Drafted on the branch
+*Status: **S7 done, S8 next** (2026-10-01; S4 withdrawn). Drafted on the branch
 `descriptive-model` from the review of 2026-09-30 that closed the
 [eark-mods plan](../archive/eark-mods.md) after its S3, with
 [ADR-0021](../decisions/0021-descriptive-model-follows-its-standard.md)
@@ -12,8 +12,9 @@ with 0 warnings and compare identical to their reference copies, and the
 MODS document is pinned byte for byte. `items.csv` is withdrawn (the
 review of S3, 2026-09-30): the rows carry flat statements only. The
 library accepts a supplied `dc.xml` or `mods.xml` as a `build.DescriptiveDocument`
-under the two eark profiles; the folder does not yet. Update this line as
-steps land.*
+under the two eark profiles, and the folder takes the same files at the
+input root and inside each representation directory, one description per
+level. Update this line as steps land.*
 
 ## Context
 
@@ -75,10 +76,14 @@ Rules, all MUST violations collected by `check`:
 - At the input root, exactly one of `description.csv` or the profile's
   document. Both, or neither, is a violation. Inside a representation
   directory, at most one of the two.
-- A document under a profile that takes none (`basic`) is a violation. A
-  document of another standard's name (`mods.xml` under `eark`) is
-  content, not a document; the profile's METS would otherwise declare a
-  type the file does not have.
+- Under a profile that takes none (`basic`) no document name is reserved:
+  a `dc.xml` there is content like any other file, as the rows file's
+  former names are (revised in S7: the reader knows no document name but
+  the one its vocabulary gives it, so it cannot single out another
+  profile's; a folder with a `dc.xml` and no `description.csv` still fails
+  on the missing rows file). A document of another standard's name
+  (`mods.xml` under `eark`) is content, not a document; the profile's METS
+  would otherwise declare a type the file does not have.
 - A document MUST be well-formed XML with the standard's root element;
   the tool checks nothing else in it (ADR-0003). build.sh runs xmllint over
   every `mods.xml` in a package as acceptance.
@@ -345,15 +350,44 @@ it in the docs. Docs only, no code.
 
 ### S7: supplied documents in the folder
 
-- [ ] **File names and rules.** The adapter names the document it accepts
+- [x] **File names and rules.** The adapter names the document it accepts
       (`dc.xml`, `mods.xml`, or none). The reader treats that name as
       reserved at the root and inside each representation directory, and
       applies the one-per-level rule of the file specification above.
-- [ ] **Tests.** Each rule, under each profile.
-- [ ] **Docs.** Input spec §1, §3, §7 and §8 (the deferred item becomes
+      (Landed as `input.DocumentVocabulary`, the optional interface next
+      to `Vocabulary`, the way `DescriptiveDocumentChecker` sits next to
+      `DescriptionEncoder` in the library: `DocumentName` returns the
+      profile's `DescriptiveName`, so the supplied file is named as the
+      package names it, and `CheckDocument` delegates to the profile
+      encoder's judgement, so `check` refuses exactly what `create` would.
+      `Eark` and `EarkMods` implement it; `Meemoo` stays a one-method type,
+      and under it no name is reserved. The reader reads the root with
+      `xmldoc.Root`, reports a malformed file or a wrong root with the
+      file name, and returns a `build.DescriptiveDocument`.)
+- [x] **Tests.** Each rule, under each profile. (`cli/input/document_test.go`,
+      through a test vocabulary that takes `dc.xml`: a document at the root
+      and inside a representation, both files at one level, neither at the
+      root, a folder under the name, a malformed file, another standard's
+      root and a wrapper, the name as content under basic and `mods.xml`
+      as content under eark, and the folder's document building with the
+      real eark profile byte for byte. `cli/input/vocabulary`: a
+      vocabulary takes a document exactly when its encoder does, names the
+      package's file, and judges roots as the encoder does.)
+- [x] **Docs.** Input spec §1, §3, §7 and §8 (the deferred item becomes
       current for the eark profiles); README Input section. Commit `Added:
-      dc.xml and mods.xml in the input folder`.
-- [ ] **Acceptance.** As S2.
+      dc.xml and mods.xml in the input folder`. (Also §2's reserved names
+      inside a representation and the MODS keys under `eark-mods` in §3;
+      the design doc's `cli/` bullet, input contract and test inventory;
+      `CLAUDE.md`'s input paragraph.)
+- [x] **Acceptance.** As S2. (Run 2026-10-01 as in S2, commons-ip 2.11.2
+      on host Java: basic passed=132, eark passed=129, 28 skipped, VALID
+      with 0 warnings; both structural comparisons identical. Plus `check`
+      and `create --profile eark-mods` on scratch folders: a root
+      `mods.xml` with a representation `description.csv` builds a package
+      whose copied document is byte-identical and whose two METS files
+      type it `MDTYPE="MODS" MDTYPEVERSION="3.7"`; both files at one
+      level, another standard's root and a folder under the name are each
+      reported with the file name.)
 
 ### S8: eark-mods acceptance
 

@@ -13,16 +13,21 @@ import (
 )
 
 // directory is the input folder under inspection: the root all messages and
-// report keys are relative to, the findings collected so far, and the
-// vocabulary that gives the rows of a description.csv their meaning.
+// report keys are relative to, the findings collected so far, the
+// vocabulary that gives the rows of a description.csv their meaning, and
+// its document side when the profile takes a supplied document.
 type directory struct {
 	root       string
 	violations Violations
 	vocabulary Vocabulary
+	// document names the file reserved for a supplied descriptive document
+	// and judges its root; nil under a profile that takes rows only.
+	document DocumentVocabulary
 }
 
 // Reserved top-level names. Reserved names inside a representation are
-// a subset.
+// a subset. The profile's document name, when it has one, is reserved at
+// both levels too; the vocabulary supplies it (isDocumentName).
 const (
 	descriptionName        = "description.csv"
 	representationsName    = "representations"
@@ -39,13 +44,21 @@ func (d *directory) read() *build.SourcePackage {
 	source := &build.SourcePackage{}
 
 	var content []os.DirEntry
-	var description, repsDir, repsCSV string
+	var description, document, repsDir, repsCSV string
 
 	for _, e := range d.readDir(d.root) {
 		// Reserved names are ASCII, which NFC normalization never alters,
 		// so comparing unnormalized names is exact.
 		name := e.Name()
 		src := filepath.Join(d.root, e.Name())
+		if d.isDocumentName(name) {
+			if e.IsDir() {
+				d.violate("%s is a folder; the reserved name is for the supplied descriptive document", name)
+				continue
+			}
+			document = src
+			continue
+		}
 		switch name {
 		case descriptionName:
 			if e.IsDir() {
@@ -88,7 +101,7 @@ func (d *directory) read() *build.SourcePackage {
 		}
 	}
 
-	source.Description = d.decodeDescription(description, true)
+	source.Description = d.description(description, document, true)
 
 	if repsDir != "" {
 		// With a representations/ folder, all content lives inside it;
@@ -135,12 +148,20 @@ func (d *directory) readRepresentations(dir string) []build.SourceRepresentation
 
 func (d *directory) readRepresentation(dir, name string) build.SourceRepresentation {
 	rep := build.SourceRepresentation{Name: name}
-	var description string
+	var description, document string
 	for _, e := range d.readDir(dir) {
 		// Reserved names are ASCII, which NFC normalization never alters,
 		// so comparing unnormalized names is exact.
 		name := e.Name()
 		src := filepath.Join(dir, e.Name())
+		if d.isDocumentName(name) {
+			if e.IsDir() {
+				d.violate("%s is a folder; the reserved name is for the supplied descriptive document", d.rel(src))
+				continue
+			}
+			document = src
+			continue
+		}
 		switch name {
 		case descriptionName:
 			if e.IsDir() {
@@ -168,11 +189,18 @@ func (d *directory) readRepresentation(dir, name string) build.SourceRepresentat
 			rep.Files = append(rep.Files, d.newFile(dir, src))
 		}
 	}
-	rep.Description = d.decodeDescription(description, false)
+	rep.Description = d.description(description, document, false)
 	if len(rep.Files) == 0 {
 		d.violate("%s: the representation contains no content files", d.rel(dir))
 	}
 	return rep
+}
+
+// isDocumentName reports whether name is the file name reserved for the
+// profile's supplied descriptive document. Under a profile that takes
+// none, no name is: a dc.xml under basic is content like any other file.
+func (d *directory) isDocumentName(name string) bool {
+	return d.document != nil && name == d.document.DocumentName()
 }
 
 // readFlatRepresentation handles the simple case: no

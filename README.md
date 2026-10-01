@@ -30,8 +30,9 @@ usage in the examples is the example, not the rule.
   [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
   built on E-ARK SIP 2.0.4, for ingest into the Flemish heritage archive.
 * Builds a complete package from a plain input folder: your content files plus a simple
-  descriptive rows file (`description.csv`), out comes a SIP with generated METS and
-  PREMIS metadata and natively computed checksums.
+  descriptive rows file (`description.csv`) or, under the eark profiles, a finished
+  `dc.xml` or `mods.xml`, out comes a SIP with generated METS and PREMIS metadata and
+  natively computed checksums.
 * Validates an input folder before building (`check`, with the same `--profile` as
   `create`), reporting every violation at once.
 * Optional PRONOM format identification based on a pre-computed
@@ -286,7 +287,7 @@ and the optional extras slot in per package or per representation:
 
 ```
 your-input/
-├── description.csv           required: descriptive metadata
+├── description.csv           required: descriptive metadata (or dc.xml / mods.xml, see below)
 ├── representations.csv       optional: a label and type per representation
 ├── siegfried.json            optional: characterization sidecar (see Format characterization)
 ├── documentation/            optional: context material about the package
@@ -297,7 +298,7 @@ your-input/
     ├── master/
     │   ├── scan-001.tif
     │   ├── scan-002.tif
-    │   ├── description.csv   optional: terms that apply to this version only
+    │   ├── description.csv   optional: terms (or a document) for this version only
     │   ├── documentation/    optional
     │   │   └── notes.txt
     │   └── premis/           optional
@@ -311,11 +312,9 @@ The rows file is a two-column `key,value` file with a header row. The profile yo
 to `check` and `create` says which vocabulary the rows are in: under `basic` the keys
 come from meemoo's closed vocabulary of Dublin Core terms plus two schema.org
 properties; under `eark` they are the fifteen Simple Dublin Core elements; under
-`eark-mods` they are the MODS keys, `identifier` and `title` today (the two DC tables
-are in the [input specification](docs/input-spec.md); the MODS table joins it with the
-[descriptive-model plan](docs/plans/descriptive-model.md)). Repeat a
-key for multiple values,
-and tag a value's language in square brackets where it matters:
+`eark-mods` they are the MODS keys, `identifier` and `title` (the tables are in the
+[input specification](docs/input-spec.md)). Repeat a key for multiple values, and tag
+a value's language in square brackets where it matters:
 
 ```csv
 key,value
@@ -335,6 +334,15 @@ rights[nl],publiek domein
 are required too (meemoo's basic content profile), as is a Dutch (`[nl]`) entry wherever
 a language-tagged key is used; `check` reports all of these. An unknown key is an error: a
 typo must not silently drop metadata.
+
+Under `eark` and `eark-mods` a finished document can stand in for the rows: `dc.xml` (a
+`simpledc` document) or `mods.xml` (a `mods:mods` document declaring version 3.7), at the
+top level or inside a representation folder, one or the other per level. This is the
+route for a record the flat rows cannot say, such as a MODS record with its physical
+copies. The tool checks that the file is well-formed XML with that root element and
+copies it into the package as it is; validity against the schema stays with the
+validators downstream. Under `basic` there is no document route, because meemoo's
+document must carry the identifier the tool mints.
 
 The optional `representations.csv` gives each representation folder a display
 label and a type (what an ingest system such as RODA shows as the
@@ -356,8 +364,8 @@ package. The full rules are in the
 
 In short:
 
-* **`description.csv`** (required): the descriptive metadata, see the example
-  above.
+* **`description.csv`** (required; under the eark profiles a `dc.xml` or `mods.xml`
+  may stand in for it): the descriptive metadata, see above.
 * **Content**: either flat in the folder (one representation, named after the
   input folder itself), or one folder per version under
   `representations/<your-name>/`. Names are free-form (letters, digits,
@@ -369,8 +377,8 @@ In short:
   material; also per representation, and
   recommended: validators flag its absence as a SHOULD-level warning),
   `premis/` (preservation XML received from a vendor, passed through as-is;
-  also per representation), a per-representation rows file of the same name
-  (e.g. a license that differs between master and access copy), and the
+  also per representation), a per-representation rows file or document of the
+  same name (e.g. a license that differs between master and access copy), and the
   `siegfried.json` characterization sidecar (see Format characterization).
 
 Validate a folder without building anything (no configuration needed):

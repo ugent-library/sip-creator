@@ -8,22 +8,50 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// decodeDescription decodes the descriptive rows file at src into the
-// profile's description, collecting a violation per broken rule. src is ""
-// when the level has no rows file: the package level needs one, a
-// representation may have none. The row syntax (header, two columns,
-// key[lang]) is the file's own and is checked here; what a key means is
-// the vocabulary's; what the finished description may say and what a
-// package-level one must state are the description's own rules, run once
-// on the result. The library runs the same methods again as the contract
-// before a build; these calls report, so check and create agree.
-func (d *directory) decodeDescription(src string, packageLevel bool) sip.Description {
-	if src == "" {
+// description returns the level's description from the one source the
+// folder supplies for it: the rows file, decoded under the vocabulary, or
+// the profile's supplied document, read as it is. Both at one level is a
+// violation: an entity has one description, and the tool does not pick.
+// The package level needs one; a representation may have neither. rows and
+// document are "" when the folder has no such file.
+func (d *directory) description(rows, document string, packageLevel bool) sip.Description {
+	switch {
+	case rows != "" && document != "":
+		described := "representation"
 		if packageLevel {
-			d.violate("descriptive rows are missing: every package folder needs a description.csv describing the content (input specification §3)")
+			described = "package"
 		}
+		d.violate("%s and %s are both present; describe the %s with one of the two, not both (input specification §3)", d.rel(rows), d.rel(document), described)
 		return nil
+	case document != "":
+		return d.readDocument(document)
+	case rows != "":
+		return d.decodeDescription(rows, packageLevel)
+	case packageLevel:
+		d.violateMissingDescription()
 	}
+	return nil
+}
+
+// violateMissingDescription records that the package level describes
+// nothing, naming the file or files the profile accepts.
+func (d *directory) violateMissingDescription() {
+	if d.document == nil {
+		d.violate("descriptive rows are missing: every package folder needs a description.csv describing the content (input specification §3)")
+		return
+	}
+	d.violate("descriptive metadata is missing: every package folder needs a description.csv or a %s describing the content (input specification §3)", d.document.DocumentName())
+}
+
+// decodeDescription decodes the descriptive rows file at src into the
+// profile's description, collecting a violation per broken rule. The row
+// syntax (header, two columns, key[lang]) is the file's own and is checked
+// here; what a key means is the vocabulary's; what the finished
+// description may say and what a package-level one must state are the
+// description's own rules, run once on the result. The library runs the
+// same methods again as the contract before a build; these calls report,
+// so check and create agree.
+func (d *directory) decodeDescription(src string, packageLevel bool) sip.Description {
 	rel := d.rel(src)
 
 	cr, ok := d.openCSV(src)

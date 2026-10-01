@@ -1,10 +1,12 @@
 package vocabulary
 
 import (
+	"encoding/xml"
 	"errors"
 	"strings"
 	"testing"
 
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/cli/input"
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/eark"
@@ -35,6 +37,57 @@ func TestEveryProfileHasAVocabularyItsEncoderAccepts(t *testing.T) {
 	}
 	if _, ok := For("nope"); ok {
 		t.Error("an unregistered name has a vocabulary")
+	}
+}
+
+// A vocabulary takes a supplied document exactly when its profile's
+// encoder judges one, and names the file the package gives the document:
+// the two eark profiles do, basic does not. A vocabulary on one side only
+// would reserve a name the build refuses, or refuse a name the build takes.
+func TestDocumentVocabulariesMatchTheirEncoders(t *testing.T) {
+	for _, name := range profiles.Names() {
+		def, _ := profiles.Get(name)
+		vocab, _ := For(name)
+		_, encoderTakes := def.Encoder.(build.DescriptiveDocumentChecker)
+		docVocab, vocabTakes := vocab.(input.DocumentVocabulary)
+		if encoderTakes != vocabTakes {
+			t.Errorf("profile %q: its encoder takes a supplied document: %v; its vocabulary: %v", name, encoderTakes, vocabTakes)
+			continue
+		}
+		if vocabTakes && docVocab.DocumentName() != def.DescriptiveName {
+			t.Errorf("profile %q: document name %q, want the package's %q", name, docVocab.DocumentName(), def.DescriptiveName)
+		}
+	}
+}
+
+var (
+	simpledcRoot = xml.StartElement{Name: xml.Name{Local: "simpledc"}}
+	modsRoot     = xml.StartElement{
+		Name: xml.Name{Space: "http://www.loc.gov/mods/v3", Local: "mods"},
+		Attr: []xml.Attr{{Name: xml.Name{Local: "version"}, Value: "3.7"}},
+	}
+)
+
+// Each document vocabulary accepts its own standard's root and refuses the
+// other's, as its encoder does.
+func TestDocumentVocabulariesJudgeTheRoot(t *testing.T) {
+	tests := []struct {
+		name             string
+		vocab            input.DocumentVocabulary
+		accepts, refuses xml.StartElement
+	}{
+		{"eark", Eark{}, simpledcRoot, modsRoot},
+		{"eark-mods", EarkMods{}, modsRoot, simpledcRoot},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.vocab.CheckDocument(tt.accepts); err != nil {
+				t.Errorf("refused its own standard's root: %v", err)
+			}
+			if err := tt.vocab.CheckDocument(tt.refuses); err == nil {
+				t.Error("accepted another standard's root")
+			}
+		})
 	}
 }
 

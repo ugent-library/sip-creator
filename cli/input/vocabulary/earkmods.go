@@ -1,6 +1,7 @@
 package vocabulary
 
 import (
+	"encoding/xml"
 	"fmt"
 	"strings"
 
@@ -18,8 +19,11 @@ import (
 // language) are errors at the row's line and the statement is not placed;
 // the reader runs the record's own rules on the result. The rows carry
 // flat statements only: a record's copies, and any other structure, reach
-// the package through the library's record or a supplied mods.xml.
+// the package through the library's record or a supplied mods.xml, which
+// may stand in for the rows.
 type EarkMods struct{}
+
+var _ input.DocumentVocabulary = EarkMods{}
 
 // placement is what the vocabulary knows about one key: where its value
 // goes in the record, whether the key takes a language tag, and how often
@@ -95,4 +99,16 @@ func (EarkMods) Description(statements []input.Statement) (sip.Description, []er
 		key.fill(&record, s)
 	}
 	return record, errs
+}
+
+// DocumentName is the file name of a supplied MODS document: mods.xml, the
+// name the package gives the document.
+func (EarkMods) DocumentName() string {
+	return earkmods.Definition.DescriptiveName
+}
+
+// CheckDocument returns why root is not a mods:mods document declaring
+// MODS 3.7, as the eark-mods profile's encoder judges it.
+func (EarkMods) CheckDocument(root xml.StartElement) error {
+	return checkDocument(earkmods.Definition, root)
 }
