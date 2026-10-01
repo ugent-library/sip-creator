@@ -101,6 +101,17 @@ func assertViolation(t *testing.T, err error, substr string) {
 	t.Errorf("no violation mentions %q; got:\n%s", substr, v.Error())
 }
 
+// assertFinding checks that one of a parser's findings mentions substr.
+func assertFinding(t *testing.T, errs []error, substr string) {
+	t.Helper()
+	for _, err := range errs {
+		if strings.Contains(err.Error(), substr) {
+			return
+		}
+	}
+	t.Errorf("no finding mentions %q; got: %v", substr, errs)
+}
+
 func paths(files []build.SourceFile) []string {
 	out := make([]string, len(files))
 	for i, f := range files {

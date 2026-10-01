@@ -1,6 +1,10 @@
 package input
 
-import "testing"
+import (
+	"errors"
+	"strings"
+	"testing"
+)
 
 // twoRepTree returns the file map of a valid two-representation folder;
 // tests add their representations.csv on top.
@@ -41,22 +45,93 @@ func TestRepresentationsCSV(t *testing.T) {
 	}
 }
 
-func TestRepresentationsCSVColumnsByHeaderName(t *testing.T) {
-	tree := twoRepTree()
-	// Reordered columns, capitalized headers (spreadsheet tools capitalize;
-	// matching is case-insensitive), and a directory-only file are all fine.
-	tree["representations.csv"] = "Type,Directory\narchival,master\naccess-copy,access\n"
-	root := writeTree(t, tree)
+// Columns are found by name: reordered, capitalized (spreadsheet tools
+// capitalize) and left out are all fine. The BOM spreadsheet tools write
+// must not hide the header, and spaces around a directory are dropped.
+func TestParseRepresentationRows(t *testing.T) {
+	data := "\ufeffType,Directory\narchival, master \naccess-copy,access\n"
+	rows, errs, err := parseRepresentationRows([]byte(data))
+	if err != nil || len(errs) > 0 {
+		t.Fatalf("parseRepresentationRows: err %v, findings %v", err, errs)
+	}
+	want := []repRow{
+		{line: 2, dir: "master", kind: "archival"},
+		{line: 3, dir: "access", kind: "access-copy"},
+	}
+	if len(rows) != len(want) {
+		t.Fatalf("got %d rows, want %d: %+v", len(rows), len(want), rows)
+	}
+	for i, w := range want {
+		if rows[i] != w {
+			t.Errorf("row %d = %+v, want %+v", i, rows[i], w)
+		}
+	}
+}
 
-	pkg, err := basicReader.Read(root)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
+// A file that cannot be used is refused as a whole, with every header
+// problem named.
+func TestParseRepresentationRowsUnusableFile(t *testing.T) {
+	tests := []struct {
+		name string
+		data string
+		want []string // substrings of the joined error
+	}{
+		{"empty file", "", []string{"the file is empty"}},
+		{"not utf-8", "directory\n\xff\n", []string{"not valid UTF-8"}},
+		{"unknown column", "directory,colour\nmaster,red\n", []string{`unknown column "colour"`}},
+		{"no directory column", "label,type\na,b\n", []string{"no directory column"}},
+		{"duplicate column", "directory,directory\nmaster,master\n", []string{`column "directory" twice`}},
+		{"every header problem", "colour,label,label\na,b,c\n", []string{`unknown column "colour"`, `column "label" twice`}},
 	}
-	if got := pkg.Representations[0].Type; got != "archival" {
-		t.Errorf("type = %q, want %q via the reordered header", got, "archival")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := parseRepresentationRows([]byte(tt.data))
+			if err == nil {
+				t.Fatal("want the file refused")
+			}
+			for _, w := range tt.want {
+				if !strings.Contains(err.Error(), w) {
+					t.Errorf("error %q does not mention %q", err, w)
+				}
+			}
+		})
 	}
-	if got := pkg.Representations[0].Label; got != "" {
-		t.Errorf("label = %q, want empty when the file has no Label column", got)
+}
+
+func TestParseRepresentationRowsFindings(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     string
+		wantLine int    // line of the *rowError; 0 for a finding about the file
+		want     string // substring of the finding
+		wantRows int    // rows still returned
+	}{
+		{"row width", "directory,label\nmaster\n", 2, "expected 2 columns", 0},
+		{"empty directory cell", "directory,label\n ,Master scan\n", 2, "directory cell is empty", 0},
+		// A row with a bad value is kept, so matching it to a directory
+		// still reports on it.
+		{"xml-unsafe label", "directory,label\nmaster,\"Master \"\"scan\"\"\"\n", 2, "label:", 1},
+		{"xml-unsafe type", "directory,type\nmaster,a&b\n", 2, "type:", 1},
+		{"broken quote", "directory,label\nmaster,\"open\n", 0, "extraneous or missing", 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows, errs, err := parseRepresentationRows([]byte(tt.data))
+			if err != nil {
+				t.Fatalf("parseRepresentationRows: %v", err)
+			}
+			assertFinding(t, errs, tt.want)
+			if len(rows) != tt.wantRows {
+				t.Errorf("got %d rows, want %d", len(rows), tt.wantRows)
+			}
+			if tt.wantLine == 0 {
+				return
+			}
+			re, ok := errors.AsType[*rowError](errs[0])
+			if !ok || re.line != tt.wantLine {
+				t.Errorf("finding %v, want a *rowError at line %d", errs[0], tt.wantLine)
+			}
+		})
 	}
 }
 
@@ -66,17 +141,12 @@ func TestRepresentationsCSVViolations(t *testing.T) {
 		csv  string
 		want string
 	}{
-		{"unknown header column", "directory,colour\nmaster,red\naccess,blue\n", "unknown column"},
-		{"no directory column", "label,type\na,b\n", "no directory column"},
-		{"duplicate header column", "directory,directory\nmaster,master\naccess,access\n", "twice"},
+		{"unknown header column", "directory,colour,directory\nmaster,red,x\naccess,blue,y\n", `representations.csv: unknown column "colour"`},
+		{"duplicate header column", "directory,colour,directory\nmaster,red,x\naccess,blue,y\n", `representations.csv: the header names column "directory" twice`},
+		{"row finding at its line", "directory,label\n,Master scan\naccess,\n", "representations.csv line 2: the directory cell is empty"},
 		{"no data rows", "directory,label,type\n", "no rows"},
-		{"empty file", "", "the file is empty"},
 		{"unmatched row", "directory\nmaster\naccess\npreservation\n", "no directory representations/preservation"},
 		{"duplicate directory row", "directory\nmaster\naccess\nmaster\n", "already has a row"},
-		{"empty directory cell", "directory,label\n,Master scan\naccess,\n", "directory cell is empty"},
-		{"row width mismatch", "directory,label\nmaster\naccess,Access copy\n", "expected 2 columns"},
-		{"xml-unsafe label", "directory,label\nmaster,\"Master \"\"scan\"\"\"\naccess,\n", "label"},
-		{"xml-unsafe type", "directory,type\nmaster,a&b\naccess,\n", "type"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -136,18 +206,5 @@ func TestRepresentationsCSVDirectoryOnlyIsANoop(t *testing.T) {
 			t.Errorf("representation %d differs: %q/%q/%q vs %q/%q/%q",
 				i, p.Name, p.Label, p.Type, w.Name, w.Label, w.Type)
 		}
-	}
-}
-
-// The BOM spreadsheet tools prepend must not hide the header.
-func TestRepresentationsCSVWithBOM(t *testing.T) {
-	tree := twoRepTree()
-	tree["representations.csv"] = "\ufeffdirectory,label\nmaster,Master scan\naccess,\n"
-	pkg, err := basicReader.Read(writeTree(t, tree))
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
-	if got := pkg.Representations[0].Label; got != "Master scan" {
-		t.Errorf("label = %q, want %q", got, "Master scan")
 	}
 }

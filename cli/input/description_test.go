@@ -82,12 +82,8 @@ func TestRowsViolations(t *testing.T) {
 		csv  string
 		want string // substring of the expected violation
 	}{
-		{"missing header", "identifier,ID-1\ntitle,T\n", `header "key,value"`},
 		{"unknown key", minimalCSV + "titel,Oeps\n", `unknown key "titel"`},
 		{"dcterms outside the profile", minimalCSV + "accrualpolicy,x\n", `unknown key "accrualpolicy"`},
-		{"prefixed dcterms key", minimalCSV + "dcterms:abstract,x\n", "prefixed keys"},
-		{"prefixed schema key", minimalCSV + "schema:artMedium,x\n", "prefixed keys"},
-		{"unknown prefix", minimalCSV + "foo:bar,x\n", "prefixed keys"},
 		{"empty value", minimalCSV + "subject,\n", "empty value"},
 		{"missing identifier", "key,value\ntitle,T\n", "identifier is required"},
 		{"missing title", "key,value\nidentifier,ID-1\n", "title is required"},
@@ -95,10 +91,7 @@ func TestRowsViolations(t *testing.T) {
 		{"single-valued key repeated", minimalCSV + "created,1913\ncreated,1914\n", "exactly one"},
 		{"per-language key repeated in one language", minimalCSV + "abstract[nl],a\nabstract[nl],b\n", `language "nl"`},
 		{"per-language key repeated untagged", minimalCSV + "abstract,a\nabstract,b\n", "distinct language tags"},
-		{"empty lang tag", minimalCSV + "subject[],x\n", "malformed language tag"},
 		{"bad lang tag", minimalCSV + "subject[nl!],x\n", "not a language tag"},
-		{"three columns", minimalCSV + "subject,a,b\n", "exactly two columns"},
-		{"not utf-8", "key,value\nidentifier,ID\ntitle,\xff\xfe\n", "not valid UTF-8"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -108,21 +101,26 @@ func TestRowsViolations(t *testing.T) {
 	}
 }
 
-func TestRowsMissingHeaderStillDecodes(t *testing.T) {
-	// Collect-all: the header violation must not hide findings in the rows.
-	_, err := readCSV(t, "identifier,ID-1\ntitel,Oeps\n")
-	assertViolation(t, err, `header "key,value"`)
-	assertViolation(t, err, `unknown key "titel"`)
-}
-
-// A finding about one term is reported at the row's line: the vocabulary
-// names the term by position, the decoder maps that back to the line.
+// A finding about one row is reported with the file and the row's line,
+// whether the parser, the vocabulary or the description's rules found it.
 func TestRowsLineNumbers(t *testing.T) {
 	_, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle,T\ntitel,Oeps\n")
-	assertViolation(t, err, `line 4: unknown key "titel"`)
-	_, err = readCSV(t, minimalCSV+"subject[nl!],x\nsubject,\n")
-	assertViolation(t, err, `line 6: "nl!" is not a language tag`)
-	assertViolation(t, err, "line 7: subject has an empty value")
+	assertViolation(t, err, `description.csv line 4: unknown key "titel"`)
+	_, err = readCSV(t, minimalCSV+"subject[nl!],x\nsubject,\nsubject[],x\n")
+	assertViolation(t, err, `description.csv line 6: "nl!" is not a language tag`)
+	assertViolation(t, err, "description.csv line 7: subject has an empty value")
+	assertViolation(t, err, `description.csv line 8: malformed language tag in "subject[]"`)
+}
+
+// Content that cannot be read as CSV is one violation: the rows are not
+// decoded, so the description's rules do not add findings about keys the
+// file may well contain.
+func TestRowsNotUTF8IsOneViolation(t *testing.T) {
+	_, err := readCSV(t, "key,value\nidentifier,ID\ntitle,\xff\xfe\n")
+	v, ok := errors.AsType[Violations](err)
+	if !ok || len(v) != 1 || !strings.Contains(v[0], "description.csv: not valid UTF-8") {
+		t.Fatalf("want one UTF-8 violation, got %v", err)
+	}
 }
 
 // A cardinality violation is a cross-row finding: no line number, but the
@@ -169,13 +167,81 @@ func TestRepresentationCSVDuplicateIdentifier(t *testing.T) {
 	assertViolation(t, err, "exactly one")
 }
 
-func TestRowsQuotedNewline(t *testing.T) {
-	// A quoted value may span lines (RFC 4180); line numbers must survive.
-	csv := "key,value\nidentifier,ID-1\ndescription,\"two\nlines\"\ntitel,Oeps\n"
-	_, err := readCSV(t, csv)
-	assertViolation(t, err, "line 5")
-	if !strings.Contains(err.Error(), `unknown key "titel"`) {
-		t.Errorf("multiline value swallowed the following row: %v", err)
+// BOM, CRLF, RFC 4180 quoting (a value spanning two lines included), a
+// capitalized key and a language tag, all in one file.
+func TestParseStatements(t *testing.T) {
+	data := "\ufeffKey,Value\r\n" +
+		"Identifier,ID-1\r\n" +
+		"description[nl],\"two\r\nlines, quoted\"\r\n" +
+		"title,T\r\n"
+
+	statements, errs, err := parseStatements([]byte(data))
+	if err != nil || len(errs) > 0 {
+		t.Fatalf("parseStatements: err %v, findings %v", err, errs)
+	}
+	want := []Statement{
+		{Key: "identifier", Value: "ID-1", Line: 2},
+		{Key: "description", Lang: "nl", Value: "two\nlines, quoted", Line: 3},
+		{Key: "title", Value: "T", Line: 5},
+	}
+	if len(statements) != len(want) {
+		t.Fatalf("got %d statements, want %d: %+v", len(statements), len(want), statements)
+	}
+	for i, w := range want {
+		if statements[i] != w {
+			t.Errorf("statement %d = %#v, want %#v", i, statements[i], w)
+		}
+	}
+}
+
+func TestParseStatementsFindings(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     string
+		wantLine int    // line of the *StatementError; 0 for a finding about the file
+		want     string // substring of the finding
+	}{
+		{"missing header", "identifier,ID-1\n", 0, `header "key,value"`},
+		{"three columns", "key,value\nsubject,a,b\n", 2, "exactly two columns"},
+		{"one column", "key,value\nsubject\n", 2, "exactly two columns"},
+		{"empty lang tag", "key,value\nsubject[],x\n", 2, "malformed language tag"},
+		{"unclosed lang tag", "key,value\nsubject[nl,x\n", 2, "malformed language tag"},
+		{"prefixed dcterms key", "key,value\ndcterms:abstract,x\n", 2, "prefixed keys"},
+		{"prefixed schema key", "key,value\nschema:artMedium,x\n", 2, "prefixed keys"},
+		{"broken quote", "key,value\ntitle,\"open\n", 0, "extraneous or missing"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, errs, err := parseStatements([]byte(tt.data))
+			if err != nil {
+				t.Fatalf("parseStatements: %v", err)
+			}
+			assertFinding(t, errs, tt.want)
+			if tt.wantLine == 0 {
+				return
+			}
+			se, ok := errors.AsType[*StatementError](errs[0])
+			if !ok || se.Line != tt.wantLine {
+				t.Errorf("finding %v, want a *StatementError at line %d", errs[0], tt.wantLine)
+			}
+		})
+	}
+}
+
+// A first row that is data, not the header, is still parsed, so its own
+// findings are reported next to the missing header.
+func TestParseStatementsMissingHeaderKeepsTheRow(t *testing.T) {
+	statements, errs, _ := parseStatements([]byte("identifier,ID-1\n"))
+	assertFinding(t, errs, `header "key,value"`)
+	if len(statements) != 1 || statements[0].Key != "identifier" || statements[0].Line != 1 {
+		t.Errorf("statements = %+v, want the first row kept", statements)
+	}
+}
+
+func TestParseStatementsNotUTF8(t *testing.T) {
+	_, _, err := parseStatements([]byte("key,value\ntitle,\xff\xfe\n"))
+	if err == nil || !strings.Contains(err.Error(), "not valid UTF-8") {
+		t.Fatalf("want the content refused as not UTF-8, got %v", err)
 	}
 }
 
