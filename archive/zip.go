@@ -1,3 +1,5 @@
+// Package archive zips a built package directory into uuid-<uuid>.zip,
+// with every entry stored uncompressed.
 package archive
 
 import (
@@ -29,6 +31,7 @@ type Archive struct {
 	Logger *slog.Logger
 }
 
+// New returns an Archive that writes to config.Destination.
 func New(config *Config) *Archive {
 	return &Archive{
 		Destination: config.Destination,

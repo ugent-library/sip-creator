@@ -1,3 +1,7 @@
+// Package premis writes the PREMIS 3 preservation metadata of a package:
+// one document for the intellectual entity and one per representation,
+// with each file's fixity and format. It also checks received
+// preservation documents before they are copied into a package.
 package premis
 
 import (

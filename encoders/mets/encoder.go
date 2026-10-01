@@ -1,3 +1,7 @@
+// Package mets writes the METS documents of a package: the package METS at
+// its root and one METS per representation, following the E-ARK CSIP and
+// SIP specifications. Every difference between profiles arrives as data
+// on sip.MetsDeclaration.
 package mets
 
 import (

@@ -1,3 +1,7 @@
+// Package store writes the files of one package under its directory. It
+// creates directories, copies content files and writes generated metadata
+// documents, and measures each file's size, MD5 checksum and modification
+// time as it writes it.
 package store
 
 import (
@@ -37,6 +41,7 @@ type Info struct {
 	Created string
 }
 
+// MkdirAll creates the directory rel and any missing parents.
 func (s *Store) MkdirAll(rel string) error {
 	path := filepath.Join(s.root, rel)
 	if err := os.MkdirAll(path, 0775); err != nil {
