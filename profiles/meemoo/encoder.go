@@ -32,12 +32,8 @@ func (dcschema) Check(d sip.Description) error {
 	return nil
 }
 
-// Encode writes d, which is Terms since Check ran before anything else, as
-// meemoo's dc+schema document: one element per term, order preserved.
-// schemasDir is the path of the package's schemas/ directory relative to
-// the document. The terms must be valid: Terms.Validate is the contract,
-// run by the engine before any write, and Encode does not repeat it. The
-// document is rendered in memory first, so a refused term writes nothing.
+// Encode writes d as meemoo's dc+schema document: one element per term,
+// order preserved.
 func (dcschema) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
 	if err := termsTemplate.ExecuteTemplate(&buf, "dcschema", termsDoc{d.(Terms), schemasDir}); err != nil {
@@ -70,9 +66,7 @@ func (dcschema) Schemas() []string {
 	return []string{"descriptive_basic.xsd", "dc.xsd", "dcterms.xsd", "dcmitype.xsd", "edtf.xsd", "schema.xsd", "xml.xsd"}
 }
 
-// The template interpolates element names from data. Every value is
-// escaped, and the element name comes from el, which maps a key to the
-// element the vocabulary lists for it and admits nothing else.
+// termsTemplate escapes every value; element names come from elementName.
 var termsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 	"el":      elementName,
 	"esc":     escapeXML,

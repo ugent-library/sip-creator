@@ -27,7 +27,9 @@ type directory struct {
 
 // Reserved top-level names. Reserved names inside a representation are
 // a subset. The profile's document name, when it has one, is reserved at
-// both levels too; the vocabulary supplies it (isDocumentName).
+// both levels too; the vocabulary supplies it (isDocumentName). Every
+// reserved name is ASCII, which NFC normalization never alters, so
+// comparing an unnormalized directory entry name to one is exact.
 const (
 	descriptionName        = "description.csv"
 	representationsName    = "representations"
@@ -47,8 +49,6 @@ func (d *directory) read() *build.SourcePackage {
 	var description, document, repsDir, repsCSV string
 
 	for _, e := range d.readDir(d.root) {
-		// Reserved names are ASCII, which NFC normalization never alters,
-		// so comparing unnormalized names is exact.
 		name := e.Name()
 		src := filepath.Join(d.root, e.Name())
 		if d.isDocumentName(name) {
@@ -150,8 +150,6 @@ func (d *directory) readRepresentation(dir, name string) build.SourceRepresentat
 	rep := build.SourceRepresentation{Name: name}
 	var description, document string
 	for _, e := range d.readDir(dir) {
-		// Reserved names are ASCII, which NFC normalization never alters,
-		// so comparing unnormalized names is exact.
 		name := e.Name()
 		src := filepath.Join(dir, e.Name())
 		if d.isDocumentName(name) {

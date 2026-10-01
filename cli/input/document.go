@@ -11,8 +11,7 @@ import (
 // readDocument reads the supplied descriptive document at src as the
 // level's description: a file the package copies as it is. It must parse
 // as XML (xmldoc.Root) with the profile's standard as its root, which the
-// vocabulary judges as the engine will before a build, so check reports
-// what create would refuse. Nothing else in the document is checked
+// vocabulary judges. Nothing else in the document is checked
 // (ADR-0003): its validity against the schema is the validators'
 // downstream.
 func (d *directory) readDocument(src string) sip.Description {

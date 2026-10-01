@@ -34,9 +34,7 @@ func For(name string) (input.Vocabulary, bool) {
 	return v, ok
 }
 
-// checkDocument judges root with the profile's encoder, the judgement the
-// engine makes before a build, so check refuses exactly what create would.
-// Only a vocabulary whose profile's encoder takes a supplied document
+// checkDocument judges root with the profile's encoder. Only a vocabulary whose profile's encoder takes a supplied document
 // implements input.DocumentVocabulary, so the refusal below is a
 // programming error, not the operator's.
 func checkDocument(def build.Definition, root xml.StartElement) error {

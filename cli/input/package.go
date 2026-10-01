@@ -20,18 +20,17 @@ import (
 // Reader reads input folders as one profile: the vocabulary it holds says
 // what the rows of a description.csv mean, and each Read walks one folder
 // with it. check and create both construct it with the profile's
-// vocabulary, so they read a folder the same way.
+// vocabulary, so they read a folder the same way. Where the library has a
+// rule for what the reader reads (a description's Validate and
+// ValidateRequired, the encoder's check of a supplied document's root),
+// the reader runs that same rule and reports its findings with file and
+// line, so check finds them before create's build would refuse them.
 type Reader struct {
 	vocabulary Vocabulary
 }
 
-// New returns a reader whose rows are given meaning by vocabulary: it
-// builds the profile's description from the rows a description.csv
-// decodes to, and that description carries the profile's rules (Validate,
-// ValidateRequired), which the reader runs and reports as violations. The
-// rows reach the vocabulary decoded for syntax only; which keys exist and
-// what a row may say are the vocabulary's and the description's own rules.
-// New validates nothing: Read refuses a nil vocabulary.
+// New returns a reader whose rows are given meaning by vocabulary. New
+// validates nothing: Read refuses a nil vocabulary.
 func New(vocabulary Vocabulary) *Reader {
 	return &Reader{vocabulary: vocabulary}
 }

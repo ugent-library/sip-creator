@@ -44,14 +44,9 @@ func (simpledc) CheckDescriptiveDocument(root xml.StartElement) error {
 	return nil
 }
 
-// Encode writes d, which is Terms since Check ran before anything else, as
-// a Simple Dublin Core document (the dc_SimpleDC20021212 shape RODA
-// renders and indexes natively): one unqualified element per term, order
-// preserved, language tags omitted. schemasDir is the path of the package's
-// schemas/ directory relative to the document. The terms must be valid:
-// Terms.Validate is the contract, run by the engine before any write, and
-// Encode does not repeat it. The document is rendered in memory first, so
-// a refused term writes nothing.
+// Encode writes d as a Simple Dublin Core document (the
+// dc_SimpleDC20021212 shape RODA renders and indexes natively): one
+// unqualified element per term, order preserved, language tags omitted.
 func (simpledc) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
 	if err := simpledcTemplate.ExecuteTemplate(&buf, "simpledc", termsDoc{d.(Terms), schemasDir}); err != nil {
@@ -68,9 +63,8 @@ func (simpledc) Schemas() []string {
 	return []string{"dc.xsd"}
 }
 
-// The template interpolates element names from data. Every value is
-// escaped, and the element name comes from el, which admits only a key
-// naming one of the fifteen.
+// simpledcTemplate escapes every value; element names come from
+// elementName.
 var simpledcTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 	"el":  elementName,
 	"esc": escapeXML,

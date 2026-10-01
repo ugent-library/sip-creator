@@ -57,13 +57,10 @@ func (mods) CheckDescriptiveDocument(root xml.StartElement) error {
 	return nil
 }
 
-// Encode writes d, which is Record since Check ran before anything else, as
-// a MODS 3.7 document: the identifier when the record states one, the
-// titles in the order given, then the items as one location. schemasDir is
-// the path of the package's schemas/ directory relative to the document.
-// The record must be valid: Record.Validate is the contract, run by the
-// engine before any write, and Encode does not repeat it. The document is
-// rendered in memory first, so a failed render writes nothing.
+// Encode writes d as a MODS 3.7 document: the identifier when the record
+// states one, one titleInfo per title in the order given, then the items
+// as one location/holdingSimple with one copyInformation each, omitted
+// when there are none.
 func (mods) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
 	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemasDir, localIdentifierType, namespace, version}); err != nil {
@@ -89,12 +86,9 @@ func (mods) Schemas() []string {
 // lives.
 const localIdentifierType = "local"
 
-// modsTemplate renders a record field by field: the identifier when the
-// record states one, one titleInfo per title, and the items as one
-// location/holdingSimple with one copyInformation each, omitted when
-// there are none. Every value is escaped; the only raw interpolations are
-// the identifier's type, the namespace and version, all constants, and
-// the schemas path the writer supplies.
+// modsTemplate renders a record field by field. Every value is escaped;
+// the only raw interpolations are the identifier's type, the namespace
+// and version, all constants, and the schemas path the writer supplies.
 var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 	"esc": escapeXML,
 }).Parse(`

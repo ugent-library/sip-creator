@@ -48,9 +48,7 @@ func (d *directory) violateMissingDescription() {
 // syntax (header, two columns, key[lang]) is the file's own and is checked
 // here; what a key means is the vocabulary's; what the finished
 // description may say and what a package-level one must state are the
-// description's own rules, run once on the result. The library runs the
-// same methods again as the contract before a build; these calls report,
-// so check and create agree.
+// description's own rules, run once on the result.
 func (d *directory) decodeDescription(src string, packageLevel bool) sip.Description {
 	rel := d.rel(src)
 

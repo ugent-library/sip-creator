@@ -26,7 +26,9 @@ type DescriptionEncoder interface {
 	// the path of the package's schemas/ directory relative to the document
 	// being written, for the document's schema-location hint; only the
 	// writer knows where a document lands. Which XSD file the hint names is
-	// the encoder's own, and Schemas lists it.
+	// the encoder's own, and Schemas lists it. Check and the description's
+	// Validate have run before Encode is called, and Encode repeats
+	// neither. A failed render writes nothing to w.
 	Encode(w io.Writer, d sip.Description, schemasDir string) error
 	// Schemas lists the bundled XSD file names the encoded document points
 	// at, plus what those import by relative path. The package ships them

@@ -39,8 +39,8 @@ type DocumentVocabulary interface {
 	DocumentName() string
 	// CheckDocument returns why root, the document's root element, is not
 	// the profile's standard: another element or namespace, or a version
-	// other than the one the package declares. It is the judgement the
-	// engine makes before a build, so check refuses what create would.
+	// other than the one the package declares, judged as the engine
+	// judges it before a build.
 	CheckDocument(root xml.StartElement) error
 }
 

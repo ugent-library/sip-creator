@@ -13,9 +13,8 @@ const Namespace = "http://www.loc.gov/premis/v3"
 
 // ValidateReceived reports why r is not acceptable received preservation
 // metadata: it must parse as XML (xmldoc.Root) with premis:premis in the
-// PREMIS 3 namespace as its root element. Deliberately not schema validation, which
-// stays external (ADR-0003); this check only keeps the tool from packaging
-// something that is not a PREMIS document at all.
+// PREMIS 3 namespace as its root element. Like every check built on
+// xmldoc, it is not schema validation.
 func ValidateReceived(r io.Reader) error {
 	root, err := xmldoc.Root(r)
 	if err != nil {

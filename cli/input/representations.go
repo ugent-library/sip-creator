@@ -18,10 +18,8 @@ type repRow struct {
 // representations read from the folder: each row names a directory and
 // supplies its label and type. The file is strict when present
 // (input-spec.md): every row must match a directory, every directory must be
-// covered by a row, and the row order becomes the packaging order. Defaults
-// are not applied here: empty cells stay empty, and the library resolves the
-// name → label → type cascade, so the CLI and an embedding caller get
-// identical behavior.
+// covered by a row, and the row order becomes the packaging order. Empty
+// cells stay empty: build.SourceRepresentation resolves the defaults.
 func (d *directory) applyRepresentations(src string, reps []build.SourceRepresentation) []build.SourceRepresentation {
 	rel := d.rel(src)
 	rows, decoded := d.decodeRepresentations(src)

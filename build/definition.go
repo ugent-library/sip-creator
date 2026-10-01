@@ -47,10 +47,8 @@ type Definition struct {
 
 // representationDeclaration returns the declaration a representation's METS
 // document carries: the package's declaration as-is, or, when the profile
-// emits representation types, a copy whose content typing names the resolved
-// type. The type lands in both the TYPE and the CONTENTINFORMATIONTYPE pair
-// because ingest systems disagree on which pair they read as the
-// representation's type (ADR-0013).
+// emits representation types, a copy whose content typing names typ as
+// EmitRepresentationType describes.
 func (d Definition) representationDeclaration(base sip.MetsDeclaration, typ string) *sip.MetsDeclaration {
 	decl := base
 	if d.EmitRepresentationType {
