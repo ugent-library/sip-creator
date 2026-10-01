@@ -3,31 +3,20 @@ package input
 import (
 	"bytes"
 	"encoding/csv"
-	"os"
+	"errors"
 	"unicode/utf8"
 )
 
-// openCSV reads src and returns a CSV reader over its content, applying the
-// encoding rules every CSV in the input convention shares: the file must be
-// UTF-8, a leading BOM is accepted and dropped (spreadsheet tools produce
-// one), and row width is left for the caller to check per row, for a better
-// message. Returns ok=false when the file is unreadable or not UTF-8, with
-// the violation recorded.
-func (d *directory) openCSV(src string) (cr *csv.Reader, ok bool) {
-	rel := d.rel(src)
-
-	data, err := os.ReadFile(src)
-	if err != nil {
-		d.violate("%s: %v", rel, err)
-		return nil, false
-	}
+// newCSVReader returns a CSV reader over data under the rules every CSV in
+// the input folder shares: the content must be UTF-8, and a leading BOM is
+// dropped (spreadsheet tools write one). Rows may have any width, so the
+// parser can name the line and the expected columns of a row that is off.
+func newCSVReader(data []byte) (*csv.Reader, error) {
 	data = bytes.TrimPrefix(data, []byte("\ufeff"))
 	if !utf8.Valid(data) {
-		d.violate("%s: not valid UTF-8; re-export the file as UTF-8", rel)
-		return nil, false
+		return nil, errors.New("not valid UTF-8; re-export the file as UTF-8")
 	}
-
-	cr = csv.NewReader(bytes.NewReader(data))
+	cr := csv.NewReader(bytes.NewReader(data))
 	cr.FieldsPerRecord = -1
-	return cr, true
+	return cr, nil
 }

@@ -2,7 +2,9 @@ package input
 
 import (
 	"errors"
+	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/ugent-library/sip-creator/sip"
@@ -43,55 +45,29 @@ func (d *directory) violateMissingDescription() {
 	d.violate("descriptive metadata is missing: every package folder needs a description.csv or a %s describing the content (input specification §3)", d.document.DocumentName())
 }
 
-// decodeDescription decodes the descriptive rows file at src into the
-// profile's description, collecting a violation per broken rule. This
-// function checks the row syntax (header, two columns, key[lang]); the
-// vocabulary decides what a key means; the description's Validate and
-// ValidateRequired, run once on the result, decide what it may say and
-// what a package-level one must state.
+// decodeDescription decodes the description.csv at src into the profile's
+// description and records a violation per broken rule: the row syntax,
+// the vocabulary's placement of each statement, and the description's own
+// rules, with ValidateRequired at the package level only.
 func (d *directory) decodeDescription(src string, packageLevel bool) sip.Description {
 	rel := d.rel(src)
 
-	cr, ok := d.openCSV(src)
-	if !ok {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		d.violate("%s: %v", rel, err)
 		return nil
 	}
 
-	var statements []Statement
-	headerSeen := false
-	for {
-		row, err := cr.Read()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			// The reader may not recover its position after a syntax
-			// error; report it (the csv error names the line) and stop.
-			d.violate("%s: %v", rel, err)
-			break
-		}
-		line, _ := cr.FieldPos(0)
-
-		if !headerSeen {
-			headerSeen = true
-			if isHeaderRow(row) {
-				continue
-			}
-			// A missing header is a violation, but the row itself may be
-			// data; keep decoding so its findings surface too.
-			d.violate(`%s: the first row must be the header "key,value"`, rel)
-		}
-
-		if len(row) != 2 {
-			d.violate("%s line %d: expected exactly two columns (key,value), got %d", rel, line, len(row))
-			continue
-		}
-
-		key, lang, ok := d.parseKey(rel, line, row[0])
-		if !ok {
-			continue
-		}
-		statements = append(statements, Statement{Key: key, Lang: lang, Value: row[1], Line: line})
+	statements, errs, err := parseStatements(data)
+	if err != nil {
+		d.violate("%s: %v", rel, err)
+		return nil
+	}
+	description, vocabularyErrs := d.vocabulary.Description(statements)
+	errs = append(errs, vocabularyErrs...)
+	errs = append(errs, flatten(description.Validate())...)
+	if packageLevel {
+		errs = append(errs, flatten(description.ValidateRequired())...)
 	}
 
 	// A finding about one statement is reported at the row's line: the
@@ -99,11 +75,6 @@ func (d *directory) decodeDescription(src string, packageLevel bool) sip.Descrip
 	// a term's position, which the statements turn back into a line. A
 	// cross-row finding names the key and language, which locates the
 	// rows in a keyed file.
-	description, errs := d.vocabulary.Description(statements)
-	errs = append(errs, flatten(description.Validate())...)
-	if packageLevel {
-		errs = append(errs, flatten(description.ValidateRequired())...)
-	}
 	for _, err := range errs {
 		var se *StatementError
 		var te *sip.TermError
@@ -122,6 +93,86 @@ func (d *directory) decodeDescription(src string, packageLevel bool) sip.Descrip
 	return description
 }
 
+// parseStatements parses the content of a description.csv: a "key,value"
+// header, then one statement per row of two columns. The errs are findings
+// in the rows: a row that breaks the syntax is reported as a
+// *StatementError and left out, and the rows after it are still read; a
+// CSV syntax error ends the parse, because the reader may not find its
+// place again. err means the content cannot be read as CSV at all.
+func parseStatements(data []byte) (statements []Statement, errs []error, err error) {
+	cr, err := newCSVReader(data)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	headerSeen := false
+	for {
+		row, err := cr.Read()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			errs = append(errs, err) // the csv error names the line
+			break
+		}
+		line, _ := cr.FieldPos(0)
+
+		if !headerSeen {
+			headerSeen = true
+			if isHeaderRow(row) {
+				continue
+			}
+			// The first row may be data that lacks a header above it;
+			// keep it, so its own findings are reported too.
+			errs = append(errs, errors.New(`the first row must be the header "key,value"`))
+		}
+
+		if len(row) != 2 {
+			errs = append(errs, &StatementError{Line: line, Err: fmt.Errorf("expected exactly two columns (key,value), got %d", len(row))})
+			continue
+		}
+
+		key, lang, err := parseKey(row[0])
+		if err != nil {
+			errs = append(errs, &StatementError{Line: line, Err: err})
+			continue
+		}
+		statements = append(statements, Statement{Key: key, Lang: lang, Value: row[1], Line: line})
+	}
+	return statements, errs, nil
+}
+
+func isHeaderRow(row []string) bool {
+	return len(row) == 2 &&
+		strings.EqualFold(strings.TrimSpace(row[0]), "key") &&
+		strings.EqualFold(strings.TrimSpace(row[1]), "value")
+}
+
+// parseKey splits a key cell into the plain key, lowercased, and the
+// language tag in its optional brackets. Whether the tag is a valid
+// language tag is a rule on the term, which Validate checks.
+func parseKey(raw string) (key, lang string, err error) {
+	key = raw
+	if i := strings.IndexByte(key, '['); i >= 0 {
+		if !strings.HasSuffix(key, "]") {
+			return "", "", fmt.Errorf("malformed language tag in %q; write it like title[nl]", raw)
+		}
+		lang = key[i+1 : len(key)-1]
+		key = key[:i]
+		if lang == "" {
+			return "", "", fmt.Errorf("malformed language tag in %q; write it like title[nl]", raw)
+		}
+	}
+
+	// Every supported element has a plain key, so a prefixed key points
+	// the operator at the key table instead of a generic unknown-key
+	// message.
+	if strings.Contains(key, ":") {
+		return "", "", fmt.Errorf("prefixed keys like %q are not supported: every element has a plain key; see the supported keys in the input specification", raw)
+	}
+	return strings.ToLower(key), lang, nil
+}
+
 // flatten splits a joined error into its parts, so each finding is
 // reported as its own violation.
 func flatten(err error) []error {
@@ -137,40 +188,4 @@ func flatten(err error) []error {
 		out = append(out, flatten(e)...)
 	}
 	return out
-}
-
-func isHeaderRow(row []string) bool {
-	return len(row) == 2 &&
-		strings.EqualFold(strings.TrimSpace(row[0]), "key") &&
-		strings.EqualFold(strings.TrimSpace(row[1]), "value")
-}
-
-// parseKey handles the key *syntax* of the CSV convention (the optional
-// [lang] bracket, no prefixes, case-insensitive spelling) and returns the
-// plain key for the vocabulary to check. Whether the language tag inside
-// the brackets is *valid* is a rule on the term, which Validate checks;
-// the decoder only adds the file and line.
-func (d *directory) parseKey(file string, line int, raw string) (key, lang string, ok bool) {
-	key = raw
-	if i := strings.IndexByte(key, '['); i >= 0 {
-		if !strings.HasSuffix(key, "]") {
-			d.violate("%s line %d: malformed language tag in %q; write it like title[nl]", file, line, raw)
-			return "", "", false
-		}
-		lang = key[i+1 : len(key)-1]
-		key = key[:i]
-		if lang == "" {
-			d.violate("%s line %d: malformed language tag in %q; write it like title[nl]", file, line, raw)
-			return "", "", false
-		}
-	}
-
-	// Prefixed keys are not supported: every supported element has
-	// a plain key, so point the operator at the spelling table instead of
-	// a generic unknown-key message.
-	if strings.Contains(key, ":") {
-		d.violate("%s line %d: prefixed keys like %q are not supported: every element has a plain key; see the supported keys in the input specification", file, line, raw)
-		return "", "", false
-	}
-	return strings.ToLower(key), lang, true
 }

@@ -3,6 +3,7 @@ package input
 import (
 	"errors"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/ugent-library/sip-creator/build"
@@ -75,8 +76,14 @@ func (d *directory) applyRepresentations(src string, reps []build.SourceRepresen
 func (d *directory) decodeRepresentations(src string) (rows []repRow, decoded bool) {
 	rel := d.rel(src)
 
-	cr, ok := d.openCSV(src)
-	if !ok {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		d.violate("%s: %v", rel, err)
+		return nil, false
+	}
+	cr, err := newCSVReader(data)
+	if err != nil {
+		d.violate("%s: %v", rel, err)
 		return nil, false
 	}
 
