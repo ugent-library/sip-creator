@@ -53,50 +53,36 @@ func (d *directory) read() *build.SourcePackage {
 		name := e.Name()
 		src := filepath.Join(d.root, e.Name())
 		if d.isDocumentName(name) {
-			if e.IsDir() {
-				d.violate("%s is a folder; the reserved name is for the supplied descriptive document", name)
-				continue
+			if d.expectFile(e, src, "the supplied descriptive document") {
+				document = src
 			}
-			document = src
 			continue
 		}
 		switch name {
 		case descriptionName:
-			if e.IsDir() {
-				d.violate("%s is a folder; the reserved name is for the descriptive rows file", name)
-				continue
+			if d.expectFile(e, src, "the descriptive rows file") {
+				description = src
 			}
-			description = src
 		case representationsName:
-			if !e.IsDir() {
-				d.violate("representations is a file; the reserved name is for the folder of representations")
-				continue
+			if d.expectFolder(e, src, "the folder of representations") {
+				repsDir = src
 			}
-			repsDir = src
 		case representationsCSVName:
-			if e.IsDir() {
-				d.violate("representations.csv is a folder; the reserved name is for the representations file")
-				continue
+			if d.expectFile(e, src, "the representations file") {
+				repsCSV = src
 			}
-			repsCSV = src
 		case documentationName:
-			if !e.IsDir() {
-				d.violate("documentation is a file; the reserved name is for a folder")
-				continue
+			if d.expectFolder(e, src, "a folder") {
+				source.Documentation = d.collectFiles(src)
 			}
-			source.Documentation = d.collectFiles(src)
 		case premisName:
-			if !e.IsDir() {
-				d.violate("premis is a file; the reserved name is for a folder")
-				continue
+			if d.expectFolder(e, src, "a folder") {
+				source.Premis = d.collectPremisFiles(src)
 			}
-			source.Premis = d.collectPremisFiles(src)
 		case sidecarName:
-			if e.IsDir() {
-				d.violate("siegfried.json is a folder; the reserved name is for the characterization report")
-				continue
+			if d.expectFile(e, src, "the characterization report") {
+				source.Characterization = d.decodeSidecar(src)
 			}
-			source.Characterization = d.decodeSidecar(src)
 		default:
 			content = append(content, e)
 		}
@@ -154,32 +140,24 @@ func (d *directory) readRepresentation(dir, name string) build.SourceRepresentat
 		name := e.Name()
 		src := filepath.Join(dir, e.Name())
 		if d.isDocumentName(name) {
-			if e.IsDir() {
-				d.violate("%s is a folder; the reserved name is for the supplied descriptive document", d.rel(src))
-				continue
+			if d.expectFile(e, src, "the supplied descriptive document") {
+				document = src
 			}
-			document = src
 			continue
 		}
 		switch name {
 		case descriptionName:
-			if e.IsDir() {
-				d.violate("%s is a folder; the reserved name is for the descriptive rows file", d.rel(src))
-				continue
+			if d.expectFile(e, src, "the descriptive rows file") {
+				description = src
 			}
-			description = src
 		case documentationName:
-			if !e.IsDir() {
-				d.violate("%s is a file; the reserved name is for a folder", d.rel(src))
-				continue
+			if d.expectFolder(e, src, "a folder") {
+				rep.Documentation = d.collectFiles(src)
 			}
-			rep.Documentation = d.collectFiles(src)
 		case premisName:
-			if !e.IsDir() {
-				d.violate("%s is a file; the reserved name is for a folder", d.rel(src))
-				continue
+			if d.expectFolder(e, src, "a folder") {
+				rep.Premis = d.collectPremisFiles(src)
 			}
-			rep.Premis = d.collectPremisFiles(src)
 		default:
 			if e.IsDir() {
 				d.walkContent(dir, src, &rep.Files)
@@ -200,6 +178,28 @@ func (d *directory) readRepresentation(dir, name string) build.SourceRepresentat
 // none, no name is: a dc.xml under basic is content like any other file.
 func (d *directory) isDocumentName(name string) bool {
 	return d.document != nil && name == d.document.DocumentName()
+}
+
+// expectFile reports whether the entry at src, which has a reserved name,
+// is a file, and records a violation naming what the name holds when it is
+// a folder.
+func (d *directory) expectFile(e os.DirEntry, src, holds string) bool {
+	if !e.IsDir() {
+		return true
+	}
+	d.violate("%s is a folder; the reserved name is for %s", d.rel(src), holds)
+	return false
+}
+
+// expectFolder reports whether the entry at src, which has a reserved
+// name, is a folder, and records a violation naming what the name holds
+// when it is a file.
+func (d *directory) expectFolder(e os.DirEntry, src, holds string) bool {
+	if e.IsDir() {
+		return true
+	}
+	d.violate("%s is a file; the reserved name is for %s", d.rel(src), holds)
+	return false
 }
 
 // readFlatRepresentation handles the simple case: no
