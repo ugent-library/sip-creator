@@ -10,11 +10,17 @@
 // written to and the logger. A [SourcePackage] holds what one package is
 // built from: its description, its representations and their files.
 //
-// [New] returns a [Builder] for one profile. [Builder.Build] validates a
-// source package against the profile's rules and writes the package
-// directory; a source package that fails validation or assembly writes
-// nothing. Zipping the directory is a separate step, in the archive
-// package.
+// [New] returns a [Builder] for one profile, and [Builder.Build] builds one
+// package from a source package. A source package is the package as you
+// supply it: paths to your files, your names for the representations, and
+// the description. Build validates it against the profile's rules, then
+// turns it into the package graph of package sip: the same package as it
+// will be written, with its identifiers minted, every file's path inside
+// the package, and the METS and PREMIS documents it carries. It then writes
+// the graph to disk, filling in each file's size and checksum as it is
+// written, and returns it. A source package that fails validation or
+// assembly writes nothing. Zipping the directory is a separate step, in the
+// archive package.
 //
 // The Go type of a description belongs to its profile: eark.Terms,
 // earkmods.Record or meemoo.Terms, or a [DescriptiveDocument] for a
