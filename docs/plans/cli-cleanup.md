@@ -196,20 +196,22 @@ Done:
 - **`placement.lang`, `placement.repeat`** in `earkmods.go` are `takesLang` and
   `occurs`: `!key.lang` read like a language value next to `s.Lang`.
 
-Moved to `docs/TODO.md`:
+Done later, with the library:
 
 - **`CheckDocument` → `Validate…`.** CLAUDE.md's naming rule applies, but
-  `CheckDocument` passes through to the library's `CheckDescriptiveDocument`, which
-  breaks the same rule. Renaming only the CLI side would leave a `Validate` calling a
-  `Check`; renaming both changes the library's API.
+  `CheckDocument` passed through to the library's `CheckDescriptiveDocument`, which
+  broke the same rule, so the two were renamed together (2026-10-02):
+  `build.DescriptiveDocumentChecker` became `build.DocumentFormat` and
+  `input.DocumentVocabulary` became `input.DocumentFormat`, both with
+  `ValidateDocumentRoot`. "Format" is how a profile's metadata model is stored as a
+  file; the [metadata-model plan](metadata-model.md) carries that naming further.
 
 Dropped:
 
 - **`violate` → `addViolation`, `rel` → `display`:** about 80 call sites for little
   gain; one call shows what each does.
 - **`DocumentVocabulary` → `SuppliedDocument`:** reads as the document itself, next to
-  `build.DescriptiveDocument`. The wider question of what to call the vocabularies is
-  in `docs/TODO.md`.
+  `build.DescriptiveDocument`. Superseded by `DocumentFormat`, above.
 - **`decodeRepresentations`, `applyRepresentations`:** they live in
   `representations.go`, and `parse…` now names the pure parsers.
 - **`repRow.kind` → `typ`:** `kind` is the usual stand-in for the keyword `type`.
