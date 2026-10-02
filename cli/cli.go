@@ -1,5 +1,5 @@
 // Package cli is the sip-creator command line: the create and check
-// commands, the --profile flag that selects a profile and its vocabulary,
+// commands, the --profile flag that selects a profile and its mapping,
 // and the configuration read from the environment and an optional .env
 // file.
 package cli

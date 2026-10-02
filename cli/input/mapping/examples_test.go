@@ -1,4 +1,4 @@
-package vocabulary
+package mapping
 
 import (
 	"io"
@@ -18,12 +18,12 @@ import (
 func TestExamplesBuild(t *testing.T) {
 	for _, name := range profiles.Names() {
 		t.Run(name, func(t *testing.T) {
-			vocab, ok := For(name)
+			mapper, ok := For(name)
 			if !ok {
-				t.Fatalf("profile %q has no vocabulary", name)
+				t.Fatalf("profile %q has no mapping", name)
 			}
 			def, _ := profiles.Get(name)
-			source, err := input.Read(filepath.Join("..", "..", "..", "examples", name), vocab, input.Document{Name: def.DocumentName, Model: def.Model})
+			source, err := input.Read(filepath.Join("..", "..", "..", "examples", name), mapper, input.Document{Name: def.DocumentName, Model: def.Model})
 			if err != nil {
 				t.Fatalf("reading the example: %v", err)
 			}

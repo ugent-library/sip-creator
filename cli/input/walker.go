@@ -17,7 +17,7 @@ import (
 type folderWalker struct {
 	root       string     // all messages and report keys are relative to it
 	violations Violations // the findings so far
-	vocabulary Vocabulary
+	mapper     Mapper
 	// documentName is the file reserved for a supplied descriptive
 	// document and documentFormat judges its root; empty and nil under a
 	// profile that takes rows only.

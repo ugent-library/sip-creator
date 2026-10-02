@@ -1,4 +1,4 @@
-package vocabulary
+package mapping
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// EarkMods is the eark-mods profile's vocabulary: the MODS keys the input
+// EarkMods is the eark-mods profile's mapping: the MODS keys the input
 // specification lists and where each one goes in the record. The record is
 // typed by field (ADR-0021), so the key table lives here, not in the
 // profile package. A term that breaks a rule on its own (an unknown key,
@@ -18,7 +18,7 @@ import (
 // supplied mods.xml.
 type EarkMods struct{}
 
-// placement is what the vocabulary knows about one key: where its value
+// placement is what the mapping knows about one key: where its value
 // goes in the record, whether the key takes a language tag, and how often
 // it may occur.
 type placement struct {
@@ -49,17 +49,17 @@ var modsKeys = map[string]placement{
 	},
 }
 
-// Description fills a record from the terms in order, reporting each term
+// Map fills a record from the terms in order, reporting each term
 // it cannot place as a *sip.TermError at its index. A repeat is reported
 // at the repeated term; the first one is placed.
-func (EarkMods) Description(terms []sip.Term) (sip.Description, []error) {
+func (EarkMods) Map(terms []sip.Term) (sip.Description, []error) {
 	var record earkmods.Record
 	var errs []error
 	placed := map[string]bool{} // key, or key and language
 	for i, t := range terms {
 		key, ok := modsKeys[t.Key]
 		if !ok {
-			errs = append(errs, &sip.TermError{Index: i, Err: fmt.Errorf("unknown key %q: not in the MODS vocabulary; see the supported keys in the input specification", t.Key)})
+			errs = append(errs, &sip.TermError{Index: i, Err: fmt.Errorf("unknown key %q: not a key of the eark-mods profile; see the supported keys in the input specification", t.Key)})
 			continue
 		}
 		if t.Lang != "" && !key.takesLang {

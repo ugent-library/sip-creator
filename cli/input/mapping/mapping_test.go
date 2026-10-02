@@ -1,4 +1,4 @@
-package vocabulary
+package mapping
 
 import (
 	"errors"
@@ -14,28 +14,28 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Every registered profile has a vocabulary, and each builds what its
+// Every registered profile has a mapping, and each builds what its
 // profile's metadata model accepts: Read hands terms to the one, the
-// engine runs ValidateType on the result. A profile without a vocabulary
+// engine runs ValidateType on the result. A profile without a mapping
 // could not read a folder.
-func TestEveryProfileHasAVocabularyItsModelAccepts(t *testing.T) {
+func TestEveryProfileHasAMappingItsModelAccepts(t *testing.T) {
 	for _, name := range profiles.Names() {
 		def, _ := profiles.Get(name)
-		vocab, ok := For(name)
+		mapper, ok := For(name)
 		if !ok {
-			t.Errorf("profile %q has no vocabulary", name)
+			t.Errorf("profile %q has no mapping", name)
 			continue
 		}
-		description, errs := vocab.Description(nil)
+		description, errs := mapper.Map(nil)
 		if len(errs) != 0 {
 			t.Errorf("profile %q: no terms, yet errors %v", name, errs)
 		}
 		if err := def.Model.ValidateType(description); err != nil {
-			t.Errorf("profile %q: ValidateType refuses what its vocabulary built: %v", name, err)
+			t.Errorf("profile %q: ValidateType refuses what its mapping built: %v", name, err)
 		}
 	}
 	if _, ok := For("nope"); ok {
-		t.Error("an unregistered name has a vocabulary")
+		t.Error("an unregistered name has a mapping")
 	}
 }
 
@@ -49,18 +49,18 @@ var terms = []sip.Term{
 // order, so a term error's index names the row.
 func TestTermsKeepTheirOrder(t *testing.T) {
 	tests := []struct {
-		name  string
-		vocab input.Vocabulary
-		terms func(sip.Description) ([]sip.Term, bool)
+		name   string
+		mapper input.Mapper
+		terms  func(sip.Description) ([]sip.Term, bool)
 	}{
 		{"basic", Meemoo{}, func(d sip.Description) ([]sip.Term, bool) { tt, ok := d.(meemoo.Terms); return tt, ok }},
 		{"eark", Eark{}, func(d sip.Description) ([]sip.Term, bool) { tt, ok := d.(eark.Terms); return tt, ok }},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			description, errs := tt.vocab.Description(terms)
+			description, errs := tt.mapper.Map(terms)
 			if len(errs) != 0 {
-				t.Fatalf("errors %v for terms every vocabulary places", errs)
+				t.Fatalf("errors %v for terms every mapping places", errs)
 			}
 			got, ok := tt.terms(description)
 			if !ok {
@@ -77,9 +77,9 @@ func TestTermsKeepTheirOrder(t *testing.T) {
 // and the titles in order with their language. The rows carry no items;
 // those reach a record through the library or a supplied document.
 func TestEarkModsTermsFillTheRecord(t *testing.T) {
-	description, errs := EarkMods{}.Description(terms)
+	description, errs := EarkMods{}.Map(terms)
 	if len(errs) != 0 {
-		t.Fatalf("errors %v for terms the vocabulary places", errs)
+		t.Fatalf("errors %v for terms the mapping places", errs)
 	}
 	record, ok := description.(earkmods.Record)
 	if !ok {
@@ -97,7 +97,7 @@ func TestEarkModsTermsFillTheRecord(t *testing.T) {
 	}
 }
 
-// A term the MODS vocabulary cannot place is a TermError at its index, and
+// A term the MODS mapping cannot place is a TermError at its index, and
 // the term is not placed; the terms around it still are. A repeat is
 // reported at the repeated term.
 func TestEarkModsErrorsNameTheTerm(t *testing.T) {
@@ -118,7 +118,7 @@ func TestEarkModsErrorsNameTheTerm(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			description, errs := EarkMods{}.Description(tt.terms)
+			description, errs := EarkMods{}.Map(tt.terms)
 			if len(errs) != 1 {
 				t.Fatalf("errors = %v, want exactly one", errs)
 			}

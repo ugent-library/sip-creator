@@ -34,7 +34,7 @@ example-0001/
 └── premis/               ← optional: preservation XML received from a vendor
 ```
 
-Institution details (who submits, who archives, contact person, agreement number) do **not** live in the folder: they rarely change and come from the tool's configuration. See [What comes from configuration](#6-what-comes-from-configuration-and-the-command-line). Neither does the profile: you pass it to `check` and `create` with `--profile`, and it says which vocabulary `description.csv` is in and whether a finished `dc.xml` or `mods.xml` may stand in for it (§3).
+Institution details (who submits, who archives, contact person, agreement number) do **not** live in the folder: they rarely change and come from the tool's configuration. See [What comes from configuration](#6-what-comes-from-configuration-and-the-command-line). Neither does the profile: you pass it to `check` and `create` with `--profile`, and it says which keys `description.csv` takes and whether a finished `dc.xml` or `mods.xml` may stand in for it (§3).
 
 ## 1. General rules
 
@@ -44,7 +44,7 @@ Institution details (who submits, who archives, contact person, agreement number
 - Symbolic links anywhere in the input MUST be an error.
 - The tool MUST compare paths after Unicode canonical normalization (NFC), because macOS file names and typed CSV values often differ only in normalization form.
 - The tool MUST refuse to build when any MUST rule is violated, and MUST report all violations at once, in plain language, naming the file or folder concerned. SHOULD violations produce warnings.
-- The tool MUST offer a check-only mode that validates a folder's structure and metadata against the rules here without building anything. It takes the same profile a build takes, because the profile says which vocabulary the rows are in (§3), and no configuration. Content-level verification (the characterization report's checksum checks in §2 and the PREMIS conformance of received preservation files in §5) happens at build, not at check: those rules apply to whoever supplies the data, however it arrives.
+- The tool MUST offer a check-only mode that validates a folder's structure and metadata against the rules here without building anything. It takes the same profile a build takes, because the profile says which keys the rows may use (§3), and no configuration. Content-level verification (the characterization report's checksum checks in §2 and the PREMIS conformance of received preservation files in §5) happens at build, not at check: those rules apply to whoever supplies the data, however it arrives.
 
 ## 2. Content files and representations
 
@@ -77,22 +77,22 @@ access,Access copy (PDF),access
 
 ## 3. Descriptive metadata: `description.csv`, or a supplied document
 
-A two-column CSV (`key,value`) describing what the package contains. Usually this is the only file an operator writes; under the eark profiles a finished document may stand in for it (see [Supplying a finished document](#supplying-a-finished-document-eark-and-eark-mods) below). The profile passed to `check` and `create` (`--profile`) says which vocabulary its rows are in and which document, if any, may replace it:
+A two-column CSV (`key,value`) describing what the package contains. Usually this is the only file an operator writes; under the eark profiles a finished document may stand in for it (see [Supplying a finished document](#supplying-a-finished-document-eark-and-eark-mods) below). The profile passed to `check` and `create` (`--profile`) says which keys its rows may use and which document, if any, may replace it:
 
-| profile | `description.csv` vocabulary | document that may stand in for it |
+| profile | `description.csv` keys | document that may stand in for it |
 |---|---|---|
-| `basic` | Meemoo's dc+schema vocabulary: the key table below | none |
+| `basic` | Meemoo's dc+schema keys: the key table below | none |
 | `eark` | Simple Dublin Core | `dc.xml`, a `simpledc` document |
 | `eark-mods` | the MODS keys `identifier` and `title` | `mods.xml`, a `mods:mods` document declaring MODS 3.7 |
 
-Under `basic` the file takes the key table below. Under `eark` it takes the fifteen Simple Dublin Core elements as keys: `title`, `creator`, `subject`, `description`, `publisher`, `contributor`, `date`, `type`, `format`, `identifier`, `source`, `language`, `relation`, `coverage`, `rights`. Every one is optional and repeatable, `identifier` and `title` MUST be present at the top level, and a language tag is accepted but not written into the document. Under `eark-mods` it takes two keys: `identifier` (once, no language tag: the record's local identifier, emitted as a `mods:identifier` of type `local`) and `title` (once per language, emitted as a `mods:titleInfo/mods:title` with `xml:lang`). The rows carry flat terms about the record only; its physical copies, and any structure richer than these keys, travel in a supplied `mods.xml` ([ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md)). The vocabularies are separate: a Meemoo key under `eark` is an unknown key, not a silently dropped one ([ADR-0015](decisions/0015-descriptive-worlds-dc-and-mods.md)). Until 2026-09-28 the file was named after its vocabulary (`dcschema.csv`, `dc.csv`); the profile decides now ([ADR-0016](decisions/0016-descriptive-input-rows-or-supplied-document.md)).
+Under `basic` the file takes the key table below. Under `eark` it takes the fifteen Simple Dublin Core elements as keys: `title`, `creator`, `subject`, `description`, `publisher`, `contributor`, `date`, `type`, `format`, `identifier`, `source`, `language`, `relation`, `coverage`, `rights`. Every one is optional and repeatable, `identifier` and `title` MUST be present at the top level, and a language tag is accepted but not written into the document. Under `eark-mods` it takes two keys: `identifier` (once, no language tag: the record's local identifier, emitted as a `mods:identifier` of type `local`) and `title` (once per language, emitted as a `mods:titleInfo/mods:title` with `xml:lang`). The rows carry flat terms about the record only; its physical copies, and any structure richer than these keys, travel in a supplied `mods.xml` ([ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md)). The key tables are separate: a Meemoo key under `eark` is an unknown key, not a silently dropped one ([ADR-0015](decisions/0015-descriptive-worlds-dc-and-mods.md)). Until 2026-09-28 the file was named after its keys (`dcschema.csv`, `dc.csv`); the profile decides now ([ADR-0016](decisions/0016-descriptive-input-rows-or-supplied-document.md)).
 
 - At the top level, exactly one of `description.csv` and the profile's document MUST be present (under `basic`, `description.csv`). Both, or neither, is an error.
 - MUST be UTF-8 with a `key,value` header row. The tool MUST accept a UTF-8 BOM and CRLF line endings (spreadsheet tools produce both) and RFC 4180 quoting.
 - Under `basic`, `identifier`, `title`, `description` and `created` MUST be present and non-empty: Meemoo's basic content profile requires all four. Under `eark` and `eark-mods`, `identifier` and `title` MUST be present. The identifier is your local catalog or inventory number; it travels with the package as its local identifier. `check` reports a missing one.
 - Repeat a key for multiple values (two `creator` lines for two creators), but only for keys the table lists as repeatable. Keys listed as *per-language* may repeat only with distinct language tags (`title[nl]` plus `title[en]` is fine; two `title[nl]` rows are not). A second row for a single-valued key, or a repeated language on a per-language key, MUST be an error.
 - Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`. Under `basic`, wherever a language-tagged key is used, a Dutch entry (`[nl]`) MUST be among the rows (Meemoo's rule); other languages are welcome alongside, but Dutch must be present. `check` reports a missing Dutch entry.
-- Unknown keys MUST be an error: a typo must not silently drop metadata. Keys are matched case-insensitively (`Title` reads as `title`). The table below is the entire vocabulary under `basic`; it follows the flat-expressible elements of Meemoo's basic content profile.
+- Unknown keys MUST be an error: a typo must not silently drop metadata. Keys are matched case-insensitively (`Title` reads as `title`). The table below lists every key under `basic`; it follows the flat-expressible elements of Meemoo's basic content profile.
 
 Supported keys (plain names; the specialist mapping is in [§7](#7-mapping-to-the-sip-informative-for-specialists)):
 

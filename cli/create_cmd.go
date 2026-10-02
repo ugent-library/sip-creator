@@ -30,7 +30,7 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		def, vocabulary, err := resolveProfile(cmd)
+		def, mapper, err := resolveProfile(cmd)
 		if err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ var createCmd = &cobra.Command{
 			contentCategory = cfg.ContentCategory
 		}
 
-		source, err := input.Read(args[0], vocabulary, input.Document{Name: def.DocumentName, Model: def.Model})
+		source, err := input.Read(args[0], mapper, input.Document{Name: def.DocumentName, Model: def.Model})
 		if err != nil {
 			return reportViolations(cmd, args[0], err)
 		}

@@ -44,7 +44,7 @@ Choose a profile with `--profile` on the command line, or with `profiles.Get` in
 | Use for | content described in general terms | library material from catalogue records | ingest into Meemoo (hetarchief.be) |
 | Specification | E-ARK SIP 2.2.0 | E-ARK SIP 2.2.0 | Meemoo SIP 1.2, on E-ARK SIP 2.0.4 |
 | Descriptive standard | Simple Dublin Core | MODS 3.7 | Meemoo's Dublin Core and schema.org |
-| [`description.csv` keys](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) | the 15 Dublin Core elements | `identifier`, `title` | Meemoo's vocabulary |
+| [`description.csv` keys](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) | the 15 Dublin Core elements | `identifier`, `title` | Meemoo's key table |
 | Required keys | `identifier`, `title` | `identifier`, `title` | `identifier`, `title`, `description`, `created` |
 | [Finished document](docs/input-spec.md#supplying-a-finished-document-eark-and-eark-mods) accepted | `dc.xml` | `mods.xml` | none |
 | Go description type | `eark.Terms` | `earkmods.Record` | `meemoo.Terms` |
@@ -82,7 +82,7 @@ representation's record; it writes them to that representation's `mods.xml`.
 Builds an E-ARK SIP (2.0.4) that also conforms to the basic content profile of the
 [Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
 for ingest into the Flemish heritage archive. `description.csv` takes Meemoo's closed
-vocabulary: Dublin Core terms (`created`, `spatial`, `extent`, ...) plus two schema.org
+key table: Dublin Core terms (`created`, `spatial`, `extent`, ...) plus two schema.org
 properties. On top of the four required keys, Meemoo requires a Dutch value (`[nl]`)
 wherever a language-tagged key is used.
 

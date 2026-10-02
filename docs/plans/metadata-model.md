@@ -186,25 +186,25 @@ configuration (ADR-0010).
 - `sip.Term`'s doc comment drops "a key from the profile's vocabulary" and
   "statement": a term is a key, an optional language tag and a value.
 
-### 4c. Name what is left (open)
+### 4c. `input.Vocabulary` becomes `input.Mapper`
 
-After 4a and 4b, `input.Vocabulary` is one method: turn a level's terms into the
-model's description. For `basic` and `eark` that is a type conversion
-(`eark.Terms(terms)`); only `eark-mods` places terms into fields of a record. The
-interface and the package `cli/input/vocabulary` need a name for that job. Considered
-so far and rejected:
+After 4a and 4b, `input.Vocabulary` is one method: map a level's terms onto the
+model's description. ADR-0021 already calls that job the CSV's mapping. Decided in
+review: `input.Mapper` with `Map(terms []sip.Term) (sip.Description, []error)`,
+following Go's naming of one-method interfaces; `Description()` named a noun, not
+what the method does. The package `cli/input/vocabulary` becomes `cli/input/mapping`
+(`mapping.Meemoo`, `mapping.Eark`, `mapping.EarkMods`, `mapping.For`), and `Read`
+takes `(root, mapper, document)`. The interface stays: a function value would save
+nothing a reader notices, and `EarkMods`'s key table and the test fakes sit naturally
+on types. Names considered and rejected:
 
 | Name | Why not |
 |---|---|
 | vocabulary | A controlled list of values in this field; see above. |
 | row format, statement format, entry format | "Row" ties the type to CSV; "statement" implies linked data; "entry format" does not say what it is. Each named the row type that 4b removes. |
 | CSV format | Named by syntax; the type never sees CSV. |
-| crosswalk | Implies two schemas. Under `basic` and `eark` the keys are the model's own element names, so nothing is crossed. |
-
-Since the job takes terms in and returns a description, a name can start from
-there. Also open: whether an interface is still needed, or a function value
-(`func([]sip.Term) (sip.Description, []error)`) per profile is enough. Decide in review,
-after 4a and 4b, because they decide what the type takes.
+| crosswalk | Implies two schemas. Under `eark` the keys are the model's own element names, so nothing is crossed. |
+| adapter | ADR-0021's word for the types, but it names a pattern, not what the type does. |
 
 ### Prose
 
@@ -212,11 +212,51 @@ The input specification and README call the key tables "vocabularies" and the ro
 "statements" ("The vocabularies are separate", "flat statements about the record").
 These become "the profile's keys" or "key table", and "terms". ADRs keep their text.
 
+## Step 5: Meemoo's keys move to the CLI
+
+The flat profiles do not split the same way. Simple Dublin Core's keys are the
+standard's own element names (`title`, `creator`), so its mapping is the identity.
+Meemoo's table in `profiles/meemoo/vocabulary.go` maps a key to an element
+(`ispartof` to `dcterms:isPartOf`, `artmedium` to `schema:artMedium`), and the key
+is the CSV's convention: lowercase, without prefix. That convention is the library's
+API today: a program building `meemoo.Terms` writes `ispartof`, not the
+`dcterms:isPartOf` Meemoo's specification names, and `sip.Term.Key` is documented as
+"spelled as the input specification's table spells it". MODS keeps its keys in the
+CLI (`modsKeys`), Meemoo keeps them in the library.
+
+One rule for all three profiles: **the library speaks the standard's names; the CLI
+owns the CSV's keys.**
+
+- `meemoo.Terms` is keyed by the element as Meemoo's specification names it
+  (`dcterms:isPartOf`). The library table keeps what belongs to the element:
+  Meemoo's cardinality limit and the `xsi:type`.
+- The CLI's `mapping.Meemoo` holds the CSV key to element table, as
+  `mapping.EarkMods` holds key to field.
+- `mapping.Eark` stays the identity.
+- `sip.Term.Key` is documented as the element's name in the model, without
+  reference to the input specification.
+
+What stays in the library: the rules of Meemoo's SIP 1.2 specification (the required
+identifier, title, description and created date, the cardinality limits, the Dutch
+entry, EDTF typing). A program that bypasses the CSV must meet them too; ADR-0021's
+three homes for rules stand.
+
+Considered and rejected: moving the Meemoo profile out of the library into the CLI.
+The key spelling would move with it, so the inconsistency stays, and a system that
+automates ingest into Meemoo would lose its library route. ADR-0022 already treats
+all three in-tree profiles as reference implementations.
+
+No generated package changes. The library's API changes for `meemoo.Terms` callers.
+An ADR records the rule and supersedes ADR-0021's "in a flat world the key is the
+model, so the profile package keeps its key table" and ADR-0011's "the element a key
+emits is known nowhere else".
+
 ## Order
 
 1. Steps 1, 2 and 3 together: one change to the library's API.
 2. Step 4a, then 4b: CLI only.
-3. Step 4c once the name is chosen.
+3. Step 4c: the rename to `Mapper`.
+4. Step 5, reviewed on its own: a library-side design change.
 
 ## Acceptance
 

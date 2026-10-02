@@ -11,7 +11,7 @@ import (
 )
 
 // description returns the level's description from the one source the
-// folder supplies for it: the rows file, decoded under the vocabulary, or
+// folder supplies for it: the rows file, mapped by the profile's mapper, or
 // the profile's supplied document, read as it is. Both at one level is a
 // violation: an entity has one description, and the tool does not pick.
 // The package level needs one; a representation may have neither.
@@ -47,7 +47,7 @@ func (w *folderWalker) violateMissingDescription() {
 
 // decodeDescription decodes the description.csv at src into the profile's
 // description and records a violation per broken rule: the row syntax,
-// the vocabulary's placement of each term, and the description's own
+// the mapper's placement of each term, and the description's own
 // rules, with ValidateRequired at the package level only.
 func (w *folderWalker) decodeDescription(src string, packageLevel bool) sip.Description {
 	rel := w.rel(src)
@@ -63,8 +63,8 @@ func (w *folderWalker) decodeDescription(src string, packageLevel bool) sip.Desc
 		w.violate("%s: %v", rel, err)
 		return nil
 	}
-	description, vocabularyErrs := w.vocabulary.Description(terms)
-	errs = append(errs, vocabularyErrs...)
+	description, mapErrs := w.mapper.Map(terms)
+	errs = append(errs, mapErrs...)
 	errs = append(errs, flatten(description.Validate())...)
 	if packageLevel {
 		errs = append(errs, flatten(description.ValidateRequired())...)
@@ -72,7 +72,7 @@ func (w *folderWalker) decodeDescription(src string, packageLevel bool) sip.Desc
 
 	// A finding about one row is reported at the row's line: the parser
 	// names the line of a row that did not become a term, and the
-	// vocabulary and the description's rules name a term by its index,
+	// mapper and the description's rules name a term by its index,
 	// which lines turns back into a line. A cross-row finding names the
 	// key and language, which locates the rows in a keyed file.
 	for _, err := range errs {

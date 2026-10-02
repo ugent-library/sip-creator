@@ -21,7 +21,7 @@ func readCSV(t *testing.T, csv string) (*build.SourcePackage, error) {
 		"description.csv": csv,
 		"scan.tiff":       "x",
 	})
-	return Read(root, meemooVocab{}, meemooDocument)
+	return Read(root, meemooMapper{}, meemooDocument)
 }
 
 func TestRowsHappy(t *testing.T) {
@@ -102,7 +102,7 @@ func TestRowsViolations(t *testing.T) {
 }
 
 // A finding about one row is reported with the file and the row's line,
-// whether the parser, the vocabulary or the description's rules found it.
+// whether the parser, the mapper or the description's rules found it.
 func TestRowsLineNumbers(t *testing.T) {
 	_, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle,T\ntitel,Oeps\n")
 	assertViolation(t, err, `description.csv line 4: unknown key "titel"`)
@@ -146,7 +146,7 @@ func TestRepresentationDescriptionNeedsNoIdentity(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	pkg, err := Read(root, meemooVocab{}, meemooDocument)
+	pkg, err := Read(root, meemooMapper{}, meemooDocument)
 	if err != nil {
 		t.Fatalf("rep-level description.csv must not require identifier/title: %v", err)
 	}
@@ -163,7 +163,7 @@ func TestRepresentationDescriptionDuplicateIdentifier(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nidentifier,A\nidentifier,B\n",
 	})
-	_, err := Read(root, meemooVocab{}, meemooDocument)
+	_, err := Read(root, meemooMapper{}, meemooDocument)
 	assertViolation(t, err, "exactly one")
 }
 
@@ -246,15 +246,15 @@ func TestParseTermsNotUTF8(t *testing.T) {
 	}
 }
 
-// The profile, not the file, says which vocabulary the rows are in: the
+// The profile, not the file, says which keys the rows may use: the
 // same description.csv is Simple Dublin Core under eark and refused under
 // basic, where coverage is not a key.
-func TestRowsProfileDecidesTheVocabulary(t *testing.T) {
+func TestRowsProfileDecidesTheKeys(t *testing.T) {
 	tree := map[string]string{
 		"description.csv": minimalDC + "coverage,Gent\n",
 		"scan.tiff":       "x",
 	}
-	pkg, err := Read(writeTree(t, tree), earkVocab{}, earkDocument)
+	pkg, err := Read(writeTree(t, tree), earkMapper{}, earkDocument)
 	if err != nil {
 		t.Fatalf("Read under eark: %v", err)
 	}
@@ -263,7 +263,7 @@ func TestRowsProfileDecidesTheVocabulary(t *testing.T) {
 		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Description)
 	}
 
-	_, err = Read(writeTree(t, tree), meemooVocab{}, meemooDocument)
+	_, err = Read(writeTree(t, tree), meemooMapper{}, meemooDocument)
 	assertViolation(t, err, `unknown key "coverage"`)
 }
 
@@ -275,25 +275,25 @@ func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	_, err := Read(root, earkVocab{}, earkDocument)
+	_, err := Read(root, earkMapper{}, earkDocument)
 	assertViolation(t, err, `unknown key "abstract"`)
 	assertViolation(t, err, `unknown key "license"`)
 }
 
-// Without a vocabulary Read cannot say what the rows mean; it is
+// Without a mapper Read cannot say what the rows mean; it is
 // refused before the folder is touched.
-func TestReadRequiresAVocabulary(t *testing.T) {
+func TestReadRequiresAMapper(t *testing.T) {
 	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "scan.tiff": "x"})
 	_, err := Read(root, nil, Document{})
-	if err == nil || !strings.Contains(err.Error(), "no vocabulary") {
-		t.Fatalf("want the missing vocabulary refused, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "no mapper") {
+		t.Fatalf("want the missing mapper refused, got %v", err)
 	}
 }
 
-// A vocabulary's own errors are reported at the row's line when they are
+// A mapper's own errors are reported at the row's line when they are
 // about one term, or against the file otherwise, next to the
 // description's rules.
-func TestVocabularyErrorsNameTheLine(t *testing.T) {
+func TestMapperErrorsNameTheLine(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv": "key,value\nidentifier,ID-1\ntitle,T\n",
 		"scan.tiff":       "x",
@@ -304,12 +304,12 @@ func TestVocabularyErrorsNameTheLine(t *testing.T) {
 	assertViolation(t, err, "identifier is required")
 }
 
-// placesNothing is a vocabulary that refuses every term at its index,
+// placesNothing is a mapper that refuses every term at its index,
 // adds one error about the file, and returns an empty eark description, so
 // the description's own required-keys rule still runs on the result.
 type placesNothing struct{}
 
-func (placesNothing) Description(terms []sip.Term) (sip.Description, []error) {
+func (placesNothing) Map(terms []sip.Term) (sip.Description, []error) {
 	errs := []error{errors.New("nothing fits")}
 	for i, t := range terms {
 		errs = append(errs, &sip.TermError{Index: i, Err: fmt.Errorf("no place for %s", t.Key)})
