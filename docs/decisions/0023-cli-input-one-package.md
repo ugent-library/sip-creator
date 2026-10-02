@@ -1,7 +1,7 @@
 # 0023 — `cli/input` stays one package: a folder walker with pure parsers
 
 Status: **Accepted** (2026-10-02, when the [cli cleanup
-plan](../archive/cli-cleanup.md) shipped).
+plan](../archive/cli-cleanup.md) shipped). **Revised in part by [ADR-0024](0024-the-metadata-model.md)** (2026-10-02): `cli/input/vocabulary` is `cli/input/mapping`, and `Read` takes a mapper and the profile's document.
 
 ## Context
 
@@ -53,4 +53,4 @@ Keep `cli/input` one package. Inside it:
   from its own store does not use `cli/input` at all.
 - The package name "input" still says little about what is in it. What the
   `cli/input/vocabulary` package beside it should be called is open in the
-  [metadata-model plan](../plans/metadata-model.md).
+  [metadata-model plan](../archive/metadata-model.md).

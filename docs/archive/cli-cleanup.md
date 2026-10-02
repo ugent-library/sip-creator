@@ -206,7 +206,7 @@ Done later, with the library:
   `build.DescriptiveDocumentChecker` became `build.DocumentFormat` and
   `input.DocumentVocabulary` became `input.DocumentFormat`, both with
   `ValidateDocumentRoot`. "Format" is how a profile's metadata model is stored as a
-  file; the [metadata-model plan](../plans/metadata-model.md) carries that naming further.
+  file; the [metadata-model plan](metadata-model.md) carries that naming further.
 
 Dropped:
 
@@ -268,4 +268,4 @@ Done (2026-10-02): `sip-creator-design.md` and CLAUDE.md describe `input.Read`, 
 folder walker and the parsers;
 [ADR-0023](../decisions/0023-cli-input-one-package.md) records keeping `cli/input`
 one package; this plan moved to `docs/archive/`. The naming question it ended on
-continues in the [metadata-model plan](../plans/metadata-model.md).
+continues in the [metadata-model plan](metadata-model.md).

@@ -4,7 +4,7 @@
 
 This plan splits `input.Read` into two steps: a walk that finds the files of an input
 folder, and a decode step that reads what is in them. It came up in the review of the
-[metadata-model plan](metadata-model.md), when `Read` started taking a mapper and a
+[metadata-model plan](../archive/metadata-model.md), when `Read` started taking a mapper and a
 document only to hand them to the walker.
 
 ## Context

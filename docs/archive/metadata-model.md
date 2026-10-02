@@ -1,6 +1,6 @@
 # Plan: the metadata model
 
-*Status: **draft** (2026-10-02), revised after a first review. Nothing implemented yet.*
+*Status: **shipped** (2026-10-02). The decision is [ADR-0024](../decisions/0024-the-metadata-model.md); the concepts are in the design doc's "The metadata model".*
 
 This plan names the concept the descriptive side of the tool is built around and makes
 the code use that name. It started in the [cli cleanup plan](../archive/cli-cleanup.md), when

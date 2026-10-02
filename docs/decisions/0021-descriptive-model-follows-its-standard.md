@@ -7,7 +7,7 @@ Status: **Accepted** (2026-10-01, when the
 [ADR-0011](0011-closed-descriptive-vocabulary.md),
 [ADR-0015](0015-descriptive-worlds-dc-and-mods.md) and
 [ADR-0016](0016-descriptive-input-rows-or-supplied-document.md); each
-carries a dated note.
+carries a dated note. **Revised in part by [ADR-0024](0024-the-metadata-model.md)** (2026-10-02): Meemoo's key table moves to the CLI; the library speaks the standard's names for all three profiles.
 
 ## Context
 

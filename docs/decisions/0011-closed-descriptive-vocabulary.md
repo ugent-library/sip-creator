@@ -9,7 +9,7 @@ profile. Where a standard is flat the key is the model and the profile
 package keeps its table for the template; where it is a tree the library
 holds a typed model and the CLI's table maps keys onto its fields. The
 rule that the CSV never approximates and never drops a key silently
-stands unchanged.
+stands unchanged. **Revised in part by [ADR-0024](0024-the-metadata-model.md)** (2026-10-02): the closed table holds Meemoo's elements; the CSV's keys live in the CLI's mapping.
 
 ## Context
 
