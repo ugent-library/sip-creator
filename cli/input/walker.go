@@ -261,14 +261,10 @@ func (w *folderWalker) walkContent(base, dir string, files *[]build.SourceFile) 
 }
 
 func (w *folderWalker) newFile(base, src string) build.SourceFile {
-	relRoot, err := filepath.Rel(w.root, src)
-	if err != nil {
-		relRoot = src
-	}
-	relBase, err := filepath.Rel(base, src)
-	if err != nil {
-		relBase = filepath.Base(src)
-	}
+	// Rel cannot fail here: root, base and src are absolute, and src lies
+	// under both.
+	relRoot, _ := filepath.Rel(w.root, src)
+	relBase, _ := filepath.Rel(base, src)
 	return build.SourceFile{
 		Source: src,
 		// Key is not NFC-normalized: it must match the filename exactly

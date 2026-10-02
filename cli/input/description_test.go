@@ -140,7 +140,7 @@ func TestRowsPerLanguageRepeat(t *testing.T) {
 	assertViolation(t, err, `language "nl"`)
 }
 
-func TestRepresentationCSVNeedsNoIdentity(t *testing.T) {
+func TestRepresentationDescriptionNeedsNoIdentity(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv":                        minimalCSV,
 		"representations/master/scan.tiff":       "x",
@@ -156,7 +156,7 @@ func TestRepresentationCSVNeedsNoIdentity(t *testing.T) {
 	}
 }
 
-func TestRepresentationCSVDuplicateIdentifier(t *testing.T) {
+func TestRepresentationDescriptionDuplicateIdentifier(t *testing.T) {
 	// Identity is optional at rep level, but two identifiers stay ambiguous.
 	root := writeTree(t, map[string]string{
 		"description.csv":                        minimalCSV,

@@ -76,16 +76,15 @@ func (w *folderWalker) decodeDescription(src string, packageLevel bool) sip.Desc
 	// cross-row finding names the key and language, which locates the
 	// rows in a keyed file.
 	for _, err := range errs {
-		var se *StatementError
-		var te *sip.TermError
-		switch {
-		case errors.As(err, &se):
+		if se, ok := errors.AsType[*StatementError](err); ok {
 			w.violate("%s line %d: %v", rel, se.Line, se.Err)
-		case errors.As(err, &te) && te.Index < len(statements):
-			w.violate("%s line %d: %v", rel, statements[te.Index].Line, te.Err)
-		default:
-			w.violate("%s: %v", rel, err)
+			continue
 		}
+		if te, ok := errors.AsType[*sip.TermError](err); ok && te.Index < len(statements) {
+			w.violate("%s line %d: %v", rel, statements[te.Index].Line, te.Err)
+			continue
+		}
+		w.violate("%s: %v", rel, err)
 	}
 	if len(statements) == 0 {
 		return nil
