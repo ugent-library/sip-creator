@@ -3,7 +3,7 @@
 *Status: **proposed** (2026-10-02). Nothing implemented yet.*
 
 This plan names the concept the descriptive side of the tool is built around and makes
-the code use that name. It started in the [cli cleanup plan](cli-cleanup.md), when
+the code use that name. It started in the [cli cleanup plan](../archive/cli-cleanup.md), when
 `input.DocumentVocabulary` turned out to be no vocabulary at all and became
 `input.DocumentFormat`, next to the library's `build.DocumentFormat`.
 

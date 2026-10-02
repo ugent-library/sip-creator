@@ -1,6 +1,6 @@
 # Plan: cleaning up the cli package
 
-*Status: **in progress** (2026-10-01). Phase 1.1 to 1.4 done, 1.5 parked; Phase 2 done (2.2 dropped); Phase 3 done (3.2 and 3.3 dropped); Phase 4 done (4.1, and 4.2 with most rows dropped).*
+*Status: **shipped** (2026-10-02). Phases 1 to 6 done, with the steps marked dropped left out; 1.5 parked. The decision to keep `cli/input` one package is [ADR-0023](../decisions/0023-cli-input-one-package.md).*
 
 This plan collects a review of `cli/` and `cli/input/` (including
 `cli/input/vocabulary/`) into small, separate steps. None of the steps changes a
@@ -10,6 +10,8 @@ with no change to the reference copy. Some steps change the wording of problems 
 CLI reports or the stream they go to; those are called out per step.
 
 ## Decision: keep `cli/input` one package
+
+*Recorded in [ADR-0023](../decisions/0023-cli-input-one-package.md).*
 
 `cli/input` is about 750 lines of non-test code with one job: read a folder into a
 `build.SourcePackage` and collect every problem found on the way. Every file in it
@@ -204,7 +206,7 @@ Done later, with the library:
   `build.DescriptiveDocumentChecker` became `build.DocumentFormat` and
   `input.DocumentVocabulary` became `input.DocumentFormat`, both with
   `ValidateDocumentRoot`. "Format" is how a profile's metadata model is stored as a
-  file; the [metadata-model plan](metadata-model.md) carries that naming further.
+  file; the [metadata-model plan](../plans/metadata-model.md) carries that naming further.
 
 Dropped:
 
@@ -220,6 +222,9 @@ Dropped:
 - **`def` → `definition`:** clear in context.
 
 ## Phase 5: comments
+
+*Done (2026-10-01), in one commit: every bullet below, plus "the reader" in comments
+that meant `Read`.*
 
 Apply the CLAUDE.md rules ("comment the thing, not its callers"; as short as it can
 be). Do this per file.
@@ -239,6 +244,11 @@ be). Do this per file.
 
 ## Phase 6: small cleanups
 
+*Done (2026-10-01), except moving the test out of `walker_test.go`: it tests
+`isOSArtifact`, which lives in `walker.go`, so `walker_test.go` is where it belongs.
+The `newFile` fallbacks became `filepath.Rel` calls whose error is ignored, with a
+one-line reason.*
+
 - `newFile`: the fallbacks for a failed `filepath.Rel` cannot happen for paths under
   the root, and if they did they would put an absolute path in `Key`. Remove them.
 - Use `errors.AsType` in `description.go`, as `check_cmd.go` does.
@@ -250,11 +260,12 @@ be). Do this per file.
 
 ## Order
 
-Phases 1 to 4 are done. What is left: Phase 5 file by file, Phase 6 at any point;
-1.5 only when someone wants tests for the CLI flags.
+All phases are done; 1.5 stays parked until someone wants tests for the CLI flags.
 
 ## When this plan ships
 
-Update `sip-creator-design.md` and CLAUDE.md for the renamed exported names and the
-parser functions. Consider a short ADR for keeping `cli/input` one package, since the
-question is likely to come up again. Then move this plan to `docs/archive/`.
+Done (2026-10-02): `sip-creator-design.md` and CLAUDE.md describe `input.Read`, the
+folder walker and the parsers;
+[ADR-0023](../decisions/0023-cli-input-one-package.md) records keeping `cli/input`
+one package; this plan moved to `docs/archive/`. The naming question it ended on
+continues in the [metadata-model plan](../plans/metadata-model.md).
