@@ -48,7 +48,7 @@ func TestDocumentVocabulariesMatchTheirEncoders(t *testing.T) {
 	for _, name := range profiles.Names() {
 		def, _ := profiles.Get(name)
 		vocab, _ := For(name)
-		_, encoderTakes := def.Encoder.(build.DescriptiveDocumentChecker)
+		_, encoderTakes := def.Encoder.(build.DocumentFormat)
 		docVocab, vocabTakes := vocab.(input.DocumentVocabulary)
 		if encoderTakes != vocabTakes {
 			t.Errorf("profile %q: its encoder takes a supplied document: %v; its vocabulary: %v", name, encoderTakes, vocabTakes)

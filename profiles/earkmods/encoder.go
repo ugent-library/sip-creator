@@ -19,12 +19,12 @@ import (
 // indexes and operators search by (ADR-0012).
 type mods struct{}
 
-// DescriptiveDocumentChecker is optional to the engine, so a drift in
-// CheckDescriptiveDocument's signature would fail silently; the
-// assertion makes it a build error.
+// DocumentFormat is optional to the engine, so a drift in
+// ValidateDocumentRoot's signature would fail silently; the assertion
+// makes it a build error.
 var (
-	_ build.DescriptionEncoder         = mods{}
-	_ build.DescriptiveDocumentChecker = mods{}
+	_ build.DescriptionEncoder = mods{}
+	_ build.DocumentFormat     = mods{}
 )
 
 // The namespace and version the template declares and a supplied document
@@ -42,9 +42,9 @@ func (mods) Check(d sip.Description) error {
 	return nil
 }
 
-// CheckDescriptiveDocument returns why root is not a mods:mods element in the MODS v3
-// namespace declaring the version the package's METS declares.
-func (mods) CheckDescriptiveDocument(root xml.StartElement) error {
+// ValidateDocumentRoot returns why root is not a mods:mods element in the
+// MODS v3 namespace declaring the version the package's METS declares.
+func (mods) ValidateDocumentRoot(root xml.StartElement) error {
 	if root.Name.Space != namespace || root.Name.Local != "mods" {
 		return fmt.Errorf("root element is {%s}%s, expected a mods:mods document in the MODS v3 namespace (%s)", root.Name.Space, root.Name.Local, namespace)
 	}

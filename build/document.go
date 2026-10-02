@@ -26,7 +26,7 @@ var _ sip.Description = DescriptiveDocument{}
 
 // Validate reports why the file is not a document at all: unreadable, or
 // not parsable as XML (xmldoc.Root). Which root element it must have is
-// the profile's rule, checked through its DescriptiveDocumentChecker.
+// the profile's rule, checked through its DocumentFormat.
 func (d DescriptiveDocument) Validate() error {
 	_, err := d.Root()
 	return err

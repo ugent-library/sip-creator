@@ -39,11 +39,11 @@ func For(name string) (input.Vocabulary, bool) {
 // input.DocumentVocabulary, so the refusal below is a programming error,
 // not the operator's.
 func checkDocument(def build.Definition, root xml.StartElement) error {
-	checker, ok := def.Encoder.(build.DescriptiveDocumentChecker)
+	format, ok := def.Encoder.(build.DocumentFormat)
 	if !ok {
 		return fmt.Errorf("profile %q takes no supplied descriptive document", def.Name)
 	}
-	return checker.CheckDescriptiveDocument(root)
+	return format.ValidateDocumentRoot(root)
 }
 
 // terms turns statements into terms, for the profiles whose description is

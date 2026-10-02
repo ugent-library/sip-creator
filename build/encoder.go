@@ -51,17 +51,17 @@ type IdentifierSwapper interface {
 	Swap(d sip.Description, id string) (local string)
 }
 
-// DescriptiveDocumentChecker is the optional part of a DescriptionEncoder
-// whose profile takes a supplied descriptive document (DescriptiveDocument)
-// next to its own description type. CheckDescriptiveDocument returns why
-// root, the document's root element, is not the profile's standard:
-// another element or namespace, or a version other than the one the METS
-// declares. An encoder without it takes no supplied document. Meemoo's
-// encoder does not implement it, because Meemoo's document must carry the
-// entity identifier the build mints, which Swap writes into the terms
-// (ADR-0021).
-type DescriptiveDocumentChecker interface {
-	CheckDescriptiveDocument(root xml.StartElement) error
+// DocumentFormat is the optional part of a DescriptionEncoder whose format
+// also accepts a finished document supplied as a file
+// (DescriptiveDocument), next to its own description type.
+// ValidateDocumentRoot returns why root, the document's root element, is
+// not a document in the format: another element or namespace, or a
+// version other than the one the METS declares. An encoder without it
+// takes no supplied document. Meemoo's encoder does not implement it,
+// because Meemoo's document must carry the entity identifier the build
+// mints, which Swap writes into the terms (ADR-0021).
+type DocumentFormat interface {
+	ValidateDocumentRoot(root xml.StartElement) error
 }
 
 // checkDescriptions returns why a description in the source package is not one
@@ -93,7 +93,7 @@ func checkDescription(enc DescriptionEncoder, d sip.Description) error {
 	if !ok {
 		return enc.Check(d)
 	}
-	checker, ok := enc.(DescriptiveDocumentChecker)
+	format, ok := enc.(DocumentFormat)
 	if !ok {
 		return fmt.Errorf("a supplied descriptive document is not accepted: this profile takes its own description type only")
 	}
@@ -101,7 +101,7 @@ func checkDescription(enc DescriptionEncoder, d sip.Description) error {
 	if err != nil {
 		return err
 	}
-	if err := checker.CheckDescriptiveDocument(root); err != nil {
+	if err := format.ValidateDocumentRoot(root); err != nil {
 		return fmt.Errorf("supplied descriptive document %s: %w", doc.Source, err)
 	}
 	return nil

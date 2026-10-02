@@ -19,12 +19,12 @@ import (
 // identifier they know (ADR-0012).
 type simpledc struct{}
 
-// DescriptiveDocumentChecker is optional to the engine, so a drift in
-// CheckDescriptiveDocument's signature would fail silently; the
-// assertion makes it a build error.
+// DocumentFormat is optional to the engine, so a drift in
+// ValidateDocumentRoot's signature would fail silently; the assertion
+// makes it a build error.
 var (
-	_ build.DescriptionEncoder         = simpledc{}
-	_ build.DescriptiveDocumentChecker = simpledc{}
+	_ build.DescriptionEncoder = simpledc{}
+	_ build.DocumentFormat     = simpledc{}
 )
 
 func (simpledc) Check(d sip.Description) error {
@@ -34,11 +34,11 @@ func (simpledc) Check(d sip.Description) error {
 	return nil
 }
 
-// CheckDescriptiveDocument returns why root is not the simpledc element this template
-// emits, without namespace. A document of another shape (an oai_dc
+// ValidateDocumentRoot returns why root is not the simpledc element this
+// template emits, without namespace. A document of another shape (an oai_dc
 // wrapper, a MODS record) would make the METS declare a type the file does
 // not have.
-func (simpledc) CheckDescriptiveDocument(root xml.StartElement) error {
+func (simpledc) ValidateDocumentRoot(root xml.StartElement) error {
 	if root.Name.Space != "" || root.Name.Local != "simpledc" {
 		return fmt.Errorf("root element is {%s}%s, expected a simpledc document without namespace", root.Name.Space, root.Name.Local)
 	}
