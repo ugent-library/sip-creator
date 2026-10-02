@@ -20,7 +20,7 @@ type folderWalker struct {
 	vocabulary Vocabulary
 	// document names the file reserved for a supplied descriptive document
 	// and judges its root; nil under a profile that takes rows only.
-	document DocumentVocabulary
+	document DocumentFormat
 }
 
 // Reserved top-level names. Reserved names inside a representation are

@@ -33,7 +33,7 @@ func (earkVocab) Description(statements []Statement) (sip.Description, []error) 
 
 func (earkVocab) DocumentName() string { return "dc.xml" }
 
-func (earkVocab) CheckDocument(root xml.StartElement) error {
+func (earkVocab) ValidateDocumentRoot(root xml.StartElement) error {
 	return eark.Definition.Encoder.(build.DocumentFormat).ValidateDocumentRoot(root)
 }
 

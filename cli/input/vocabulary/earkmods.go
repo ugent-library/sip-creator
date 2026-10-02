@@ -20,7 +20,7 @@ import (
 // or a supplied mods.xml.
 type EarkMods struct{}
 
-var _ input.DocumentVocabulary = EarkMods{}
+var _ input.DocumentFormat = EarkMods{}
 
 // placement is what the vocabulary knows about one key: where its value
 // goes in the record, whether the key takes a language tag, and how often
@@ -104,8 +104,8 @@ func (EarkMods) DocumentName() string {
 	return earkmods.Definition.DescriptiveName
 }
 
-// CheckDocument returns why root is not a mods:mods document declaring
-// MODS 3.7, as the eark-mods profile's encoder judges it.
-func (EarkMods) CheckDocument(root xml.StartElement) error {
-	return checkDocument(earkmods.Definition, root)
+// ValidateDocumentRoot returns why root is not a mods:mods document
+// declaring MODS 3.7, as the eark-mods profile's encoder judges it.
+func (EarkMods) ValidateDocumentRoot(root xml.StartElement) error {
+	return validateDocumentRoot(earkmods.Definition, root)
 }

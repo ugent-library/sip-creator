@@ -44,9 +44,9 @@ func Read(root string, vocabulary Vocabulary) (*build.SourcePackage, error) {
 
 	w := &folderWalker{root: abs, vocabulary: vocabulary}
 	// A vocabulary whose profile takes a supplied document says so by
-	// implementing DocumentVocabulary; under any other, no file name is
-	// the document's.
-	w.document, _ = vocabulary.(DocumentVocabulary)
+	// implementing DocumentFormat; under any other, no file name is the
+	// document's.
+	w.document, _ = vocabulary.(DocumentFormat)
 	source := w.read()
 	if len(w.violations) > 0 {
 		return source, w.violations

@@ -44,18 +44,18 @@ func TestEveryProfileHasAVocabularyItsEncoderAccepts(t *testing.T) {
 // encoder judges one, and names the file the package gives the document:
 // the two eark profiles do, basic does not. A vocabulary on one side only
 // would reserve a name the build refuses, or refuse a name the build takes.
-func TestDocumentVocabulariesMatchTheirEncoders(t *testing.T) {
+func TestDocumentFormatsMatchTheirEncoders(t *testing.T) {
 	for _, name := range profiles.Names() {
 		def, _ := profiles.Get(name)
 		vocab, _ := For(name)
 		_, encoderTakes := def.Encoder.(build.DocumentFormat)
-		docVocab, vocabTakes := vocab.(input.DocumentVocabulary)
-		if encoderTakes != vocabTakes {
-			t.Errorf("profile %q: its encoder takes a supplied document: %v; its vocabulary: %v", name, encoderTakes, vocabTakes)
+		docFormat, vocabularyTakes := vocab.(input.DocumentFormat)
+		if encoderTakes != vocabularyTakes {
+			t.Errorf("profile %q: its encoder takes a supplied document: %v; its vocabulary: %v", name, encoderTakes, vocabularyTakes)
 			continue
 		}
-		if vocabTakes && docVocab.DocumentName() != def.DescriptiveName {
-			t.Errorf("profile %q: document name %q, want the package's %q", name, docVocab.DocumentName(), def.DescriptiveName)
+		if vocabularyTakes && docFormat.DocumentName() != def.DescriptiveName {
+			t.Errorf("profile %q: document name %q, want the package's %q", name, docFormat.DocumentName(), def.DescriptiveName)
 		}
 	}
 }
@@ -68,12 +68,12 @@ var (
 	}
 )
 
-// Each document vocabulary accepts its own standard's root and refuses the
-// other's, as its encoder does.
-func TestDocumentVocabulariesJudgeTheRoot(t *testing.T) {
+// Each document format accepts its own root and refuses the other's, as
+// its encoder does.
+func TestDocumentFormatsJudgeTheRoot(t *testing.T) {
 	tests := []struct {
 		name             string
-		vocab            input.DocumentVocabulary
+		format           input.DocumentFormat
 		accepts, refuses xml.StartElement
 	}{
 		{"eark", Eark{}, simpledcRoot, modsRoot},
@@ -81,10 +81,10 @@ func TestDocumentVocabulariesJudgeTheRoot(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.vocab.CheckDocument(tt.accepts); err != nil {
+			if err := tt.format.ValidateDocumentRoot(tt.accepts); err != nil {
 				t.Errorf("refused its own standard's root: %v", err)
 			}
-			if err := tt.vocab.CheckDocument(tt.refuses); err == nil {
+			if err := tt.format.ValidateDocumentRoot(tt.refuses); err == nil {
 				t.Error("accepted another standard's root")
 			}
 		})

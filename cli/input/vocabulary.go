@@ -22,18 +22,18 @@ type Vocabulary interface {
 	Description(statements []Statement) (sip.Description, []error)
 }
 
-// DocumentVocabulary is the optional part of a Vocabulary whose profile
-// takes a finished document of its standard in place of the rows, as the
-// two eark profiles do. Without it no file name is reserved for a
-// document: a dc.xml under basic is content like any other file.
-type DocumentVocabulary interface {
+// DocumentFormat is the optional part of a Vocabulary whose profile takes
+// a finished document in its format in place of the rows, as the two eark
+// profiles do. Without it no file name is reserved for a document: a
+// dc.xml under basic is content like any other file.
+type DocumentFormat interface {
 	// DocumentName is the file name of the supplied document, dc.xml or
 	// mods.xml: the name the package gives the document too.
 	DocumentName() string
-	// CheckDocument returns why root, the document's root element, is not
-	// the profile's standard (another element, namespace or version), as
-	// the engine judges it before a build.
-	CheckDocument(root xml.StartElement) error
+	// ValidateDocumentRoot returns why root, the document's root element,
+	// is not a document in the profile's format (another element,
+	// namespace or version), as the engine judges it before a build.
+	ValidateDocumentRoot(root xml.StartElement) error
 }
 
 // Statement is one row of a description.csv: one thing the folder states

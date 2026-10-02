@@ -14,7 +14,7 @@ import (
 // what a statement may say. A finished dc.xml may stand in for the rows.
 type Eark struct{}
 
-var _ input.DocumentVocabulary = Eark{}
+var _ input.DocumentFormat = Eark{}
 
 // Description wraps the statements as Simple Dublin Core terms in
 // statement order.
@@ -28,8 +28,8 @@ func (Eark) DocumentName() string {
 	return eark.Definition.DescriptiveName
 }
 
-// CheckDocument returns why root is not a simpledc document, as the eark
-// profile's encoder judges it.
-func (Eark) CheckDocument(root xml.StartElement) error {
-	return checkDocument(eark.Definition, root)
+// ValidateDocumentRoot returns why root is not a simpledc document, as the
+// eark profile's encoder judges it.
+func (Eark) ValidateDocumentRoot(root xml.StartElement) error {
+	return validateDocumentRoot(eark.Definition, root)
 }

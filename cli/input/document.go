@@ -28,7 +28,7 @@ func (w *folderWalker) readDocument(src string) sip.Description {
 		w.violate("%s: %v", rel, err)
 		return nil
 	}
-	if err := w.document.CheckDocument(root); err != nil {
+	if err := w.document.ValidateDocumentRoot(root); err != nil {
 		w.violate("%s: %v", rel, err)
 	}
 	return build.DescriptiveDocument{Source: src}
