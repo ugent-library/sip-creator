@@ -184,7 +184,7 @@ func (sp *SourcePackage) Validate() error {
 		return fmt.Errorf("no descriptive metadata supplied")
 	}
 	// The one place the description's rules run before a write; the
-	// encoders trust it. A package-level description must also state what
+	// metadata models trust it. A package-level description must also state what
 	// its standard requires of one (an identifier and a title at least); a
 	// representation's need not.
 	if err := sp.Description.Validate(); err != nil {

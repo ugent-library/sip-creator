@@ -11,9 +11,9 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// simpledc is the encoder for the simpledc document: it accepts Terms and
-// writes them with Encode, and says which supplied document is one of its
-// own. It never swaps: dc.xml keeps the producer's identifier, because
+// simpledc is the Simple Dublin Core metadata model: it accepts Terms,
+// writes them as a simpledc document with Encode, and says which supplied
+// document is one of its own. It never swaps: dc.xml keeps the producer's identifier, because
 // CSIP has no rule tying it to the package identifier and the ingesting
 // catalogue indexes dc.xml, so operators find the package by the
 // identifier they know (ADR-0012).
@@ -23,11 +23,11 @@ type simpledc struct{}
 // ValidateDocumentRoot's signature would fail silently; the assertion
 // makes it a build error.
 var (
-	_ build.DescriptionEncoder = simpledc{}
-	_ build.DocumentFormat     = simpledc{}
+	_ build.MetadataModel  = simpledc{}
+	_ build.DocumentFormat = simpledc{}
 )
 
-func (simpledc) Check(d sip.Description) error {
+func (simpledc) ValidateType(d sip.Description) error {
 	if _, ok := d.(Terms); !ok {
 		return fmt.Errorf("descriptive metadata is %T, not Simple Dublin Core terms (eark.Terms)", d)
 	}

@@ -425,14 +425,14 @@ a Go package with three parts:
 
 * a description type implementing `sip.Description`, whose `Validate` and
   `ValidateRequired` are the rules of your standard;
-* an encoder implementing `build.DescriptionEncoder`: the type check, the code that
-  writes the document (the profiles here use `text/template`), and the list of XSDs
-  the document points at;
-* an exported `build.Definition` naming the encoder, the document's file name and the
+* a metadata model implementing `build.MetadataModel`: `ValidateType`, which refuses a
+  description of another type, `Encode`, which writes the document (the profiles here
+  use `text/template`), and `Schemas`, the list of XSDs the document points at;
+* an exported `build.Definition` naming the model, the document's file name and the
   METS values (`sip.MetsDeclaration`: profile URL, content typing, `MDTYPE`). The
-  encoder type itself can stay unexported.
+  model type itself can stay unexported.
 
-Hand that definition to `build.New` as above. The XSDs an encoder lists must be ones
+Hand that definition to `build.New` as above. The XSDs a model lists must be ones
 this repository bundles in `schemas/`: the build refuses any other name, so a standard
 whose schema is not bundled needs its XSD added there first. Your package does not need
 to be added to the registry in `profiles/`: the registry only lists the names `--profile`

@@ -12,9 +12,9 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// mods is the encoder for the MODS document: it accepts Record and writes
-// it with Encode, and says which supplied
-// document is one of its own. It never swaps: mods.xml keeps the
+// mods is the MODS 3.7 metadata model: it accepts Record, writes it as a
+// MODS document with Encode, and says which supplied document is one of its
+// own. It never swaps: mods.xml keeps the
 // producer's identifier, the catalogue number the ingesting repository
 // indexes and operators search by (ADR-0012).
 type mods struct{}
@@ -23,8 +23,8 @@ type mods struct{}
 // ValidateDocumentRoot's signature would fail silently; the assertion
 // makes it a build error.
 var (
-	_ build.DescriptionEncoder = mods{}
-	_ build.DocumentFormat     = mods{}
+	_ build.MetadataModel  = mods{}
+	_ build.DocumentFormat = mods{}
 )
 
 // The namespace and version the template declares and a supplied document
@@ -35,7 +35,7 @@ const (
 	version   = "3.7"
 )
 
-func (mods) Check(d sip.Description) error {
+func (mods) ValidateType(d sip.Description) error {
 	if _, ok := d.(Record); !ok {
 		return fmt.Errorf("descriptive metadata is %T, not a MODS record (earkmods.Record)", d)
 	}

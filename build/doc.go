@@ -25,6 +25,6 @@
 // The Go type of a description belongs to its profile: eark.Terms,
 // earkmods.Record or meemoo.Terms, or a [DescriptiveDocument] for a
 // finished document where the profile accepts one. A profile for another
-// descriptive standard implements [DescriptionEncoder] and exports its own
+// descriptive standard implements [MetadataModel] and exports its own
 // [Definition].
 package build

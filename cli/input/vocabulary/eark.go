@@ -25,11 +25,11 @@ func (Eark) Description(statements []input.Statement) (sip.Description, []error)
 // DocumentName is the file name of a supplied Simple Dublin Core document:
 // dc.xml, the name the package gives the document.
 func (Eark) DocumentName() string {
-	return eark.Definition.DescriptiveName
+	return eark.Definition.DocumentName
 }
 
 // ValidateDocumentRoot returns why root is not a simpledc document, as the
-// eark profile's encoder judges it.
+// eark profile's metadata model judges it.
 func (Eark) ValidateDocumentRoot(root xml.StartElement) error {
 	return validateDocumentRoot(eark.Definition, root)
 }

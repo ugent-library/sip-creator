@@ -21,9 +21,9 @@ import (
 // specification and returns the source package it holds, the value the
 // builder takes. vocabulary is the profile's: it says what the rows of a
 // description.csv mean. Where the library has a rule for what Read reads
-// (a description's Validate and ValidateRequired, the encoder's check of a
-// supplied document's root), Read runs that same rule and reports its
-// findings with file and line. Every MUST violation is collected and
+// (a description's Validate and ValidateRequired, the metadata model's
+// check of a supplied document's root), Read runs that same rule and
+// reports its findings with file and line. Every MUST violation is collected and
 // returned together as a Violations error; when the error is non-nil the
 // returned source package is incomplete and must not be built.
 func Read(root string, vocabulary Vocabulary) (*build.SourcePackage, error) {

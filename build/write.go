@@ -12,9 +12,10 @@ import (
 )
 
 // The path of the package's schemas/ directory relative to a descriptive
-// document, which the encoders write into their schema-location hints: from
-// a package-level document (metadata/descriptive/*.xml) and from a
-// representation-level one (representations/<name>/metadata/descriptive/*.xml).
+// document, which the metadata models write into their schema-location
+// hints: from a package-level document (metadata/descriptive/*.xml) and
+// from a representation-level one
+// (representations/<name>/metadata/descriptive/*.xml).
 // Only the writer knows where a document lands, so the paths live here.
 const (
 	schemasDirFromPackage        = "../../schemas"
@@ -126,8 +127,8 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 // describes, under base (empty for the package, "representations/<name>/"
 // for a representation), and back-fills the node with the fixity of the
 // bytes written. A supplied document is copied as it is with the store's
-// streamed copy, fixity computed on the way as for essence; a model is
-// rendered by the profile's encoder. schemasDir is the path of the package's
+// streamed copy, fixity computed on the way as for essence; any other
+// description is rendered by the profile's metadata model. schemasDir is the path of the package's
 // schemas/ directory relative to the document, which only a rendered
 // document uses; a supplied one keeps its own schema-location hint.
 func (b *Builder) writeDescription(st *store.Store, base string, df *sip.File, d sip.Description, schemasDir string) error {
@@ -137,7 +138,7 @@ func (b *Builder) writeDescription(st *store.Store, base string, df *sip.File, d
 		info, err = st.CopyFile(doc.Source, base+df.Path)
 	} else {
 		info, err = st.WriteMetadata(base+df.Path, func(w io.Writer) error {
-			return b.profile.Encoder.Encode(w, d, schemasDir)
+			return b.profile.Model.Encode(w, d, schemasDir)
 		})
 	}
 	if err != nil {

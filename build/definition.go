@@ -7,26 +7,26 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Definition declares a profile as data: the encoder for its descriptive
-// document, which metadata it emits, and the values its METS documents
-// carry.
+// Definition declares a profile as data: its metadata model, which
+// metadata it emits, and the values its METS documents carry.
 // Profiles differ in these values, not in build logic: one engine
 // (Builder.Build) reads them. Each profile package under profiles/ builds
 // its own definition, and the registry in profiles/ hands them out by name.
 type Definition struct {
 	// Name is the registry key: what --profile selects.
 	Name string
-	// Encoder writes the profile's descriptive document from the
-	// description it accepts. A definition without one is refused before
-	// any write.
-	Encoder DescriptionEncoder
+	// Model is the profile's metadata model: the description type it
+	// accepts and how a description is written as a document. A definition
+	// without one is refused before any write.
+	Model MetadataModel
 	// RequireSubmitterORID requires the submitting organization's Meemoo
 	// OR-id, emitted as the agent's IDENTIFICATIONCODE note (Meemoo SIP
 	// 1.2, metsHdr); WithSubmitter needs the OR-id when set.
 	RequireSubmitterORID bool
-	// DescriptiveName is the emitted filename of the descriptive document
-	// under metadata/descriptive/.
-	DescriptiveName string
+	// DocumentName is the file name of the descriptive document under
+	// metadata/descriptive/: the package's convention for naming a document
+	// in the model's format, such as dc+schema.xml or mods.xml.
+	DocumentName string
 	// EmitPackagePremis emits the generated package PREMIS document.
 	EmitPackagePremis bool
 	// EmitRepresentationPremis emits a generated PREMIS document per

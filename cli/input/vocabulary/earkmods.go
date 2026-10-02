@@ -101,11 +101,11 @@ func (EarkMods) Description(statements []input.Statement) (sip.Description, []er
 // DocumentName is the file name of a supplied MODS document: mods.xml, the
 // name the package gives the document.
 func (EarkMods) DocumentName() string {
-	return earkmods.Definition.DescriptiveName
+	return earkmods.Definition.DocumentName
 }
 
 // ValidateDocumentRoot returns why root is not a mods:mods document
-// declaring MODS 3.7, as the eark-mods profile's encoder judges it.
+// declaring MODS 3.7, as the eark-mods profile's metadata model judges it.
 func (EarkMods) ValidateDocumentRoot(root xml.StartElement) error {
 	return validateDocumentRoot(earkmods.Definition, root)
 }

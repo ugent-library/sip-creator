@@ -168,7 +168,7 @@ func TestAssemble(t *testing.T) {
 	}
 
 	// One schema node per distinct XSD the package's documents point at
-	// (the METS list plus the descriptive encoder's), in sorted
+	// (the METS list plus the metadata model's), in sorted
 	// (deterministic) order.
 	names := make([]string, 0, len(pkg.SchemaFiles))
 	for _, sf := range pkg.SchemaFiles {
@@ -177,7 +177,7 @@ func TestAssemble(t *testing.T) {
 			t.Errorf("schema Path = %q, want %q", sf.Path, "schemas/"+sf.Name)
 		}
 	}
-	referenced := slices.Concat(mets.Schemas, basicDef(t).Encoder.Schemas())
+	referenced := slices.Concat(mets.Schemas, basicDef(t).Model.Schemas())
 	if want := slices.Compact(slices.Sorted(slices.Values(referenced))); !slices.Equal(names, want) {
 		t.Errorf("schema nodes = %v, want the referenced XSDs sorted and deduplicated: %v", names, want)
 	}
@@ -901,18 +901,18 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// unbundledSchemas wraps a real encoder and claims an XSD the bundle does
+// unbundledSchemas wraps a real metadata model and claims an XSD the bundle does
 // not hold.
-type unbundledSchemas struct{ build.DescriptionEncoder }
+type unbundledSchemas struct{ build.MetadataModel }
 
 func (unbundledSchemas) Schemas() []string { return []string{"nope.xsd"} }
 
-// An encoder listing a schema the bundle does not hold is refused at
+// A metadata model listing a schema the bundle does not hold is refused at
 // assembly, before any write: the alternative is an empty XSD in the
 // package.
 func TestBuildRefusesUnbundledSchema(t *testing.T) {
 	def := basicDef(t)
-	def.Encoder = unbundledSchemas{def.Encoder}
+	def.Model = unbundledSchemas{def.Model}
 	b, in, outDir := newTestBuilder(t, def)
 	_, err := b.Build(in)
 	if err == nil || !strings.Contains(err.Error(), `"nope.xsd"`) {
@@ -921,12 +921,12 @@ func TestBuildRefusesUnbundledSchema(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// A definition built outside the registry names no descriptive encoder
-// and is refused when the builder is constructed, as an error rather than
+// A definition built outside the registry names no metadata model and is
+// refused when the builder is constructed, as an error rather than
 // a panic, so no build can start from it.
-func TestNewRefusesDefinitionWithoutEncoder(t *testing.T) {
+func TestNewRefusesDefinitionWithoutModel(t *testing.T) {
 	def := basicDef(t)
-	def.Encoder = nil
+	def.Model = nil
 	_, err := build.New(&build.Config{
 		Profile:     def,
 		Destination: t.TempDir(),

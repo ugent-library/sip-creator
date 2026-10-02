@@ -18,7 +18,7 @@ import (
 // profiles: the statements as stated, wrapped as the profile's terms. The
 // CLI's own vocabularies in cli/input/vocabulary import this package, so
 // its tests cannot use them. earkVocab also takes a dc.xml, judged by the
-// eark encoder, so Read's document rules are tested through it.
+// eark metadata model, so Read's document rules are tested through it.
 type meemooVocab struct{}
 
 func (meemooVocab) Description(statements []Statement) (sip.Description, []error) {
@@ -34,7 +34,7 @@ func (earkVocab) Description(statements []Statement) (sip.Description, []error) 
 func (earkVocab) DocumentName() string { return "dc.xml" }
 
 func (earkVocab) ValidateDocumentRoot(root xml.StartElement) error {
-	return eark.Definition.Encoder.(build.DocumentFormat).ValidateDocumentRoot(root)
+	return eark.Definition.Model.(build.DocumentFormat).ValidateDocumentRoot(root)
 }
 
 func terms(statements []Statement) []sip.Term {

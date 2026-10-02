@@ -25,7 +25,7 @@ func shipped(t *testing.T, name string) []string {
 	if !ok {
 		t.Fatalf("no %q definition registered", name)
 	}
-	return slices.Compact(slices.Sorted(slices.Values(slices.Concat(mets.Schemas, def.Encoder.Schemas()))))
+	return slices.Compact(slices.Sorted(slices.Values(slices.Concat(mets.Schemas, def.Model.Schemas()))))
 }
 
 // withMETS returns the sorted set a profile ships when its descriptive
@@ -34,7 +34,7 @@ func withMETS(names ...string) []string {
 	return slices.Sorted(slices.Values(append(slices.Clone(mets.Schemas), names...)))
 }
 
-// Every XSD a profile ships is bundled, so a typo in an encoder's list fails
+// Every XSD a profile ships is bundled, so a typo in a metadata model's list fails
 // here rather than at the first build, and each profile ships exactly what
 // its documents point at: basic the METS set plus Meemoo's descriptive
 // schema and what it imports (the Dublin Core family, EDTF, schema.org,
@@ -65,8 +65,8 @@ func TestRegistrySchemas(t *testing.T) {
 	}
 }
 
-// sampleDescriptions holds one description per profile that its encoder
-// renders; Encode does not run Validate, and an empty description has no
+// sampleDescriptions holds one description per profile that its metadata
+// model renders; Encode does not run Validate, and an empty description has no
 // key for the template to refuse, so it is enough to render the
 // document's root.
 var sampleDescriptions = map[string]sip.Description{
@@ -90,7 +90,7 @@ func TestRegistryDescriptiveDocumentsPointAtShippedSchemas(t *testing.T) {
 		}
 		def, _ := Get(name)
 		var buf bytes.Buffer
-		if err := def.Encoder.Encode(&buf, description, schemasDir); err != nil {
+		if err := def.Model.Encode(&buf, description, schemasDir); err != nil {
 			t.Errorf("profile %q: Encode: %v", name, err)
 			continue
 		}
@@ -100,8 +100,8 @@ func TestRegistryDescriptiveDocumentsPointAtShippedSchemas(t *testing.T) {
 		}
 		for _, loc := range locations {
 			dir, file := path.Split(loc)
-			if path.Clean(dir) != schemasDir || !slices.Contains(def.Encoder.Schemas(), file) {
-				t.Errorf("profile %q: the document points at %q, want a file under %s/ that Schemas() lists (%v)", name, loc, schemasDir, def.Encoder.Schemas())
+			if path.Clean(dir) != schemasDir || !slices.Contains(def.Model.Schemas(), file) {
+				t.Errorf("profile %q: the document points at %q, want a file under %s/ that Schemas() lists (%v)", name, loc, schemasDir, def.Model.Schemas())
 			}
 		}
 	}
@@ -136,13 +136,13 @@ func schemaLocations(t *testing.T, doc []byte) []string {
 	return locations
 }
 
-// Every registry entry names a descriptive encoder; the engine refuses a
+// Every registry entry names a metadata model; the engine refuses a
 // definition without one before any write.
-func TestRegistryEntriesNameAnEncoder(t *testing.T) {
+func TestRegistryEntriesNameAModel(t *testing.T) {
 	for _, name := range Names() {
 		def, _ := Get(name)
-		if def.Encoder == nil {
-			t.Errorf("profile %q has no descriptive encoder", name)
+		if def.Model == nil {
+			t.Errorf("profile %q has no metadata model", name)
 		}
 		if def.Name != name {
 			t.Errorf("profile %q is registered under Name %q", name, def.Name)

@@ -9,14 +9,14 @@ import (
 // on the E-ARK SIP profile of its era, writing dc+schema.xml from Terms.
 // The registry in profiles/ hands it out under the name "basic".
 var Definition = build.Definition{
-	Name:    "basic",
-	Encoder: dcschema{},
+	Name:  "basic",
+	Model: dcschema{},
 	// Meemoo identifies the submitting organization by its OR-id
 	// (Meemoo SIP 1.2, metsHdr agent note).
 	RequireSubmitterORID: true,
 	// The filename Meemoo's basic profile expects for the descriptive
 	// document.
-	DescriptiveName:          "dc+schema.xml",
+	DocumentName:             "dc+schema.xml",
 	EmitPackagePremis:        true,
 	EmitRepresentationPremis: true,
 	Declaration: sip.MetsDeclaration{

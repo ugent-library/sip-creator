@@ -15,8 +15,7 @@ type Config struct {
 	// Profile is the definition every package this builder makes is built
 	// to: one of this module's profiles (see profiles.Get) or one written
 	// for another descriptive standard (ADR-0022), with the submitting
-	// organization added by WithSubmitter. It must name a descriptive
-	// encoder.
+	// organization added by WithSubmitter. It must name a metadata model.
 	Profile Definition
 	// Destination is the directory packages are created under.
 	Destination string
@@ -34,10 +33,10 @@ type Builder struct {
 }
 
 // New returns a builder for the config's profile. A profile without a
-// descriptive encoder is refused here, before any build.
+// metadata model is refused here, before any build.
 func New(config *Config) (*Builder, error) {
-	if config.Profile.Encoder == nil {
-		return nil, fmt.Errorf("profile %q names no descriptive encoder; set the definition's Encoder", config.Profile.Name)
+	if config.Profile.Model == nil {
+		return nil, fmt.Errorf("profile %q names no metadata model; set the definition's Model", config.Profile.Name)
 	}
 	return &Builder{
 		profile:     config.Profile,
@@ -50,7 +49,7 @@ func New(config *Config) (*Builder, error) {
 // (no disk writes), then emits it in the canonical order. Failures before
 // the write phase leave no partial package dir behind.
 func (b *Builder) Build(source *SourcePackage) (*sip.Package, error) {
-	if err := checkDescriptions(b.profile.Encoder, source); err != nil {
+	if err := checkDescriptions(b.profile.Model, source); err != nil {
 		return nil, fmt.Errorf("profile %q: %w", b.profile.Name, err)
 	}
 	if err := source.Validate(); err != nil {

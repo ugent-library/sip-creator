@@ -16,10 +16,10 @@ import (
 )
 
 // Every registered profile has a vocabulary, and each builds what its
-// profile's encoder accepts: Read hands statements to the one, the
-// engine runs Check on the result. A profile without a vocabulary could
-// not read a folder.
-func TestEveryProfileHasAVocabularyItsEncoderAccepts(t *testing.T) {
+// profile's metadata model accepts: Read hands statements to the one, the
+// engine runs ValidateType on the result. A profile without a vocabulary
+// could not read a folder.
+func TestEveryProfileHasAVocabularyItsModelAccepts(t *testing.T) {
 	for _, name := range profiles.Names() {
 		def, _ := profiles.Get(name)
 		vocab, ok := For(name)
@@ -31,8 +31,8 @@ func TestEveryProfileHasAVocabularyItsEncoderAccepts(t *testing.T) {
 		if len(errs) != 0 {
 			t.Errorf("profile %q: no statements, yet errors %v", name, errs)
 		}
-		if err := def.Encoder.Check(description); err != nil {
-			t.Errorf("profile %q: Check refuses what its vocabulary built: %v", name, err)
+		if err := def.Model.ValidateType(description); err != nil {
+			t.Errorf("profile %q: ValidateType refuses what its vocabulary built: %v", name, err)
 		}
 	}
 	if _, ok := For("nope"); ok {
@@ -41,21 +41,21 @@ func TestEveryProfileHasAVocabularyItsEncoderAccepts(t *testing.T) {
 }
 
 // A vocabulary takes a supplied document exactly when its profile's
-// encoder judges one, and names the file the package gives the document:
-// the two eark profiles do, basic does not. A vocabulary on one side only
+// metadata model judges one, and names the file the package gives the
+// document: the two eark profiles do, basic does not. A vocabulary on one side only
 // would reserve a name the build refuses, or refuse a name the build takes.
-func TestDocumentFormatsMatchTheirEncoders(t *testing.T) {
+func TestDocumentFormatsMatchTheirModels(t *testing.T) {
 	for _, name := range profiles.Names() {
 		def, _ := profiles.Get(name)
 		vocab, _ := For(name)
-		_, encoderTakes := def.Encoder.(build.DocumentFormat)
+		_, modelTakes := def.Model.(build.DocumentFormat)
 		docFormat, vocabularyTakes := vocab.(input.DocumentFormat)
-		if encoderTakes != vocabularyTakes {
-			t.Errorf("profile %q: its encoder takes a supplied document: %v; its vocabulary: %v", name, encoderTakes, vocabularyTakes)
+		if modelTakes != vocabularyTakes {
+			t.Errorf("profile %q: its metadata model takes a supplied document: %v; its vocabulary: %v", name, modelTakes, vocabularyTakes)
 			continue
 		}
-		if vocabularyTakes && docFormat.DocumentName() != def.DescriptiveName {
-			t.Errorf("profile %q: document name %q, want the package's %q", name, docFormat.DocumentName(), def.DescriptiveName)
+		if vocabularyTakes && docFormat.DocumentName() != def.DocumentName {
+			t.Errorf("profile %q: document name %q, want the package's %q", name, docFormat.DocumentName(), def.DocumentName)
 		}
 	}
 }
@@ -69,7 +69,7 @@ var (
 )
 
 // Each document format accepts its own root and refuses the other's, as
-// its encoder does.
+// its metadata model does.
 func TestDocumentFormatsJudgeTheRoot(t *testing.T) {
 	tests := []struct {
 		name             string

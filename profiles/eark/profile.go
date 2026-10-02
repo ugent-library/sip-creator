@@ -9,11 +9,11 @@ import (
 // RODA-class repositories, writing dc.xml from Terms and no PREMIS. The
 // registry in profiles/ hands it out under the name "eark".
 var Definition = build.Definition{
-	Name:    "eark",
-	Encoder: simpledc{},
+	Name:  "eark",
+	Model: simpledc{},
 	// Named after the simple-DC document it holds; Meemoo's naming
 	// convention doesn't apply to the eark profile.
-	DescriptiveName: "dc.xml",
+	DocumentName: "dc.xml",
 	// The eark profile emits no PREMIS: RODA drops package PREMIS that
 	// does not describe agents or events.
 	EmitPackagePremis:        false,

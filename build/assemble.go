@@ -44,10 +44,10 @@ func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {
 
 	b.assembleDescriptive(e, source)
 	// The package ships the XSDs the METS documents point at and those the
-	// descriptive encoder lists. Each encoder knows its own list. The
+	// metadata model lists. Each knows its own list. The
 	// descriptive list ships for a supplied document too, whatever that
 	// document's own schema-location hint names.
-	schemaFiles, err := schemaFileNodes(slices.Concat(mets.Schemas, b.profile.Encoder.Schemas()))
+	schemaFiles, err := schemaFileNodes(slices.Concat(mets.Schemas, b.profile.Model.Schemas()))
 	if err != nil {
 		return nil, fmt.Errorf("profile %q: %w", b.profile.Name, err)
 	}
@@ -96,13 +96,13 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, source *SourcePackage) {
 	// description, and the producer's identifier it replaces travels as
 	// MEEMOO-LOCAL-ID. Without a swap the document keeps the producer's
 	// identifier as-is (ADR-0012).
-	if s, ok := b.profile.Encoder.(IdentifierSwapper); ok {
+	if s, ok := b.profile.Model.(IdentifierSwapper); ok {
 		e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"] = s.Swap(d, e.Identifier)
 	}
 	e.Description = d
 
 	df := sip.NewFile()
-	df.Name = b.profile.DescriptiveName
+	df.Name = b.profile.DocumentName
 	df.Path = "metadata/descriptive/" + df.Name
 	df.Mime = "text/xml" // rendered, or supplied and read as XML
 	e.DescriptionFile = df
@@ -110,10 +110,10 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, source *SourcePackage) {
 }
 
 // schemaFileNodes declares one graph node per XSD the package ships, sorted
-// so METS emission is deterministic whatever order the encoders list them
-// in, and each name once: the METS list and the descriptive encoder's list
+// so METS emission is deterministic whatever order the lists give them
+// in, and each name once: the METS list and the metadata model's list
 // overlap where two documents point at the same schema. A name the bundle
-// does not hold is a mistake in an encoder's list and is refused here,
+// does not hold is a mistake in one of the lists and is refused here,
 // before any write, rather than landing in the package as an empty file.
 func schemaFileNodes(names []string) ([]*sip.File, error) {
 	xsds := schemas.Get()
@@ -182,13 +182,13 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 			// no-op when the terms carry none; rep-level identity is
 			// optional). The replaced value is not lifted: MEEMOO-LOCAL-ID
 			// is an identifier of the entity.
-			if s, ok := b.profile.Encoder.(IdentifierSwapper); ok {
+			if s, ok := b.profile.Model.(IdentifierSwapper); ok {
 				s.Swap(sr.Description, r.Identifier)
 			}
 			r.Description = sr.Description
 
 			df := sip.NewFile()
-			df.Name = b.profile.DescriptiveName
+			df.Name = b.profile.DocumentName
 			df.Path = "metadata/descriptive/" + df.Name // rep-relative, per File.Path
 			df.Mime = "text/xml"                        // rendered, or supplied and read as XML
 			r.DescriptionFile = df

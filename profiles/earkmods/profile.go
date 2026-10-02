@@ -11,10 +11,10 @@ import (
 // Every other value is eark's. The registry in profiles/ hands it out under
 // the name "eark-mods".
 var Definition = build.Definition{
-	Name:    "eark-mods",
-	Encoder: mods{},
+	Name:  "eark-mods",
+	Model: mods{},
 	// Named after the MODS document it holds.
-	DescriptiveName: "mods.xml",
+	DocumentName: "mods.xml",
 	// No PREMIS, as for eark: RODA drops package PREMIS that does not
 	// describe agents or events.
 	EmitPackagePremis:        false,

@@ -11,8 +11,9 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// dcschema is the encoder for the dc+schema document: it accepts Terms,
-// writes them with Encode, and swaps the entity identifier in. It does not
+// dcschema is Meemoo's dc+schema.org metadata model: it accepts Terms,
+// writes them as a dc+schema document with Encode, and swaps the entity
+// identifier in. It does not
 // implement DocumentFormat, so the engine refuses a supplied
 // document: Meemoo's document must carry the entity identifier the build
 // mints, which Swap writes into the terms.
@@ -21,11 +22,11 @@ type dcschema struct{}
 // IdentifierSwapper is optional to the engine, so a drift in Swap's
 // signature would fail silently; these assertions make it a build error.
 var (
-	_ build.DescriptionEncoder = dcschema{}
-	_ build.IdentifierSwapper  = dcschema{}
+	_ build.MetadataModel     = dcschema{}
+	_ build.IdentifierSwapper = dcschema{}
 )
 
-func (dcschema) Check(d sip.Description) error {
+func (dcschema) ValidateType(d sip.Description) error {
 	if _, ok := d.(Terms); !ok {
 		return fmt.Errorf("descriptive metadata is %T, not Meemoo dc+schema terms (meemoo.Terms)", d)
 	}
@@ -50,7 +51,7 @@ func (dcschema) Encode(w io.Writer, d sip.Description, schemasDir string) error 
 // identifier. The terms hold one identifier slot, so the producer's value
 // is read before the swap overwrites it.
 func (dcschema) Swap(d sip.Description, id string) string {
-	terms := d.(Terms) // Check ran before anything else
+	terms := d.(Terms) // ValidateType ran before anything else
 	local := terms.localIdentifier()
 	terms.setObjectIdentifier(id)
 	return local
