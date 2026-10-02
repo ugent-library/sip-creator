@@ -18,14 +18,16 @@ type folderWalker struct {
 	root       string     // all messages and report keys are relative to it
 	violations Violations // the findings so far
 	vocabulary Vocabulary
-	// document names the file reserved for a supplied descriptive document
-	// and judges its root; nil under a profile that takes rows only.
-	document DocumentFormat
+	// documentName is the file reserved for a supplied descriptive
+	// document and documentFormat judges its root; empty and nil under a
+	// profile that takes rows only.
+	documentName   string
+	documentFormat build.DocumentFormat
 }
 
 // Reserved top-level names. Reserved names inside a representation are
 // a subset. The profile's document name, when it has one, is reserved at
-// both levels too; the vocabulary supplies it (isDocumentName). Every
+// both levels too; Read's Document supplies it (isDocumentName). Every
 // reserved name is ASCII, which NFC normalization never alters, so
 // comparing an unnormalized directory entry name to one is exact.
 const (
@@ -174,7 +176,7 @@ func (w *folderWalker) readRepresentation(dir, repName string) build.SourceRepre
 // profile's supplied descriptive document. Under a profile that takes
 // none, no name is: a dc.xml under basic is content like any other file.
 func (w *folderWalker) isDocumentName(name string) bool {
-	return w.document != nil && name == w.document.DocumentName()
+	return w.documentFormat != nil && name == w.documentName
 }
 
 // expectFile reports whether the entry at src, which has a reserved name,

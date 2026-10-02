@@ -1,7 +1,6 @@
 package input
 
 import (
-	"encoding/xml"
 	"fmt"
 
 	"github.com/ugent-library/sip-creator/sip"
@@ -20,20 +19,6 @@ type Vocabulary interface {
 	// Where the description is a list of terms it keeps the statements'
 	// order, so the index in a *sip.TermError names a statement.
 	Description(statements []Statement) (sip.Description, []error)
-}
-
-// DocumentFormat is the optional part of a Vocabulary whose profile takes
-// a finished document in its format in place of the rows, as the two eark
-// profiles do. Without it no file name is reserved for a document: a
-// dc.xml under basic is content like any other file.
-type DocumentFormat interface {
-	// DocumentName is the file name of the supplied document, dc.xml or
-	// mods.xml: the name the package gives the document too.
-	DocumentName() string
-	// ValidateDocumentRoot returns why root, the document's root element,
-	// is not a document in the profile's format (another element,
-	// namespace or version), as the engine judges it before a build.
-	ValidateDocumentRoot(root xml.StartElement) error
 }
 
 // Statement is one row of a description.csv: one thing the folder states

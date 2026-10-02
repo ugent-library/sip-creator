@@ -1,12 +1,10 @@
 package vocabulary
 
 import (
-	"encoding/xml"
 	"errors"
 	"strings"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/cli/input"
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/eark"
@@ -37,57 +35,6 @@ func TestEveryProfileHasAVocabularyItsModelAccepts(t *testing.T) {
 	}
 	if _, ok := For("nope"); ok {
 		t.Error("an unregistered name has a vocabulary")
-	}
-}
-
-// A vocabulary takes a supplied document exactly when its profile's
-// metadata model judges one, and names the file the package gives the
-// document: the two eark profiles do, basic does not. A vocabulary on one side only
-// would reserve a name the build refuses, or refuse a name the build takes.
-func TestDocumentFormatsMatchTheirModels(t *testing.T) {
-	for _, name := range profiles.Names() {
-		def, _ := profiles.Get(name)
-		vocab, _ := For(name)
-		_, modelTakes := def.Model.(build.DocumentFormat)
-		docFormat, vocabularyTakes := vocab.(input.DocumentFormat)
-		if modelTakes != vocabularyTakes {
-			t.Errorf("profile %q: its metadata model takes a supplied document: %v; its vocabulary: %v", name, modelTakes, vocabularyTakes)
-			continue
-		}
-		if vocabularyTakes && docFormat.DocumentName() != def.DocumentName {
-			t.Errorf("profile %q: document name %q, want the package's %q", name, docFormat.DocumentName(), def.DocumentName)
-		}
-	}
-}
-
-var (
-	simpledcRoot = xml.StartElement{Name: xml.Name{Local: "simpledc"}}
-	modsRoot     = xml.StartElement{
-		Name: xml.Name{Space: "http://www.loc.gov/mods/v3", Local: "mods"},
-		Attr: []xml.Attr{{Name: xml.Name{Local: "version"}, Value: "3.7"}},
-	}
-)
-
-// Each document format accepts its own root and refuses the other's, as
-// its metadata model does.
-func TestDocumentFormatsJudgeTheRoot(t *testing.T) {
-	tests := []struct {
-		name             string
-		format           input.DocumentFormat
-		accepts, refuses xml.StartElement
-	}{
-		{"eark", Eark{}, simpledcRoot, modsRoot},
-		{"eark-mods", EarkMods{}, modsRoot, simpledcRoot},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.format.ValidateDocumentRoot(tt.accepts); err != nil {
-				t.Errorf("refused its own standard's root: %v", err)
-			}
-			if err := tt.format.ValidateDocumentRoot(tt.refuses); err == nil {
-				t.Error("accepted another standard's root")
-			}
-		})
 	}
 }
 

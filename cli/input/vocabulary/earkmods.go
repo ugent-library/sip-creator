@@ -1,7 +1,6 @@
 package vocabulary
 
 import (
-	"encoding/xml"
 	"fmt"
 	"strings"
 
@@ -19,8 +18,6 @@ import (
 // only: a record's copies reach the package through the library's record
 // or a supplied mods.xml.
 type EarkMods struct{}
-
-var _ input.DocumentFormat = EarkMods{}
 
 // placement is what the vocabulary knows about one key: where its value
 // goes in the record, whether the key takes a language tag, and how often
@@ -96,16 +93,4 @@ func (EarkMods) Description(statements []input.Statement) (sip.Description, []er
 		key.fill(&record, s)
 	}
 	return record, errs
-}
-
-// DocumentName is the file name of a supplied MODS document: mods.xml, the
-// name the package gives the document.
-func (EarkMods) DocumentName() string {
-	return earkmods.Definition.DocumentName
-}
-
-// ValidateDocumentRoot returns why root is not a mods:mods document
-// declaring MODS 3.7, as the eark-mods profile's metadata model judges it.
-func (EarkMods) ValidateDocumentRoot(root xml.StartElement) error {
-	return validateDocumentRoot(earkmods.Definition, root)
 }

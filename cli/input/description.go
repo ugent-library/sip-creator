@@ -38,11 +38,11 @@ func (w *folderWalker) description(rowsPath, documentPath string, packageLevel b
 // violateMissingDescription records that the package level describes
 // nothing, naming the file or files the profile accepts.
 func (w *folderWalker) violateMissingDescription() {
-	if w.document == nil {
+	if w.documentFormat == nil {
 		w.violate("descriptive rows are missing: every package folder needs a description.csv describing the content (input specification §3)")
 		return
 	}
-	w.violate("descriptive metadata is missing: every package folder needs a description.csv or a %s describing the content (input specification §3)", w.document.DocumentName())
+	w.violate("descriptive metadata is missing: every package folder needs a description.csv or a %s describing the content (input specification §3)", w.documentName)
 }
 
 // decodeDescription decodes the description.csv at src into the profile's

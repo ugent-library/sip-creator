@@ -154,10 +154,11 @@ out, folds the CLI's own row type into `sip.Term`, and renames what is left.
 
 `Eark.DocumentName` and `Eark.ValidateDocumentRoot` (and the same pair on `EarkMods`)
 only forward to the definition's file name and to the model's `build.DocumentFormat`.
-`cli/profile.go` already holds the definition, so it builds the document half from it
-and passes it to `input.Read` as a value: the file name and the model's
-`build.DocumentFormat`, or nothing for a profile whose model takes no supplied
-document. `input.DocumentFormat` goes away, and the file name is written in one place.
+The CLI already holds the definition, so it passes the document half to `input.Read`
+as a value, `input.Document{Name: def.DocumentName, Model: def.Model}`; `Read`
+reserves the name and reads a supplied document only when the model implements
+`build.DocumentFormat`, and the zero `Document` takes none. `input.DocumentFormat`
+goes away, and the file name is written in one place.
 `cli/input` still imports no profile package and takes no `build.Definition`
 ([ADR-0023](../decisions/0023-cli-input-one-package.md)); `check` still needs no
 configuration (ADR-0010).

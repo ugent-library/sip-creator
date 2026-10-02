@@ -53,7 +53,7 @@ var createCmd = &cobra.Command{
 			contentCategory = cfg.ContentCategory
 		}
 
-		source, err := input.Read(args[0], vocabulary)
+		source, err := input.Read(args[0], vocabulary, input.Document{Name: def.DocumentName, Model: def.Model})
 		if err != nil {
 			return reportViolations(cmd, args[0], err)
 		}

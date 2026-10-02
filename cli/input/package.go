@@ -20,13 +20,14 @@ import (
 // Read walks and validates the folder at root against the input
 // specification and returns the source package it holds, the value the
 // builder takes. vocabulary is the profile's: it says what the rows of a
-// description.csv mean. Where the library has a rule for what Read reads
+// description.csv mean. document is the profile's descriptive document,
+// which a folder may supply in place of the rows. Where the library has a rule for what Read reads
 // (a description's Validate and ValidateRequired, the metadata model's
 // check of a supplied document's root), Read runs that same rule and
-// reports its findings with file and line. Every MUST violation is collected and
-// returned together as a Violations error; when the error is non-nil the
-// returned source package is incomplete and must not be built.
-func Read(root string, vocabulary Vocabulary) (*build.SourcePackage, error) {
+// reports its findings with file and line. Every MUST violation is
+// collected and returned together as a Violations error; when the error is
+// non-nil the returned source package is incomplete and must not be built.
+func Read(root string, vocabulary Vocabulary, document Document) (*build.SourcePackage, error) {
 	if vocabulary == nil {
 		return nil, errors.New("no vocabulary: pass the profile's vocabulary, which says what the rows of description.csv mean")
 	}
@@ -43,10 +44,10 @@ func Read(root string, vocabulary Vocabulary) (*build.SourcePackage, error) {
 	}
 
 	w := &folderWalker{root: abs, vocabulary: vocabulary}
-	// A vocabulary whose profile takes a supplied document says so by
-	// implementing DocumentFormat; under any other, no file name is the
-	// document's.
-	w.document, _ = vocabulary.(DocumentFormat)
+	if format, ok := document.Model.(build.DocumentFormat); ok {
+		w.documentName = document.Name
+		w.documentFormat = format
+	}
 	source := w.read()
 	if len(w.violations) > 0 {
 		return source, w.violations

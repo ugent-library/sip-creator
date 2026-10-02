@@ -22,12 +22,12 @@ func TestExamplesBuild(t *testing.T) {
 			if !ok {
 				t.Fatalf("profile %q has no vocabulary", name)
 			}
-			source, err := input.Read(filepath.Join("..", "..", "..", "examples", name), vocab)
+			def, _ := profiles.Get(name)
+			source, err := input.Read(filepath.Join("..", "..", "..", "examples", name), vocab, input.Document{Name: def.DocumentName, Model: def.Model})
 			if err != nil {
 				t.Fatalf("reading the example: %v", err)
 			}
 
-			def, _ := profiles.Get(name)
 			def, err = def.WithSubmitter("Example Organization", "OR-0000000")
 			if err != nil {
 				t.Fatalf("WithSubmitter() error = %v", err)
