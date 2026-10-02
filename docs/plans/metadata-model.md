@@ -99,8 +99,7 @@ Renames only; no change in behavior or output.
 
 Stays as it is: `build.DocumentFormat`, `build.IdentifierSwapper`, `Encode`, `Schemas`,
 the implementation types (`dcschema`, `simpledc`, `mods`, already named after their
-model), `sip.Description` and the description types, and
-`MetsDeclaration.DescriptiveMDType` (METS's own term, used where the METS is written).
+model), and `sip.Description` and the description types.
 
 Touches `build/`, the three profile packages, `cli/input/vocabulary`, the README's
 library section, `build/example_test.go`, CLAUDE.md and `sip-creator-design.md`. The
@@ -118,10 +117,15 @@ kinds of value, so they go different ways.
   dmdSec declares MODS 3.7 over a document of another version, which CSIP forbids and
   which no check in this repository catches. A profile written outside the module
   (ADR-0022) can pair `simpledc{}` with `MDTYPE="MODS"` without an error. The model
-  gets a method returning its label (`MDType() (mdType, version string)`), and the
-  engine copies it into the `MetsDeclaration` it hands the METS encoder, so the label
-  cannot disagree with the document. `MetsDeclaration` keeps the two fields: it stays
-  the data the METS templates read.
+  gets two methods, `ModelType()` and `ModelTypeVersion()`, named for the model
+  rather than after the METS attributes, and the assembler sets them on the
+  descriptive file node (`sip.File.MDType` and `MDTypeVersion`, the METS side,
+  which keeps METS's names), at the package and in each representation, where the
+  dmdSec's mdRef reads them next to the file's `Mime`. `MetsDeclaration` loses
+  `DescriptiveMDType` and `DescriptiveMDTypeVersion` and holds the profile's METS
+  values only, so a profile has no field in which to set another model's label.
+  (Review chose this over keeping the fields on `MetsDeclaration` and having the
+  engine overwrite them, which left a field a profile could set and see ignored.)
 - **The file name is a convention of the package.** `dc+schema.xml` is set by the
   Meemoo spec; `dc.xml` and `mods.xml` are choices of the eark profiles. It stays on
   `Definition` as `DocumentName` (step 1).

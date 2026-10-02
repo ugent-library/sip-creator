@@ -23,11 +23,6 @@ type MetsDeclaration struct {
 	// OtherContentInformationType is mets/@csip:OTHERCONTENTINFORMATIONTYPE,
 	// rendered only when set.
 	OtherContentInformationType string
-	// DescriptiveMDType is the dmdSec mdRef @MDTYPE.
-	DescriptiveMDType string
-	// DescriptiveMDTypeVersion is the dmdSec mdRef @MDTYPEVERSION, rendered
-	// only when set.
-	DescriptiveMDTypeVersion string
 	// RecordStatus is metsHdr/@RECORDSTATUS (SIP3), rendered in the package
 	// METS only, and only when set: the E-ARK SIP spec defines an absent
 	// status as equal to NEW.

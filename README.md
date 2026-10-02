@@ -427,9 +427,11 @@ a Go package with three parts:
   `ValidateRequired` are the rules of your standard;
 * a metadata model implementing `build.MetadataModel`: `ValidateType`, which refuses a
   description of another type, `Encode`, which writes the document (the profiles here
-  use `text/template`), and `Schemas`, the list of XSDs the document points at;
+  use `text/template`), `Schemas`, the list of XSDs the document points at, and
+  `ModelType` and `ModelTypeVersion`, which name the model as the METS dmdSec types
+  the document (`MDTYPE` and `MDTYPEVERSION`);
 * an exported `build.Definition` naming the model, the document's file name and the
-  METS values (`sip.MetsDeclaration`: profile URL, content typing, `MDTYPE`). The
+  METS values (`sip.MetsDeclaration`: profile URL, content typing, agents). The
   model type itself can stay unexported.
 
 Hand that definition to `build.New` as above. The XSDs a model lists must be ones

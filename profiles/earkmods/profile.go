@@ -26,11 +26,9 @@ var Definition = build.Definition{
 		// The version-pinned profile URL: commons-ip's SIP2 check for
 		// spec 2.2.0 compares against this exact value (its error
 		// message misleadingly prints the unversioned URL).
-		ProfileURL:               "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
-		Type:                     "Mixed", // CSIP content-category vocabulary; --content-category and SIP_CONTENT_CATEGORY override it
-		ContentInformationType:   "MIXED", // package METS value; RODA reads it as the AIP type
-		DescriptiveMDType:        "MODS",
-		DescriptiveMDTypeVersion: "3.7",
+		ProfileURL:             "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
+		Type:                   "Mixed", // CSIP content-category vocabulary; --content-category and SIP_CONTENT_CATEGORY override it
+		ContentInformationType: "MIXED", // package METS value; RODA reads it as the AIP type
 		// Only the software agent; WithSubmitter appends the
 		// submitting organization.
 		Agents: []sip.Agent{

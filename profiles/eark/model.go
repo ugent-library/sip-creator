@@ -57,6 +57,17 @@ func (simpledc) Encode(w io.Writer, d sip.Description, schemasDir string) error 
 	return err
 }
 
+// ModelType types the document as DC.
+func (simpledc) ModelType() string {
+	return "DC"
+}
+
+// ModelTypeVersion names the SimpleDC20021212 shape the template writes,
+// which RODA renders natively.
+func (simpledc) ModelTypeVersion() string {
+	return "SimpleDC20021212"
+}
+
 // Schemas lists the bundled XSD file names the simpledc document points
 // at: dc.xsd alone. Its own import of xml.xsd is an absolute W3C URL, not
 // a file next to it, so nothing else needs to ship.

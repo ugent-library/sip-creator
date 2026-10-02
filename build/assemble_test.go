@@ -638,6 +638,28 @@ func TestAssembleDeclaresPackageValues(t *testing.T) {
 	}
 }
 
+// Both descriptive file nodes, the package's and a representation's, carry
+// the dmdSec label of the profile's metadata model.
+func TestAssembleLabelsDescriptionFilesWithTheModel(t *testing.T) {
+	b, in, _ := newTestBuilder(t, earkDef(t))
+	in.Description = identityTerms()
+	in.Representations[0].Description = eark.Terms{{Key: "rights", Value: "CC BY 4.0"}}
+
+	pkg, err := b.Assemble(in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	for name, df := range map[string]*sip.File{
+		"package":        pkg.Root.DescriptionFile,
+		"representation": pkg.Root.Representations[0].DescriptionFile,
+	} {
+		if df.MDType != "DC" || df.MDTypeVersion != "SimpleDC20021212" {
+			t.Errorf("%s descriptive file labeled %q/%q, want the Simple DC model's DC/SimpleDC20021212",
+				name, df.MDType, df.MDTypeVersion)
+		}
+	}
+}
+
 // The eark profile keeps the producer's identifier in the descriptive
 // terms, at both levels, and lifts no MEEMOO-LOCAL-ID onto the entity: its
 // standard has no swap (ADR-0012).

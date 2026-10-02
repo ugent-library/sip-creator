@@ -41,6 +41,17 @@ type MetadataModel interface {
 	// XSD no document references is noise to whoever reads the package
 	// later.
 	Schemas() []string
+	// ModelType names the model as METS types a descriptive document, a
+	// value of the METS MDTYPE vocabulary such as DC or MODS. With
+	// ModelTypeVersion it describes the document Encode writes and a
+	// supplied document must match, so it belongs to the model, not to the
+	// profile's METS values: a profile cannot pair a model with another
+	// model's type.
+	ModelType() string
+	// ModelTypeVersion names the version of the model the document
+	// follows, as METS records it in MDTYPEVERSION, such as 3.7 for MODS;
+	// empty when the model has no version to name.
+	ModelTypeVersion() string
 }
 
 // IdentifierSwapper is the optional part of a MetadataModel whose

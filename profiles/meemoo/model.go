@@ -57,6 +57,18 @@ func (dcschema) Swap(d sip.Description, id string) string {
 	return local
 }
 
+// ModelType types the dc+schema document as DC: Meemoo's model is built
+// on Dublin Core terms.
+func (dcschema) ModelType() string {
+	return "DC"
+}
+
+// ModelTypeVersion is empty: the model is Meemoo's own, and no Dublin Core
+// version names it.
+func (dcschema) ModelTypeVersion() string {
+	return ""
+}
+
 // Schemas lists the bundled XSD file names the dc+schema document points
 // at, plus what those import by relative path: Meemoo's
 // descriptive_basic.xsd imports dc.xsd, dcterms.xsd, edtf.xsd and

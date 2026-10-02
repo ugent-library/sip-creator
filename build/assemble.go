@@ -101,12 +101,23 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, source *SourcePackage) {
 	}
 	e.Description = d
 
-	df := sip.NewFile()
-	df.Name = b.profile.DocumentName
-	df.Path = "metadata/descriptive/" + df.Name
-	df.Mime = "text/xml" // rendered, or supplied and read as XML
+	df := b.descriptionFile()
 	e.DescriptionFile = df
 	b.logger.Info("created a descriptive file", slog.String("id", df.Identifier))
+}
+
+// descriptionFile declares the node for a descriptive document, the
+// package's or a representation's: the same name and path under the
+// metadata/descriptive/ of its level, and the type and version of the
+// profile's metadata model, which the METS dmdSec declares.
+func (b *Builder) descriptionFile() *sip.File {
+	df := sip.NewFile()
+	df.Name = b.profile.DocumentName
+	df.Path = "metadata/descriptive/" + df.Name // relative to the METS of its level, per File.Path
+	df.Mime = "text/xml"                        // rendered, or supplied and read as XML
+	df.MDType = b.profile.Model.ModelType()
+	df.MDTypeVersion = b.profile.Model.ModelTypeVersion()
+	return df
 }
 
 // schemaFileNodes declares one graph node per XSD the package ships, sorted
@@ -187,10 +198,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 			}
 			r.Description = sr.Description
 
-			df := sip.NewFile()
-			df.Name = b.profile.DocumentName
-			df.Path = "metadata/descriptive/" + df.Name // rep-relative, per File.Path
-			df.Mime = "text/xml"                        // rendered, or supplied and read as XML
+			df := b.descriptionFile()
 			r.DescriptionFile = df
 			b.logger.Info("created a representation descriptive file", slog.String("id", df.Identifier))
 		}

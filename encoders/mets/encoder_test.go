@@ -12,9 +12,9 @@ import (
 
 // descriptiveGraph returns the smallest package and representation whose
 // METS documents carry a dmdSec: a root entity with a descriptive file
-// node, and one representation with its own, both declaring decl. The
-// graph is built by assigning fields, as the assembler does.
-func descriptiveGraph(t *testing.T, decl sip.MetsDeclaration) (*sip.Package, *sip.Representation) {
+// node, and one representation with its own, both labeled mdType and
+// version. The graph is built by assigning fields, as the assembler does.
+func descriptiveGraph(t *testing.T, mdType, version string) (*sip.Package, *sip.Representation) {
 	t.Helper()
 	generated := func(path string) *sip.File {
 		f := sip.NewFile()
@@ -22,39 +22,44 @@ func descriptiveGraph(t *testing.T, decl sip.MetsDeclaration) (*sip.Package, *si
 		f.Mime = "text/xml"
 		return f
 	}
+	descriptive := func() *sip.File {
+		f := generated("metadata/descriptive/descriptive.xml")
+		f.MDType, f.MDTypeVersion = mdType, version
+		return f
+	}
 
 	pkg := sip.NewPackage(t.TempDir(), "")
-	pkg.Declaration = &decl
+	pkg.Declaration = &sip.MetsDeclaration{}
 	pkg.Root = sip.NewEntity()
-	pkg.Root.DescriptionFile = generated("metadata/descriptive/descriptive.xml")
+	pkg.Root.DescriptionFile = descriptive()
 
 	rep := sip.NewRepresentation("master")
 	rep.Label = "master"
-	rep.Declaration = &decl
+	rep.Declaration = &sip.MetsDeclaration{}
 	rep.Entity = pkg.Root
-	rep.DescriptionFile = generated("metadata/descriptive/descriptive.xml")
+	rep.DescriptionFile = descriptive()
 	rep.MetsFile = generated("representations/master/METS.xml") // the package METS references it
 	pkg.Root.Representations = []*sip.Representation{rep}
 	return pkg, rep
 }
 
-// The dmdSec mdRef types the descriptive document from the declaration, in
+// The dmdSec mdRef types the descriptive document from its file node, in
 // the package METS and the representation METS alike: MDTYPE always,
-// MDTYPEVERSION only when the declaration carries one (basic declares
-// none; eark and eark-mods do), never as an empty attribute.
+// MDTYPEVERSION only when the node carries one (Meemoo's model declares
+// none; Simple DC and MODS do), never as an empty attribute.
 func TestDmdSecTyping(t *testing.T) {
 	cases := []struct {
-		name    string
-		decl    sip.MetsDeclaration
-		want    string
-		wantNot string
+		name            string
+		mdType, version string
+		want            string
+		wantNot         string
 	}{
-		{"type and version", sip.MetsDeclaration{DescriptiveMDType: "MODS", DescriptiveMDTypeVersion: "3.7"}, `MDTYPE="MODS" MDTYPEVERSION="3.7" xlink:type`, ""},
-		{"type alone", sip.MetsDeclaration{DescriptiveMDType: "DC"}, `MDTYPE="DC" xlink:type`, "MDTYPEVERSION"},
+		{"type and version", "MODS", "3.7", `MDTYPE="MODS" MDTYPEVERSION="3.7" xlink:type`, ""},
+		{"type alone", "DC", "", `MDTYPE="DC" xlink:type`, "MDTYPEVERSION"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			pkg, rep := descriptiveGraph(t, c.decl)
+			pkg, rep := descriptiveGraph(t, c.mdType, c.version)
 			documents := map[string]func(io.Writer) error{
 				"package":        func(w io.Writer) error { return EncodePackage(w, pkg) },
 				"representation": func(w io.Writer) error { return EncodeRepresentation(w, rep) },
@@ -72,7 +77,7 @@ func TestDmdSecTyping(t *testing.T) {
 					t.Errorf("%s METS dmdSec lacks %s\n%s", name, c.want, out)
 				}
 				if c.wantNot != "" && strings.Contains(out, c.wantNot) {
-					t.Errorf("%s METS dmdSec carries %s, which the declaration leaves empty\n%s", name, c.wantNot, out)
+					t.Errorf("%s METS dmdSec carries %s, which the file node leaves empty\n%s", name, c.wantNot, out)
 				}
 			}
 		})
@@ -84,7 +89,7 @@ func TestDmdSecTyping(t *testing.T) {
 // character, so a hint for https://dilcis.eu/... does not apply to the
 // https://DILCIS.eu/... namespace that CSIP and the SIP specification use.
 func TestSchemaLocationNamesDeclaredNamespaces(t *testing.T) {
-	pkg, rep := descriptiveGraph(t, sip.MetsDeclaration{DescriptiveMDType: "DC"})
+	pkg, rep := descriptiveGraph(t, "DC", "")
 	documents := map[string]func(io.Writer) error{
 		"package":        func(w io.Writer) error { return EncodePackage(w, pkg) },
 		"representation": func(w io.Writer) error { return EncodeRepresentation(w, rep) },

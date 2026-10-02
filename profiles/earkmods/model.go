@@ -28,8 +28,8 @@ var (
 )
 
 // The namespace and version the template declares and a supplied document
-// must declare. The METS dmdSec declares the document as MODS 3.7, so a
-// document of another version would contradict it.
+// must declare. ModelTypeVersion gives the METS dmdSec the same version,
+// so a document of another version would contradict it.
 const (
 	namespace = "http://www.loc.gov/mods/v3"
 	version   = "3.7"
@@ -69,6 +69,17 @@ func (mods) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	}
 	_, err := w.Write(buf.Bytes())
 	return err
+}
+
+// ModelType types the document as MODS.
+func (mods) ModelType() string {
+	return "MODS"
+}
+
+// ModelTypeVersion is the MODS version the template writes and a supplied
+// document must declare.
+func (mods) ModelTypeVersion() string {
+	return version
 }
 
 // Schemas lists the bundled XSD file names the MODS document points at:

@@ -34,6 +34,13 @@ type File struct {
 	// the characterization report's assertion, the known type of a generated
 	// document, or application/octet-stream when the type is unknown.
 	Mime string
+	// MDType is the mdRef/@MDTYPE the METS dmdSec declares for a
+	// descriptive document, a value of the METS vocabulary such as DC or
+	// MODS; empty for every other file.
+	MDType string
+	// MDTypeVersion is the descriptive document's mdRef/@MDTYPEVERSION,
+	// rendered only when set.
+	MDTypeVersion string
 	// Representation is the owning representation; nil for package-level
 	// files.
 	Representation *Representation

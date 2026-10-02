@@ -72,7 +72,7 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
   {{- with .DescriptionFile }}
 
   <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
-    <mdRef LOCTYPE="URL" MDTYPE="{{ $.Declaration.DescriptiveMDType }}"{{ with $.Declaration.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
+    <mdRef LOCTYPE="URL" MDTYPE="{{ .MDType }}"{{ with .MDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
   </dmdSec>
   {{- end }}
   {{- with .PremisFiles }}
@@ -157,7 +157,7 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
   <!-- ref to descriptive metadata about IE -->
   {{- range .DescriptiveFiles }}
   <dmdSec ID="{{ .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
-    <mdRef LOCTYPE="URL" MDTYPE="{{ $.Declaration.DescriptiveMDType }}"{{ with $.Declaration.DescriptiveMDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
+    <mdRef LOCTYPE="URL" MDTYPE="{{ .MDType }}"{{ with .MDTypeVersion }} MDTYPEVERSION="{{ . }}"{{ end }} xlink:type="simple" xlink:href="{{ encode .Path }}" MIMETYPE="{{ .Mime }}" SIZE="{{ .Size }}" CREATED="{{ .Created }}" CHECKSUM="{{ .Checksum }}" CHECKSUMTYPE="MD5" />
   </dmdSec>
   {{- end }}
   {{- with .PremisFiles }}
