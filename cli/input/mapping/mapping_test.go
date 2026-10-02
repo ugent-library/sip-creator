@@ -6,38 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/cli/input"
-	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
 )
-
-// Every registered profile has a mapping, and each builds what its
-// profile's metadata model accepts: Read hands terms to the one, the
-// engine runs ValidateType on the result. A profile without a mapping
-// could not read a folder.
-func TestEveryProfileHasAMappingItsModelAccepts(t *testing.T) {
-	for _, name := range profiles.Names() {
-		def, _ := profiles.Get(name)
-		mapper, ok := For(name)
-		if !ok {
-			t.Errorf("profile %q has no mapping", name)
-			continue
-		}
-		description, errs := mapper.Map(nil)
-		if len(errs) != 0 {
-			t.Errorf("profile %q: no terms, yet errors %v", name, errs)
-		}
-		if err := def.Model.ValidateType(description); err != nil {
-			t.Errorf("profile %q: ValidateType refuses what its mapping built: %v", name, err)
-		}
-	}
-	if _, ok := For("nope"); ok {
-		t.Error("an unregistered name has a mapping")
-	}
-}
 
 var terms = []sip.Term{
 	{Key: "identifier", Value: "ID-1"},
@@ -45,31 +18,65 @@ var terms = []sip.Term{
 	{Key: "title", Lang: "en", Value: "Cat"},
 }
 
-// Under basic and eark the terms become the profile's terms unchanged, in
-// order, so a term error's index names the row.
-func TestTermsKeepTheirOrder(t *testing.T) {
-	tests := []struct {
-		name   string
-		mapper input.Mapper
-		terms  func(sip.Description) ([]sip.Term, bool)
-	}{
-		{"basic", Meemoo{}, func(d sip.Description) ([]sip.Term, bool) { tt, ok := d.(meemoo.Terms); return tt, ok }},
-		{"eark", Eark{}, func(d sip.Description) ([]sip.Term, bool) { tt, ok := d.(eark.Terms); return tt, ok }},
+// Under eark the terms become Simple Dublin Core terms unchanged, in order:
+// the keys are the elements' own names.
+func TestEarkKeepsTheTerms(t *testing.T) {
+	description, errs := Eark{}.Map(terms)
+	if len(errs) != 0 {
+		t.Fatalf("errors %v for terms the mapping places", errs)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			description, errs := tt.mapper.Map(terms)
-			if len(errs) != 0 {
-				t.Fatalf("errors %v for terms every mapping places", errs)
-			}
-			got, ok := tt.terms(description)
-			if !ok {
-				t.Fatalf("description is %T", description)
-			}
-			if !slices.Equal(got, terms) {
-				t.Errorf("terms = %+v, want %+v", got, terms)
-			}
-		})
+	got, ok := description.(eark.Terms)
+	if !ok {
+		t.Fatalf("description is %T, want eark.Terms", description)
+	}
+	if !slices.Equal([]sip.Term(got), terms) {
+		t.Errorf("terms = %+v, want %+v", got, terms)
+	}
+}
+
+// Under basic each key becomes the element Meemoo's specification names, in
+// order, with the language and value unchanged. An unknown key is a
+// TermError at its index, and the term stays as written, so the terms keep
+// their indexes.
+func TestMeemooMapsKeysToElements(t *testing.T) {
+	in := []sip.Term{
+		{Key: "identifier", Value: "ID-1"},
+		{Key: "coverage", Value: "Gent"},
+		{Key: "ispartof", Lang: "nl", Value: "Reeks"},
+		{Key: "artmedium", Value: "olieverf"},
+	}
+	description, errs := Meemoo{}.Map(in)
+	want := meemoo.Terms{
+		{Key: "dcterms:identifier", Value: "ID-1"},
+		{Key: "coverage", Value: "Gent"},
+		{Key: "dcterms:isPartOf", Lang: "nl", Value: "Reeks"},
+		{Key: "schema:artMedium", Value: "olieverf"},
+	}
+	got, ok := description.(meemoo.Terms)
+	if !ok {
+		t.Fatalf("description is %T, want meemoo.Terms", description)
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("terms = %+v, want %+v", got, want)
+	}
+	if len(errs) != 1 {
+		t.Fatalf("errors = %v, want one for the unknown key", errs)
+	}
+	te, ok := errors.AsType[*sip.TermError](errs[0])
+	if !ok || te.Index != 1 || !strings.Contains(te.Err.Error(), `unknown key "coverage"`) {
+		t.Errorf("error = %v, want the unknown key at index 1", errs[0])
+	}
+}
+
+// Every element the Meemoo mapping names is one the library's terms
+// accept, so the key table cannot point at an element Meemoo's profile
+// does not have.
+func TestMeemooElementsAreAccepted(t *testing.T) {
+	for key, element := range meemooElements {
+		term := meemoo.Terms{{Key: element, Lang: "nl", Value: "x"}}
+		if err := term.Validate(); err != nil {
+			t.Errorf("key %q maps to %q, which the terms refuse: %v", key, element, err)
+		}
 	}
 }
 

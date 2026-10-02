@@ -107,22 +107,20 @@ type termsDoc struct {
 	SchemasDir string
 }
 
-// elementName is the element a key emits, and the template's one guard:
-// the element name is the only thing the template interpolates raw, and
-// only a name the vocabulary lists may reach the output. Returning an
-// error aborts the render.
-func elementName(key string) (string, error) {
-	row, ok := vocabularyByKey[key]
-	if !ok {
-		return "", fmt.Errorf("unknown key %q: not in the descriptive vocabulary", key)
+// elementName is the template's one guard: the element name is the only
+// thing the template interpolates raw, and only a name the table lists may
+// reach the output. Returning an error aborts the render.
+func elementName(element string) (string, error) {
+	if _, ok := elementsByName[element]; !ok {
+		return "", fmt.Errorf("unknown element %q: not an element of Meemoo's basic content profile", element)
 	}
-	return row.Element, nil
+	return element, nil
 }
 
-// xsiType is the xsi:type the vocabulary declares for the key's element:
-// how the Meemoo document types its EDTF dates ("" for untyped elements).
-func xsiType(key string) string {
-	return vocabularyByKey[key].XSIType
+// xsiType is the xsi:type the table declares for the element: how the
+// Meemoo document types its EDTF dates ("" for untyped elements).
+func xsiType(element string) string {
+	return elementsByName[element].XSIType
 }
 
 // escapeXML makes a data value safe as XML character data or a quoted

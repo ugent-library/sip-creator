@@ -246,6 +246,27 @@ The key spelling would move with it, so the inconsistency stays, and a system th
 automates ingest into Meemoo would lose its library route. ADR-0022 already treats
 all three in-tree profiles as reference implementations.
 
+Decided while implementing (2026-10-02):
+
+- **Findings name the element.** The library's findings under `basic` name the
+  element (`dcterms:created is required but missing`), not the CSV key; the input
+  specification's `basic` key table gains an element column so an operator can find
+  the key. Translating element names back to keys in the CLI was rejected: more code
+  and a second method on `Mapper` only to keep the old wording. The library's repeat
+  finding no longer quotes CSV syntax: "repeat it only with a distinct language on
+  each value".
+- **Refused terms keep their place.** `mapping.Meemoo` keeps a term with an unknown
+  key as written and reports it, so the terms keep their indexes and later findings
+  name the right row. `Read` reports one finding per term: the library's verdict on a
+  term the mapper refused is dropped.
+- **The profile to mapper table moves to `cli/profile.go`.** `mapping.For` and its
+  table imported `cli/input` for `input.Mapper`, so `cli/input`'s tests could not use
+  the real mappings and read folders through stand-ins that passed keys through.
+  Without that import the tests use `mapping.Meemoo` and `mapping.Eark` directly.
+  `TestExamplesBuild` and the test that every profile has a mapping move to
+  `cli/profile_test.go`.
+- `profiles/meemoo/vocabulary.go` becomes `elements.go`.
+
 No generated package changes. The library's API changes for `meemoo.Terms` callers.
 An ADR records the rule and supersedes ADR-0021's "in a flat world the key is the
 model, so the profile package keeps its key table" and ADR-0011's "the element a key

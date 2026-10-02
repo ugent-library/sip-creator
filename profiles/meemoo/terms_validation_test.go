@@ -15,24 +15,24 @@ func TestValidateCardinality(t *testing.T) {
 		want  string // "" means conformant; else substring of the error
 	}{
 		{"single-valued repeated", Terms{
-			{Key: "identifier", Value: "A"},
-			{Key: "identifier", Value: "B"},
+			{Key: "dcterms:identifier", Value: "A"},
+			{Key: "dcterms:identifier", Value: "B"},
 		}, "exactly one"},
 		{"per-language same language", Terms{
-			{Key: "abstract", Lang: "nl", Value: "een"},
-			{Key: "abstract", Lang: "nl", Value: "twee"},
+			{Key: "dcterms:abstract", Lang: "nl", Value: "een"},
+			{Key: "dcterms:abstract", Lang: "nl", Value: "twee"},
 		}, `language "nl"`},
 		{"per-language distinct languages", Terms{
-			{Key: "title", Lang: "nl", Value: "Kat"},
-			{Key: "title", Lang: "en", Value: "Cat"},
+			{Key: "dcterms:title", Lang: "nl", Value: "Kat"},
+			{Key: "dcterms:title", Lang: "en", Value: "Cat"},
 		}, ""},
 		{"per-language untagged repeat", Terms{
-			{Key: "abstract", Value: "een"},
-			{Key: "abstract", Value: "twee"},
-		}, "distinct language tags"},
+			{Key: "dcterms:abstract", Value: "een"},
+			{Key: "dcterms:abstract", Value: "twee"},
+		}, "a distinct language on each value"},
 		{"repeatable repeated", Terms{
-			{Key: "subject", Lang: "nl", Value: "katten"},
-			{Key: "subject", Lang: "nl", Value: "testdata"},
+			{Key: "dcterms:subject", Lang: "nl", Value: "katten"},
+			{Key: "dcterms:subject", Lang: "nl", Value: "testdata"},
 		}, ""},
 	}
 	for _, tt := range tests {
@@ -55,10 +55,10 @@ func TestValidateCardinality(t *testing.T) {
 // key.
 func TestValidateCardinalityJoinsFindings(t *testing.T) {
 	terms := Terms{
-		{Key: "created", Value: "1913"},
-		{Key: "created", Value: "1914"},
-		{Key: "rights", Lang: "nl", Value: "a"},
-		{Key: "rights", Lang: "nl", Value: "b"},
+		{Key: "dcterms:created", Value: "1913"},
+		{Key: "dcterms:created", Value: "1914"},
+		{Key: "dcterms:rights", Lang: "nl", Value: "a"},
+		{Key: "dcterms:rights", Lang: "nl", Value: "b"},
 	}
 	err := terms.validateCardinality()
 	if err == nil {
@@ -77,9 +77,9 @@ func TestValidateCardinalityJoinsFindings(t *testing.T) {
 // the terms from rows can point at the row.
 func TestTermsValidateReportsEveryTerm(t *testing.T) {
 	terms := Terms{
-		{Key: "identifier", Value: "A"},
+		{Key: "dcterms:identifier", Value: "A"},
 		{Key: "titel", Value: "x"},
-		{Key: "subject", Value: " "},
+		{Key: "dcterms:subject", Value: " "},
 	}
 	err := terms.Validate()
 	if err == nil {
@@ -106,8 +106,8 @@ func TestTermsValidateReportsEveryTerm(t *testing.T) {
 // missing one is a finding naming the key.
 func TestValidateRequired(t *testing.T) {
 	err := (Terms{
-		{Key: "identifier", Value: "A"},
-		{Key: "title", Lang: "nl", Value: "Kat"},
+		{Key: "dcterms:identifier", Value: "A"},
+		{Key: "dcterms:title", Lang: "nl", Value: "Kat"},
 	}).ValidateRequired()
 	if err == nil {
 		t.Fatal("want the missing keys reported, got none")
@@ -117,22 +117,22 @@ func TestValidateRequired(t *testing.T) {
 			t.Errorf("findings do not include %q: %v", want, err)
 		}
 	}
-	err = (Terms{{Key: "title", Lang: "nl", Value: "Kat"}}).ValidateRequired()
+	err = (Terms{{Key: "dcterms:title", Lang: "nl", Value: "Kat"}}).ValidateRequired()
 	if err == nil || !strings.Contains(err.Error(), "identifier is required") {
 		t.Errorf("missing identifier not reported: %v", err)
 	}
-	complete := append(testTerms(), sip.Term{Key: "description", Lang: "nl", Value: "Een album"})
+	complete := append(testTerms(), sip.Term{Key: "dcterms:description", Lang: "nl", Value: "Een album"})
 	if err := complete.ValidateRequired(); err != nil {
 		t.Fatalf("complete terms refused: %v", err)
 	}
 }
 
-// Every required key is one the table lists, so a typo in the list fails
-// here rather than at the first build.
-func TestRequiredKeysAreInTheVocabulary(t *testing.T) {
-	for _, key := range required {
-		if _, ok := vocabularyByKey[key]; !ok {
-			t.Errorf("required key %q is not in the vocabulary", key)
+// Every required element is one the table lists, so a typo in the list
+// fails here rather than at the first build.
+func TestRequiredElementsAreInTheTable(t *testing.T) {
+	for _, element := range required {
+		if _, ok := elementsByName[element]; !ok {
+			t.Errorf("required element %q is not in the table", element)
 		}
 	}
 }
@@ -144,16 +144,16 @@ func TestValidateRequiredLang(t *testing.T) {
 		lang  string
 		want  string // "" means conformant; else substring of the error
 	}{
-		{"no rule", Terms{{Key: "title", Lang: "fr", Value: "x"}}, "", ""},
+		{"no rule", Terms{{Key: "dcterms:title", Lang: "fr", Value: "x"}}, "", ""},
 		{"tagged without required language", Terms{
-			{Key: "title", Lang: "fr", Value: "Chat"},
+			{Key: "dcterms:title", Lang: "fr", Value: "Chat"},
 		}, "nl", "title carries"},
 		{"required language among others", Terms{
-			{Key: "title", Lang: "fr", Value: "Chat"},
-			{Key: "title", Lang: "nl", Value: "Kat"},
+			{Key: "dcterms:title", Lang: "fr", Value: "Chat"},
+			{Key: "dcterms:title", Lang: "nl", Value: "Kat"},
 		}, "nl", ""},
 		{"untagged values carry no rule", Terms{
-			{Key: "creator", Value: "Jane Doe"},
+			{Key: "dcterms:creator", Value: "Jane Doe"},
 		}, "nl", ""},
 	}
 	for _, tt := range tests {

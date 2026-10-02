@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ugent-library/sip-creator/build"
+	"github.com/ugent-library/sip-creator/cli/input/mapping"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
@@ -21,7 +22,7 @@ func readCSV(t *testing.T, csv string) (*build.SourcePackage, error) {
 		"description.csv": csv,
 		"scan.tiff":       "x",
 	})
-	return Read(root, meemooMapper{}, meemooDocument)
+	return Read(root, mapping.Meemoo{}, meemooDocument)
 }
 
 func TestRowsHappy(t *testing.T) {
@@ -46,17 +47,17 @@ func TestRowsHappy(t *testing.T) {
 	}
 
 	want := meemoo.Terms{
-		{Key: "identifier", Value: "example-0001"},
-		{Key: "title", Lang: "nl", Value: "Fotoalbum 2026"},
-		{Key: "description", Lang: "nl", Value: "Album met 48 foto's, zwart-wit"},
-		{Key: "created", Value: "1913"},
-		{Key: "subject", Lang: "nl", Value: "voorbeelden"},
-		{Key: "subject", Lang: "nl", Value: "fotografie"},
-		{Key: "ispartof", Value: "Collectie Één"},
-		{Key: "rightsholder", Value: "Example Organization"},
-		{Key: "abstract", Lang: "nl", Value: "Een fotoalbum"},
-		{Key: "abstract", Lang: "en", Value: "A photo album"},
-		{Key: "artmedium", Lang: "nl", Value: "zilvergelatinedruk"},
+		{Key: "dcterms:identifier", Value: "example-0001"},
+		{Key: "dcterms:title", Lang: "nl", Value: "Fotoalbum 2026"},
+		{Key: "dcterms:description", Lang: "nl", Value: "Album met 48 foto's, zwart-wit"},
+		{Key: "dcterms:created", Value: "1913"},
+		{Key: "dcterms:subject", Lang: "nl", Value: "voorbeelden"},
+		{Key: "dcterms:subject", Lang: "nl", Value: "fotografie"},
+		{Key: "dcterms:isPartOf", Value: "Collectie Één"},
+		{Key: "dcterms:rightsHolder", Value: "Example Organization"},
+		{Key: "dcterms:abstract", Lang: "nl", Value: "Een fotoalbum"},
+		{Key: "dcterms:abstract", Lang: "en", Value: "A photo album"},
+		{Key: "schema:artMedium", Lang: "nl", Value: "zilvergelatinedruk"},
 	}
 	got, ok := pkg.Description.(meemoo.Terms)
 	if !ok || len(got) != len(want) {
@@ -90,7 +91,7 @@ func TestRowsViolations(t *testing.T) {
 		{"duplicate identifier", minimalCSV + "identifier,ID-2\n", "exactly one"},
 		{"single-valued key repeated", minimalCSV + "created,1913\ncreated,1914\n", "exactly one"},
 		{"per-language key repeated in one language", minimalCSV + "abstract[nl],a\nabstract[nl],b\n", `language "nl"`},
-		{"per-language key repeated untagged", minimalCSV + "abstract,a\nabstract,b\n", "distinct language tags"},
+		{"per-language key repeated untagged", minimalCSV + "abstract,a\nabstract,b\n", "a distinct language on each value"},
 		{"bad lang tag", minimalCSV + "subject[nl!],x\n", "not a language tag"},
 	}
 	for _, tt := range tests {
@@ -108,7 +109,7 @@ func TestRowsLineNumbers(t *testing.T) {
 	assertViolation(t, err, `description.csv line 4: unknown key "titel"`)
 	_, err = readCSV(t, minimalCSV+"subject[nl!],x\nsubject,\nsubject[],x\n")
 	assertViolation(t, err, `description.csv line 6: "nl!" is not a language tag`)
-	assertViolation(t, err, "description.csv line 7: subject has an empty value")
+	assertViolation(t, err, "description.csv line 7: dcterms:subject has an empty value")
 	assertViolation(t, err, `description.csv line 8: malformed language tag in "subject[]"`)
 }
 
@@ -146,12 +147,12 @@ func TestRepresentationDescriptionNeedsNoIdentity(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	pkg, err := Read(root, meemooMapper{}, meemooDocument)
+	pkg, err := Read(root, mapping.Meemoo{}, meemooDocument)
 	if err != nil {
 		t.Fatalf("rep-level description.csv must not require identifier/title: %v", err)
 	}
 	got, ok := pkg.Representations[0].Description.(meemoo.Terms)
-	if !ok || len(got) != 1 || got[0].Key != "license" {
+	if !ok || len(got) != 1 || got[0].Key != "dcterms:license" {
 		t.Errorf("rep descriptive = %#v", pkg.Representations[0].Description)
 	}
 }
@@ -163,7 +164,7 @@ func TestRepresentationDescriptionDuplicateIdentifier(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nidentifier,A\nidentifier,B\n",
 	})
-	_, err := Read(root, meemooMapper{}, meemooDocument)
+	_, err := Read(root, mapping.Meemoo{}, meemooDocument)
 	assertViolation(t, err, "exactly one")
 }
 
@@ -254,7 +255,7 @@ func TestRowsProfileDecidesTheKeys(t *testing.T) {
 		"description.csv": minimalDC + "coverage,Gent\n",
 		"scan.tiff":       "x",
 	}
-	pkg, err := Read(writeTree(t, tree), earkMapper{}, earkDocument)
+	pkg, err := Read(writeTree(t, tree), mapping.Eark{}, earkDocument)
 	if err != nil {
 		t.Fatalf("Read under eark: %v", err)
 	}
@@ -263,7 +264,7 @@ func TestRowsProfileDecidesTheKeys(t *testing.T) {
 		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Description)
 	}
 
-	_, err = Read(writeTree(t, tree), meemooMapper{}, meemooDocument)
+	_, err = Read(writeTree(t, tree), mapping.Meemoo{}, meemooDocument)
 	assertViolation(t, err, `unknown key "coverage"`)
 }
 
@@ -275,7 +276,7 @@ func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	_, err := Read(root, earkMapper{}, earkDocument)
+	_, err := Read(root, mapping.Eark{}, earkDocument)
 	assertViolation(t, err, `unknown key "abstract"`)
 	assertViolation(t, err, `unknown key "license"`)
 }

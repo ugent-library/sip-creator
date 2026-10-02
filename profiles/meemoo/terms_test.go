@@ -10,11 +10,11 @@ import (
 
 func testTerms() Terms {
 	return Terms{
-		{Key: "identifier", Value: "example-0001"},
-		{Key: "title", Lang: "nl", Value: "Fotoalbum 2026"},
-		{Key: "created", Value: "1913"},
-		{Key: "subject", Lang: "nl", Value: "R&D <scans>"},
-		{Key: "artmedium", Lang: "nl", Value: "zilvergelatinedruk"},
+		{Key: "dcterms:identifier", Value: "example-0001"},
+		{Key: "dcterms:title", Lang: "nl", Value: "Fotoalbum 2026"},
+		{Key: "dcterms:created", Value: "1913"},
+		{Key: "dcterms:subject", Lang: "nl", Value: "R&D <scans>"},
+		{Key: "schema:artMedium", Lang: "nl", Value: "zilvergelatinedruk"},
 	}
 }
 
@@ -81,20 +81,20 @@ func TestValidateTerm(t *testing.T) {
 		term sip.Term
 		want string // "" means valid; else substring of the error
 	}{
-		{"valid plain", sip.Term{Key: "title", Value: "x"}, ""},
-		{"valid schema.org key with lang", sip.Term{Key: "artform", Lang: "nl-BE", Value: "x"}, ""},
-		{"valid abstract", sip.Term{Key: "abstract", Value: "x"}, ""},
-		{"typo", sip.Term{Key: "titel", Value: "x"}, "unknown key"},
+		{"valid plain", sip.Term{Key: "dcterms:title", Value: "x"}, ""},
+		{"valid schema.org element with lang", sip.Term{Key: "schema:artform", Lang: "nl-BE", Value: "x"}, ""},
+		{"valid abstract", sip.Term{Key: "dcterms:abstract", Value: "x"}, ""},
+		{"typo", sip.Term{Key: "dcterms:titel", Value: "x"}, "unknown element"},
 		// a real DCMI term Meemoo's profile excludes
-		{"dcterms outside the profile", sip.Term{Key: "accrualpolicy", Value: "x"}, "unknown key"},
+		{"dcterms outside the profile", sip.Term{Key: "dcterms:accrualPolicy", Value: "x"}, "unknown element"},
 		// schema.org is not an open passthrough
-		{"schema outside the profile", sip.Term{Key: "duration", Value: "x"}, "unknown key"},
-		// a key is the plain word, never the element name it emits
-		{"element name as key", sip.Term{Key: "dcterms:title", Value: "x"}, "unknown key"},
-		// keys are lowercase; case folding is the rows file's convention
-		{"capitalized", sip.Term{Key: "Title", Value: "x"}, "unknown key"},
-		{"bad lang", sip.Term{Key: "title", Lang: "nl!", Value: "x"}, "not a language tag"},
-		{"empty value", sip.Term{Key: "subject", Value: "  "}, "empty value"},
+		{"schema outside the profile", sip.Term{Key: "schema:duration", Value: "x"}, "unknown element"},
+		// a key of description.csv is not an element name
+		{"csv key as element", sip.Term{Key: "title", Value: "x"}, "unknown element"},
+		// element names are exact; case folding is the rows file's convention
+		{"wrong case", sip.Term{Key: "dcterms:ispartof", Value: "x"}, "unknown element"},
+		{"bad lang", sip.Term{Key: "dcterms:title", Lang: "nl!", Value: "x"}, "not a language tag"},
+		{"empty value", sip.Term{Key: "dcterms:subject", Value: "  "}, "empty value"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -114,8 +114,8 @@ func TestValidateTerm(t *testing.T) {
 
 func TestTermsValidateDuplicateIdentifier(t *testing.T) {
 	terms := Terms{
-		{Key: "identifier", Value: "A"},
-		{Key: "identifier", Value: "B"},
+		{Key: "dcterms:identifier", Value: "A"},
+		{Key: "dcterms:identifier", Value: "B"},
 	}
 	err := terms.Validate()
 	if err == nil || !strings.Contains(err.Error(), "exactly one") {
@@ -151,8 +151,8 @@ func TestTermsIdentifierSwap(t *testing.T) {
 // with every finding reported at once and named by key.
 func TestTermsValidateAppliesMeemooRules(t *testing.T) {
 	terms := append(testTerms(),
-		sip.Term{Key: "created", Value: "1914"},
-		sip.Term{Key: "abstract", Lang: "en", Value: "About"})
+		sip.Term{Key: "dcterms:created", Value: "1914"},
+		sip.Term{Key: "dcterms:abstract", Lang: "en", Value: "About"})
 	err := terms.Validate()
 	if err == nil {
 		t.Fatal("want the repeated created and the abstract without Dutch refused")

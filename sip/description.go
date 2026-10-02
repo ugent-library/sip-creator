@@ -28,16 +28,17 @@ type Description interface {
 	ValidateRequired() error
 }
 
-// Term is one key, an optional language tag, and a value: one line of a
-// description.csv, and one element of a description in a flat metadata
-// model (Dublin Core calls its elements terms). Every model that is a flat
-// list of elements shares this shape; the profile decides which keys
-// exist, which element each one emits, and what rules apply.
+// Term is one key, an optional language tag, and a value: one element of a
+// description in a flat metadata model (Dublin Core calls its elements
+// terms), and the shape of one line of a description.csv. Every model that
+// is a flat list of elements shares this shape; the profile decides which
+// elements exist and what rules apply.
 type Term struct {
-	// Key names the element the term fills, spelled as the input
-	// specification's table spells it: "title", "created", "artmedium".
-	// It is lowercase and carries no prefix; the profile maps it to the
-	// element it emits.
+	// Key names what the term states. In a description it is the
+	// element's name in the model, as the standard spells it:
+	// "dcterms:title" in Meemoo's model, "title" in Simple Dublin Core.
+	// Read from a description.csv it is the key the row spells, until the
+	// profile's mapping turns it into an element.
 	Key string
 	// Lang is the value's language tag; empty when unspecified.
 	Lang string

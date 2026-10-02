@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ugent-library/sip-creator/build"
+	"github.com/ugent-library/sip-creator/cli/input/mapping"
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
@@ -39,7 +40,7 @@ func TestSourcePackageEquivalence(t *testing.T) {
 		"description.csv":                  csv,
 		"representations/master/scan.tiff": "essence bytes",
 	})
-	pkg, err := Read(root, meemooMapper{}, meemooDocument)
+	pkg, err := Read(root, mapping.Meemoo{}, meemooDocument)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -60,10 +61,10 @@ func TestSourcePackageEquivalence(t *testing.T) {
 	}
 	handIn := &build.SourcePackage{
 		Description: meemoo.Terms{
-			{Key: "identifier", Value: "ID-1"},
-			{Key: "title", Value: "Test"},
-			{Key: "description", Lang: "nl", Value: "Testbeschrijving"},
-			{Key: "created", Value: "2026"},
+			{Key: "dcterms:identifier", Value: "ID-1"},
+			{Key: "dcterms:title", Value: "Test"},
+			{Key: "dcterms:description", Lang: "nl", Value: "Testbeschrijving"},
+			{Key: "dcterms:created", Value: "2026"},
 		},
 		Representations: []build.SourceRepresentation{
 			{Name: "master", Files: []build.SourceFile{
@@ -112,7 +113,7 @@ func TestSourcePackageRepresentationWithoutDescriptive(t *testing.T) {
 		"representations/access/scan.jpg":        "access bytes",
 		"representations/master/scan.tiff":       "master bytes",
 	})
-	in, err := Read(root, meemooMapper{}, meemooDocument)
+	in, err := Read(root, mapping.Meemoo{}, meemooDocument)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}

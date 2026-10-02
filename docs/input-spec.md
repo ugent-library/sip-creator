@@ -94,33 +94,33 @@ Under `basic` the file takes the key table below. Under `eark` it takes the fift
 - Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`. Under `basic`, wherever a language-tagged key is used, a Dutch entry (`[nl]`) MUST be among the rows (Meemoo's rule); other languages are welcome alongside, but Dutch must be present. `check` reports a missing Dutch entry.
 - Unknown keys MUST be an error: a typo must not silently drop metadata. Keys are matched case-insensitively (`Title` reads as `title`). The table below lists every key under `basic`; it follows the flat-expressible elements of Meemoo's basic content profile.
 
-Supported keys (plain names; the specialist mapping is in [§7](#7-mapping-to-the-sip-informative-for-specialists)):
+Supported keys, with the element each one states (findings about a whole file, such as a missing required value or a repeat, name the element; the specialist mapping is in [§7](#7-mapping-to-the-sip-informative-for-specialists)):
 
-| key | meaning | repeatable |
-|---|---|---|
-| `identifier` | local catalog/inventory number (required) | no |
-| `title` | title of the work (required) | per-language |
-| `description` | free-text description (required) | per-language |
-| `created` | creation date of the original (year or ISO date) (required) | no |
-| `alternative` | alternative title | yes |
-| `abstract` | summary or abstract | per-language |
-| `creator` | maker of the work (photographer, author, artist) | yes |
-| `contributor` | other contributors | yes |
-| `publisher` | publisher | yes |
-| `issued` | date of issue or publication | no |
-| `available` | date the material became available | no |
-| `subject` | subject keyword | yes |
-| `spatial` | place depicted or covered | yes |
-| `temporal` | period covered | yes |
-| `extent` | extent (e.g. "48 foto's") | no |
-| `language` | language of the content | yes |
-| `type` | kind of work | yes |
-| `ispartof` | collection or series this belongs to | yes |
-| `license` | license on the content | yes |
-| `rights` | rights statement | per-language |
-| `rightsholder` | rights holder | no |
-| `artmedium` | material or medium of an artwork | yes |
-| `artform` | form of an artwork | yes |
+| key | element | meaning | repeatable |
+|---|---|---|---|
+| `identifier` | `dcterms:identifier` | local catalog/inventory number (required) | no |
+| `title` | `dcterms:title` | title of the work (required) | per-language |
+| `description` | `dcterms:description` | free-text description (required) | per-language |
+| `created` | `dcterms:created` | creation date of the original (year or ISO date) (required) | no |
+| `alternative` | `dcterms:alternative` | alternative title | yes |
+| `abstract` | `dcterms:abstract` | summary or abstract | per-language |
+| `creator` | `dcterms:creator` | maker of the work (photographer, author, artist) | yes |
+| `contributor` | `dcterms:contributor` | other contributors | yes |
+| `publisher` | `dcterms:publisher` | publisher | yes |
+| `issued` | `dcterms:issued` | date of issue or publication | no |
+| `available` | `dcterms:available` | date the material became available | no |
+| `subject` | `dcterms:subject` | subject keyword | yes |
+| `spatial` | `dcterms:spatial` | place depicted or covered | yes |
+| `temporal` | `dcterms:temporal` | period covered | yes |
+| `extent` | `dcterms:extent` | extent (e.g. "48 foto's") | no |
+| `language` | `dcterms:language` | language of the content | yes |
+| `type` | `dcterms:type` | kind of work | yes |
+| `ispartof` | `dcterms:isPartOf` | collection or series this belongs to | yes |
+| `license` | `dcterms:license` | license on the content | yes |
+| `rights` | `dcterms:rights` | rights statement | per-language |
+| `rightsholder` | `dcterms:rightsHolder` | rights holder | no |
+| `artmedium` | `schema:artMedium` | material or medium of an artwork | yes |
+| `artform` | `schema:artform` | form of an artwork | yes |
 
 Example:
 

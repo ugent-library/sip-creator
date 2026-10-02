@@ -36,10 +36,10 @@ func fileMD5(t *testing.T, path string) string {
 // basic profile's input; eark tests swap in identityTerms.
 func testDescription() meemoo.Terms {
 	return meemoo.Terms{
-		{Key: "identifier", Value: "local-id-001"},
-		{Key: "title", Lang: "nl", Value: "Catus Testus"},
-		{Key: "description", Lang: "nl", Value: "Een testkat"},
-		{Key: "created", Value: "2026"},
+		{Key: "dcterms:identifier", Value: "local-id-001"},
+		{Key: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
+		{Key: "dcterms:description", Lang: "nl", Value: "Een testkat"},
+		{Key: "dcterms:created", Value: "2026"},
 	}
 }
 
@@ -476,13 +476,13 @@ func TestSourcePackageValidate(t *testing.T) {
 	}{
 		{"no descriptive", func(c *build.SourcePackage) { c.Description = nil }, "no descriptive metadata"},
 		{"invalid term", func(c *build.SourcePackage) {
-			c.Description = append(c.Description.(meemoo.Terms), sip.Term{Key: "titel", Value: "x"})
-		}, "not in the descriptive vocabulary"},
+			c.Description = append(c.Description.(meemoo.Terms), sip.Term{Key: "dcterms:titel", Value: "x"})
+		}, "unknown element"},
 		{"no identifier", func(c *build.SourcePackage) {
-			c.Description = meemoo.Terms{{Key: "title", Value: "x"}}
+			c.Description = meemoo.Terms{{Key: "dcterms:title", Value: "x"}}
 		}, "identifier is required"},
 		{"no title", func(c *build.SourcePackage) {
-			c.Description = meemoo.Terms{{Key: "identifier", Value: "x"}}
+			c.Description = meemoo.Terms{{Key: "dcterms:identifier", Value: "x"}}
 		}, "title is required"},
 		{"no representations", func(c *build.SourcePackage) { c.Representations = nil }, "at least one version"},
 		{"bad name", func(c *build.SourcePackage) { c.Representations[0].Name = "master copy" }, "may only contain"},
@@ -513,8 +513,8 @@ func TestSourcePackageValidate(t *testing.T) {
 			c.ContentCategory = "a<b"
 		}, "cannot be emitted"},
 		{"invalid representation descriptive", func(c *build.SourcePackage) {
-			c.Representations[0].Description = meemoo.Terms{{Key: "titel", Value: "x"}}
-		}, "not in the descriptive vocabulary"},
+			c.Representations[0].Description = meemoo.Terms{{Key: "dcterms:titel", Value: "x"}}
+		}, "unknown element"},
 		{"received premis claims the generated name", func(c *build.SourcePackage) {
 			c.Premis = []build.SourceFile{{Source: "/x/premis.xml", Path: "premis.xml"}}
 		}, "reserved for the generated"},
@@ -545,7 +545,7 @@ func TestSourcePackageValidate(t *testing.T) {
 func TestAssembleRepresentationDescriptive(t *testing.T) {
 	b, in, _ := newTestBuilder(t, basicDef(t))
 	in.Representations[0].Description = meemoo.Terms{
-		{Key: "license", Value: "publiek domein"},
+		{Key: "dcterms:license", Value: "publiek domein"},
 	}
 
 	pkg, err := b.Assemble(in)
@@ -568,7 +568,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	// swapped in, mirroring the package-level behavior.
 	b2, in2, _ := newTestBuilder(t, basicDef(t))
 	in2.Representations[0].Description = meemoo.Terms{
-		{Key: "identifier", Value: "rep-local-1"},
+		{Key: "dcterms:identifier", Value: "rep-local-1"},
 	}
 	pkg2, err := b2.Assemble(in2)
 	if err != nil {
@@ -596,16 +596,17 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 // the Meemoo package's own business, and the eark profiles never swap.
 func identifierTerm(d sip.Description) string {
 	var terms []sip.Term
+	key := "identifier"
 	switch v := d.(type) {
 	case meemoo.Terms:
-		terms = v
+		terms, key = v, "dcterms:identifier"
 	case eark.Terms:
 		terms = v
 	case earkmods.Record:
 		return v.Identifier
 	}
 	for _, term := range terms {
-		if term.Key == "identifier" {
+		if term.Key == key {
 			return term.Value
 		}
 	}
@@ -977,7 +978,7 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 		want string
 	}{
 		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description is required"},
-		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "identifier", Value: "x"}}, "title is required"},
+		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "dcterms:identifier", Value: "x"}}, "title is required"},
 		{"eark without an identifier", earkDef(t), eark.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
 		{"eark-mods without a title", earkmodsDef(t), earkmods.Record{Identifier: "x"}, "title is required"},
 	}

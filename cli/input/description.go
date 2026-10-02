@@ -65,7 +65,20 @@ func (w *folderWalker) decodeDescription(src string, packageLevel bool) sip.Desc
 	}
 	description, mapErrs := w.mapper.Map(terms)
 	errs = append(errs, mapErrs...)
-	errs = append(errs, flatten(description.Validate())...)
+	// A term the mapper refused is reported once: the description's rules
+	// would judge the same term again, as written.
+	refused := map[int]bool{}
+	for _, err := range mapErrs {
+		if te, ok := errors.AsType[*sip.TermError](err); ok {
+			refused[te.Index] = true
+		}
+	}
+	for _, err := range flatten(description.Validate()) {
+		if te, ok := errors.AsType[*sip.TermError](err); ok && refused[te.Index] {
+			continue
+		}
+		errs = append(errs, err)
+	}
 	if packageLevel {
 		errs = append(errs, flatten(description.ValidateRequired())...)
 	}

@@ -9,17 +9,17 @@ package meemoo
 import "github.com/ugent-library/sip-creator/sip"
 
 // Terms is an ordered list of terms in Meemoo's dc+schema model, each
-// keyed by the plain key the input specification's table lists ("title",
-// "created", "artmedium"); the order the producer gave them in is
-// preserved through to the emitted XML. Any producer constructs
-// it directly (the CLI's rows-file decoder is one); Validate holds the
-// rules on what a term may say.
+// keyed by the element it states, named as Meemoo's specification names
+// it ("dcterms:title", "dcterms:created", "schema:artMedium"); the order
+// the producer gave them in is preserved through to the emitted XML. Any
+// producer constructs it directly (the CLI's mapping of description.csv
+// is one); Validate holds the rules on what a term may say.
 type Terms []sip.Term
 
-// has reports whether any term states the given key.
-func (t Terms) has(key string) bool {
+// has reports whether any term states the given element.
+func (t Terms) has(element string) bool {
 	for _, term := range t {
-		if term.Key == key {
+		if term.Key == element {
 			return true
 		}
 	}
@@ -30,7 +30,7 @@ func (t Terms) has(key string) bool {
 // local catalog/inventory number ("" when absent).
 func (t Terms) localIdentifier() string {
 	for _, term := range t {
-		if term.Key == "identifier" {
+		if term.Key == identifierElement {
 			return term.Value
 		}
 	}
@@ -43,7 +43,7 @@ func (t Terms) localIdentifier() string {
 // first.
 func (t Terms) setObjectIdentifier(id string) {
 	for i, term := range t {
-		if term.Key == "identifier" {
+		if term.Key == identifierElement {
 			t[i].Value = id
 			return
 		}

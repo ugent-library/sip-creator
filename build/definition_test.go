@@ -55,8 +55,8 @@ func identityRecord() earkmods.Record {
 // the four keys the basic profile requires.
 func meemooIdentityTerms() meemoo.Terms {
 	return meemoo.Terms{
-		{Key: "identifier", Value: "local-id-001"},
-		{Key: "title", Lang: "nl", Value: "Catus Testus"},
+		{Key: "dcterms:identifier", Value: "local-id-001"},
+		{Key: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
 	}
 }
 
@@ -66,20 +66,20 @@ func meemooIdentityTerms() meemoo.Terms {
 func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {
 	_, in, _ := newTestBuilder(t, basicDef(t))
 	in.Description = append(testDescription(),
-		sip.Term{Key: "abstract", Lang: "nl", Value: "een"},
-		sip.Term{Key: "abstract", Lang: "nl", Value: "twee"})
+		sip.Term{Key: "dcterms:abstract", Lang: "nl", Value: "een"},
+		sip.Term{Key: "dcterms:abstract", Lang: "nl", Value: "twee"})
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), "more than once") {
 		t.Errorf("repeated abstract accepted: %v", err)
 	}
 
 	_, in, _ = newTestBuilder(t, basicDef(t))
-	in.Description = append(testDescription(), sip.Term{Key: "subject", Lang: "en", Value: "cats"})
+	in.Description = append(testDescription(), sip.Term{Key: "dcterms:subject", Lang: "en", Value: "cats"})
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `"nl"`) {
 		t.Errorf("subject without a Dutch entry accepted: %v", err)
 	}
 
 	_, in, _ = newTestBuilder(t, basicDef(t))
-	in.Representations[0].Description = meemoo.Terms{{Key: "title", Lang: "en", Value: "Cats"}}
+	in.Representations[0].Description = meemoo.Terms{{Key: "dcterms:title", Lang: "en", Value: "Cats"}}
 	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `representation "master"`) {
 		t.Errorf("representation title without a Dutch entry accepted: %v", err)
 	}
