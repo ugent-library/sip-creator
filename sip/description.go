@@ -28,18 +28,20 @@ type Description interface {
 	ValidateRequired() error
 }
 
-// Term is one descriptive statement: a key from the profile's vocabulary,
-// an optional language tag, and the value. Every descriptive standard
-// that is a flat list of elements shares this shape; the profile decides
-// which keys exist, which element each one emits, and what rules apply.
+// Term is one key, an optional language tag, and a value: one line of a
+// description.csv, and one element of a description in a flat metadata
+// model (Dublin Core calls its elements terms). Every model that is a flat
+// list of elements shares this shape; the profile decides which keys
+// exist, which element each one emits, and what rules apply.
 type Term struct {
-	// Key names what the statement says, spelled as the input
-	// specification's table spells it: "title", "created", "artmedium". It is lowercase and carries no prefix; the profile maps
-	// it to the element it emits.
+	// Key names the element the term fills, spelled as the input
+	// specification's table spells it: "title", "created", "artmedium".
+	// It is lowercase and carries no prefix; the profile maps it to the
+	// element it emits.
 	Key string
 	// Lang is the value's language tag; empty when unspecified.
 	Lang string
-	// Value is the statement's text.
+	// Value is the term's text.
 	Value string
 }
 

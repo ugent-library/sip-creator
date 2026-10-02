@@ -169,36 +169,37 @@ func TestRepresentationDescriptionDuplicateIdentifier(t *testing.T) {
 
 // BOM, CRLF, RFC 4180 quoting (a value spanning two lines included), a
 // capitalized key and a language tag, all in one file.
-func TestParseStatements(t *testing.T) {
+func TestParseTerms(t *testing.T) {
 	data := "\ufeffKey,Value\r\n" +
 		"Identifier,ID-1\r\n" +
 		"description[nl],\"two\r\nlines, quoted\"\r\n" +
 		"title,T\r\n"
 
-	statements, errs, err := parseStatements([]byte(data))
+	terms, lines, errs, err := parseTerms([]byte(data))
 	if err != nil || len(errs) > 0 {
-		t.Fatalf("parseStatements: err %v, findings %v", err, errs)
+		t.Fatalf("parseTerms: err %v, findings %v", err, errs)
 	}
-	want := []Statement{
-		{Key: "identifier", Value: "ID-1", Line: 2},
-		{Key: "description", Lang: "nl", Value: "two\nlines, quoted", Line: 3},
-		{Key: "title", Value: "T", Line: 5},
+	want := []sip.Term{
+		{Key: "identifier", Value: "ID-1"},
+		{Key: "description", Lang: "nl", Value: "two\nlines, quoted"},
+		{Key: "title", Value: "T"},
 	}
-	if len(statements) != len(want) {
-		t.Fatalf("got %d statements, want %d: %+v", len(statements), len(want), statements)
+	wantLines := []int{2, 3, 5}
+	if len(terms) != len(want) || len(lines) != len(wantLines) {
+		t.Fatalf("got %d terms on %d lines, want %d: %+v", len(terms), len(lines), len(want), terms)
 	}
 	for i, w := range want {
-		if statements[i] != w {
-			t.Errorf("statement %d = %#v, want %#v", i, statements[i], w)
+		if terms[i] != w || lines[i] != wantLines[i] {
+			t.Errorf("term %d = %#v on line %d, want %#v on line %d", i, terms[i], lines[i], w, wantLines[i])
 		}
 	}
 }
 
-func TestParseStatementsFindings(t *testing.T) {
+func TestParseTermsFindings(t *testing.T) {
 	tests := []struct {
 		name     string
 		data     string
-		wantLine int    // line of the *StatementError; 0 for a finding about the file
+		wantLine int    // line of the *rowError; 0 for a finding about the file
 		want     string // substring of the finding
 	}{
 		{"missing header", "identifier,ID-1\n", 0, `header "key,value"`},
@@ -212,17 +213,17 @@ func TestParseStatementsFindings(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, errs, err := parseStatements([]byte(tt.data))
+			_, _, errs, err := parseTerms([]byte(tt.data))
 			if err != nil {
-				t.Fatalf("parseStatements: %v", err)
+				t.Fatalf("parseTerms: %v", err)
 			}
 			assertFinding(t, errs, tt.want)
 			if tt.wantLine == 0 {
 				return
 			}
-			se, ok := errors.AsType[*StatementError](errs[0])
-			if !ok || se.Line != tt.wantLine {
-				t.Errorf("finding %v, want a *StatementError at line %d", errs[0], tt.wantLine)
+			re, ok := errors.AsType[*rowError](errs[0])
+			if !ok || re.line != tt.wantLine {
+				t.Errorf("finding %v, want a *rowError at line %d", errs[0], tt.wantLine)
 			}
 		})
 	}
@@ -230,16 +231,16 @@ func TestParseStatementsFindings(t *testing.T) {
 
 // A first row that is data, not the header, is still parsed, so its own
 // findings are reported next to the missing header.
-func TestParseStatementsMissingHeaderKeepsTheRow(t *testing.T) {
-	statements, errs, _ := parseStatements([]byte("identifier,ID-1\n"))
+func TestParseTermsMissingHeaderKeepsTheRow(t *testing.T) {
+	terms, lines, errs, _ := parseTerms([]byte("identifier,ID-1\n"))
 	assertFinding(t, errs, `header "key,value"`)
-	if len(statements) != 1 || statements[0].Key != "identifier" || statements[0].Line != 1 {
-		t.Errorf("statements = %+v, want the first row kept", statements)
+	if len(terms) != 1 || terms[0].Key != "identifier" || lines[0] != 1 {
+		t.Errorf("terms = %+v on lines %v, want the first row kept", terms, lines)
 	}
 }
 
-func TestParseStatementsNotUTF8(t *testing.T) {
-	_, _, err := parseStatements([]byte("key,value\ntitle,\xff\xfe\n"))
+func TestParseTermsNotUTF8(t *testing.T) {
+	_, _, _, err := parseTerms([]byte("key,value\ntitle,\xff\xfe\n"))
 	if err == nil || !strings.Contains(err.Error(), "not valid UTF-8") {
 		t.Fatalf("want the content refused as not UTF-8, got %v", err)
 	}
@@ -290,7 +291,7 @@ func TestReadRequiresAVocabulary(t *testing.T) {
 }
 
 // A vocabulary's own errors are reported at the row's line when they are
-// about one statement, or against the file otherwise, next to the
+// about one term, or against the file otherwise, next to the
 // description's rules.
 func TestVocabularyErrorsNameTheLine(t *testing.T) {
 	root := writeTree(t, map[string]string{
@@ -303,15 +304,15 @@ func TestVocabularyErrorsNameTheLine(t *testing.T) {
 	assertViolation(t, err, "identifier is required")
 }
 
-// placesNothing is a vocabulary that refuses every statement at its line,
+// placesNothing is a vocabulary that refuses every term at its index,
 // adds one error about the file, and returns an empty eark description, so
 // the description's own required-keys rule still runs on the result.
 type placesNothing struct{}
 
-func (placesNothing) Description(statements []Statement) (sip.Description, []error) {
+func (placesNothing) Description(terms []sip.Term) (sip.Description, []error) {
 	errs := []error{errors.New("nothing fits")}
-	for _, s := range statements {
-		errs = append(errs, &StatementError{Line: s.Line, Err: fmt.Errorf("no place for %s", s.Key)})
+	for i, t := range terms {
+		errs = append(errs, &sip.TermError{Index: i, Err: fmt.Errorf("no place for %s", t.Key)})
 	}
 	return eark.Terms(nil), errs
 }

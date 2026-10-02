@@ -14,7 +14,7 @@ import (
 )
 
 // meemooVocab and earkVocab are the tests' vocabularies for the two flat
-// profiles: the statements as stated, wrapped as the profile's terms. The
+// profiles: the terms as read, taken as the profile's terms. The
 // CLI's own vocabularies in cli/input/vocabulary import this package, so
 // its tests cannot use them. meemooDocument and earkDocument are the two
 // profiles' documents, as the CLI passes them: eark takes a dc.xml, judged
@@ -22,28 +22,20 @@ import (
 // it; basic takes none.
 type meemooVocab struct{}
 
-func (meemooVocab) Description(statements []Statement) (sip.Description, []error) {
-	return meemoo.Terms(terms(statements)), nil
+func (meemooVocab) Description(terms []sip.Term) (sip.Description, []error) {
+	return meemoo.Terms(terms), nil
 }
 
 type earkVocab struct{}
 
-func (earkVocab) Description(statements []Statement) (sip.Description, []error) {
-	return eark.Terms(terms(statements)), nil
+func (earkVocab) Description(terms []sip.Term) (sip.Description, []error) {
+	return eark.Terms(terms), nil
 }
 
 var (
 	meemooDocument = Document{Name: meemoo.Definition.DocumentName, Model: meemoo.Definition.Model}
 	earkDocument   = Document{Name: eark.Definition.DocumentName, Model: eark.Definition.Model}
 )
-
-func terms(statements []Statement) []sip.Term {
-	out := make([]sip.Term, len(statements))
-	for i, s := range statements {
-		out[i] = sip.Term{Key: s.Key, Lang: s.Lang, Value: s.Value}
-	}
-	return out
-}
 
 // minimalCSV is the smallest description.csv that passes check: Meemoo's
 // basic content profile requires these four keys. minimalDC is its eark

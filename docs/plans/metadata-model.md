@@ -176,6 +176,13 @@ configuration (ADR-0010).
   title) become `TermError`s, which is what they describe.
 - `input.Statement`, `input.StatementError` and the `terms` copy in
   `cli/input/vocabulary/vocabulary.go` are removed.
+- The parser reports a row that did not become a term with the unexported
+  `rowError` that representations.csv already used, now in `cli/input/csv.go`.
+- `EarkMods` no longer knows lines, so its repeat findings drop the back
+  reference: "identifier appears more than once (first on line 2)" becomes
+  "identifier appears more than once; give exactly one value", still reported at
+  the repeated row's line. Meemoo's repeat findings never named the first row
+  either.
 - `sip.Term`'s doc comment drops "a key from the profile's vocabulary" and
   "statement": a term is a key, an optional language tag and a value.
 

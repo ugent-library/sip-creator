@@ -15,10 +15,9 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Terms is an ordered list of descriptive statements in Simple Dublin
-// Core, each keyed by one of the fifteen element names ("title",
-// "coverage"); the order the producer stated them in is preserved through
-// to the emitted XML. A term's language tag is accepted so producers can
+// Terms is an ordered list of terms in Simple Dublin Core, each keyed by
+// one of the fifteen element names ("title", "coverage"); the order the
+// producer gave them in is preserved through to the emitted XML. A term's language tag is accepted so producers can
 // state it, but not emitted: the simpledc document carries no xml:lang.
 // Validate holds the rules on what a term may say.
 type Terms []sip.Term

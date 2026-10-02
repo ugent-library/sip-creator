@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"unicode/utf8"
 )
 
@@ -20,3 +21,14 @@ func newCSVReader(data []byte) (*csv.Reader, error) {
 	cr.FieldsPerRecord = -1
 	return cr, nil
 }
+
+// rowError is a finding about one row of a CSV in the input folder: the
+// row's line, counted from one, and what is wrong with it.
+type rowError struct {
+	line int
+	err  error
+}
+
+func (e *rowError) Error() string { return fmt.Sprintf("line %d: %v", e.line, e.err) }
+
+func (e *rowError) Unwrap() error { return e.err }

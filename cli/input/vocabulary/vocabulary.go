@@ -1,5 +1,5 @@
 // Package vocabulary holds the profiles' vocabularies for the input
-// folder: one input.Vocabulary per profile, giving the statements of a
+// folder: one input.Vocabulary per profile, giving the terms of a
 // description.csv their meaning under it and building the profile's
 // description from them. It is the one place in the CLI that imports the
 // profile packages for descriptive metadata; Read in cli/input imports
@@ -11,7 +11,6 @@ import (
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
-	"github.com/ugent-library/sip-creator/sip"
 )
 
 // byProfile pairs each profile, by the name the registry in profiles/
@@ -28,15 +27,4 @@ var byProfile = map[string]input.Vocabulary{
 func For(name string) (input.Vocabulary, bool) {
 	v, ok := byProfile[name]
 	return v, ok
-}
-
-// terms turns statements into terms, for the profiles whose description is
-// a list of them, in statement order, so a term error's index names the
-// row.
-func terms(statements []input.Statement) []sip.Term {
-	out := make([]sip.Term, len(statements))
-	for i, s := range statements {
-		out[i] = sip.Term{Key: s.Key, Lang: s.Lang, Value: s.Value}
-	}
-	return out
 }

@@ -204,13 +204,3 @@ func parseRepresentationsHeader(header []string) (repColumns, error) {
 	}
 	return cols, errors.Join(errs...)
 }
-
-// rowError is a finding about one row of a representations.csv.
-type rowError struct {
-	line int
-	err  error
-}
-
-func (e *rowError) Error() string { return fmt.Sprintf("line %d: %v", e.line, e.err) }
-
-func (e *rowError) Unwrap() error { return e.err }

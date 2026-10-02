@@ -8,10 +8,10 @@ package meemoo
 
 import "github.com/ugent-library/sip-creator/sip"
 
-// Terms is an ordered list of descriptive statements in the dc+schema
-// vocabulary, each keyed by the plain key the input specification's table
-// lists ("title", "created", "artmedium"); the order the producer stated
-// them in is preserved through to the emitted XML. Any producer constructs
+// Terms is an ordered list of terms in Meemoo's dc+schema model, each
+// keyed by the plain key the input specification's table lists ("title",
+// "created", "artmedium"); the order the producer gave them in is
+// preserved through to the emitted XML. Any producer constructs
 // it directly (the CLI's rows-file decoder is one); Validate holds the
 // rules on what a term may say.
 type Terms []sip.Term

@@ -47,7 +47,7 @@ func (w *folderWalker) violateMissingDescription() {
 
 // decodeDescription decodes the description.csv at src into the profile's
 // description and records a violation per broken rule: the row syntax,
-// the vocabulary's placement of each statement, and the description's own
+// the vocabulary's placement of each term, and the description's own
 // rules, with ValidateRequired at the package level only.
 func (w *folderWalker) decodeDescription(src string, packageLevel bool) sip.Description {
 	rel := w.rel(src)
@@ -58,50 +58,51 @@ func (w *folderWalker) decodeDescription(src string, packageLevel bool) sip.Desc
 		return nil
 	}
 
-	statements, errs, err := parseStatements(data)
+	terms, lines, errs, err := parseTerms(data)
 	if err != nil {
 		w.violate("%s: %v", rel, err)
 		return nil
 	}
-	description, vocabularyErrs := w.vocabulary.Description(statements)
+	description, vocabularyErrs := w.vocabulary.Description(terms)
 	errs = append(errs, vocabularyErrs...)
 	errs = append(errs, flatten(description.Validate())...)
 	if packageLevel {
 		errs = append(errs, flatten(description.ValidateRequired())...)
 	}
 
-	// A finding about one statement is reported at the row's line: the
-	// vocabulary names the line itself, and the description's rules name
-	// a term's position, which the statements turn back into a line. A
-	// cross-row finding names the key and language, which locates the
-	// rows in a keyed file.
+	// A finding about one row is reported at the row's line: the parser
+	// names the line of a row that did not become a term, and the
+	// vocabulary and the description's rules name a term by its index,
+	// which lines turns back into a line. A cross-row finding names the
+	// key and language, which locates the rows in a keyed file.
 	for _, err := range errs {
-		if se, ok := errors.AsType[*StatementError](err); ok {
-			w.violate("%s line %d: %v", rel, se.Line, se.Err)
+		if re, ok := errors.AsType[*rowError](err); ok {
+			w.violate("%s line %d: %v", rel, re.line, re.err)
 			continue
 		}
-		if te, ok := errors.AsType[*sip.TermError](err); ok && te.Index < len(statements) {
-			w.violate("%s line %d: %v", rel, statements[te.Index].Line, te.Err)
+		if te, ok := errors.AsType[*sip.TermError](err); ok && te.Index < len(lines) {
+			w.violate("%s line %d: %v", rel, lines[te.Index], te.Err)
 			continue
 		}
 		w.violate("%s: %v", rel, err)
 	}
-	if len(statements) == 0 {
+	if len(terms) == 0 {
 		return nil
 	}
 	return description
 }
 
-// parseStatements parses the content of a description.csv: a "key,value"
-// header, then one statement per row of two columns. The errs are findings
-// in the rows: a row that breaks the syntax is reported as a
-// *StatementError and left out, and the rows after it are still read; a
-// CSV syntax error ends the parse, because the reader may not find its
-// place again. err means the content cannot be read as CSV at all.
-func parseStatements(data []byte) (statements []Statement, errs []error, err error) {
+// parseTerms parses the content of a description.csv: a "key,value"
+// header, then one term per row of two columns, with lines[i] the line
+// terms[i] was read from, counted from one. The errs are findings in the
+// rows: a row that breaks the syntax is reported as a *rowError and left
+// out, and the rows after it are still read; a CSV syntax error ends the
+// parse, because the reader may not find its place again. err means the
+// content cannot be read as CSV at all.
+func parseTerms(data []byte) (terms []sip.Term, lines []int, errs []error, err error) {
 	cr, err := newCSVReader(data)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	headerSeen := false
@@ -127,18 +128,19 @@ func parseStatements(data []byte) (statements []Statement, errs []error, err err
 		}
 
 		if len(row) != 2 {
-			errs = append(errs, &StatementError{Line: line, Err: fmt.Errorf("expected exactly two columns (key,value), got %d", len(row))})
+			errs = append(errs, &rowError{line: line, err: fmt.Errorf("expected exactly two columns (key,value), got %d", len(row))})
 			continue
 		}
 
 		key, lang, err := parseKey(row[0])
 		if err != nil {
-			errs = append(errs, &StatementError{Line: line, Err: err})
+			errs = append(errs, &rowError{line: line, err: err})
 			continue
 		}
-		statements = append(statements, Statement{Key: key, Lang: lang, Value: row[1], Line: line})
+		terms = append(terms, sip.Term{Key: key, Lang: lang, Value: row[1]})
+		lines = append(lines, line)
 	}
-	return statements, errs, nil
+	return terms, lines, errs, nil
 }
 
 func isHeaderRow(row []string) bool {

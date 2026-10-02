@@ -1,18 +1,16 @@
 package vocabulary
 
 import (
-	"github.com/ugent-library/sip-creator/cli/input"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
 // Meemoo is the basic profile's vocabulary: the keys of Meemoo's dc+schema
-// table in profiles/meemoo. Each statement becomes one term of
-// meemoo.Terms unchanged; the terms' Validate decides which keys exist and
-// what a statement may say.
+// table in profiles/meemoo. The terms become meemoo.Terms unchanged; their
+// Validate decides which keys exist and what a term may say.
 type Meemoo struct{}
 
-// Description wraps the statements as Meemoo terms in statement order.
-func (Meemoo) Description(statements []input.Statement) (sip.Description, []error) {
-	return meemoo.Terms(terms(statements)), nil
+// Description takes the terms as Meemoo terms, in order.
+func (Meemoo) Description(terms []sip.Term) (sip.Description, []error) {
+	return meemoo.Terms(terms), nil
 }
