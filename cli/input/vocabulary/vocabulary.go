@@ -2,8 +2,8 @@
 // folder: one input.Vocabulary per profile, giving the statements of a
 // description.csv their meaning under it and building the profile's
 // description from them. It is the one place in the CLI that imports the
-// profile packages for descriptive metadata; the reader in cli/input
-// imports none and takes a vocabulary as a value.
+// profile packages for descriptive metadata; Read in cli/input imports
+// none and takes a vocabulary as a value.
 package vocabulary
 
 import (
@@ -34,9 +34,10 @@ func For(name string) (input.Vocabulary, bool) {
 	return v, ok
 }
 
-// checkDocument judges root with the profile's encoder. Only a vocabulary whose profile's encoder takes a supplied document
-// implements input.DocumentVocabulary, so the refusal below is a
-// programming error, not the operator's.
+// checkDocument judges root with the profile's encoder. Only a vocabulary
+// whose profile's encoder takes a supplied document implements
+// input.DocumentVocabulary, so the refusal below is a programming error,
+// not the operator's.
 func checkDocument(def build.Definition, root xml.StartElement) error {
 	checker, ok := def.Encoder.(build.DescriptiveDocumentChecker)
 	if !ok {

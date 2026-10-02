@@ -279,7 +279,7 @@ func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 	assertViolation(t, err, `unknown key "license"`)
 }
 
-// Without a vocabulary the reader cannot say what the rows mean; it is
+// Without a vocabulary Read cannot say what the rows mean; it is
 // refused before the folder is touched.
 func TestReadRequiresAVocabulary(t *testing.T) {
 	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "scan.tiff": "x"})

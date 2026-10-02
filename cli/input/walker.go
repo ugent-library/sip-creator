@@ -118,8 +118,8 @@ func (w *folderWalker) readRepresentations(dir string) []build.SourceRepresentat
 		// The folder-name rule is the library's name rule:
 		// one source of truth for what a representation may be called.
 		if err := build.ValidateRepresentationName(name); err != nil {
-			// Still read the folder: the naming fix shouldn't hide any
-			// findings inside it (collect-all).
+			// Still read the folder, so the problems inside it are
+			// reported in the same run.
 			w.violate("representations/%s: %v", e.Name(), err)
 		}
 		reps = append(reps, w.readRepresentation(filepath.Join(dir, e.Name()), name))
@@ -297,18 +297,13 @@ func (w *folderWalker) decodeSidecar(src string) characterization.Report {
 	return report
 }
 
-// readDir lists dir applying the rules that hold everywhere in the input
-// tree: symbolic links are a violation and are never
-// followed; OS artifacts are silently ignored (never packaged, never
-// warned about); and two names identical after NFC normalization are a
-// collision, because such pairs can coexist on non-normalizing filesystems
-// and would collide in the package.
-//
-// os.ReadDir lists lexically, so every file list built over it is in
-// deterministic traversal order. That order carries no meaning (neither
-// CSIP nor Meemoo assigns semantics to file order; explicit sequencing is
-// a deferred manifest feature), but it must be stable:
-// METS emission and scripts/reference-diff.sh depend on run-to-run identical order.
+// readDir lists dir under the rules that hold everywhere in the input
+// folder: a symbolic link is a violation and is never followed, OS
+// artifacts are skipped without a word, and two names that are the same
+// after NFC normalization are a collision, because they can coexist on a
+// filesystem that does not normalize but would collide in the package.
+// os.ReadDir sorts by name, so the order of every file list is the same
+// from run to run; neither CSIP nor Meemoo gives that order a meaning.
 func (w *folderWalker) readDir(dir string) []os.DirEntry {
 	entries, err := os.ReadDir(dir)
 	if err != nil {

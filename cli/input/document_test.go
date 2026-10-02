@@ -152,7 +152,7 @@ func TestDocumentNameIsContentElsewhere(t *testing.T) {
 }
 
 // The folder's document builds with the real eark profile: the engine
-// copies the file the reader pointed at, byte for byte.
+// copies the file Read pointed at, byte for byte.
 func TestDocumentBuilds(t *testing.T) {
 	root := writeTree(t, map[string]string{"dc.xml": validDC, "scan.tiff": "x"})
 	source, err := Read(root, earkVocab{})

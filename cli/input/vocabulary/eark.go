@@ -10,9 +10,8 @@ import (
 
 // Eark is the eark profile's vocabulary: the fifteen Simple Dublin Core
 // elements, the table in profiles/eark. Each statement becomes one term of
-// eark.Terms unchanged; the terms' Validate, which the reader runs on the
-// result, decides which keys exist and what a statement may say. A
-// finished dc.xml may stand in for the rows.
+// eark.Terms unchanged; the terms' Validate decides which keys exist and
+// what a statement may say. A finished dc.xml may stand in for the rows.
 type Eark struct{}
 
 var _ input.DocumentVocabulary = Eark{}

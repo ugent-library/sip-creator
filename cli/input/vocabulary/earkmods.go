@@ -11,16 +11,13 @@ import (
 )
 
 // EarkMods is the eark-mods profile's vocabulary: the MODS keys the input
-// specification lists and the place in the record each one fills. The
-// record is typed by field (ADR-0021), so the key table lives here, on the
-// CLI side, not in the profile package. The rules a statement can break
-// on its own (an unknown key, a language on a key that takes none, an
-// empty value, a second row for a key that occurs once, a repeated
-// language) are errors at the row's line and the statement is not placed;
-// the reader runs the record's own rules on the result. The rows carry
-// flat statements only: a record's copies, and any other structure, reach
-// the package through the library's record or a supplied mods.xml, which
-// may stand in for the rows.
+// specification lists and where each one goes in the record. The record is
+// typed by field (ADR-0021), so the key table lives here, not in the
+// profile package. A statement that breaks a rule on its own (an unknown
+// key, a language tag where none is taken, an empty value, a repeat) is an
+// error at its line and is not placed. The rows carry flat statements
+// only: a record's copies reach the package through the library's record
+// or a supplied mods.xml.
 type EarkMods struct{}
 
 var _ input.DocumentVocabulary = EarkMods{}

@@ -16,7 +16,7 @@ import (
 )
 
 // Every registered profile has a vocabulary, and each builds what its
-// profile's encoder accepts: the reader hands statements to the one, the
+// profile's encoder accepts: Read hands statements to the one, the
 // engine runs Check on the result. A profile without a vocabulary could
 // not read a folder.
 func TestEveryProfileHasAVocabularyItsEncoderAccepts(t *testing.T) {
