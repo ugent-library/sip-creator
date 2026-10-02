@@ -65,7 +65,7 @@ type IdentifierSwapper interface {
 }
 
 // DocumentFormat is the optional part of a MetadataModel that accepts a
-// finished document supplied as a file (DescriptiveDocument), next to its
+// finished document supplied as a file (EncodedDescription), next to its
 // own description type: it recognizes a supplied file as a document in the
 // model's document format. Every model has a document format; only a model
 // that takes supplied documents implements this.
@@ -105,7 +105,7 @@ func checkDescriptions(model MetadataModel, source *SourcePackage) error {
 // takes none or whose root is another format's. Reading the document is
 // the engine's; the model sees the root element only.
 func checkDescription(model MetadataModel, d sip.Description) error {
-	doc, ok := d.(DescriptiveDocument)
+	doc, ok := d.(EncodedDescription)
 	if !ok {
 		return model.ValidateType(d)
 	}

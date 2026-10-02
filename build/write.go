@@ -134,7 +134,7 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 func (b *Builder) writeDescription(st *store.Store, base string, df *sip.File, d sip.Description, schemasDir string) error {
 	var info store.Info
 	var err error
-	if doc, ok := d.(DescriptiveDocument); ok {
+	if doc, ok := d.(EncodedDescription); ok {
 		info, err = st.CopyFile(doc.Source, base+df.Path)
 	} else {
 		info, err = st.WriteMetadata(base+df.Path, func(w io.Writer) error {

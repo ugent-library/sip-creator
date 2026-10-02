@@ -31,14 +31,14 @@ const (
 	malformedDocument = `<simpledc><title>x</simpledc>`
 )
 
-// writeDocument puts a document on disk and returns it as a build.DescriptiveDocument.
-func writeDocument(t *testing.T, dir, name, content string) build.DescriptiveDocument {
+// writeDocument puts a document on disk and returns it as a build.EncodedDescription.
+func writeDocument(t *testing.T, dir, name, content string) build.EncodedDescription {
 	t.Helper()
 	src := filepath.Join(dir, name)
 	if err := os.WriteFile(src, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
-	return build.DescriptiveDocument{Source: src}
+	return build.EncodedDescription{Source: src}
 }
 
 // A document validates as a document: well-formed XML, whatever its root;
@@ -48,7 +48,7 @@ func TestDocumentValidate(t *testing.T) {
 	dir := t.TempDir()
 	tests := []struct {
 		name string
-		doc  build.DescriptiveDocument
+		doc  build.EncodedDescription
 		want string // "" means valid; else substring of the error
 	}{
 		{"simpledc", writeDocument(t, dir, "dc.xml", simpleDCDocument), ""},
@@ -56,7 +56,7 @@ func TestDocumentValidate(t *testing.T) {
 		{"another standard", writeDocument(t, dir, "oai.xml", oaiDCDocument), ""},
 		{"malformed", writeDocument(t, dir, "bad.xml", malformedDocument), "not well-formed"},
 		{"not xml", writeDocument(t, dir, "text.xml", "not xml"), "not an XML document"},
-		{"missing", build.DescriptiveDocument{Source: filepath.Join(dir, "nope.xml")}, "no such file"},
+		{"missing", build.EncodedDescription{Source: filepath.Join(dir, "nope.xml")}, "no such file"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -163,7 +163,7 @@ func TestBuildRefusesWrongDocument(t *testing.T) {
 	cases := []struct {
 		name string
 		def  build.Definition
-		doc  build.DescriptiveDocument
+		doc  build.EncodedDescription
 		want string
 	}{
 		{"dc document to eark-mods", earkmodsDef(t), writeDocument(t, dir, "dc.xml", simpleDCDocument), "expected a mods:mods document"},
@@ -172,7 +172,7 @@ func TestBuildRefusesWrongDocument(t *testing.T) {
 		{"mods 3.6 to eark-mods", earkmodsDef(t), writeDocument(t, dir, "old.xml", modsOldVersion), `version="3.6"`},
 		{"mods without a version to eark-mods", earkmodsDef(t), writeDocument(t, dir, "nov.xml", modsNoVersion), "declares no version"},
 		{"malformed to eark", earkDef(t), writeDocument(t, dir, "bad.xml", malformedDocument), "not well-formed"},
-		{"missing file to eark", earkDef(t), build.DescriptiveDocument{Source: filepath.Join(dir, "nope.xml")}, "no such file"},
+		{"missing file to eark", earkDef(t), build.EncodedDescription{Source: filepath.Join(dir, "nope.xml")}, "no such file"},
 		{"any document to basic", basicDef(t), writeDocument(t, dir, "dcschema.xml", simpleDCDocument), "supplied descriptive document is not accepted"},
 	}
 	for _, c := range cases {

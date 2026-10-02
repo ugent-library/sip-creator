@@ -20,7 +20,7 @@ const (
 )
 
 // Under a profile that takes a document, dc.xml at the root is the
-// package's description, a DescriptiveDocument pointing at the file on
+// package's description, an EncodedDescription pointing at the file on
 // disk, and not content.
 func TestDocumentAtRoot(t *testing.T) {
 	root := writeTree(t, map[string]string{
@@ -31,9 +31,9 @@ func TestDocumentAtRoot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	doc, ok := pkg.Description.(build.DescriptiveDocument)
+	doc, ok := pkg.Description.(build.EncodedDescription)
 	if !ok || doc.Source != filepath.Join(root, "dc.xml") {
-		t.Errorf("Description = %#v, want a DescriptiveDocument at %s", pkg.Description, filepath.Join(root, "dc.xml"))
+		t.Errorf("Description = %#v, want an EncodedDescription at %s", pkg.Description, filepath.Join(root, "dc.xml"))
 	}
 	if got := paths(pkg.Representations[0].Files); strings.Join(got, ",") != "scan.tiff" {
 		t.Errorf("content = %v; the document must not count as content", got)
@@ -53,7 +53,7 @@ func TestDocumentInRepresentation(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 	rep := pkg.Representations[0]
-	doc, ok := rep.Description.(build.DescriptiveDocument)
+	doc, ok := rep.Description.(build.EncodedDescription)
 	if !ok || doc.Source != filepath.Join(root, "representations", "master", "dc.xml") {
 		t.Errorf("representation Description = %#v, want its dc.xml", rep.Description)
 	}

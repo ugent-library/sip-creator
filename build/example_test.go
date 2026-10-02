@@ -119,7 +119,7 @@ func ExampleBuilder_Build_mods() {
 
 // Supply a finished descriptive document instead of terms or a record. The
 // build checks its root element and copies it into the package as it is.
-func ExampleDescriptiveDocument() {
+func ExampleEncodedDescription() {
 	destination, err := os.MkdirTemp("", "sip")
 	if err != nil {
 		log.Fatal(err)
@@ -144,7 +144,7 @@ func ExampleDescriptiveDocument() {
 	}
 
 	pkg, err := builder.Build(&build.SourcePackage{
-		Description: build.DescriptiveDocument{Source: "../examples/eark-mods/mods.xml"},
+		Description: build.EncodedDescription{Source: "../examples/eark-mods/mods.xml"},
 		Representations: []build.SourceRepresentation{{
 			Name: "master",
 			Files: []build.SourceFile{{

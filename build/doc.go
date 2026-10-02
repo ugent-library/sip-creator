@@ -23,7 +23,7 @@
 // archive package.
 //
 // The Go type of a description belongs to its profile: eark.Terms,
-// earkmods.Record or meemoo.Terms, or a [DescriptiveDocument] for a
+// earkmods.Record or meemoo.Terms, or an [EncodedDescription] for a
 // finished document where the profile accepts one. A profile for another
 // descriptive standard implements [MetadataModel] and exports its own
 // [Definition].

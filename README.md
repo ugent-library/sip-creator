@@ -385,10 +385,10 @@ identifier, titles, and physical copies as items, each a call number with an opt
 barcode and an optional volume or issue designation (example: `ExampleBuilder_Build_mods`).
 
 A record that already exists as a document travels as a file: profiles that accept a
-finished document (see [Profiles](#profiles)) take a `build.DescriptiveDocument` in place
+finished document (see [Profiles](#profiles)) take a `build.EncodedDescription` in place
 of terms or a record, naming the file in its `Source` field. The library checks and
 copies it the same way the command-line tool does (see [Input folder](#input-folder);
-example: `ExampleDescriptiveDocument`).
+example: `ExampleEncodedDescription`).
 
 ### Representation labels and types
 
