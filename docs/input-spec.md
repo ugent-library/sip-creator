@@ -34,7 +34,7 @@ example-0001/
 └── premis/               ← optional: preservation XML received from a vendor
 ```
 
-Institution details (who submits, who archives, contact person, agreement number) do **not** live in the folder: they rarely change and come from the tool's configuration. See [What comes from configuration](#6-what-comes-from-configuration-and-the-command-line). Neither does the profile: you pass it to `check` and `create` with `--profile`, and it says which keys `description.csv` takes and whether a finished `dc.xml` or `mods.xml` may stand in for it (§3).
+The submitting organization does **not** live in the folder: it rarely changes and comes from the tool's configuration. See [What comes from configuration](#6-what-comes-from-configuration-and-the-command-line). Neither does the profile: you pass it to `check` and `create` with `--profile`, and it says which keys `description.csv` takes and whether a finished `dc.xml` or `mods.xml` may stand in for it (§3).
 
 ## 1. General rules
 
@@ -181,23 +181,23 @@ Rules:
 
 ## 6. What comes from configuration and the command line
 
-These values span many packages and rarely change, so they live in the tool's configuration rather than in each package folder:
+These values span many packages or belong to the run, so they do not live in the package folder. The environment variables are listed in [CONFIG.md](../CONFIG.md).
 
 | value | source |
 |---|---|
-| submitting organization (name, identifier) | configuration |
-| archival creator organization | configuration |
-| contact person(s) (name, email) | configuration |
-| submission agreement reference | configuration |
-| target profile (e.g. Meemoo basic) | configuration, overridable per run |
-| content category (e.g. photographs) | configuration, overridable per run |
+| submitting organization: name | `SIP_SUBMITTER_NAME`, required by `create` under every profile |
+| submitting organization: Meemoo OR-id | `SIP_SUBMITTER_OR_ID`, required by `create` under `basic` |
+| content category (e.g. `Photographs – Digital`) | `--content-category`, else `SIP_CONTENT_CATEGORY`, else the profile's value |
+| profile | `--profile`, required by `check` and `create` |
+| record status | `--status` |
+| identifier of the package this one updates | `--updates` |
 
 Creating vs. updating:
 
-- By default every package is **new**.
-- To submit a package that supplements or replaces an earlier one, the operator passes the original package identifier and the kind of update on the command line (e.g. `--status replacement --updates <original-package-id>`). The tool then reuses the original identifier as the package identifier; that is how a conformant archive matches the update to the existing holdings.
+- Without `--status` the package carries no record status, which the E-ARK SIP specification reads as new.
+- To submit a package that supplements or replaces an earlier one, the operator passes the kind of update and the original package identifier (e.g. `--status replacement --updates <original-package-id>`). The tool then reuses the original identifier as the package identifier, so the archive can match the update to the package it already holds.
 
-Deliberate trade-off: because organization details come from configuration, an input folder alone does not fully determine the package. The generated package itself records which values were used; audit the output, not the input. If this tool ever serves multiple submitting organizations from one installation, this decision must be revisited.
+Because the submitting organization comes from configuration, an input folder alone does not determine the package. The generated METS records the values used, so audit the output, not the input.
 
 ## 7. Mapping to the SIP (informative, for specialists)
 
@@ -213,10 +213,9 @@ Deliberate trade-off: because organization details come from configuration, an i
 | `dc.xml` / `mods.xml` (a supplied document) | copied as it is to `metadata/descriptive/` (or `representations/<name>/metadata/descriptive/`), checksum computed on the copy, METS dmdSec typed by the profile (`DC` / `MODS`) exactly as a generated document |
 | `representations/<name>/description.csv` (or `dc.xml` / `mods.xml`) | `representations/<name>/metadata/descriptive/*.xml`, dmdSec of that representation's METS (CSIPSTR12/13) |
 | `[lang]` suffixes | `xml:lang` attributes |
-| configuration: organizations, contacts | METS `metsHdr/agent` (`ROLE=CREATOR TYPE=ORGANIZATION` submitter; `ROLE=ARCHIVIST TYPE=ORGANIZATION` archival creator; individuals as contact agents) |
-| configuration: submission agreement | METS `altRecordID TYPE="SUBMISSIONAGREEMENT"` (SIP5) |
-| configuration: content category | METS `@TYPE` (CSIP vocabulary) |
-| `--status` | METS `metsHdr/@RECORDSTATUS` (SIP3 vocabulary: NEW, SUPPLEMENT, REPLACEMENT, TEST, VERSION, DELETE; default NEW) |
+| `SIP_SUBMITTER_NAME`, `SIP_SUBMITTER_OR_ID` | METS `metsHdr/agent ROLE="CREATOR" TYPE="ORGANIZATION"` with the name; under `basic` the OR-id as its `note NOTETYPE="IDENTIFICATIONCODE"` |
+| content category | METS `@TYPE` (CSIP vocabulary) |
+| `--status` | METS `metsHdr/@RECORDSTATUS` (SIP3 vocabulary: NEW, SUPPLEMENT, REPLACEMENT, TEST, VERSION, DELETE); omitted without the flag |
 | `--updates <id>` | package identifier `mets/@OBJID` reuses the original package's identifier (the E-ARK SIP spec defines no separate prior-AIP pointer) |
 | `premis/` files | copied under `metadata/preservation/` (package or representation level), referenced from METS amdSec/digiprovMD |
 | computed checksums, sizes; formats from `siegfried.json` | METS fileSec + generated PREMIS fixity/format |
@@ -231,3 +230,4 @@ Recorded so they are chosen against, not forgotten:
 - Describing multiple intellectual entities / hierarchies in one package.
 - Accepting a BagIt bag as input (fixity from `manifest-sha256.txt`).
 - Per-package overrides of configured administrative values.
+- The archival creator (`metsHdr/agent ROLE="ARCHIVIST"`), contact persons, and a submission agreement reference (`altRecordID TYPE="SUBMISSIONAGREEMENT"`, SIP5). [ADR-0010](decisions/0010-config-over-self-describing-input.md) places them in configuration; the tool does not read or write them yet.
