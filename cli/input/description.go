@@ -4,106 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/ugent-library/sip-creator/sip"
 )
-
-// description returns the level's description from the one source the
-// folder supplies for it: the rows file, mapped by the profile's mapper, or
-// the profile's supplied document, read as it is. Both at one level is a
-// violation: an entity has one description, and the tool does not pick.
-// The package level needs one; a representation may have neither.
-// rowsPath and documentPath are "" when the folder has no such file.
-func (w *folderWalker) description(rowsPath, documentPath string, packageLevel bool) sip.Description {
-	switch {
-	case rowsPath != "" && documentPath != "":
-		described := "representation"
-		if packageLevel {
-			described = "package"
-		}
-		w.violate("%s and %s are both present; describe the %s with one of the two, not both (input specification §3)", w.rel(rowsPath), w.rel(documentPath), described)
-		return nil
-	case documentPath != "":
-		return w.readDocument(documentPath)
-	case rowsPath != "":
-		return w.decodeDescription(rowsPath, packageLevel)
-	case packageLevel:
-		w.violateMissingDescription()
-	}
-	return nil
-}
-
-// violateMissingDescription records that the package level describes
-// nothing, naming the file or files the profile accepts.
-func (w *folderWalker) violateMissingDescription() {
-	if w.documentFormat == nil {
-		w.violate("descriptive rows are missing: every package folder needs a description.csv describing the content (input specification §3)")
-		return
-	}
-	w.violate("descriptive metadata is missing: every package folder needs a description.csv or a %s describing the content (input specification §3)", w.documentName)
-}
-
-// decodeDescription decodes the description.csv at src into the profile's
-// description and records a violation per broken rule: the row syntax,
-// the mapper's placement of each term, and the description's own
-// rules, with ValidateRequired at the package level only.
-func (w *folderWalker) decodeDescription(src string, packageLevel bool) sip.Description {
-	rel := w.rel(src)
-
-	data, err := os.ReadFile(src)
-	if err != nil {
-		w.violate("%s: %v", rel, err)
-		return nil
-	}
-
-	terms, lines, errs, err := parseTerms(data)
-	if err != nil {
-		w.violate("%s: %v", rel, err)
-		return nil
-	}
-	description, mapErrs := w.mapper.Map(terms)
-	errs = append(errs, mapErrs...)
-	// A term the mapper refused is reported once: the description's rules
-	// would judge the same term again, as written.
-	refused := map[int]bool{}
-	for _, err := range mapErrs {
-		if te, ok := errors.AsType[*sip.TermError](err); ok {
-			refused[te.Index] = true
-		}
-	}
-	for _, err := range flatten(description.Validate()) {
-		if te, ok := errors.AsType[*sip.TermError](err); ok && refused[te.Index] {
-			continue
-		}
-		errs = append(errs, err)
-	}
-	if packageLevel {
-		errs = append(errs, flatten(description.ValidateRequired())...)
-	}
-
-	// A finding about one row is reported at the row's line: the parser
-	// names the line of a row that did not become a term, and the
-	// mapper and the description's rules name a term by its index,
-	// which lines turns back into a line. A cross-row finding names the
-	// key and language, which locates the rows in a keyed file.
-	for _, err := range errs {
-		if re, ok := errors.AsType[*rowError](err); ok {
-			w.violate("%s line %d: %v", rel, re.line, re.err)
-			continue
-		}
-		if te, ok := errors.AsType[*sip.TermError](err); ok && te.Index < len(lines) {
-			w.violate("%s line %d: %v", rel, lines[te.Index], te.Err)
-			continue
-		}
-		w.violate("%s: %v", rel, err)
-	}
-	if len(terms) == 0 {
-		return nil
-	}
-	return description
-}
 
 // parseTerms parses the content of a description.csv: a "key,value"
 // header, then one term per row of two columns, with lines[i] the line

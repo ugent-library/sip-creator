@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/ugent-library/sip-creator/build"
@@ -14,88 +13,6 @@ import (
 type repRow struct {
 	line                int
 	folder, label, kind string
-}
-
-// applyRepresentations decodes representations.csv and applies it to the
-// representations read from representations/: each row names a
-// representation folder and supplies its label and type. The file is strict when present
-// (input-spec.md): every row must match a folder, every folder must be
-// covered by a row, and the row order becomes the packaging order. Empty
-// cells stay empty: build.SourceRepresentation resolves the defaults.
-func (w *folderWalker) applyRepresentations(src string, reps []build.SourceRepresentation) []build.SourceRepresentation {
-	rel := w.rel(src)
-	rows, decoded := w.decodeRepresentations(src)
-	if !decoded {
-		return reps
-	}
-	if len(rows) == 0 {
-		w.violate("%s: the file has no rows; list every representation folder, or delete the file", rel)
-		return reps
-	}
-
-	byName := make(map[string]int, len(reps))
-	for i, rep := range reps {
-		byName[rep.Name] = i
-	}
-
-	covered := make(map[string]int, len(rows)) // folder → line of its row
-	var ordered []build.SourceRepresentation
-	for _, row := range rows {
-		if prev, ok := covered[row.folder]; ok {
-			w.violate("%s line %d: folder %q already has a row (line %d)", rel, row.line, row.folder, prev)
-			continue
-		}
-		covered[row.folder] = row.line
-		i, ok := byName[row.folder]
-		if !ok {
-			w.violate("%s line %d: there is no folder representations/%s; every row must name an existing representation folder", rel, row.line, row.folder)
-			continue
-		}
-		rep := reps[i]
-		rep.Label = row.label
-		rep.Type = row.kind
-		ordered = append(ordered, rep)
-	}
-
-	// A folder the file does not cover must fail loudly: skipping it
-	// would silently drop content from the package.
-	for _, rep := range reps {
-		if _, ok := covered[rep.Name]; !ok {
-			w.violate("representations/%s is not listed in %s; add a row for it, or remove the folder", rep.Name, rel)
-			ordered = append(ordered, rep)
-		}
-	}
-	return ordered
-}
-
-// decodeRepresentations reads the representations.csv at src into rows and
-// records a violation per broken rule. Returns decoded=false when the file
-// cannot be used at all; a usable file with no data rows returns an empty
-// slice.
-func (w *folderWalker) decodeRepresentations(src string) (rows []repRow, decoded bool) {
-	rel := w.rel(src)
-
-	data, err := os.ReadFile(src)
-	if err != nil {
-		w.violate("%s: %v", rel, err)
-		return nil, false
-	}
-
-	rows, errs, err := parseRepresentationRows(data)
-	if err != nil {
-		for _, e := range flatten(err) {
-			w.violate("%s: %v", rel, e)
-		}
-		return nil, false
-	}
-	for _, e := range errs {
-		if re, ok := errors.AsType[*rowError](e); ok {
-			w.violate("%s line %d: %v", rel, re.line, re.err)
-			continue
-		}
-		w.violate("%s: %v", rel, e)
-	}
-	return rows, true
 }
 
 // parseRepresentationRows parses the content of a representations.csv: a

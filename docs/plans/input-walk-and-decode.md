@@ -74,7 +74,7 @@ Representations are keyed by name, not by position, because applying
 representations.csv reorders them. The names are unique: `readDir` already reports two
 names that are the same after NFC normalization.
 
-Two rules about which files exist, not what they say, belong to the walk:
+Three rules about which files exist, not what they say, belong to the walk:
 
 - **representations.csv requires a representations/ folder.** In a flat folder the walk
   reports the file and leaves `inventory.representationsCSV` empty. Recording it

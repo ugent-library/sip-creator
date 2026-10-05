@@ -8,28 +8,42 @@ import (
 	"strings"
 
 	"github.com/ugent-library/sip-creator/build"
-	"github.com/ugent-library/sip-creator/characterization"
 	"golang.org/x/text/unicode/norm"
 )
 
-// folderWalker walks one input folder into a build.SourcePackage,
-// collecting every violation on the way; Read makes one per call.
-type folderWalker struct {
+// folderReader holds what one read of an input folder shares across the
+// walk and the decoders; Read makes one per call.
+type folderReader struct {
 	root       string     // all messages and report keys are relative to it
 	violations Violations // the findings so far
-	mapper     Mapper
-	// documentName is the file reserved for a supplied descriptive
-	// document and documentFormat judges its root; empty and nil under a
-	// profile that takes rows only.
-	documentName   string
-	documentFormat build.DocumentFormat
+	// documentName is the file name reserved for the profile's supplied
+	// descriptive document at both levels; empty under a profile that
+	// takes rows only.
+	documentName string
+}
+
+// inventory lists the files of an input folder that a decoder reads after
+// the walk. An empty path means the folder has no such file. reps has an
+// entry per folder under representations/; a flat folder has none, because
+// its description.csv describes the package.
+type inventory struct {
+	pkg                descriptionFiles            // the package level
+	reps               map[string]descriptionFiles // by representation name
+	representationsCSV string
+	sidecar            string
+}
+
+// descriptionFiles are the files one level may describe itself with.
+type descriptionFiles struct {
+	rows     string // description.csv
+	document string // the profile's supplied document
 }
 
 // Reserved top-level names. Reserved names inside a representation are
 // a subset. The profile's document name, when it has one, is reserved at
-// both levels too; Read's Document supplies it (isDocumentName). Every
-// reserved name is ASCII, which NFC normalization never alters, so
-// comparing an unnormalized directory entry name to one is exact.
+// both levels too (isDocumentName). Every reserved name is ASCII, which
+// NFC normalization never alters, so comparing an unnormalized directory
+// entry name to one is exact.
 const (
 	descriptionName        = "description.csv"
 	representationsName    = "representations"
@@ -39,81 +53,84 @@ const (
 	sidecarName            = "siegfried.json"
 )
 
-// read walks the top level: the reserved names each go to their decoder or
-// collector, everything else is content, whose place depends on whether a
-// representations/ folder exists.
-func (w *folderWalker) read() *build.SourcePackage {
+// walk reads the structure of the folder: the source package as far as
+// names, kinds and places fill it, and the inventory of the files the
+// decoders read. The reserved names each go to their collector or into
+// the inventory; everything else is content, whose place depends on
+// whether a representations/ folder exists.
+func (r *folderReader) walk() (*build.SourcePackage, inventory) {
 	source := &build.SourcePackage{}
+	var inv inventory
 
 	var content []os.DirEntry
-	var descriptionPath, documentPath, representationsPath, representationsCSVPath string
+	var found descriptionFiles
+	var representationsPath, representationsCSVPath string
 
-	for _, e := range w.readDir(w.root) {
+	for _, e := range r.readDir(r.root) {
 		name := e.Name()
-		src := filepath.Join(w.root, e.Name())
-		if w.isDocumentName(name) {
-			if w.expectFile(e, src, "the supplied descriptive document") {
-				documentPath = src
+		src := filepath.Join(r.root, e.Name())
+		if r.isDocumentName(name) {
+			if r.expectFile(e, src, "the supplied descriptive document") {
+				found.document = src
 			}
 			continue
 		}
 		switch name {
 		case descriptionName:
-			if w.expectFile(e, src, "the descriptive rows file") {
-				descriptionPath = src
+			if r.expectFile(e, src, "the descriptive rows file") {
+				found.rows = src
 			}
 		case representationsName:
-			if w.expectFolder(e, src, "the folder of representations") {
+			if r.expectFolder(e, src, "the folder of representations") {
 				representationsPath = src
 			}
 		case representationsCSVName:
-			if w.expectFile(e, src, "the representations file") {
+			if r.expectFile(e, src, "the representations file") {
 				representationsCSVPath = src
 			}
 		case documentationName:
-			if w.expectFolder(e, src, "a folder") {
-				source.Documentation = w.collectFiles(src)
+			if r.expectFolder(e, src, "a folder") {
+				source.Documentation = r.collectFiles(src)
 			}
 		case premisName:
-			if w.expectFolder(e, src, "a folder") {
-				source.Premis = w.collectPremisFiles(src)
+			if r.expectFolder(e, src, "a folder") {
+				source.Premis = r.collectPremisFiles(src)
 			}
 		case sidecarName:
-			if w.expectFile(e, src, "the characterization report") {
-				source.Characterization = w.decodeSidecar(src)
+			if r.expectFile(e, src, "the characterization report") {
+				inv.sidecar = src
 			}
 		default:
 			content = append(content, e)
 		}
 	}
 
-	source.Description = w.description(descriptionPath, documentPath, true)
+	inv.pkg = r.levelDescription(found, true)
 
 	if representationsPath != "" {
 		// With a representations/ folder, all content lives inside it;
 		// only the reserved names may sit beside it.
 		for _, e := range content {
-			w.violate("%s: content must live inside representations/ when that folder exists (only the reserved names of the input specification may sit beside it)", e.Name())
+			r.violate("%s: content must live inside representations/ when that folder exists (only the reserved names of the input specification may sit beside it)", e.Name())
 		}
-		source.Representations = w.readRepresentations(representationsPath)
-		if representationsCSVPath != "" {
-			source.Representations = w.applyRepresentations(representationsCSVPath, source.Representations)
-		}
+		source.Representations, inv.reps = r.readRepresentations(representationsPath)
+		inv.representationsCSV = representationsCSVPath
 	} else {
 		if representationsCSVPath != "" {
-			w.violate("representations.csv requires a representations/ folder; a flat folder is one representation named after the folder itself")
+			r.violate("representations.csv requires a representations/ folder; a flat folder is one representation named after the folder itself")
 		}
-		source.Representations = []build.SourceRepresentation{w.readFlatRepresentation(content)}
+		source.Representations = []build.SourceRepresentation{r.readFlatRepresentation(content)}
 	}
 
-	return source
+	return source, inv
 }
 
-func (w *folderWalker) readRepresentations(dir string) []build.SourceRepresentation {
+func (r *folderReader) readRepresentations(dir string) ([]build.SourceRepresentation, map[string]descriptionFiles) {
 	var reps []build.SourceRepresentation
-	for _, e := range w.readDir(dir) {
+	descriptions := map[string]descriptionFiles{}
+	for _, e := range r.readDir(dir) {
 		if !e.IsDir() {
-			w.violate("representations/%s: only representation folders may sit directly inside representations/", e.Name())
+			r.violate("representations/%s: only representation folders may sit directly inside representations/", e.Name())
 			continue
 		}
 		name := e.Name()
@@ -122,107 +139,140 @@ func (w *folderWalker) readRepresentations(dir string) []build.SourceRepresentat
 		if err := build.ValidateRepresentationName(name); err != nil {
 			// Still read the folder, so the problems inside it are
 			// reported in the same run.
-			w.violate("representations/%s: %v", e.Name(), err)
+			r.violate("representations/%s: %v", e.Name(), err)
 		}
-		reps = append(reps, w.readRepresentation(filepath.Join(dir, e.Name()), name))
+		rep, files := r.readRepresentation(filepath.Join(dir, e.Name()), name)
+		reps = append(reps, rep)
+		descriptions[name] = files
 	}
 	if len(reps) == 0 {
-		w.violate("representations/ contains no representation folders: a package needs at least one version of the content")
+		r.violate("representations/ contains no representation folders: a package needs at least one version of the content")
 	}
-	return reps
+	return reps, descriptions
 }
 
-func (w *folderWalker) readRepresentation(dir, repName string) build.SourceRepresentation {
+func (r *folderReader) readRepresentation(dir, repName string) (build.SourceRepresentation, descriptionFiles) {
 	rep := build.SourceRepresentation{Name: repName}
-	var descriptionPath, documentPath string
-	for _, e := range w.readDir(dir) {
+	var found descriptionFiles
+	for _, e := range r.readDir(dir) {
 		name := e.Name()
 		src := filepath.Join(dir, e.Name())
-		if w.isDocumentName(name) {
-			if w.expectFile(e, src, "the supplied descriptive document") {
-				documentPath = src
+		if r.isDocumentName(name) {
+			if r.expectFile(e, src, "the supplied descriptive document") {
+				found.document = src
 			}
 			continue
 		}
 		switch name {
 		case descriptionName:
-			if w.expectFile(e, src, "the descriptive rows file") {
-				descriptionPath = src
+			if r.expectFile(e, src, "the descriptive rows file") {
+				found.rows = src
 			}
 		case documentationName:
-			if w.expectFolder(e, src, "a folder") {
-				rep.Documentation = w.collectFiles(src)
+			if r.expectFolder(e, src, "a folder") {
+				rep.Documentation = r.collectFiles(src)
 			}
 		case premisName:
-			if w.expectFolder(e, src, "a folder") {
-				rep.Premis = w.collectPremisFiles(src)
+			if r.expectFolder(e, src, "a folder") {
+				rep.Premis = r.collectPremisFiles(src)
 			}
 		default:
 			if e.IsDir() {
-				w.walkContent(dir, src, &rep.Files)
+				r.walkContent(dir, src, &rep.Files)
 				continue
 			}
-			rep.Files = append(rep.Files, w.newFile(dir, src))
+			rep.Files = append(rep.Files, r.newFile(dir, src))
 		}
 	}
-	rep.Description = w.description(descriptionPath, documentPath, false)
+	files := r.levelDescription(found, false)
 	if len(rep.Files) == 0 {
-		w.violate("%s: the representation contains no content files", w.rel(dir))
+		r.violate("%s: the representation contains no content files", r.rel(dir))
 	}
-	return rep
+	return rep, files
+}
+
+// levelDescription applies the rules on which description files one level
+// has, and returns the one the decoder reads, if any. Both at one level is
+// a violation: an entity has one description, and the tool does not pick.
+// The package level needs one; a representation may have neither.
+func (r *folderReader) levelDescription(found descriptionFiles, packageLevel bool) descriptionFiles {
+	switch {
+	case found.rows != "" && found.document != "":
+		described := "representation"
+		if packageLevel {
+			described = "package"
+		}
+		r.violate("%s and %s are both present; describe the %s with one of the two, not both (input specification §3)", r.rel(found.rows), r.rel(found.document), described)
+		return descriptionFiles{}
+	case found.rows == "" && found.document == "" && packageLevel:
+		r.violateMissingDescription()
+	}
+	return found
+}
+
+// violateMissingDescription records that the package level describes
+// nothing, naming the file or files the profile accepts. It repeats the
+// library's rule (SourcePackage.Validate, ADR-0025), so that check, which
+// never builds, reports it too.
+func (r *folderReader) violateMissingDescription() {
+	if r.documentName == "" {
+		r.violate("descriptive rows are missing: every package folder needs a description.csv describing the content (input specification §3)")
+		return
+	}
+	r.violate("descriptive metadata is missing: every package folder needs a description.csv or a %s describing the content (input specification §3)", r.documentName)
 }
 
 // isDocumentName reports whether name is the file name reserved for the
 // profile's supplied descriptive document. Under a profile that takes
 // none, no name is: a dc.xml under basic is content like any other file.
-func (w *folderWalker) isDocumentName(name string) bool {
-	return w.documentFormat != nil && name == w.documentName
+func (r *folderReader) isDocumentName(name string) bool {
+	return r.documentName != "" && name == r.documentName
 }
 
 // expectFile reports whether the entry at src, which has a reserved name,
 // is a file, and records a violation naming what the name holds when it is
 // a folder.
-func (w *folderWalker) expectFile(e os.DirEntry, src, holds string) bool {
+func (r *folderReader) expectFile(e os.DirEntry, src, holds string) bool {
 	if !e.IsDir() {
 		return true
 	}
-	w.violate("%s is a folder; the reserved name is for %s", w.rel(src), holds)
+	r.violate("%s is a folder; the reserved name is for %s", r.rel(src), holds)
 	return false
 }
 
 // expectFolder reports whether the entry at src, which has a reserved
 // name, is a folder, and records a violation naming what the name holds
 // when it is a file.
-func (w *folderWalker) expectFolder(e os.DirEntry, src, holds string) bool {
+func (r *folderReader) expectFolder(e os.DirEntry, src, holds string) bool {
 	if e.IsDir() {
 		return true
 	}
-	w.violate("%s is a file; the reserved name is for %s", w.rel(src), holds)
+	r.violate("%s is a file; the reserved name is for %s", r.rel(src), holds)
 	return false
 }
 
 // readFlatRepresentation handles the simple case: no
 // representations/ folder, so every non-reserved entry is the content of a
 // single representation, named after the input folder itself.
-func (w *folderWalker) readFlatRepresentation(entries []os.DirEntry) build.SourceRepresentation {
-	name := filepath.Base(w.root)
+func (r *folderReader) readFlatRepresentation(entries []os.DirEntry) build.SourceRepresentation {
+	name := filepath.Base(r.root)
 	// The input folder's name becomes the representation's package-side
 	// name, so it must satisfy the same rule as a folder under
 	// representations/.
 	if err := build.ValidateRepresentationName(name); err != nil {
-		w.violate("the folder name names the single representation: %v", err)
+		r.violate("the folder name names the single representation: %v", err)
 	}
 	rep := build.SourceRepresentation{Name: name}
 	for _, e := range entries {
-		src := filepath.Join(w.root, e.Name())
+		src := filepath.Join(r.root, e.Name())
 		if e.IsDir() {
-			w.walkContent(w.root, src, &rep.Files)
+			r.walkContent(r.root, src, &rep.Files)
 			continue
 		}
-		rep.Files = append(rep.Files, w.newFile(w.root, src))
+		rep.Files = append(rep.Files, r.newFile(r.root, src))
 	}
 	if len(rep.Files) == 0 {
-		w.violate("the folder contains no content files")
+		r.violate("the folder contains no content files")
 	}
 	return rep
 }
@@ -230,9 +280,9 @@ func (w *folderWalker) readFlatRepresentation(entries []os.DirEntry) build.Sourc
 // collectFiles gathers every file under dir recursively with Path relative
 // to dir; documentation/, premis/, and representation content all collect
 // the same way.
-func (w *folderWalker) collectFiles(dir string) []build.SourceFile {
+func (r *folderReader) collectFiles(dir string) []build.SourceFile {
 	var files []build.SourceFile
-	w.walkContent(dir, dir, &files)
+	r.walkContent(dir, dir, &files)
 	return files
 }
 
@@ -241,31 +291,31 @@ func (w *folderWalker) collectFiles(dir string) []build.SourceFile {
 // transport-level premis rule: premis.xml belongs to the generated
 // document. Content conformance (a premis:premis document) is
 // deliberately left to assembly.
-func (w *folderWalker) collectPremisFiles(dir string) []build.SourceFile {
-	files := w.collectFiles(dir)
+func (r *folderReader) collectPremisFiles(dir string) []build.SourceFile {
+	files := r.collectFiles(dir)
 	for _, f := range files {
 		if path.Base(f.Path) == "premis.xml" {
-			w.violate("%s: premis.xml is reserved for the generated preservation document; rename the received file", f.Key)
+			r.violate("%s: premis.xml is reserved for the generated preservation document; rename the received file", f.Key)
 		}
 	}
 	return files
 }
 
-func (w *folderWalker) walkContent(base, dir string, files *[]build.SourceFile) {
-	for _, e := range w.readDir(dir) {
+func (r *folderReader) walkContent(base, dir string, files *[]build.SourceFile) {
+	for _, e := range r.readDir(dir) {
 		src := filepath.Join(dir, e.Name())
 		if e.IsDir() {
-			w.walkContent(base, src, files)
+			r.walkContent(base, src, files)
 			continue
 		}
-		*files = append(*files, w.newFile(base, src))
+		*files = append(*files, r.newFile(base, src))
 	}
 }
 
-func (w *folderWalker) newFile(base, src string) build.SourceFile {
+func (r *folderReader) newFile(base, src string) build.SourceFile {
 	// Rel cannot fail here: root, base and src are absolute, and src lies
 	// under both.
-	relRoot, _ := filepath.Rel(w.root, src)
+	relRoot, _ := filepath.Rel(r.root, src)
 	relBase, _ := filepath.Rel(base, src)
 	return build.SourceFile{
 		Source: src,
@@ -276,25 +326,6 @@ func (w *folderWalker) newFile(base, src string) build.SourceFile {
 	}
 }
 
-// decodeSidecar decodes the optional pre-computed characterization report.
-// A present report must parse (ADR-0009); the assembler verifies each
-// entry's MD5, because only it knows which entries it needs.
-func (w *folderWalker) decodeSidecar(src string) characterization.Report {
-	f, err := os.Open(src)
-	if err != nil {
-		w.violate("siegfried.json: %v", err)
-		return nil
-	}
-	defer f.Close()
-
-	report, err := characterization.DecodeSiegfried(f)
-	if err != nil {
-		w.violate("siegfried.json: %v; regenerate it from the input root with: sf -hash md5 -json .", err)
-		return nil
-	}
-	return report
-}
-
 // readDir lists dir under the rules that hold everywhere in the input
 // folder: a symbolic link is a violation and is never followed, OS
 // artifacts are skipped without a word, and two names that are the same
@@ -302,10 +333,10 @@ func (w *folderWalker) decodeSidecar(src string) characterization.Report {
 // filesystem that does not normalize but would collide in the package.
 // os.ReadDir sorts by name, so the order of every file list is the same
 // from run to run; neither CSIP nor Meemoo gives that order a meaning.
-func (w *folderWalker) readDir(dir string) []os.DirEntry {
+func (r *folderReader) readDir(dir string) []os.DirEntry {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		w.violate("%s: %v", w.rel(dir), err)
+		r.violate("%s: %v", r.rel(dir), err)
 		return nil
 	}
 
@@ -316,12 +347,12 @@ func (w *folderWalker) readDir(dir string) []os.DirEntry {
 			continue
 		}
 		if e.Type()&fs.ModeSymlink != 0 {
-			w.violate("%s is a symbolic link; symbolic links are not allowed anywhere in an input folder", w.rel(filepath.Join(dir, e.Name())))
+			r.violate("%s is a symbolic link; symbolic links are not allowed anywhere in an input folder", r.rel(filepath.Join(dir, e.Name())))
 			continue
 		}
 		name := norm.NFC.String(e.Name())
 		if prev, ok := seen[name]; ok {
-			w.violate("%s: %q and %q are the same name after Unicode normalization; rename one", w.rel(dir), prev, e.Name())
+			r.violate("%s: %q and %q are the same name after Unicode normalization; rename one", r.rel(dir), prev, e.Name())
 			continue
 		}
 		seen[name] = e.Name()
@@ -344,8 +375,8 @@ func isOSArtifact(name string) bool {
 
 // rel makes a path presentable in a violation message: relative to the
 // input root, slash-separated.
-func (w *folderWalker) rel(p string) string {
-	rel, err := filepath.Rel(w.root, p)
+func (r *folderReader) rel(p string) string {
+	rel, err := filepath.Rel(r.root, p)
 	if err != nil {
 		return p
 	}

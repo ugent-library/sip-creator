@@ -43,14 +43,16 @@ func Read(root string, mapper Mapper, document Document) (*build.SourcePackage, 
 		return nil, fmt.Errorf("input folder %s is a file, not a folder", root)
 	}
 
-	w := &folderWalker{root: abs, mapper: mapper}
-	if format, ok := document.Model.(build.DocumentFormat); ok {
-		w.documentName = document.Name
-		w.documentFormat = format
+	r := &folderReader{root: abs}
+	format, takesDocument := document.Model.(build.DocumentFormat)
+	if takesDocument {
+		r.documentName = document.Name
 	}
-	source := w.read()
-	if len(w.violations) > 0 {
-		return source, w.violations
+
+	source, inv := r.walk()
+	r.decode(source, inv, mapper, format)
+	if len(r.violations) > 0 {
+		return source, r.violations
 	}
 	return source, nil
 }
