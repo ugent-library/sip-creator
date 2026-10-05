@@ -1,7 +1,9 @@
 # 0025 — Every package carries a package-level description
 
-Status: **Accepted** (2026-10-05). Records a rule the code already enforces; no code
-changes with it.
+Status: **Superseded by [ADR-0029](0029-eark-profiles-offer-csip-as-written.md)**
+(2026-10-05): whether a package carries a description is the profile's rule, stated by
+its metadata model; `eark/none` carries none. Was Accepted (2026-10-05), recording a
+rule the code enforced.
 
 ## Context
 

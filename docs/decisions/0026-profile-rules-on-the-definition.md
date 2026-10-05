@@ -1,6 +1,9 @@
 # 0026 — A profile's rules on the package are definition values the library checks
 
-Status: **Accepted** (2026-10-05).
+Status: **Accepted** (2026-10-05). **Extended by
+[ADR-0029](0029-eark-profiles-offer-csip-as-written.md)** (2026-10-05):
+`MinRepresentations` joins `MaxRepresentations`, so a profile also states the least a
+package needs.
 
 ## Context
 

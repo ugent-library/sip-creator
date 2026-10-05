@@ -19,7 +19,10 @@ themselves, the `Description` interface and the items on the record
 stand; the `items.csv` file of the twelfth decision is withdrawn from the
 CLI (2026-09-30, the same review, before it shipped): the rows carry flat
 statements only, and copies reach a package through the library's record
-or a supplied `mods.xml`.
+or a supplied `mods.xml`. **Extended by
+[ADR-0030](0030-profile-names-by-family.md)** (2026-10-05): profile names carry
+the family and, after a slash, the descriptive standard (`eark/dc`, `eark/mods`,
+`eark/none`) or Meemoo's content profile (`meemoo/basic`).
 
 ## Context
 
