@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -37,7 +38,8 @@ func (t Terms) has(key string) bool {
 var langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
 
 // validateTerm reports why the term cannot be emitted: a key outside the
-// fifteen, a malformed language tag, or an empty value.
+// fifteen, a malformed language tag, an empty value, or a value XML cannot
+// carry.
 func validateTerm(t sip.Term) error {
 	if !elementSet[t.Key] {
 		return fmt.Errorf("unknown key %q: not a Simple Dublin Core element; see the supported keys in the input specification", t.Key)
@@ -47,6 +49,9 @@ func validateTerm(t sip.Term) error {
 	}
 	if strings.TrimSpace(t.Value) == "" {
 		return fmt.Errorf("%s has an empty value", t.Key)
+	}
+	if err := build.ValidateXMLText(t.Value); err != nil {
+		return fmt.Errorf("%s: %w", t.Key, err)
 	}
 	return nil
 }

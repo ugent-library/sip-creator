@@ -5,18 +5,26 @@
 package premis
 
 import (
+	"bytes"
+	"encoding/xml"
 	"io"
 	"text/template"
 
 	"github.com/ugent-library/sip-creator/sip"
 )
 
+// The templates escape every value they read from the package graph: an
+// essence file's original name and the producer's local identifier are
+// arbitrary text.
+//
 // Both documents point xsi:schemaLocation at the remote loc.gov PREMIS
 // schema rather than a copy in the package's schemas/ dir, unlike the METS
 // and descriptive documents: Meemoo SIP 1.2 requires exactly this value on
 // the PREMIS root, at package and representation level ("When used, its
 // value MUST be set to ...").
-var premis = template.Must(template.New("").Parse(`
+var premis = template.Must(template.New("").Funcs(template.FuncMap{
+	"esc": escapeXML,
+}).Parse(`
 {{ define "entity" -}}
 <?xml version='1.0' encoding='UTF-8'?>
 <premis:premis version="3.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:premis="http://www.loc.gov/premis/v3" xsi:schemaLocation="http://www.loc.gov/premis/v3 https://www.loc.gov/standards/premis/premis.xsd">
@@ -24,12 +32,12 @@ var premis = template.Must(template.New("").Parse(`
   <premis:object xsi:type="premis:intellectualEntity">
     <premis:objectIdentifier>
       <premis:objectIdentifierType>UUID</premis:objectIdentifierType>
-      <premis:objectIdentifierValue>{{ .Identifier }}</premis:objectIdentifierValue>
+      <premis:objectIdentifierValue>{{ esc .Identifier }}</premis:objectIdentifierValue>
     </premis:objectIdentifier>
     {{- range $k, $v := .AdditionalIdentifiers }}
     <premis:objectIdentifier>
-      <premis:objectIdentifierType>{{ $k }}</premis:objectIdentifierType>
-      <premis:objectIdentifierValue>{{ $v }}</premis:objectIdentifierValue>
+      <premis:objectIdentifierType>{{ esc $k }}</premis:objectIdentifierType>
+      <premis:objectIdentifierValue>{{ esc $v }}</premis:objectIdentifierValue>
     </premis:objectIdentifier>
     {{- end }}
     {{- range .Representations }}
@@ -46,7 +54,7 @@ var premis = template.Must(template.New("").Parse(`
   <premis:object xsi:type="premis:representation">
     <premis:objectIdentifier>
       <premis:objectIdentifierType>UUID</premis:objectIdentifierType>
-      <premis:objectIdentifierValue>{{ .Identifier }}</premis:objectIdentifierValue>
+      <premis:objectIdentifierValue>{{ esc .Identifier }}</premis:objectIdentifierValue>
     </premis:objectIdentifier>
 
     <!-- relationship between representation and its files -->
@@ -69,27 +77,27 @@ var premis = template.Must(template.New("").Parse(`
   <premis:object xsi:type="premis:file">
     <premis:objectIdentifier>
       <premis:objectIdentifierType>UUID</premis:objectIdentifierType>
-      <premis:objectIdentifierValue>{{ .Identifier }}</premis:objectIdentifierValue>
+      <premis:objectIdentifierValue>{{ esc .Identifier }}</premis:objectIdentifierValue>
     </premis:objectIdentifier>
 
     <premis:objectCharacteristics>
       <premis:fixity>
         <premis:messageDigestAlgorithm authority="cryptographicHashFunctions" authorityURI="http://id.loc.gov/vocabulary/preservation/cryptographicHashFunctions" valueURI="http://id.loc.gov/vocabulary/preservation/cryptographicHashFunctions/md5">MD5</premis:messageDigestAlgorithm>
-        <premis:messageDigest>{{ .Checksum }}</premis:messageDigest>
+        <premis:messageDigest>{{ esc .Checksum }}</premis:messageDigest>
       </premis:fixity>
-      <premis:size>{{ .Size }}</premis:size>
+      <premis:size>{{ esc .Size }}</premis:size>
       {{- with .Format }}
       <premis:format>
         <premis:formatRegistry>
-          <premis:formatRegistryName>{{ .FormatRegistry.Name }}</premis:formatRegistryName>
-          <premis:formatRegistryKey>{{ .FormatRegistry.Key }}</premis:formatRegistryKey>
-          <premis:formatRegistryRole authority="formatRegistryRole" authorityURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole" valueURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole/spe">{{ .FormatRegistry.Role }}</premis:formatRegistryRole>
+          <premis:formatRegistryName>{{ esc .FormatRegistry.Name }}</premis:formatRegistryName>
+          <premis:formatRegistryKey>{{ esc .FormatRegistry.Key }}</premis:formatRegistryKey>
+          <premis:formatRegistryRole authority="formatRegistryRole" authorityURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole" valueURI="http://id.loc.gov/vocabulary/preservation/formatRegistryRole/spe">{{ esc .FormatRegistry.Role }}</premis:formatRegistryRole>
         </premis:formatRegistry>
       </premis:format>
       {{- end }}
     </premis:objectCharacteristics>
 
-    <premis:originalName>{{ .Name }}</premis:originalName>
+    <premis:originalName>{{ esc .Name }}</premis:originalName>
 
     <!-- relationship between file and its representation -->
     {{- template "isIncludedIn" .Representation }}
@@ -102,7 +110,7 @@ var premis = template.Must(template.New("").Parse(`
       <premis:relationshipSubType authority="relationshipSubType" authorityURI="http://id.loc.gov/vocabulary/preservation/relationshipSubType" valueURI="http://id.loc.gov/vocabulary/preservation/relationshipSubType/isr">is represented by</premis:relationshipSubType>
       <premis:relatedObjectIdentifier>
         <premis:relatedObjectIdentifierType>UUID</premis:relatedObjectIdentifierType>
-        <premis:relatedObjectIdentifierValue>{{ .Identifier }}</premis:relatedObjectIdentifierValue>
+        <premis:relatedObjectIdentifierValue>{{ esc .Identifier }}</premis:relatedObjectIdentifierValue>
       </premis:relatedObjectIdentifier>
     </premis:relationship>
 {{- end }}
@@ -113,7 +121,7 @@ var premis = template.Must(template.New("").Parse(`
       <premis:relationshipSubType authority="relationshipSubType" authorityURI="http://id.loc.gov/vocabulary/preservation/relationshipSubType" valueURI="http://id.loc.gov/vocabulary/preservation/relationshipSubType/rep">represents</premis:relationshipSubType>
       <premis:relatedObjectIdentifier>
         <premis:relatedObjectIdentifierType>UUID</premis:relatedObjectIdentifierType>
-        <premis:relatedObjectIdentifierValue>{{ .Identifier }}</premis:relatedObjectIdentifierValue>
+        <premis:relatedObjectIdentifierValue>{{ esc .Identifier }}</premis:relatedObjectIdentifierValue>
       </premis:relatedObjectIdentifier>
     </premis:relationship>
 {{- end }}
@@ -124,7 +132,7 @@ var premis = template.Must(template.New("").Parse(`
       <premis:relationshipSubType authority="relationshipSubType" authorityURI="http://id.loc.gov/vocabulary/preservation/relationshipSubType" valueURI="http://id.loc.gov/vocabulary/preservation/relationshipSubType/inc">includes</premis:relationshipSubType>
       <premis:relatedObjectIdentifier>
         <premis:relatedObjectIdentifierType>UUID</premis:relatedObjectIdentifierType>
-        <premis:relatedObjectIdentifierValue>{{ .Identifier }}</premis:relatedObjectIdentifierValue>
+        <premis:relatedObjectIdentifierValue>{{ esc .Identifier }}</premis:relatedObjectIdentifierValue>
       </premis:relatedObjectIdentifier>
     </premis:relationship>
 {{- end }}
@@ -135,11 +143,18 @@ var premis = template.Must(template.New("").Parse(`
       <premis:relationshipSubType authority="relationshipSubType" authorityURI="http://id.loc.gov/vocabulary/preservation/relationshipSubType" valueURI="http://id.loc.gov/vocabulary/preservation/relationshipSubType/isi">is included in</premis:relationshipSubType>
       <premis:relatedObjectIdentifier>
         <premis:relatedObjectIdentifierType>UUID</premis:relatedObjectIdentifierType>
-        <premis:relatedObjectIdentifierValue>{{ .Identifier }}</premis:relatedObjectIdentifierValue>
+        <premis:relatedObjectIdentifierValue>{{ esc .Identifier }}</premis:relatedObjectIdentifierValue>
       </premis:relatedObjectIdentifier>
     </premis:relationship>
 {{- end }}
 `))
+
+// escapeXML makes a value safe as XML character data.
+func escapeXML(s string) string {
+	var b bytes.Buffer
+	xml.EscapeText(&b, []byte(s)) // never fails on a bytes.Buffer
+	return b.String()
+}
 
 // EncodeEntity writes the package PREMIS document: the intellectual entity
 // and its relationships to the representations.

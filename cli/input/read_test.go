@@ -342,3 +342,23 @@ func TestReadNFCCollision(t *testing.T) {
 	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "Unicode normalization")
 }
+
+// A file name is written into the METS and PREMIS documents, so a name XML
+// cannot carry is a violation naming the file, in content and in the
+// reserved folders alike, rather than a reference that names no file.
+func TestReadNameXMLCannotCarry(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"description.csv":         minimalCSV,
+		"documentation/":          "",
+		"representations/master/": "",
+	})
+	for _, p := range []string{"representations/master/scan\x01.tiff", "documentation/notes\x1b.txt"} {
+		if err := os.WriteFile(filepath.Join(root, filepath.FromSlash(p)), []byte("x"), 0o644); err != nil {
+			t.Skipf("the filesystem refuses the name: %v", err)
+		}
+	}
+
+	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	assertViolation(t, err, `"representations/master/scan\x01.tiff" holds the character U+0001, which XML cannot carry; rename the file`)
+	assertViolation(t, err, `"documentation/notes\x1b.txt" holds the character U+001B`)
+}

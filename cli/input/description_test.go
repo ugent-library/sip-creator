@@ -111,6 +111,8 @@ func TestRowsLineNumbers(t *testing.T) {
 	assertViolation(t, err, `description.csv line 6: "nl!" is not a language tag`)
 	assertViolation(t, err, "description.csv line 7: dcterms:subject has an empty value")
 	assertViolation(t, err, `description.csv line 8: malformed language tag in "subject[]"`)
+	_, err = readCSV(t, minimalCSV+"subject,Tab\x0bvertical\n")
+	assertViolation(t, err, `description.csv line 6: dcterms:subject: "Tab\vvertical" holds the character U+000B`)
 }
 
 // Content that cannot be read as CSV is one violation: the rows are not

@@ -2,7 +2,9 @@ package mets
 
 import (
 	"bytes"
+	"encoding/xml"
 	"io"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -123,6 +125,94 @@ func TestSchemaLocationNamesDeclaredNamespaces(t *testing.T) {
 			if !declared[pairs[i]] {
 				t.Errorf("%s METS xsi:schemaLocation names %s, which the document does not declare", name, pairs[i])
 			}
+		}
+	}
+}
+
+// Values from producers and operators reach the documents escaped: a file
+// path, a label and an agent name carrying the XML-active characters leave
+// both documents well-formed, an XML reader gets the label and the name
+// back as they were given, and the path as its href.
+func TestEscapesGraphValues(t *testing.T) {
+	const (
+		path     = `data/R&D "1" <a>.tif`
+		wantHref = `data/R%26D%20%221%22%20%3Ca%3E.tif`
+		label    = `Scans "R&D" <a>`
+		agent    = `R&D <Lab> "Gent"`
+	)
+	pkg, rep := descriptiveGraph(t, "DC", "")
+	pkg.Declaration.Agents = []sip.Agent{{Role: "CREATOR", Type: "ORGANIZATION", Name: agent}}
+	rep.Label = label
+	essence := sip.NewFile()
+	essence.Path = path
+	essence.Mime = "image/tiff"
+	rep.Files = []*sip.File{essence}
+
+	var repMETS, pkgMETS bytes.Buffer
+	if err := EncodeRepresentation(&repMETS, rep); err != nil {
+		t.Fatalf("representation METS: %v", err)
+	}
+	if err := EncodePackage(&pkgMETS, pkg); err != nil {
+		t.Fatalf("package METS: %v", err)
+	}
+
+	repValues := decodedValues(t, repMETS.Bytes())
+	for _, want := range []string{wantHref, label} {
+		if !repValues[want] {
+			t.Errorf("representation METS does not carry %q as a value\n%s", want, repMETS.String())
+		}
+	}
+	if !decodedValues(t, pkgMETS.Bytes())[agent] {
+		t.Errorf("package METS does not carry the agent name %q\n%s", agent, pkgMETS.String())
+	}
+}
+
+// decodedValues reads the whole document, failing the test unless it is
+// well-formed, and returns every attribute value and text node as an XML
+// reader decodes them.
+func decodedValues(t *testing.T, doc []byte) map[string]bool {
+	t.Helper()
+	values := map[string]bool{}
+	dec := xml.NewDecoder(bytes.NewReader(doc))
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			return values
+		}
+		if err != nil {
+			t.Fatalf("not well-formed: %v\n%s", err, doc)
+		}
+		switch tok := tok.(type) {
+		case xml.StartElement:
+			for _, a := range tok.Attr {
+				values[a.Value] = true
+			}
+		case xml.CharData:
+			values[string(tok)] = true
+		}
+	}
+}
+
+// An href names the file whatever reads it: RFC 3986 and a decoder that
+// also reads "+" as a space (java.net.URLDecoder, which commons-ip and RODA
+// use) both get the path back. Unreserved characters and the slashes
+// between segments stay as they are.
+func TestHref(t *testing.T) {
+	tests := []struct{ path, want string }{
+		{"data/image-001.jpg", "data/image-001.jpg"},
+		{"metadata/descriptive/dc+schema.xml", "metadata/descriptive/dc%2Bschema.xml"},
+		{"data/R&D scan.tif", "data/R%26D%20scan.tif"},
+		{"data/100%.jpg", "data/100%25.jpg"},
+		{"data/a#b?.jpg", "data/a%23b%3F.jpg"},
+		{"data/sub/~v1_final.tif", "data/sub/~v1_final.tif"},
+		{"data/caf\u00e9.tif", "data/caf%C3%A9.tif"},
+	}
+	for _, tt := range tests {
+		if got := href(tt.path); got != tt.want {
+			t.Errorf("href(%q) = %q, want %q", tt.path, got, tt.want)
+		}
+		if decoded, err := url.PathUnescape(tt.want); err != nil || decoded != tt.path {
+			t.Errorf("%q decodes to %q (%v), want %q", tt.want, decoded, err, tt.path)
 		}
 	}
 }

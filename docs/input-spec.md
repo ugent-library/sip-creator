@@ -41,6 +41,7 @@ Two things do not live in the folder. The submitting organization comes from the
   All other names are free, with any nesting, and are content. That includes `metadata.csv`, `dcschema.csv` and `dc.csv`, and a document name the profile does not take, such as `dc.xml` under `basic` or `mods.xml` under `eark`.
 - Operating-system files (`.DS_Store`, `Thumbs.db`, `desktop.ini`, `._*`) MUST be ignored: never packaged, never reported.
 - A symbolic link anywhere in the input MUST be an error.
+- A file or folder name MAY hold any character XML can carry, `&`, `%`, `+` and spaces included. A name that is not valid UTF-8, or that holds a control character other than tab, line feed and carriage return, MUST be an error: the package's METS and PREMIS documents cannot carry it, and escaping would change the name.
 - The tool MUST compare paths after Unicode normalization (NFC), because macOS file names and typed CSV values often differ only in normalization form.
 - The tool MUST refuse to build when a MUST rule is broken, and MUST report every violation at once, in plain language, naming the file or folder concerned.
 - The tool MUST offer a check-only mode, `check`, that validates a folder against these rules without building. It takes the same `--profile` as a build and reads no configuration. The checks on file contents, the format report's checksums (§2) and received PREMIS (§5), run only when building.
@@ -70,7 +71,7 @@ access,Access copy (PDF),access
 - The file MUST have at least one row, and it requires a `representations/` folder: in the simple case it MUST be an error.
 - `folder` names a folder directly under `representations/` by its name alone (`master`, not a path). Every row MUST match an existing folder, no two rows may name the same folder, and every folder MUST have a row. A folder without a row is an error, never an exclusion, so no content can silently drop out of the package. To leave material out, move it out of the input folder.
 - An empty `label` means the folder name; an empty `type` means the label.
-- `label` and `type` are written into the package's XML as they are, so the characters `< > & "` MUST be an error.
+- `label` and `type` may hold any text, `&` and quotes included: the tool escapes them when it writes the package's XML. A control character other than tab, line feed and carriage return MUST be an error.
 - The rows' order is the representations' order in the package.
 - The label is used under every profile. The type is used only under the eark profiles; under `basic` it has no effect (§7).
 
@@ -96,6 +97,7 @@ cd ./your-input && report="$(sf -hash md5 -json .)" && printf '%s\n' "$report" >
 
 - A two-column CSV with a `key,value` header row, in UTF-8. A UTF-8 BOM, CRLF line endings (spreadsheet tools produce both) and RFC 4180 quoting MUST be accepted.
 - Keys are matched case-insensitively (`Title` reads as `title`). An unknown key MUST be an error, so a typo cannot silently drop metadata.
+- A value MAY hold any text, `&`, `<` and quotes included. A control character other than tab, line feed and carriage return MUST be an error, because XML cannot carry it.
 - Add a language tag in square brackets where the language matters: `title[nl]`, `description[en]`.
 - Repeat a key for more values (two `creator` rows for two creators) where the profile allows it, as listed below. A key that may repeat *per language* takes one row per language tag: `title[nl]` and `title[en]` is fine, two `title[nl]` rows are not. A repeat the profile does not allow MUST be an error.
 - The required keys of the profile MUST be present and non-empty at the top level. `identifier` is your local catalog or inventory number; it travels with the package as its local identifier.

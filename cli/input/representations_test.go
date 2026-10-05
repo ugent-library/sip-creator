@@ -20,7 +20,7 @@ func twoRepTree() map[string]string {
 
 func TestRepresentationsCSV(t *testing.T) {
 	tree := twoRepTree()
-	tree["representations.csv"] = "folder,label,type\nmaster,Master scan,archival\naccess,,\n"
+	tree["representations.csv"] = "folder,label,type\nmaster,\"Master scan, R&D \"\"A\"\"\",archival\naccess,,\n"
 	root := writeTree(t, tree)
 
 	pkg, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
@@ -37,7 +37,8 @@ func TestRepresentationsCSV(t *testing.T) {
 	if master.Name != "master" || access.Name != "access" {
 		t.Fatalf("order = %q, %q; want the CSV row order master, access", master.Name, access.Name)
 	}
-	if master.Label != "Master scan" || master.Type != "archival" {
+	// The label is taken as written: the METS encoder escapes it.
+	if master.Label != `Master scan, R&D "A"` || master.Type != "archival" {
 		t.Errorf("master label/type = %q/%q, want the CSV values", master.Label, master.Type)
 	}
 	// Empty cells stay empty: the library applies the defaulting cascade,
@@ -110,11 +111,11 @@ func TestParseRepresentationRowsFindings(t *testing.T) {
 	}{
 		{"row width", "folder,label\nmaster\n", 2, "expected 2 columns", 0},
 		{"empty folder cell", "folder,label\n ,Master scan\n", 2, "folder cell is empty", 0},
-		// A row with a bad value is kept, so matching it to a folder
-		// still reports on it.
-		{"xml-unsafe label", "folder,label\nmaster,\"Master \"\"scan\"\"\"\n", 2, "label:", 1},
-		{"xml-unsafe type", "folder,type\nmaster,a&b\n", 2, "type:", 1},
 		{"broken quote", "folder,label\nmaster,\"open\n", 0, "extraneous or missing", 0},
+		// A row with a value XML cannot carry is kept, so matching it to a
+		// folder still reports on it.
+		{"label XML cannot carry", "folder,label\nmaster,Master\x01\n", 2, "label:", 1},
+		{"type XML cannot carry", "folder,type\nmaster,a\x1bb\n", 2, "type:", 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

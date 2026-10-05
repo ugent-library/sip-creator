@@ -84,6 +84,12 @@ func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 	if name == "" {
 		return Definition{}, fmt.Errorf("profile %q requires the submitting organization's name", d.Name)
 	}
+	if err := ValidateXMLText(name); err != nil {
+		return Definition{}, fmt.Errorf("submitting organization's name: %w", err)
+	}
+	if err := ValidateXMLText(orID); err != nil {
+		return Definition{}, fmt.Errorf("submitting organization's OR-id: %w", err)
+	}
 	agent := sip.Agent{Role: "CREATOR", Type: "ORGANIZATION", Name: name}
 	if d.RequireSubmitterORID {
 		if orID == "" {

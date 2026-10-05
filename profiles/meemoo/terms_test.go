@@ -95,6 +95,8 @@ func TestValidateTerm(t *testing.T) {
 		{"wrong case", sip.Term{Key: "dcterms:ispartof", Value: "x"}, "unknown element"},
 		{"bad lang", sip.Term{Key: "dcterms:title", Lang: "nl!", Value: "x"}, "not a language tag"},
 		{"empty value", sip.Term{Key: "dcterms:subject", Value: "  "}, "empty value"},
+		// XML cannot carry it, so escaping would change the value
+		{"control character", sip.Term{Key: "dcterms:title", Value: "Tab\x0bvertical"}, "dcterms:title: \"Tab\\vvertical\" holds the character U+000B"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -66,11 +67,14 @@ var _ sip.Description = Record{}
 // subtags), not full BCP 47 validation.
 var langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
 
-// validateTitle reports why the title cannot be emitted: an empty text, or
-// a malformed language tag.
+// validateTitle reports why the title cannot be emitted: an empty text, a
+// text XML cannot carry, or a malformed language tag.
 func validateTitle(t Title) error {
 	if strings.TrimSpace(t.Value) == "" {
 		return errors.New("has an empty value")
+	}
+	if err := build.ValidateXMLText(t.Value); err != nil {
+		return err
 	}
 	if t.Lang != "" && !langRx.MatchString(t.Lang) {
 		return fmt.Errorf("%q is not a language tag", t.Lang)
@@ -78,9 +82,9 @@ func validateTitle(t Title) error {
 	return nil
 }
 
-// validateItem reports why the item cannot be emitted: no call number, or
-// an optional value that is blank rather than absent, which would emit an
-// empty element. Barcode uniqueness is a cross-item rule, checked in
+// validateItem reports why the item cannot be emitted: no call number, an
+// optional value that is blank rather than absent, which would emit an
+// empty element, or a value XML cannot carry. Barcode uniqueness is a cross-item rule, checked in
 // Validate.
 func validateItem(it Item) error {
 	if strings.TrimSpace(it.CallNumber) == "" {
@@ -91,6 +95,11 @@ func validateItem(it Item) error {
 	}
 	if it.Enumeration != "" && strings.TrimSpace(it.Enumeration) == "" {
 		return errors.New("has a blank enumeration; leave it empty instead")
+	}
+	for _, value := range []string{it.CallNumber, it.Barcode, it.Enumeration} {
+		if err := build.ValidateXMLText(value); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -106,6 +115,9 @@ func (r Record) Validate() error {
 	var errs []error
 	if r.Identifier != "" && strings.TrimSpace(r.Identifier) == "" {
 		errs = append(errs, errors.New("identifier is blank; leave it empty instead"))
+	}
+	if err := build.ValidateXMLText(r.Identifier); err != nil {
+		errs = append(errs, fmt.Errorf("identifier: %w", err))
 	}
 	for i, title := range r.Titles {
 		if err := validateTitle(title); err != nil {

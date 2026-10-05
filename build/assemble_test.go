@@ -488,8 +488,11 @@ func TestSourcePackageValidate(t *testing.T) {
 		{"bad name", func(c *build.SourcePackage) { c.Representations[0].Name = "master copy" }, "may only contain"},
 		{"dot name", func(c *build.SourcePackage) { c.Representations[0].Name = "." }, "outside representations/"},
 		{"dot-dot name", func(c *build.SourcePackage) { c.Representations[0].Name = ".." }, "outside representations/"},
-		{"xml-unsafe label", func(c *build.SourcePackage) { c.Representations[0].Label = `Master "scan"` }, "cannot be emitted"},
-		{"xml-unsafe type", func(c *build.SourcePackage) { c.Representations[0].Type = "a<b" }, "cannot be emitted"},
+		{"label XML cannot carry", func(c *build.SourcePackage) { c.Representations[0].Label = "Master\x01" }, `label: "Master\x01" holds the character U+0001`},
+		{"type XML cannot carry", func(c *build.SourcePackage) { c.Representations[0].Type = "a\x0bb" }, "type:"},
+		{"content category XML cannot carry", func(c *build.SourcePackage) { c.ContentCategory = "\x1b" }, "content category:"},
+		{"file path XML cannot carry", func(c *build.SourcePackage) { c.Representations[0].Files[0].Path = "a\x01b.jpg" }, "which XML cannot carry"},
+		{"file path not UTF-8", func(c *build.SourcePackage) { c.Representations[0].Files[0].Path = "caf\xe9.jpg" }, "not valid UTF-8"},
 		{"duplicate label", func(c *build.SourcePackage) {
 			c.Representations = append(c.Representations, c.Representations[0])
 		}, "supplied twice"},
@@ -509,9 +512,6 @@ func TestSourcePackageValidate(t *testing.T) {
 		{"update status without the updated package's identifier", func(c *build.SourcePackage) {
 			c.RecordStatus = "REPLACEMENT"
 		}, "PackageIdentifier must carry"},
-		{"xml-unsafe content category", func(c *build.SourcePackage) {
-			c.ContentCategory = "a<b"
-		}, "cannot be emitted"},
 		{"invalid representation descriptive", func(c *build.SourcePackage) {
 			c.Representations[0].Description = meemoo.Terms{{Key: "dcterms:titel", Value: "x"}}
 		}, "unknown element"},

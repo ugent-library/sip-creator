@@ -46,6 +46,7 @@ func TestValidateTitle(t *testing.T) {
 		{"valid with lang", Title{Value: "x", Lang: "nl-BE"}, ""},
 		{"bad lang", Title{Value: "x", Lang: "nl!"}, "not a language tag"},
 		{"empty value", Title{Value: "  "}, "empty value"},
+		{"control character", Title{Value: "a\x01b"}, "U+0001"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -67,6 +68,10 @@ func TestValidateItem(t *testing.T) {
 		// empty means none; blank would emit an empty element
 		{"blank barcode", Item{CallNumber: "A", Barcode: " "}, "blank barcode"},
 		{"blank enumeration", Item{CallNumber: "A", Enumeration: "\t"}, "blank enumeration"},
+		// XML cannot carry it, in any of the three values
+		{"control character in the call number", Item{CallNumber: "A\x01"}, "U+0001"},
+		{"control character in the barcode", Item{CallNumber: "A", Barcode: "1\x1b"}, "U+001B"},
+		{"control character in the enumeration", Item{CallNumber: "A", Enumeration: "vol.\x0b1"}, "U+000B"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -81,6 +86,7 @@ func TestRecordValidate(t *testing.T) {
 	requireError(t, testRecord().Validate(), "")
 
 	requireError(t, Record{Identifier: " "}.Validate(), "identifier is blank")
+	requireError(t, Record{Identifier: "ID\x01"}.Validate(), `identifier: "ID\x01" holds the character U+0001`)
 	requireError(t, Record{}.Validate(), "")
 
 	twoBarcodes := Record{Items: []Item{

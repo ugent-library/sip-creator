@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -14,7 +15,8 @@ import (
 var langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
 
 // validateTerm reports why the term cannot be emitted: an element outside
-// the profile's elements, a malformed language tag, or an empty value.
+// the profile's elements, a malformed language tag, an empty value, or a
+// value XML cannot carry.
 // These rules apply to every producer, not just the CSV transport.
 func validateTerm(t sip.Term) error {
 	if _, ok := elementsByName[t.Key]; !ok {
@@ -25,6 +27,9 @@ func validateTerm(t sip.Term) error {
 	}
 	if strings.TrimSpace(t.Value) == "" {
 		return fmt.Errorf("%s has an empty value", t.Key)
+	}
+	if err := build.ValidateXMLText(t.Value); err != nil {
+		return fmt.Errorf("%s: %w", t.Key, err)
 	}
 	return nil
 }

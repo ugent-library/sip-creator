@@ -1,6 +1,6 @@
 # 0014 — representations.csv is strict when present, and defaults cascade
 
-Status: Accepted (2026-09-03)
+Status: Accepted (2026-09-03). **Superseded in part by [ADR-0028](0028-encoders-escape-every-value.md)** (2026-10-05): the METS and PREMIS templates escape every value, so `Label` and `Type` may contain `< > & "`.
 
 ## Context
 

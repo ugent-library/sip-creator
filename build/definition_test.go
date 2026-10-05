@@ -123,6 +123,17 @@ func TestWithSubmitterMeemooRequiresORID(t *testing.T) {
 	}
 }
 
+// The submitter's name and OR-id are written into the package METS, so
+// they are held to what XML can carry.
+func TestWithSubmitterRefusesTextXMLCannotCarry(t *testing.T) {
+	if _, err := basicDef(t).WithSubmitter("Example\x01Organization", "OR-a1b2c3d"); err == nil || !strings.Contains(err.Error(), "name") {
+		t.Errorf("WithSubmitter() with a control character in the name: error = %v", err)
+	}
+	if _, err := basicDef(t).WithSubmitter("Example Organization", "OR-\x1b"); err == nil || !strings.Contains(err.Error(), "OR-id") {
+		t.Errorf("WithSubmitter() with a control character in the OR-id: error = %v", err)
+	}
+}
+
 func TestWithSubmitterRequiresName(t *testing.T) {
 	if _, err := basicDef(t).WithSubmitter("", "OR-a1b2c3d"); err == nil {
 		t.Fatal("WithSubmitter() with empty name: want error, got nil")

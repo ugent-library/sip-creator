@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
-	"strings"
+	"unicode/utf8"
 
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/sip"
@@ -21,6 +21,7 @@ type SourceFile struct {
 	Key string
 	// Path is the logical path relative to the file's container
 	// (representation data/, documentation/, premis/), slash-separated.
+	// Must satisfy ValidateXMLText: the METS and PREMIS documents carry it.
 	Path string
 }
 
@@ -35,12 +36,12 @@ type SourceRepresentation struct {
 	Name string
 	// Label is the display name, emitted as the representation METS
 	// mets/@LABEL. Optional: empty means the Name. Must satisfy
-	// ValidateAttributeText.
+	// ValidateXMLText.
 	Label string
 	// Type is the representation's type, declared in the representation
 	// METS content typing by profiles with EmitRepresentationType set.
 	// Optional: empty means the resolved Label. Must satisfy
-	// ValidateAttributeText.
+	// ValidateXMLText.
 	Type string
 	// Files are the content files, in packaging order.
 	Files []SourceFile
@@ -102,7 +103,7 @@ type SourcePackage struct {
 	RecordStatus sip.RecordStatus
 	// ContentCategory optionally declares this package's mets/@TYPE, its
 	// content category in the CSIP vocabulary; empty means the profile's
-	// value. Must satisfy ValidateAttributeText.
+	// value. Must satisfy ValidateXMLText.
 	ContentCategory string
 	// Description is the package-level descriptive metadata. Its concrete
 	// type must be the profile's descriptive standard (meemoo.Terms for
@@ -144,15 +145,28 @@ func ValidateRepresentationName(name string) error {
 	return nil
 }
 
-// ValidateAttributeText returns why a value cannot be emitted as a METS
-// attribute: the METS templates do no XML escaping, so the XML-active
-// characters are rejected rather than escaped. The empty string is fine
-// (an empty Label or Type falls back along the defaulting cascade).
-func ValidateAttributeText(value string) error {
-	if i := strings.IndexAny(value, `<>&"`); i >= 0 {
-		return fmt.Errorf("%q contains %q, which cannot be emitted into METS; the characters < > & \" are not allowed", value, value[i])
+// ValidateXMLText returns why a value cannot be written into the package's
+// XML documents: it is not valid UTF-8, or it holds a character XML 1.0
+// excludes, such as a control character other than tab, line feed and
+// carriage return. Escaping cannot carry such a character; it would be
+// replaced, and a file name would no longer name its file.
+func ValidateXMLText(value string) error {
+	if !utf8.ValidString(value) {
+		return fmt.Errorf("%q is not valid UTF-8", value)
+	}
+	for _, c := range value {
+		if !isXMLChar(c) {
+			return fmt.Errorf("%q holds the character %U, which XML cannot carry", value, c)
+		}
 	}
 	return nil
+}
+
+// isXMLChar reports whether c is a character XML 1.0 allows in a document
+// (its Char production).
+func isXMLChar(c rune) bool {
+	return c == '\t' || c == '\n' || c == '\r' ||
+		0x20 <= c && c <= 0xD7FF || 0xE000 <= c && c <= 0xFFFD || 0x10000 <= c && c <= 0x10FFFF
 }
 
 // Validate reports the first rule the source package breaks. These are the
@@ -177,7 +191,7 @@ func (sp *SourcePackage) Validate() error {
 	if sp.RecordStatus.IsUpdate() && sp.PackageIdentifier == "" {
 		return fmt.Errorf("record status %s updates an earlier package, so PackageIdentifier must carry that package's identifier", sp.RecordStatus)
 	}
-	if err := ValidateAttributeText(sp.ContentCategory); err != nil {
+	if err := ValidateXMLText(sp.ContentCategory); err != nil {
 		return fmt.Errorf("content category: %w", err)
 	}
 	if sp.Description == nil {
@@ -206,10 +220,10 @@ func (sp *SourcePackage) Validate() error {
 			return fmt.Errorf("representation name %q supplied twice", r.Name)
 		}
 		names[r.Name] = true
-		if err := ValidateAttributeText(r.Label); err != nil {
+		if err := ValidateXMLText(r.Label); err != nil {
 			return fmt.Errorf("representation %q label: %w", r.Name, err)
 		}
-		if err := ValidateAttributeText(r.Type); err != nil {
+		if err := ValidateXMLText(r.Type); err != nil {
 			return fmt.Errorf("representation %q type: %w", r.Name, err)
 		}
 		if len(r.Files) == 0 {
@@ -257,6 +271,9 @@ func validateFiles(container string, files []SourceFile) error {
 	for _, f := range files {
 		if f.Source == "" || f.Path == "" {
 			return fmt.Errorf("%s: a file needs both a Source and a Path (got Source %q, Path %q)", container, f.Source, f.Path)
+		}
+		if err := ValidateXMLText(f.Path); err != nil {
+			return fmt.Errorf("%s: %w", container, err)
 		}
 		if paths[f.Path] {
 			return fmt.Errorf("%s: two files share the logical path %q", container, f.Path)

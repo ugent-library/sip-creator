@@ -317,13 +317,21 @@ func (r *folderReader) newFile(base, src string) build.SourceFile {
 	// under both.
 	relRoot, _ := filepath.Rel(r.root, src)
 	relBase, _ := filepath.Rel(base, src)
-	return build.SourceFile{
+	f := build.SourceFile{
 		Source: src,
 		// Key is not NFC-normalized: it must match the filename exactly
 		// as the characterization report recorded it.
 		Key:  path.Clean(filepath.ToSlash(relRoot)),
 		Path: norm.NFC.String(filepath.ToSlash(relBase)),
 	}
+	// The path is written into the METS and PREMIS documents, so it is held
+	// to the library's rule for their text (SourcePackage.Validate). Key
+	// holds the same names from the input root, so the finding names the
+	// file the producer must rename.
+	if err := build.ValidateXMLText(f.Key); err != nil {
+		r.violate("%v; rename the file or folder", err)
+	}
+	return f
 }
 
 // readDir lists dir under the rules that hold everywhere in the input

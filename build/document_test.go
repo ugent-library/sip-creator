@@ -146,9 +146,7 @@ func TestBuildSuppliedDocumentOnRepresentation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The mdRef href is percent-encoded by the METS encoder, so match the
-	// file name and the typing rather than the path.
-	if !strings.Contains(string(mets), `MDTYPE="DC"`) || !strings.Contains(string(mets), "dc.xml") {
+	if !strings.Contains(string(mets), `MDTYPE="DC" MDTYPEVERSION="SimpleDC20021212" xlink:type="simple" xlink:href="metadata/descriptive/dc.xml"`) {
 		t.Errorf("representation METS does not reference the supplied document:\n%s", mets)
 	}
 }

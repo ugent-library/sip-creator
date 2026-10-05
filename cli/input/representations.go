@@ -19,8 +19,8 @@ type repRow struct {
 // header naming the columns, then one row per representation folder.
 // The errs are findings in the rows: a *rowError for a row that breaks a
 // rule, or a CSV syntax error, which ends the parse because the reader may
-// not find its place again. A row with a bad label or type is still
-// returned, so matching rows to folders can report on it too. err
+// not find its place again. A row with a label or type XML cannot carry is
+// still returned, so matching rows to folders can report on it too. err
 // means the file cannot be used: not UTF-8, empty, or a wrong header, whose
 // problems are joined into it.
 func parseRepresentationRows(data []byte) (rows []repRow, errs []error, err error) {
@@ -72,12 +72,12 @@ func parseRepresentationRows(data []byte) (rows []repRow, errs []error, err erro
 			continue
 		}
 		label, kind := cell(row, cols.label), cell(row, cols.kind)
-		// Whether a value may be emitted is the library's rule, so a label
+		// What the package's XML can carry is the library's rule, so a label
 		// is refused here the same way as in a SourcePackage built in Go.
-		if err := build.ValidateAttributeText(label); err != nil {
+		if err := build.ValidateXMLText(label); err != nil {
 			errs = append(errs, &rowError{line, fmt.Errorf("label: %w", err)})
 		}
-		if err := build.ValidateAttributeText(kind); err != nil {
+		if err := build.ValidateXMLText(kind); err != nil {
 			errs = append(errs, &rowError{line, fmt.Errorf("type: %w", err)})
 		}
 		rows = append(rows, repRow{line: line, folder: folder, label: label, kind: kind})
