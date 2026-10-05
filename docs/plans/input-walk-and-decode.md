@@ -9,7 +9,7 @@ document only to hand them to the walker.
 
 ## Context
 
-`input.Read(root, mapper, document)` makes one `folderWalker` and calls `read()`. The
+`input.Read(root, mapper, documentSpec)` makes one `folderWalker` and calls `read()`. The
 walker does two jobs in one pass:
 
 - **Finding files**: the reserved names, the folder rules (`expectFile`,
@@ -168,8 +168,8 @@ together with the format. `readDocument` says so in one comment line.
 
 ### What does not change
 
-- `input.Read(root, mapper, document)`, its arguments and its result.
-- `input.Document` and the three places that build it from a `build.Definition`.
+- `input.Read(root, mapper, documentSpec)`, its arguments and its result.
+- `input.DocumentSpec` (named `input.Document` when this plan was written) and the three places that build it from a `build.Definition`.
 - Every violation message, word for word.
 - The pure parsers and their tests.
 

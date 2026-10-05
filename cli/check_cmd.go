@@ -26,7 +26,7 @@ var checkCmd = &cobra.Command{
 			return err
 		}
 
-		source, err := input.Read(args[0], mapper, input.Document{Name: def.DocumentName, Model: def.Model})
+		source, err := input.Read(args[0], mapper, input.DocumentSpec{Name: def.DocumentName, Model: def.Model})
 		if err != nil {
 			return reportViolations(cmd, args[0], err)
 		}

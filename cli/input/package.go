@@ -20,14 +20,15 @@ import (
 // Read walks and validates the folder at root against the input
 // specification and returns the source package it holds, the value the
 // builder takes. mapper is the profile's: it maps the rows of a
-// description.csv onto the profile's description. document is the profile's descriptive document,
-// which a folder may supply in place of the rows. Where the library has a rule for what Read reads
+// description.csv onto the profile's description. documentSpec describes the
+// profile's descriptive document, which a folder may supply in place of the
+// rows. Where the library has a rule for what Read reads
 // (a description's Validate and ValidateRequired, the metadata model's
 // check of a supplied document's root), Read runs that same rule and
 // reports its findings with file and line. Every MUST violation is
 // collected and returned together as a Violations error; when the error is
 // non-nil the returned source package is incomplete and must not be built.
-func Read(root string, mapper Mapper, document Document) (*build.SourcePackage, error) {
+func Read(root string, mapper Mapper, documentSpec DocumentSpec) (*build.SourcePackage, error) {
 	if mapper == nil {
 		return nil, errors.New("no mapper: pass the profile's mapper, which maps the rows of description.csv onto its description")
 	}
@@ -44,9 +45,9 @@ func Read(root string, mapper Mapper, document Document) (*build.SourcePackage, 
 	}
 
 	r := &folderReader{root: abs}
-	format, takesDocument := document.Model.(build.DocumentFormat)
+	format, takesDocument := documentSpec.Model.(build.DocumentFormat)
 	if takesDocument {
-		r.documentName = document.Name
+		r.documentName = documentSpec.Name
 	}
 
 	source, inv := r.walk()
