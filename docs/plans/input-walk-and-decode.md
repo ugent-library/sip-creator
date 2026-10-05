@@ -94,8 +94,8 @@ The last rule repeats a library rule: `SourcePackage.Validate` refuses a package
 without a description ("no descriptive metadata supplied"). The reader reports it too,
 naming the input specification, because `check` runs `Read` and never the library's
 `Validate`; without it, `check` would pass a folder that `create` then refuses with a
-message that names no file. Whether the rule should depend on the profile is an open
-question in [TODO.md](../TODO.md), outside this plan.
+message that names no file. The rule holds under every profile
+([ADR-0025](../decisions/0025-every-package-carries-a-description.md)).
 
 All three rules sit in one walk helper that takes a level's `descriptionFiles` as the
 walk found them and returns what the inventory records. The decoder then sees at most

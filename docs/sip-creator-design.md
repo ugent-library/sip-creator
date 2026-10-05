@@ -161,6 +161,7 @@ The workflow around the tool ([ADR-0005](decisions/0005-dockerized-validation-an
 These are true of the code today and tracked in [TODO.md](TODO.md):
 
 - **The `sip.Event` stub is unused.** PREMIS events are not modeled; the stub anchors the events design question in [TODO.md](TODO.md). (The once-unused `sip.Identifier` interface was deleted 2026-08-20; identifiers are plain `uuid-<uuid>` strings, validated by `sip.ValidateIdentifier`.)
+- **The `basic` profile accepts a representation-level description**, which Meemoo SIP 1.2's basic profile forbids.
 - **Essence arrives as filesystem paths, not streams**, and fixity cannot be supplied pre-computed; this is the remaining embeddability work (see the CLI/library boundary above).
 
 Resolved 2026-08-20 with the [input-convention plan](archive/input-convention.md): `mets/@TYPE` is operator-selectable (`--content-category`, `SIP_CONTENT_CATEGORY`), and the old `representation_N` input regex is gone: operator folders under `representations/` are free-form labels. Since 2026-09-01 the label also names the package-side directory verbatim (before that, the assembler renamed to `representation_N`).
