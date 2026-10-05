@@ -49,8 +49,8 @@ func New(config *Config) (*Builder, error) {
 // (no disk writes), then emits it in the canonical order. Failures before
 // the write phase leave no partial package dir behind.
 func (b *Builder) Build(source *SourcePackage) (*sip.Package, error) {
-	if err := checkDescriptions(b.profile.Model, source); err != nil {
-		return nil, fmt.Errorf("profile %q: %w", b.profile.Name, err)
+	if err := b.profile.ValidateSource(source); err != nil {
+		return nil, err
 	}
 	if err := source.Validate(); err != nil {
 		return nil, fmt.Errorf("source package: %w", err)

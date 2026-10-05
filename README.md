@@ -204,7 +204,9 @@ your-input/
 ```
 
 When the content comes in several versions, such as a preservation master and an access
-copy, each version gets its own folder under `representations/`:
+copy, each version gets its own folder under `representations/` (under the `eark`
+profiles; Meemoo's `basic` profile allows one representation and no description below the
+package level):
 
 ```
 your-input/
@@ -233,10 +235,10 @@ your-input/
 | `premis/` | no | received preservation XML, copied as it is | [§5](docs/input-spec.md#5-received-preservation-files-premis) |
 | `siegfried.json` | no | a format characterization report | [below](#format-characterization) |
 
-Everything else is content. A representation folder can hold its own `description.csv`
-(or document), `documentation/` and `premis/`, about that version only. Representation
-folder names may use letters, digits and `._-`; in the simple case the representation is
-named after the input folder.
+Everything else is content. A representation folder can hold its own `documentation/` and
+`premis/`, and under the `eark` profiles its own `description.csv` (or document), about
+that version only. Representation folder names may use letters, digits and `._-`; in the
+simple case the representation is named after the input folder.
 
 [examples/](examples/) has a complete input folder for each profile.
 

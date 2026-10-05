@@ -1,6 +1,7 @@
 package build
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
@@ -23,6 +24,16 @@ type Definition struct {
 	// OR-id, emitted as the agent's IDENTIFICATIONCODE note (Meemoo SIP
 	// 1.2, metsHdr); WithSubmitter needs the OR-id when set.
 	RequireSubmitterORID bool
+	// MaxRepresentations is the number of representations a package may
+	// have at most; zero sets no limit. Meemoo SIP 1.2's basic profile
+	// allows one: "The IE MUST be represented by exactly one
+	// representation."
+	MaxRepresentations int
+	// AllowRepresentationDescriptions allows a representation to carry its
+	// own description; false allows one at the package level only. Meemoo
+	// SIP 1.2's basic profile leaves it false: "There MUST NOT be any
+	// descriptive metadata at the representation level."
+	AllowRepresentationDescriptions bool
 	// DocumentName is the file name of the descriptive document under
 	// metadata/descriptive/: the package's convention for naming a document
 	// in the model's format, such as dc+schema.xml or mods.xml.
@@ -84,4 +95,30 @@ func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 	// with the profile package's value, and append must never write into it.
 	d.Declaration.Agents = append(slices.Clone(d.Declaration.Agents), agent)
 	return d, nil
+}
+
+// ValidateSource returns why the source package is not one the profile
+// accepts: a description that is not in the profile's metadata model, or a
+// package that breaks the profile's own rules (MaxRepresentations,
+// AllowRepresentationDescriptions). The profile's rules are joined, one error each,
+// so all of them can be reported at once. It writes nothing, so a source
+// package can be checked against the profile without building it. What
+// every package needs regardless of profile is SourcePackage.Validate's.
+func (d Definition) ValidateSource(source *SourcePackage) error {
+	if err := checkDescriptions(d.Model, source); err != nil {
+		return fmt.Errorf("profile %q: %w", d.Name, err)
+	}
+
+	var errs []error
+	if d.MaxRepresentations > 0 && len(source.Representations) > d.MaxRepresentations {
+		errs = append(errs, fmt.Errorf("profile %q allows at most %d representation(s), the package has %d", d.Name, d.MaxRepresentations, len(source.Representations)))
+	}
+	if !d.AllowRepresentationDescriptions {
+		for _, r := range source.Representations {
+			if r.Description != nil {
+				errs = append(errs, fmt.Errorf("representation %q has a description; profile %q allows one at the package level only", r.Name, d.Name))
+			}
+		}
+	}
+	return errors.Join(errs...)
 }

@@ -12,7 +12,9 @@ func init() {
 	rootCmd.AddCommand(checkCmd)
 }
 
-// checkCmd validates an input folder without building. Checks on file
+// checkCmd validates an input folder without building: the input
+// specification's rules, then the profile's rules on the source package
+// the folder holds, which the build would apply too. Checks on file
 // contents (received PREMIS, the characterization report) run only in
 // create. It reads no configuration (ADR-0010).
 var checkCmd = &cobra.Command{
@@ -29,6 +31,9 @@ var checkCmd = &cobra.Command{
 		source, err := input.Read(args[0], mapper, input.DocumentSpec{Name: def.DocumentName, Model: def.Model})
 		if err != nil {
 			return reportViolations(cmd, args[0], err)
+		}
+		if err := def.ValidateSource(source); err != nil {
+			return err
 		}
 
 		files := 0

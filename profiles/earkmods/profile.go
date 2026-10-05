@@ -15,6 +15,8 @@ var Definition = build.Definition{
 	Model: mods{},
 	// Named after the MODS document it holds.
 	DocumentName: "mods.xml",
+	// As for eark: a representation may carry its own description.
+	AllowRepresentationDescriptions: true,
 	// No PREMIS, as for eark: RODA drops package PREMIS that does not
 	// describe agents or events.
 	EmitPackagePremis:        false,

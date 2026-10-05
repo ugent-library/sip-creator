@@ -51,7 +51,7 @@ Institution details (who submits, who archives, contact person, agreement number
 A *representation* is one version of the content: the archival master scans are one, a derived PDF is another. Every package has at least one.
 
 - **Simple case:** if there is no `representations/` folder, everything in the package folder (apart from the reserved names) is the content of a single representation, named after the input folder itself.
-- **Multiple versions:** if `representations/` exists, each folder directly inside it is one representation, named by its folder name. All content MUST then live inside `representations/`; content files elsewhere at the top level are an error (except inside `documentation/` and `premis/`).
+- **Multiple versions:** if `representations/` exists, each folder directly inside it is one representation, named by its folder name. All content MUST then live inside `representations/`; content files elsewhere at the top level are an error (except inside `documentation/` and `premis/`). Under `basic` the folder MUST hold exactly one representation: Meemoo SIP 1.2's basic profile says "The IE MUST be represented by exactly one representation." The eark profiles set no limit.
 - Representation names (the folder names, or the input folder's own name in the simple case) MUST match `A–Z a–z 0–9 . _ -`. The name is used as-is inside the final package: it becomes the representation's directory name under `representations/` and, unless `representations.csv` says otherwise, its human-readable name and type in the generated metadata. Neither E-ARK CSIP nor the Meemoo specification dictates a naming scheme; CSIP requires only that the names be unique, which folder names are by construction.
 - Inside a representation folder, three names are reserved: `description.csv`, `documentation/` and `premis/` (all optional, see §3–5), plus the profile's document name under the eark profiles (§3). Everything else is content, with free naming and nesting.
 - Files are packaged in a stable, tool-determined order (alphabetical by path). This order carries no meaning: neither E-ARK CSIP nor the Meemoo specification assigns semantics to file order. If a human-readable sequence matters to you, zero-pad your numbering (`0001.tiff`, `0002.tiff`, …); explicit ordering is a deferred feature (see §8, the manifest).
@@ -140,12 +140,14 @@ rights[nl],publiek domein
 
 ### Describing one representation
 
-A representation MAY carry its own rows file (at `representations/<name>/description.csv`) when something is true of that version only, typically a license or rights statement that differs between the master and an access copy. Same format and rules as the package-level file, with two differences:
+Under the eark profiles a representation MAY carry its own rows file (at `representations/<name>/description.csv`) when something is true of that version only, typically a license or rights statement that differs between the master and an access copy. Same format and rules as the package-level file, with two differences:
 
 - `identifier` and `title` are NOT required: the package-level description covers the work's identity. A `title` MAY still be given as a human-readable name for the version (e.g. "PDF-versie").
 - It describes the representation, not the work: keys like `created` or `creator` here refer to the making of this version.
 
 Under the eark profiles the profile's document MAY stand in for the rows here too (`representations/<name>/dc.xml` or `mods.xml`), one or the other, never both. In the simple case without a `representations/` folder there is no place for either file, by design; the simple case stays simple.
+
+Under `basic` a representation MUST NOT carry a description: Meemoo SIP 1.2's basic profile says "There MUST NOT be any descriptive metadata at the representation level." A `description.csv` in a representation folder is reported by `check` and refused by `create`.
 
 ### Supplying a finished document (`eark` and `eark-mods`)
 

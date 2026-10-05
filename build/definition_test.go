@@ -167,3 +167,31 @@ func TestWithSubmitterLeavesRegistryUntouched(t *testing.T) {
 		}
 	}
 }
+
+// Meemoo's basic profile allows one representation and no description
+// below the package level; plain E-ARK allows both. Build refuses what
+// ValidateSource refuses, before anything is written.
+func TestValidateSourceAppliesProfileRules(t *testing.T) {
+	b, in, outDir := newTestBuilder(t, basicDef(t))
+	access := in.Representations[0]
+	access.Name = "access"
+	access.Description = meemoo.Terms{{Key: "dcterms:title", Lang: "nl", Value: "Toegangskopie"}}
+	in.Representations = append(in.Representations, access)
+
+	err := basicDef(t).ValidateSource(in)
+	for _, want := range []string{"at most 1 representation(s), the package has 2", `representation "access" has a description`} {
+		if err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("ValidateSource = %v, want a finding mentioning %q", err, want)
+		}
+	}
+	if _, err := b.Build(in); err == nil {
+		t.Error("Build accepted what ValidateSource refused")
+	}
+	requireEmpty(t, outDir)
+
+	in.Description = identityTerms()
+	in.Representations[1].Description = eark.Terms{{Key: "title", Value: "Access copy"}}
+	if err := earkDef(t).ValidateSource(in); err != nil {
+		t.Errorf("eark has no such rules, yet ValidateSource refused: %v", err)
+	}
+}

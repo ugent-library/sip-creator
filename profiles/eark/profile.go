@@ -14,6 +14,9 @@ var Definition = build.Definition{
 	// Named after the simple-DC document it holds; Meemoo's naming
 	// convention doesn't apply to the eark profile.
 	DocumentName: "dc.xml",
+	// A representation may carry its own description, such as a license
+	// that holds for one version only; CSIP has no rule against it.
+	AllowRepresentationDescriptions: true,
 	// The eark profile emits no PREMIS: RODA drops package PREMIS that
 	// does not describe agents or events.
 	EmitPackagePremis:        false,

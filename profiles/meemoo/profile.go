@@ -14,6 +14,10 @@ var Definition = build.Definition{
 	// Meemoo identifies the submitting organization by its OR-id
 	// (Meemoo SIP 1.2, metsHdr agent note).
 	RequireSubmitterORID: true,
+	// The basic profile allows exactly one representation, and no
+	// descriptive metadata at the representation level
+	// (AllowRepresentationDescriptions left false).
+	MaxRepresentations: 1,
 	// The filename Meemoo's basic profile expects for the descriptive
 	// document.
 	DocumentName:             "dc+schema.xml",
