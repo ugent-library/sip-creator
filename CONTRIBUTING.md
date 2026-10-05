@@ -21,6 +21,15 @@ using the jar version that `docker/validator/Dockerfile` pins:
 CSIP_CMD="java -jar commons-ip2-cli-2.11.2.jar" ./build.sh eark
 ```
 
+## Building
+
+```sh
+go build -o bin/sip-creator .
+./bin/sip-creator create --profile basic examples/basic basic-uuid
+```
+
+`bin/` and `<profile>-uuid/` are ignored by git.
+
 ## Tests
 
 ```sh
@@ -59,8 +68,23 @@ docker compose up -d reports
 open http://localhost:8080
 ```
 
-`./scripts/validate.sh <sip.zip|sip-dir>...` validates any package on its own, including
-an unzipped package directory when debugging structure.
+`./scripts/validate.sh [-o report-dir] <sip.zip|sip-dir>...` validates any package on
+its own, including an unzipped package directory when debugging structure.
+
+## Comparing against the reference copy
+
+```sh
+./scripts/reference-diff.sh tmp/reference/<pkg> <profile>-uuid/uuid-<uuid>
+```
+
+compares a generated package with a reference copy kept in `tmp/reference/`, after
+replacing the values that change on every run or per environment: UUIDs, timestamps,
+the checksums and sizes of generated XML files, and the submitting organization. The
+script's header lists what it normalizes and what it never does. A refactor must
+produce no difference. When a change alters the output on purpose, replace the
+reference copy and record why in the commit message and in `tmp/reference/README.md`.
+`tmp/` is local and not tracked in git. The reference copies contain format info, so
+build the package to compare with `build.sh`, which generates `siegfried.json`.
 
 ## Documentation
 

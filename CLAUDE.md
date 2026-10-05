@@ -1,129 +1,134 @@
 # SIP Creator agent orientation
 
-SIP Creator is both a Go library and a CLI that builds Submission Information Packages (SIPs). It takes a producer's essence files plus descriptive metadata and assembles them into a standards-conformant package. Its primary target is a valid [E-ARK CSIP](https://earkcsip.dilcis.eu/) package (ingestible by RODA and other CSIP-conformant systems) with [Meemoo's SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) (the **stable** version; 2.0/2.1 are release candidates) layered on top as an additional specialization for ingest into the Flemish heritage archive (hetarchief.be). The BagIt envelope Meemoo's transfer requires is out of scope: bag the package directory with a reference BagIt implementation.
+SIP Creator is a Go library and CLI that builds Submission Information Packages (SIPs): it takes a producer's essence files and descriptive metadata and writes one package that conforms to [E-ARK CSIP](https://earkcsip.dilcis.eu/), optionally with [Meemoo's SIP Specification 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) on top (the stable version; 2.0 and 2.1 are release candidates). The project is experimental.
 
 ## Scope
 
-This is digital-preservation software at the front of the chain. In [OAIS](https://www.iso.org/standard/57284.html) terms (ISO 14721) a SIP is what a *Producer* hands to an archive's *Ingest* entity; SIP Creator is the tool that builds it. It is a **package builder, not an archive**: no permanent identifiers of its own authority, no store, no preservation guarantees; it produces one well-formed SIP and stops. Everything after ingest (AIP, storage, DIP dissemination) lives downstream in RODA and Meemoo's pipeline.
-
-A SIP bundles the *essence* (the content files) with the metadata to understand and trust it: **descriptive** (Dublin Core / MODS), **preservation** ([PREMIS](https://www.loc.gov/standards/premis/): provenance, fixity, events, agents), and **structural** ([METS](https://www.loc.gov/standards/mets/): the manifest tying files, checksums, and metadata together). Generating that XML correctly (valid references, accurate fixity, right profile declarations) is the whole job, so spec compliance and valid XML matter more than features or clever code. The E-ARK CSIP profile is the base contract every package must satisfy; Meemoo SIP v1.2 specializes on top of it. When in doubt, CSIP validity wins over convenience, and the Meemoo spec wins over convenience within the Meemoo layer.
-
-The project is **experimental and work in progress**. `docs/README.md` is the map of the documentation: `docs/sip-creator-design.md` describes *what the system is* (schema, domain model, lifecycle); `docs/decisions/` holds the ADRs recording *why* choices were made; coding and naming conventions live in this file. Keep `docs/` current: when a refactor changes the system, update `sip-creator-design.md` in the same change, and when it enacts a decision worth remembering, add or update an ADR. A doc that drifts from the code misleads the future reader, including future-you.
-
-Keep the dependency footprint small and boring. All XML is generated with Go `text/template` templates, not an XML library. Keep it that way unless there is a strong, discussed reason to change. Adding a new external dependency is a serious choice, not a convenience.
+- **A package builder, not an archive.** In OAIS terms SIP Creator builds what a Producer hands to Ingest. It mints no identifiers of its own authority, stores nothing and makes no preservation guarantees; everything after ingest happens in RODA and Meemoo's pipeline. The BagIt envelope Meemoo's transfer requires is out of scope.
+- **Spec compliance comes first.** Correct METS, PREMIS and descriptive XML (valid references, accurate fixity, the right profile declarations) is the whole job. CSIP validity wins over convenience; within the Meemoo layer, the Meemoo spec does.
+- **Few dependencies.** All XML is generated with `text/template`, not an XML library. Change that, or add a dependency, only after a discussion.
 
 ## Audience
 
-SIP Creator serves digital-preservation staff at UGent Library preparing SIPs for Meemoo ingest and for UGent's RODA instance. It is written to be usable by other institutions as it stands and to read as a reference implementation of E-ARK SIP packaging ([ADR-0022](docs/decisions/0022-reference-implementation-bring-your-own-profile.md)): the profiles in this repository are reference implementations, and an institution with its own descriptive standard brings its own profile. Downstream consumers are Meemoo's ingest pipeline, CSIP validators (commons-ip / RODA), and the future archivists and systems that will read the preserved metadata decades from now.
-
-Use vocabulary from the Meemoo SIP spec and OAIS: SIP, essence, representation, intellectual entity, fixity, descriptive vs. preservation metadata.
+Digital-preservation staff at UGent Library, preparing SIPs for Meemoo and for UGent's RODA. The code is also a reference implementation for other institutions, which bring their own profile for their own descriptive standard ([ADR-0022](docs/decisions/0022-reference-implementation-bring-your-own-profile.md)). Use the vocabulary of the Meemoo spec and OAIS: SIP, essence, representation, intellectual entity, fixity, descriptive and preservation metadata.
 
 ## System shape
 
-Single-binary cobra CLI. Entry point is `main.go` → `cli/cli.go` → `cli/create_cmd.go` (plus `cli/check_cmd.go`: validate an input folder without building).
+A Go library with a cobra CLI on top (`main.go` → `cli/`). [docs/sip-creator-design.md](docs/sip-creator-design.md) describes each part; this is where to look first.
 
-Data flow for `create [src] [dest] --profile basic`:
+| Package | Role |
+|---|---|
+| `cli/` | the `create` and `check` commands, environment config, profile-to-mapper pairing |
+| `cli/input/` | reads an input folder ([docs/input-spec.md](docs/input-spec.md)) into a `build.SourcePackage` |
+| `cli/input/mapping/` | one mapper per profile: `description.csv` rows to the profile's description |
+| `profiles/` | the registry; one package per profile (`meemoo` is `basic`, `eark`, `earkmods` is `eark-mods`) |
+| `build/` | the library's face and the engine: validate, assemble the graph, write it |
+| `sip/` | the domain graph: `Package`, `Entity`, `Representation`, `File` |
+| `encoders/` | METS and PREMIS templates; `xmldoc`, the one XML reader |
+| `store/`, `schemas/`, `archive/`, `characterization/` | file writes with fixity, embedded XSDs, the zip, the Siegfried report decoder |
 
-1. **Input** (`cli/input/`): a source folder prepared per the input specification ([docs/input-spec.md](docs/input-spec.md)): one description per level, the rows file `description.csv` (key–value terms in the keys of the profile passed with `--profile`) or, under the eark profiles, a finished `dc.xml` or `mods.xml` in its place, content files either flat at the root or under `representations/<label>/`, plus optional `documentation/`, `premis/` (received preservation XML, passed through unparsed), and a `siegfried.json` sidecar. `input.Read(root, mapper, documentSpec)` walks the folder (names, kinds and places: the reserved names, folder rules, which description files each level has), then decodes the files the walk found (sidecar, `representations.csv`, then each level's description), and collects every MUST violation into one `Violations` error. It takes the two things reading a folder needs from a profile (the `check` command runs this standalone with the same `--profile` and no configuration, ADR-0010): an `input.Mapper`, the one-method interface that maps the rows of `description.csv` onto the profile's description (`Map` builds the description from the decoded terms and reports each term it cannot place by index, which the reader turns into a line), and an `input.DocumentSpec`, which describes the supplied document by the definition's `DocumentName` and `Model`: when the model implements `build.DocumentFormat`, the reader reserves that file name and validates the document's root element as the engine will. It returns the `build.SourcePackage` the builder takes. The mappers live in `cli/input/mapping`, one per profile (`Meemoo`, `Eark`, `EarkMods`), each importing its profile package; `cli/profile.go` pairs each profile with its mapper and resolves it together with the definition, and the commands build the `input.DocumentSpec` from the definition. The folder is one transport, not the API: the library never imports `cli/input`; the generic reader in `cli/input` imports no profile package and takes no profile definition, and only the mappings beside it import the profile packages; embedding systems construct the same `build.SourcePackage` from their own stores.
-2. **Profile** (`profiles/`): the registry (`Get`/`Names`) over one package per profile: `profiles/meemoo` (the `basic` profile, Meemoo SIP 1.2's basic content profile), `profiles/eark` (the `eark` profile, plain E-ARK with Simple Dublin Core) and `profiles/earkmods` (the `eark-mods` profile, plain E-ARK with MODS 3.7: one bibliographic record typed by field, its identifier and titles plus its physical copies as items). A profile package holds everything the profile knows about its descriptive metadata (its description type, for Meemoo and eark its key table, validation, template and the XSDs its document points at) and exports one `build.Definition` carrying the rest as data (PREMIS emission flags, the descriptive document's file name, METS values as `sip.MetsDeclaration`) with an unexported type implementing `build.MetadataModel`, the profile's metadata model (the type check `ValidateType`, `Encode` with the XSDs its document points at, `ModelType` and `ModelTypeVersion`, which the METS dmdSec declares the document as, and for Meemoo the identifier swap). The CLI resolves `--profile` in the registry and an unknown value lists the available profiles. A new profile is a new package and one registry line; the engine imports no profile (ADR-0018).
-3. **Engine** (`build/`): one engine reads any definition. `build.New(config)` takes the profile with the destination and logger and refuses a profile without a metadata model; `Builder.Build(source)` (`builder.go`) runs the profile's check on the source package (`Definition.ValidateSource`: its descriptions belong to the profile's descriptive standard, and the profile's own rules hold, such as `basic`'s one representation and no description below the package level; the `check` command runs it too), validates the `SourcePackage` (the one run of the description's rules before a write, including what the standard requires of a package-level description; the metadata models trust it), then runs two strictly separated phases. `assemble.go` is pure: it takes the validated `SourcePackage`, optionally enriches essence files from its pre-decoded characterization report (verifying each record's MD5 against the *source* bytes), and builds the complete `sip.Package` graph with zero disk writes; `write.go` emits the graph in the one canonical dependency order (skeleton → schemas → essence copies → descriptive → per-rep PREMIS then METS → package PREMIS → package METS strictly last), back-filling fixity onto graph nodes as each file lands. Errors return (no panics on the build path); a failed assembly leaves nothing on disk.
-4. **Store** (`store/store.go`): dumb filesystem primitives rooted at the `uuid-<uuid>` package dir under `dest`; callers speak package-relative paths. `CopyFile` computes MD5/size during the streamed copy; `WriteMetadata` renders to memory before writing (a failed template leaves no partial file); all writes truncate.
-5. **Encoders** (`encoders/mets`, `encoders/premis`): the renderers of the domain graph, thin `Encode*(io.Writer, ...)` APIs backed by `text/template`: `premis` the preservation XML, `mets` the structural manifest. Every profile difference reaches them as data on `sip.MetsDeclaration`. UUID minting for METS IDs is the `identifier` template func in the mets encoder; the received-PREMIS check lives next to the PREMIS template. `encoders/xmldoc` is the one XML reader the tool has: the root element of a well-formed document, which the received-PREMIS check and the supplied-document type (`build.EncodedDescription`) both use.
-6. **Schemas** (`schemas/schemas.go`): all XSDs are bundled via `//go:embed`. A package ships the XSDs its documents point at and nothing else: the METS encoder exports its list (`mets.Schemas`), the profile's metadata model reports its own through `Schemas()`, and the assembler copies that set into the SIP's `schemas/` dir.
-7. **Archive** (`archive/zip.go`): zips the package dir into `dest/uuid-<uuid>.zip`, stored uncompressed (`zip.Store`).
+Rules of the architecture, each easy to break from a change that looks local:
 
-Supporting pieces:
-
-- **Domain model** (`sip/`): `Package`, `Entity`, `Representation`, `File`. All identifiers take the form `uuid-<uuid>`, carried as plain strings and checked by `sip.ValidateIdentifier`. The metsHdr record status is `sip.RecordStatus`, a typed string with the SIP3 values as constants; `ParseRecordStatus` is the way from text to it. `File.Path` is the href relative to the METS document that references the file (documented on the field; subtle and easy to get wrong); `File.Source` records where essence comes from; `Entity.Description` carries the decoded descriptive metadata until the writer serializes it, typed on the `sip.Description` interface so the domain model imports no profile (`meemoo.Terms` and `eark.Terms`, lists of `sip.Term` values keyed by the element's name in the model, `dcterms:title` for Meemoo and `title` for Simple Dublin Core; `earkmods.Record`, a bibliographic record typed by field; and `build.EncodedDescription`, a finished document supplied as a file, which the two eark profiles accept and copy as it is and the `basic` profile refuses because its document needs the identifier swap). `sip.Event` is an empty stub.
-- **Characterization** (`characterization/`): format info is **optional pre-computed input** ([ADR-0009](docs/decisions/0009-characterization-as-sidecar-input.md)): the library takes a pre-decoded `characterization.Report` via `Input.Characterization`; the CLI fills it from the `siegfried.json` sidecar at the input root (generated with `sf -hash md5 -json`; the reserved name is a `cli/input` constant); the tool never executes a characterization tool. Absent → skipped (premis:format is a SHOULD; fixity is computed natively by the store). Present → fully strict: malformed report, missing essence entry, per-entry sf error, missing checksum, or an MD5 mismatch against the source bytes aborts assembly, because a stale format claim is worse than none; an entry with empty `matches[]` → nil format for that file only. Documentation files are lenient (entry optional) but checksum-verified when present.
-- **Config** (`cli/config.go`): environment vars, with `.env` loaded when present (a missing file is fine; `create` requires the `SIP_SUBMITTER_*` vars, checked at profile resolution). Config is CLI wiring, unexported by design: embedding systems supply the profile, their destination and logger as data (`build.Config`); what a package is built from, characterization report included, and the values that are the package's own (its record status and content category) arrive per build as `build.SourcePackage`, never via env vars.
+- The engine imports no profile; a profile is a `build.Definition` plus its metadata model ([ADR-0018](docs/decisions/0018-engine-and-profile-packages.md)).
+- The library never imports `cli/`. Within `cli/input`, only `mapping/` imports the profiles.
+- Assembly writes nothing to disk. The writer emits in one fixed order, package METS last, because later files carry the checksums of earlier ones.
+- Every profile difference reaches the encoders as data on the definition, never as a branch on the profile's name.
+- `File.Path` is relative to the METS document that references the file, not to the package root.
+- The tool never runs a characterization tool; format info arrives as a pre-computed report ([ADR-0009](docs/decisions/0009-characterization-as-sidecar-input.md)).
 
 ## Read the right docs
 
-- [docs/README.md](docs/README.md): the map of the documentation, stating which genre (design / decision / plan) answers which kind of question, and the lifecycle rules for each.
-- [docs/sip-creator-design.md](docs/sip-creator-design.md): the system as it is today (domain model, package layout, build lifecycle, known gaps). The entry point for understanding the code.
-- [README.md](README.md): usage, configuration, input requirements, experimental-status warning.
-- [docs/input-spec.md](docs/input-spec.md): the input folder specification, stating what producers must prepare for the CLI (`description.csv`, representations, documentation, premis, sidecar) and every MUST/SHOULD the `check` command enforces.
-- [docs/TODO.md](docs/TODO.md): open design questions and known defects. Check here first when investigating a bug.
-- [CONFIG.md](CONFIG.md): environment variables. This file is **generated** by envdoc; regenerate with `go generate ./cli`, never hand-edit.
-- External specs: [Meemoo SIP spec 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) (stable; 2.x are release candidates), [E-ARK CSIP profile](https://earkcsip.dilcis.eu/), [METS](https://www.loc.gov/standards/mets/) and [PREMIS](https://www.loc.gov/standards/premis/) at loc.gov.
-- Concrete examples: `examples/basic/`, `examples/eark/` and `examples/eark-mods/` are the sample input trees, tracked in git with invented, institution-neutral metadata and built by `TestExamplesBuild` in `cli/`; they carry no `siegfried.json`. `<profile>-uuid/` is sample generated output, and `tmp/reference/` holds the reference copies the structural comparison reads; both are local, not tracked in git.
+- [docs/sip-creator-design.md](docs/sip-creator-design.md): the system as it is. Start here.
+- [docs/input-spec.md](docs/input-spec.md): the input folder rules the `check` command enforces.
+- [docs/TODO.md](docs/TODO.md): open questions and known defects. Check here first for a bug.
+- [docs/README.md](docs/README.md): which document answers which question, and when design docs, ADRs and plans change.
+- [README.md](README.md): usage. [CONTRIBUTING.md](CONTRIBUTING.md): tools and commands. [CONFIG.md](CONFIG.md): environment variables, generated by `go generate ./cli`, never edited by hand.
+- `examples/<profile>/`: one sample input folder per profile, with invented metadata and no `siegfried.json`.
+- Specs: [E-ARK CSIP](https://earkcsip.dilcis.eu/), [Meemoo SIP 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/), [METS](https://www.loc.gov/standards/mets/), [PREMIS](https://www.loc.gov/standards/premis/).
 
 ## Non-negotiables
 
 ### Documentation
 
-- Keep docs current in the same change as code: new or changed env vars require `go generate ./cli` to regenerate `CONFIG.md`; changed usage or input requirements go in `README.md`; resolved items get removed from `docs/TODO.md`.
+- Keep docs current in the same change as code. [CONTRIBUTING.md](CONTRIBUTING.md#documentation) lists which file each kind of change updates.
 
 ### Git
 
-- Commit messages use a change-type prefix (`Added:`, `Changed:`, `Fixed:`, `Removed:`), capitalized, followed by a colon and a short summary. This matches existing history.
-- Keep commits small and focused. Direct commits to `main` are acceptable in this experimental phase.
-- No rebase or force-push of pushed history unless the user explicitly directs it.
-- Never commit `.env`, `tmp/`, `basic-uuid/`, or other local fixtures and generated output.
+- Commit messages start with `Added:`, `Changed:`, `Fixed:` or `Removed:`, followed by a short summary.
+- Keep commits small and focused. Committing directly to `main` is fine while the project is experimental.
+- No rebase or force-push of pushed history unless the user asks for it.
+- Never commit `.env` or anything `.gitignore` lists (`tmp/`, `<profile>-uuid/`, `bin/`, `reports/`).
 
 ### Code
 
-Write idiomatic Go (Effective Go, Go Code Review Comments, Google's Go Style Guide): clarity over cleverness, happy path left-aligned, early returns, useful zero values, exported symbols documented. The project-specific rules below take precedence where they overlap.
+Write idiomatic Go (Effective Go, Go Code Review Comments, Google's Go Style Guide). The rules below take precedence where they overlap. Write for a colleague reading the code for the first time: a verbose but obvious diff is accepted, a clever but dense one is rejected.
 
-- **Order code so readers don't jump around.** Top-to-bottom reading should be enough; if a reader has to scroll backwards or sideways to understand the next line, restructure.
-- **One concern per function.** If a function does two things, split it.
-- **Name things by what they are, not how they're implemented.**
-- **Folder for the input, directory for the package.** What a producer prepares is a *folder* everywhere: the input specification, CLI messages, names and comments in `cli/input`, the `folder` column of representations.csv. What the tool writes is a *directory*: the package directory and the destination directory, in `build/`, `sip/`, `store/`, `archive/` and the docs about output. Terms from Go or a file format keep their own word (`os.DirEntry`, the zip format's central directory).
-- **New helpers live next to their callers** until used from at least two places. No `helpers.go`, no anticipatory toolbox functions.
-- **Name validation primitives by what they return.** `Is…`/`IsValid…` are pure `bool` predicates (e.g. a future `IsValidIdentifier`); `Validate…` returns an explanatory `error` naming the rule that failed; `Parse…` parses a string form and validates it in one step, returning the parsed values plus an error; `Resolve…` maps a value to the domain record(s) it belongs to. Choose by what the caller needs (a branch wants a predicate, a rejection path wants the error) and follow this split when adding a new primitive.
-- **When a domain file grows past ~250 lines, split by concept.** E.g. rather than letting one file in `sip/` carry the package, the identifier scheme, and the file/fixity types all at once, lift each concept into its own file.
+**Structure**
 
-A clever-but-dense diff gets rejected; a verbose-but-obvious one is accepted. Write it the way a colleague reading it for the first time would understand fastest.
+- Order code so it reads top to bottom: a reader should never scroll back to understand the next line.
+- One concern per function; a function that does two things gets split.
+- A new helper lives next to its caller until a second place uses it. No `helpers.go`, no functions written in advance of a need.
+- Split a file by concept once it passes about 250 lines. `cli/input/walker.go`, `build/assemble.go` and `build/source.go` are past that now.
 
-Keep the API surface small. Default to unexported: every exported symbol is a commitment in a long-lived codebase. Don't export a function or type unless it has a cross-package caller. `build` is the library's face: everything a program using the library works with (the source package, the definition, the config, the builder, the metadata model interface a profile implements) lives there. `sip/` holds the shared domain types and the engine's graph, and exports what a template or a second package reads, nothing more; the assembler builds the graph by assigning fields, so the graph has no setters ([ADR-0019](docs/decisions/0019-build-is-the-library-face.md)).
+**Names**
 
-Keep operational failures (I/O, config) as `error`/`fmt.Errorf`. Validation of what a program hands to the library (the source package, its representation names and attribute text) lives in `build`: `SourcePackage.Validate` and the name and attribute rules next to it. The graph in `sip/` has no checks of its own; its invariants are the assembler's to keep (ADR-0019). Wrap with `%w` and unwrap with `errors.Is`/`errors.As` where a caller needs to branch on the cause; don't both log and return an error; pick one.
+- Name a thing by what it is, not how it is implemented, in the terms of the reference models (OAIS, PREMIS, METS, OAI-PMH). Avoid words that are already overloaded in this codebase (description, encoder, reader). Discuss a rename in chat before making it.
+- Folder for the input, directory for the package. What a producer prepares is a *folder*: the input specification, CLI messages, `cli/input`, the `folder` column of representations.csv. What the tool writes is a *directory*: `build/`, `sip/`, `store/`, `archive/` and the docs about output. Terms from Go or a file format keep their own word (`os.DirEntry`, the zip format's central directory).
+- Name validation primitives by what they return: `Is…` is a `bool` predicate (`RecordStatus.IsValid`); `Validate…` returns an `error` naming the rule that failed; `Parse…` turns text into a value and validates it (`ParseRecordStatus`); `Resolve…` maps a value to the domain records it belongs to. Pick by what the caller needs: a branch wants a predicate, a rejection wants the error.
 
-**Streaming I/O.** An `io.Reader` is consumed as it is read; it cannot be read twice. Essence files can be large: prefer streaming (`io.Copy` reader-to-writer) over buffering whole files in memory.
+**API**
 
-Comment the why, not the what. Don't restate what the code or a function signature already says; explain why something exists or why it's done the unobvious way. Keep that explanation as short as it can be (usually a sentence), but a longer comment is right when it carries a domain rule or justifies a non-obvious workaround. Delete commented-out code rather than leaving it.
+- Default to unexported, and export only what has a caller in another package: every exported symbol is a commitment.
+- `build` is the library's face: the source package, the definition, the config, the builder and the metadata model interface live there ([ADR-0019](docs/decisions/0019-build-is-the-library-face.md)).
+- `sip/` exports what a template or a second package reads. The assembler builds the graph by assigning fields, so the graph has no setters and no checks; its invariants are the assembler's to keep.
+- Validation of what a program hands to the library lives in `build`: `SourcePackage.Validate` and the name and attribute rules next to it.
 
-Comment the thing, not its callers. A comment on a data type or field describes the data and its constraints, never what other code does with it or where a constraint is enforced ("checked at assembly" on a field is noise; "must be a well-formed premis:premis document" is the field's own contract). The direction matters: on code that deliberately delegates or abstains, naming who owns the rule is a legitimate why, because it stops the next reader from adding the check twice.
+**Errors and I/O**
 
-On exported types, document every field, stdlib style: the rendered doc page is the reader's only context there. Each field doc goes on its own line above the field, as a sentence starting with the field name, never as an end-of-line comment. Inside unexported code, comment only what a name can't say, and compact inline comments are fine.
+- The build path returns errors and never panics. A panic is only for a programmer error that cannot happen at runtime, with a comment saying why.
+- Wrap with `%w` where a caller needs to branch on the cause, and branch with `errors.Is`/`errors.As`. Either log an error or return it, never both.
+- Messages for the operator are plain language and name the file, and the line where there is one.
+- Essence files can be large: stream them (`io.Copy`) instead of reading them into memory.
+
+**Comments**
+
+- Comment the why, not the what: why something exists or why it is done the unobvious way, usually in one sentence. A longer comment is right when it carries a domain rule or explains a workaround. Delete commented-out code.
+- Comment the thing, not its callers. A comment on a type or field states the data and its constraints ("must be a well-formed premis:premis document"), never where they are checked ("checked at assembly"). The exception: code that deliberately leaves a rule to someone else names that owner, so the next reader doesn't add the check twice.
+- On exported types, document every field, stdlib style: on its own line above the field, as a sentence starting with the field name, never at the end of the line. In unexported code, comment only what a name can't say; short inline comments are fine.
+
+**Tests**
+
+- Add Go tests for new logic where practical. `build/` is tested as an external package (`build_test`) with the real profiles; `export_test.go` exposes the assembly phase to it. Library usage is shown as runnable examples in `build/example_test.go`, which pkg.go.dev displays. Tests need no external tools and write only to temporary directories: `t.TempDir()`, or `os.MkdirTemp` in the examples, which have no `t`.
 
 ## Development commands
 
-- `go build -o bin/sip-creator .`: produces the binary in the gitignored `bin/`.
-- `./bin/sip-creator create --profile basic examples/basic basic-uuid`: generate a sample SIP from the example input.
-- `./build.sh [profile] [input]`: the local CI loop (default `basic`, input `examples/<profile>`): rebuilds, copies the input to `tmp/build/<profile>` (the sidecar is written there, never into `examples/`), wipes and regenerates `<profile>-uuid/` from the copy, validates the zip with dockerized commons-ip (and every `mods.xml` in the package with xmllint against the MODS schema the package ships, offline through `scripts/schema-catalog.xml`, since commons-ip does not validate the descriptive documents the METS points at), publishes the JSON reports to `reports/runs/<timestamp>-<profile>/`, and exits non-zero iff the package is not `VALID` or a `mods.xml` is not valid MODS 3.7. **All three profiles validate VALID**, each against the E-ARK spec version of its era (`basic`/meemoo-1.2 → 2.0.4, `eark` and `eark-mods` → 2.2.0; see the [meemoo-12 plan](docs/archive/meemoo-12.md)). Requires `docker`, `jq` and `xmllint`, plus `sf` (Siegfried) on PATH: build.sh generates the copy's `siegfried.json` sidecar before building (a stale sidecar is a hard build failure by design); the sidecar is optional for the tool itself, but the reference tree in `tmp/reference/` contains format info, so the structural comparison expects it.
-- `./scripts/validate.sh [-o report-dir] <sip.zip|sip-dir>...`: validate any package standalone (also unzipped package dirs, for structure debugging).
-- `docker compose up -d reports`: serve the HTML validation reports at http://localhost:8080 (see [ADR-0005](docs/decisions/0005-dockerized-validation-and-html-reporting.md)).
-- `go generate ./cli`: regenerate `CONFIG.md` from the config struct.
+[CONTRIBUTING.md](CONTRIBUTING.md) lists the required tools and every command: building, tests, `build.sh`, the validation scripts and the reference comparison. What a change must pass:
 
-- `go test ./...`: Go tests cover the `store/` primitives, the engine (`build/`, as an external test package building with the real profiles, plus the runnable library examples in `build/example_test.go` that pkg.go.dev shows and the README links to), the registry (`profiles/`), the input reader (`cli/input/`), the profiles' mappings for it (`cli/input/mapping/`) and the CLI's pairing of profiles with mappings (`cli/`), the profile packages' description models (`profiles/meemoo/`, `profiles/eark/`, `profiles/earkmods/`), the received-PREMIS check (`encoders/premis/`), the METS dmdSec typing (`encoders/mets/`), and the schema lists; they run with no external dependencies (no `sf`, no docker, no `.env`). External CSIP validation via `build.sh` remains the acceptance check: Go tests pin internal contracts and failure paths, the validator pins spec conformance. Add Go tests for new logic where practical.
-- `./scripts/reference-diff.sh tmp/reference/pkg <pkg-dir>`: compares a generated package against the reference copy in `tmp/reference/` with run-varying values normalized (introduced as [refactoring plan](docs/archive/refactoring-plan.md) Phase 0). Refactors must diff clean; a deliberate output change updates the reference copy consciously (record it in the commit message and `tmp/reference/README.md`).
+- `go test ./...`, which needs no docker, `sf` or `.env`. Go tests pin internal contracts and failure paths; the commons-ip validation in `build.sh` pins spec conformance, so CSIP rules are not reimplemented as Go tests ([ADR-0003](docs/decisions/0003-validation-stays-external.md)).
+- `./build.sh <profile>` reports `VALID` for all three profiles.
+- A refactor leaves `./scripts/reference-diff.sh` clean against the reference copy in `tmp/reference/`. A deliberate output change updates the reference copy and says so in the commit message and `tmp/reference/README.md`.
 
-## Tone and Style guidelines
+## Tone and style
 
-Write all prose in plain, direct language. This covers every text a human reads: README.md and all other markdown, code comments, and chat responses. Prefer the common word over the specialized one, name concrete things (files, scripts, spec versions) instead of vague qualifiers, and cut filler. Domain vocabulary from the Meemoo SIP spec and OAIS (SIP, essence, fixity, representation) is the field's real language and stays. The lists below name known offenders; this principle also covers what they miss.
+Write every text a human reads (chat, markdown, code comments) in plain, direct language. Prefer the common word, name concrete things (files, scripts, spec versions) instead of vague qualifiers, and cut filler. Domain vocabulary from the Meemoo spec and OAIS stays. The lists below name known offenders; the principle also covers what they miss. `docs/archive/` and `docs/decisions/` are historical records: leave their existing text as it is.
 
-### Banned Vocabulary & Phrases
+### Banned words and phrases
 
-Under no circumstances use the following overused AI tells, buzzwords, or structural clichés in any prose: chat responses, markdown files (README.md included), or code comments. One exemption: `docs/archive/` and `docs/decisions/` are historical records, so leave their existing text as-is rather than rewriting it to comply. The rules apply to new and edited prose. Refer to the project's checks by what they do, never by nickname: "the commons-ip validation in build.sh", "the structural comparison in scripts/reference-diff.sh", "both validations pass" rather than "the gate is green".
+- **Structural:** "load-bearing" (and "load-bearing seams"), "gate", "seams", "spine", "substrate", "blast radius", "friction", "birth", "bucket", "headline", "honestly", "land mine", "blessed", "bind", "baseline", "mark", "bare"
+- **Proverbial:** "footgun", "yak shaving", "belt-and-suspenders", "smoking gun", "classic trap", "carve-out"
+- **Pretentious:** "tapestry", "delve", "testament to", "beacon", "underscore", "honest take", "identity made legible", "worth saying", "standing pass", "mandate", "demands", "honest gap"
+- **Transitions:** "You're absolutely right!", "That's totally on me", "Now I have the full picture", "It's worth noting/flagging/considering", "I'd gently reset the framing"
+- **Structure:** "That's not just X, it's Y"
 
-- **The Structural Group:** "load-bearing" (and "load-bearing seams"), "gate", "seams", "spine", "substrate", "blast radius", "friction", "birth", "bucket", "headline", "honestly", "land mine", "blessed", "bind", "baseline", "mark", "bare"
-- **The Proverbial Group:** "footgun", "yak shaving", "belt-and-suspenders", "smoking gun", "classic trap", "carve-out"
-- **The Pretentious Group:** "tapestry", "delve", "testament to", "beacon", "underscore", "honest take", "identity made legible", "worth saying", "standing pass", "mandate", "demands", "honest gap"
-- **The "Gaslighting" Transitions:** "You're absolutely right!", "That's totally on me", "Now I have the full picture", "It's worth noting/flagging/considering", "I'd gently reset the framing".
-- **The AI Cliché Structure:** Do not use the pretentious "That's not just X, it's Y" writing style.
+### Formatting
 
-### Formatting & Punctuation Constraints
+- Avoid em-dashes (—); write separate sentences instead.
+- Don't invent abbreviations (`initialVerification` → `IV`).
+- Don't coin hyphenated shorthand ("premis-less", "checksum-bound", "gate-safe", "two-bar acceptance"); write the phrase out ("without PREMIS", "whose checksum matches"). Established terms stay ("well-formed", "fail-fast", "read-only", "pre-computed"). The test is whether a new reader must stop to unpack the word.
+- Call a check by what it does, never by a nickname: "the commons-ip validation in build.sh", "scripts/reference-diff.sh, which compares a generated package with the reference copy in tmp/reference/", "both validations pass", never "the gate is green" or "the equivalence check".
 
-- **Em-Dash Ban:** Drastically limit or eliminate the use of em-dashes (—). Write clean, separate sentences instead of embedding clauses.
-- **No Invented Acronyms:** Do not invent internal abbreviations on the fly (e.g., converting a function name like `initialVerification` into `IV`).
-- **No Invented Compound Shorthand:** Do not compress a phrase into a coined hyphenated modifier ("premis-less", "checksum-bound", "gate-safe", "two-bar acceptance"). Write the phrase out in plain words: "without PREMIS", "whose checksum matches", "leaves the validated output unchanged", "two checks". Established technical terms stay ("well-formed", "fail-fast", "read-only", "pre-computed"); the test is whether a new reader must stop to unpack the coinage.
+### Behavior
 
-### Execution & Behavior (Don't Go Rogue)
-
-- **Code is onboarding, not a philosophy essay:** Write code documentation like you are onboarding a smart developer, not writing a dramatic tech essay.
-- **Ask before tearing up files:** If a requirement or product decision is ambiguous, do not confidently guess and run a 12-file diff. Stop and ask clarifying questions first.
-- **Spell out consequences literally:** Do not just say code is "fragile" or a "trap." Explain exactly what breaks, to whom, and under what specific action.
-- **Lead with the point:** Put the solution, code fix, or core answer in the very first sentence. If a user only reads sentence one, they should have the complete gist.
-- **Plain words over coined names in chat:** Do not refer to project checks or tools by their nicknames ("the baseline gate", "the equivalence gate", "the structural-equivalence check") in chat responses. Name the actual script or file and say concretely what it does: "scripts/reference-diff.sh, which compares a generated package against the reference copy in tmp/reference/ to catch accidental output changes". The reader should understand the sentence without knowing the project's internal vocabulary.
+- Lead with the point: the first sentence carries the answer or the fix.
+- When a requirement or product decision is ambiguous, ask before changing files; don't guess and produce a 12-file diff.
+- Spell out consequences: not "fragile" or "a trap", but what breaks, for whom, after which action.
