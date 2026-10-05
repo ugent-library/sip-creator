@@ -1,6 +1,6 @@
 # Plan: the input reader walks, then decodes
 
-*Status: **proposed** (2026-10-02, revised 2026-10-05). Nothing implemented yet.*
+*Status: **shipped** (2026-10-05). The decision is [ADR-0027](../decisions/0027-input-reader-walks-then-decodes.md); the reader is described in the design doc's `cli/` entry.*
 
 This plan splits `input.Read` into two steps: a walk that finds the files of an input
 folder, and a decode step that reads what is in them. It came up in the review of the

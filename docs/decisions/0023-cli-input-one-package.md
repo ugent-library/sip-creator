@@ -1,7 +1,7 @@
 # 0023 — `cli/input` stays one package: a folder walker with pure parsers
 
 Status: **Accepted** (2026-10-02, when the [cli cleanup
-plan](../archive/cli-cleanup.md) shipped). **Revised in part by [ADR-0024](0024-the-metadata-model.md)** (2026-10-02): `cli/input/vocabulary` is `cli/input/mapping`, and `Read` takes a mapper and the profile's document.
+plan](../archive/cli-cleanup.md) shipped). **Revised in part by [ADR-0024](0024-the-metadata-model.md)** (2026-10-02): `cli/input/vocabulary` is `cli/input/mapping`, and `Read` takes a mapper and the profile's document. **Superseded in part by [ADR-0027](0027-input-reader-walks-then-decodes.md)** (2026-10-05): the per-read state is `folderReader`, which walks the folder and then decodes what it found; the mapper and the document format are parameters of the description decoder.
 
 ## Context
 
