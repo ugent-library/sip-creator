@@ -29,7 +29,7 @@ See [Profiles](#profiles) for what each one requires.
   descriptive document. Out comes a SIP with generated METS and PREMIS metadata and
   natively computed checksums.
 * Validates an input folder before building (`check`, with the same `--profile` as
-  `create`), reporting every violation at once.
+  `create`), reporting every violation of the input rules at once.
 * Optional PRONOM format identification based on a pre-computed
   [Siegfried](https://github.com/richardlehane/siegfried) report (see Format characterization).
 * Profiles of your own for other archives or descriptive standards (see
@@ -166,8 +166,9 @@ package directory for `basic` (see [Profiles](#profiles)).
 ### Checking an input folder
 
 To check a folder without building anything, pass the same profile. `check` reports
-every violation at once, in plain language. It reads no configuration: no `.env` and no
-environment variables:
+every violation of the input rules at once, in plain language. When the folder passes, it
+then checks the profile's own rules, such as `basic`'s single representation. It reads
+no configuration: no `.env` and no environment variables:
 
 ```
 ./bin/sip-creator check --profile eark ./your-input

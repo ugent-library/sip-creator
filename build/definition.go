@@ -25,9 +25,10 @@ type Definition struct {
 	// 1.2, metsHdr); WithSubmitter needs the OR-id when set.
 	RequireSubmitterORID bool
 	// MaxRepresentations is the number of representations a package may
-	// have at most; zero sets no limit. Meemoo SIP 1.2's basic profile
-	// allows one: "The IE MUST be represented by exactly one
-	// representation."
+	// have at most; zero sets no limit. With the one representation every
+	// package needs (SourcePackage.Validate), a maximum of 1 means exactly
+	// one, as Meemoo SIP 1.2's basic profile requires: "The IE MUST be
+	// represented by exactly one representation."
 	MaxRepresentations int
 	// AllowRepresentationDescriptions allows a representation to carry its
 	// own description; false allows one at the package level only. Meemoo
