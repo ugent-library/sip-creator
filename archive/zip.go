@@ -24,12 +24,10 @@ type Config struct {
 	Logger *slog.Logger
 }
 
-// Archive zips built package directories.
+// Archive zips built package directories. New returns one.
 type Archive struct {
-	// Destination is the directory the zip is written to.
-	Destination string
-	// Logger receives a message per zipped entry. It must not be nil.
-	Logger *slog.Logger
+	destination string
+	logger      *slog.Logger
 }
 
 // New returns an Archive that writes to config.Destination.
@@ -39,8 +37,8 @@ func New(config *Config) *Archive {
 		logger = slog.New(slog.DiscardHandler)
 	}
 	return &Archive{
-		Destination: config.Destination,
-		Logger:      logger,
+		destination: config.Destination,
+		logger:      logger,
 	}
 }
 
@@ -51,7 +49,7 @@ func New(config *Config) *Archive {
 // zip leaves nothing behind; a process killed partway leaves only the
 // temporary file, whose name does not end in .zip.
 func (a *Archive) Zip(pkg *sip.Package) (err error) {
-	dest := filepath.Join(a.Destination, pkg.Identifier+".zip")
+	dest := filepath.Join(a.destination, pkg.Identifier+".zip")
 	if _, err := os.Lstat(dest); err == nil {
 		return fmt.Errorf("zip %s already exists; move it away first", dest)
 	} else if !errors.Is(err, fs.ErrNotExist) {
@@ -61,7 +59,7 @@ func (a *Archive) Zip(pkg *sip.Package) (err error) {
 	// The temporary file sits in the same directory, so the rename stays on
 	// one file system, where it is atomic. It is opened with the mode
 	// os.Create uses, so the zip gets the permissions it always had.
-	tmp := filepath.Join(a.Destination, "."+pkg.Identifier+".zip.tmp")
+	tmp := filepath.Join(a.destination, "."+pkg.Identifier+".zip.tmp")
 	file, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
 		return fmt.Errorf("creating zip %s: %w", dest, err)
@@ -97,12 +95,12 @@ func (a *Archive) writeEntries(out io.Writer, src string) error {
 		// Entry names are relative to the destination dir, so the package
 		// dir (uuid-<uuid>/) stays the top-level entry; zip names are
 		// slash-separated regardless of platform.
-		rel, err := filepath.Rel(a.Destination, path)
+		rel, err := filepath.Rel(a.destination, path)
 		if err != nil {
 			return err
 		}
 		name := filepath.ToSlash(rel)
-		a.Logger.Info("zipping", slog.String("path", name))
+		a.logger.Info("zipping", slog.String("path", name))
 		if d.IsDir() {
 			// Directories need explicit entries (name ending in "/"):
 			// readers otherwise infer them from file paths, and empty
