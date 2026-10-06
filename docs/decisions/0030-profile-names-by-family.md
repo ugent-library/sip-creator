@@ -2,7 +2,10 @@
 
 Status: **Accepted** (2026-10-05). Extends
 [ADR-0015](0015-descriptive-worlds-dc-and-mods.md): a profile still names its
-descriptive standard; the name now also carries the family.
+descriptive standard; the name now also carries the family. **Note, 2026-10-06:** the
+renames ship without `eark/none`, which waits with ADR-0029's implementation. Three
+profiles take the new names: `meemoo/basic`, `eark/dc`, `eark/mods`; `profiles/eark`
+stays free for `eark/none`.
 
 ## Context
 

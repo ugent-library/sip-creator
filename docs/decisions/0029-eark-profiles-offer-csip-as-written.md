@@ -3,7 +3,13 @@
 Status: **Accepted** (2026-10-05). Supersedes
 [ADR-0025](0025-every-package-carries-a-description.md). Extends
 [ADR-0026](0026-profile-rules-on-the-definition.md): a minimum number of
-representations joins the maximum.
+representations joins the maximum. **Note, 2026-10-06:** implementation waits for a
+UGent case. Neither the package without descriptive metadata (`eark/none`) nor the
+metadata-only package is needed within UGent now
+([ADR-0033](0033-ugent-first-profiles-of-your-own.md)); the decision stands, and steps 2
+to 5 and 8 of the [plan](../plans/profile-rules-and-names.md) are parked until a case
+arrives. Until then the engine keeps its two rules: every package carries a package-level
+description and at least one representation.
 
 ## Context
 

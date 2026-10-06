@@ -1,10 +1,22 @@
 # Plan: the eark family offers CSIP as written, and profile names by family
 
-*Status: **in progress** (drafted 2026-10-05). Step 1 landed in 7fc5626
+*Status: **in progress, reduced** (drafted 2026-10-05). Step 1 landed in 7fc5626
 ([ADR-0029](../decisions/0029-eark-profiles-offer-csip-as-written.md),
-[ADR-0030](../decisions/0030-profile-names-by-family.md)); steps 2 to 8 follow, one
-commit each. The plan builds on 5074f49 (the escaping series, ADR-0028); line numbers
-refer to that tree. Update this line as steps land.*
+[ADR-0030](../decisions/0030-profile-names-by-family.md)). Steps 6 and 7, the renames,
+follow, one commit each. The plan builds on 5074f49 (the escaping series, ADR-0028);
+line numbers refer to that tree and are out of date since 2026-10-06. Update this line
+as steps land.*
+
+*Parked 2026-10-06: steps 2 to 5 and 8.* They implement ADR-0029's two packages, one
+with essence and no descriptive metadata (`eark/none`) and one with metadata only. Neither
+is needed within UGent now ([ADR-0033](../decisions/0033-ugent-first-profiles-of-your-own.md)),
+and whether UGent's RODA accepts either is unchecked. When they resume, three things
+changed on 2026-10-06 that the steps below do not reflect: `build.New` checks the model's
+format name, so step 3 must skip that check for a nil model; schemas are `build.Schema`
+values (`BundledSchemas(mets.Schemas...)` plus the model's), and the registry test's
+`shipped` reads names through `schemaNames`; and step 8 copies the eark profile's neutral
+comments, which no longer name RODA. With step 8 parked, step 7 lists three names, not
+four.
 
 ## Context
 
