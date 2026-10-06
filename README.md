@@ -176,6 +176,25 @@ no configuration: no `.env` and no environment variables:
 ./bin/sip-creator check --profile eark ./your-input
 ```
 
+The report goes to stdout, so it can be saved to a file. A folder with problems lists
+each one:
+
+```
+1 problem in ./your-input
+
+  premis/broken.xml: not well-formed XML: XML syntax error on line 2: unexpected EOF
+
+FAILED: fix the problems above and run check again.
+```
+
+The exit status tells a script what happened:
+
+| status | meaning |
+|---|---|
+| 0 | the folder meets the input specification and the profile's rules |
+| 1 | the folder has problems; the report lists them |
+| 2 | check could not check the folder: a wrong path, a file instead of a folder, an unknown profile, or a missing argument |
+
 ### Configuration
 
 Configuration is read from the environment. A `.env` file is loaded when present; start

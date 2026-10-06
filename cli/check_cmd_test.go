@@ -8,16 +8,25 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
 // runCLI runs the command line with args, as Run does but logging
 // nowhere, and returns what it wrote to stdout and stderr and the error it
-// ended with. Cobra keeps flag values on the commands, which are package
-// variables, so every flag is set back to its default afterwards: a
-// --no-zip in one run must not carry into the next.
+// ended with.
 func runCLI(t *testing.T, args ...string) (stdout, stderr string, err error) {
+	t.Helper()
+	_, stdout, stderr, err = runCommand(t, args...)
+	return stdout, stderr, err
+}
+
+// runCommand is runCLI that also returns the command that ran, which Run
+// needs for the exit status. Cobra keeps flag values on the commands,
+// which are package variables, so every flag is set back to its default
+// afterwards: a --no-zip in one run must not carry into the next.
+func runCommand(t *testing.T, args ...string) (cmd *cobra.Command, stdout, stderr string, err error) {
 	t.Helper()
 	var out, errOut bytes.Buffer
 	logger = slog.New(slog.DiscardHandler)
@@ -38,8 +47,8 @@ func runCLI(t *testing.T, args ...string) (stdout, stderr string, err error) {
 			})
 		}
 	})
-	err = rootCmd.Execute()
-	return out.String(), errOut.String(), err
+	cmd, err = rootCmd.ExecuteC()
+	return cmd, out.String(), errOut.String(), err
 }
 
 // writeFolder builds an input folder from slash paths and contents.
@@ -58,10 +67,9 @@ func writeFolder(t *testing.T, files map[string]string) string {
 	return root
 }
 
-// A folder that breaks no rule is summarized on stdout, and check needs no
-// configuration to say so (ADR-0010): the submitter settings create
-// requires are empty here. The summary's wording and counts are not
-// pinned: what the summary counts is still to be decided.
+// A folder that breaks no rule gets the OK verdict on stdout, and check
+// needs no configuration to say so (ADR-0010): the submitter settings
+// create requires are empty here.
 func TestCheckSummarizesAValidFolder(t *testing.T) {
 	t.Setenv("SIP_SUBMITTER_NAME", "")
 	t.Setenv("SIP_SUBMITTER_OR_ID", "")
@@ -96,9 +104,9 @@ func TestCheckAcceptsTheExamples(t *testing.T) {
 	}
 }
 
-// Every violation of the input specification is printed on its own line
-// to stderr, and the command ends with one summary naming the folder and
-// the count. Nothing reaches stdout.
+// Every violation of the input specification is listed in the report on
+// stdout, under a count, and the command ends with an error that names the
+// folder and the count only. Nothing reaches stderr: Run prints the error.
 func TestCheckReportsEveryViolation(t *testing.T) {
 	root := writeFolder(t, map[string]string{
 		// no description.csv
@@ -110,14 +118,15 @@ func TestCheckReportsEveryViolation(t *testing.T) {
 	if want := root + ": 2 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
-	lines := strings.Split(strings.TrimSuffix(stderr, "\n"), "\n")
-	if len(lines) != 2 ||
-		!strings.Contains(stderr, "stray.tif: content must live inside representations/") ||
-		!strings.Contains(stderr, "descriptive metadata is missing") {
-		t.Errorf("stderr = %q, want one line per violation", stderr)
+	want := "2 problems in " + root + "\n\n" +
+		"  descriptive metadata is missing: every package folder needs a description.csv or a dc.xml describing the content (input specification §3)\n" +
+		"  stray.tif: content must live inside representations/ when that folder exists (only the reserved names of the input specification may sit beside it)\n" +
+		"\nFAILED: fix the problems above and run check again.\n"
+	if stdout != want {
+		t.Errorf("stdout = %q, want %q", stdout, want)
 	}
-	if stdout != "" {
-		t.Errorf("stdout = %q, want nothing", stdout)
+	if stderr != "" {
+		t.Errorf("stderr = %q, want nothing", stderr)
 	}
 }
 
@@ -132,11 +141,30 @@ func TestCheckAppliesTheProfileRules(t *testing.T) {
 	})
 
 	stdout, _, err := runCLI(t, "check", "--profile", "basic", root)
-	if want := `profile "basic" allows at most 1 representation(s), the package has 2`; err == nil || !strings.Contains(err.Error(), want) {
+	if want := root + ": 1 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
-	if stdout != "" {
-		t.Errorf("stdout = %q, want nothing", stdout)
+	if want := `  profile "basic" allows at most 1 representation(s), the package has 2`; !strings.Contains(stdout, want) {
+		t.Errorf("stdout = %q, want %q", stdout, want)
+	}
+}
+
+// The profile's rules run only on a folder read without violations: a
+// folder with a broken description.csv and two representations under
+// basic reports the description, not also the representation count.
+func TestCheckSkipsTheProfileRulesOnAPartlyReadFolder(t *testing.T) {
+	root := writeFolder(t, map[string]string{
+		"description.csv":              "key,value\nnot-a-key,x\n",
+		"representations/master/a.tif": "a",
+		"representations/access/b.pdf": "b",
+	})
+
+	stdout, _, err := runCLI(t, "check", "--profile", "basic", root)
+	if err == nil {
+		t.Fatal("check passed a folder with a broken description.csv")
+	}
+	if strings.Contains(stdout, "allows at most 1 representation") {
+		t.Errorf("stdout = %q, want no profile rule findings", stdout)
 	}
 }
 
@@ -149,12 +177,12 @@ func TestCheckReportsMalformedPremis(t *testing.T) {
 		"premis/vendor.xml": "<premis:premis>",
 	})
 
-	_, stderr, err := runCLI(t, "check", "--profile", "eark", root)
+	stdout, _, err := runCLI(t, "check", "--profile", "eark", root)
 	if want := root + ": 1 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
-	if !strings.Contains(stderr, "premis/vendor.xml: not well-formed XML") {
-		t.Errorf("stderr = %q, want the malformed file named", stderr)
+	if !strings.Contains(stdout, "premis/vendor.xml: not well-formed XML") {
+		t.Errorf("stdout = %q, want the malformed file named", stdout)
 	}
 }
 
@@ -168,12 +196,12 @@ func TestCheckReportsContentMissingFromTheReport(t *testing.T) {
 		"siegfried.json":  `{"siegfried":"1.11.0","files":[{"filename":"a.tif","md5":"0","matches":[]}]}`,
 	})
 
-	_, stderr, err := runCLI(t, "check", "--profile", "eark", root)
+	stdout, _, err := runCLI(t, "check", "--profile", "eark", root)
 	if want := root + ": 1 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
-	if !strings.Contains(stderr, "siegfried.json has no entry for b.tif") {
-		t.Errorf("stderr = %q, want the file without an entry named", stderr)
+	if !strings.Contains(stdout, "siegfried.json has no entry for b.tif") {
+		t.Errorf("stdout = %q, want the file without an entry named", stdout)
 	}
 }
 
@@ -189,5 +217,36 @@ func TestCheckRefusesWhatItCannotRead(t *testing.T) {
 	_, _, err = runCLI(t, "check", "--profile", "eark", missing)
 	if err == nil || !strings.Contains(err.Error(), "input folder: ") || !strings.Contains(err.Error(), "no such file") {
 		t.Errorf("error = %v, want the missing input folder named", err)
+	}
+}
+
+// check exits with 1 when the folder has problems and with 2 when it could
+// not check the folder at all; create exits with 1 on any error.
+func TestExitStatus(t *testing.T) {
+	broken := writeFolder(t, map[string]string{"a.tif": "a"}) // no description
+	missing := filepath.Join(t.TempDir(), "missing")
+	cases := []struct {
+		name string
+		args []string
+		want int
+	}{
+		{"check, folder with problems", []string{"check", "--profile", "eark", broken}, 1},
+		{"check, missing folder", []string{"check", "--profile", "eark", missing}, 2},
+		{"check, unknown profile", []string{"check", "--profile", "nope", broken}, 2},
+		{"check, no folder given", []string{"check", "--profile", "eark"}, 2},
+		{"create, missing folder", []string{"create", "--profile", "eark", missing, t.TempDir()}, 1},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("SIP_SUBMITTER_NAME", "Test")
+			t.Setenv("SIP_SUBMITTER_OR_ID", "OR-test")
+			cmd, _, _, err := runCommand(t, tc.args...)
+			if err == nil {
+				t.Fatal("want an error")
+			}
+			if got := exitStatus(cmd, err); got != tc.want {
+				t.Errorf("exit status = %d, want %d (error: %v)", got, tc.want, err)
+			}
+		})
 	}
 }

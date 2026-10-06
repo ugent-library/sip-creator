@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/spf13/cobra"
 	"github.com/ugent-library/sip-creator/cli/input"
@@ -14,8 +14,8 @@ func init() {
 
 // checkCmd validates an input folder without building: the input
 // specification's rules, then the profile's rules on the source package
-// the folder holds, which the build would apply too. Checks on file
-// contents (received PREMIS, the characterization report) run only in
+// the folder holds, which the build would apply too. Checks that read
+// every file, such as the characterization report's checksums, run only in
 // create. It reads no configuration (ADR-0010).
 var checkCmd = &cobra.Command{
 	Use:          "check [src]",
@@ -28,20 +28,23 @@ var checkCmd = &cobra.Command{
 			return err
 		}
 
+		report := checkReport{folder: args[0], profile: def.Name}
 		source, err := input.Read(args[0], mapper, input.DocumentSpec{Name: def.DocumentName, Model: def.Model})
-		if err != nil {
-			return reportViolations(cmd, args[0], err)
-		}
-		if err := def.ValidateSource(source); err != nil {
-			return err
+		if violations, ok := errors.AsType[input.Violations](err); ok {
+			report.findings = violations
+		} else if err != nil {
+			return err // the folder could not be read at all
+		} else {
+			// The profile's rules run only on a folder read without
+			// violations: on a partly read one they would report what is
+			// only missing because the reader could not read it.
+			report.findings = findingLines(def.ValidateSource(source))
 		}
 
-		files := 0
-		for _, r := range source.Representations {
-			files += len(r.Files)
+		report.print(cmd.OutOrStdout())
+		if len(report.findings) > 0 {
+			return problemsFound{folder: args[0], count: len(report.findings)}
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "OK: %d representation(s), %d content file(s), %d documentation file(s)\n",
-			len(source.Representations), files, len(source.Documentation))
 		return nil
 	},
 }

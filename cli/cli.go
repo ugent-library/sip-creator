@@ -33,7 +33,8 @@ func newLogger() *slog.Logger {
 
 // reportViolations prints each violation in err on its own line to stderr
 // and returns a one-line summary for the input folder src. An error that
-// is not input.Violations is returned unchanged.
+// is not input.Violations is returned unchanged. create reports with it;
+// check prints its own report (checkReport).
 func reportViolations(cmd *cobra.Command, src string, err error) error {
 	v, ok := errors.AsType[input.Violations](err)
 	if !ok {
@@ -46,9 +47,41 @@ func reportViolations(cmd *cobra.Command, src string, err error) error {
 }
 
 // Run executes the CLI. Configuration is read by the commands that need
-// it, so check runs without it (ADR-0010).
+// it, so check runs without it (ADR-0010). An error is printed on stderr,
+// and the process exits with the status exitStatus gives it.
 func Run() {
 	logger = newLogger()
 
-	cobra.CheckErr(rootCmd.Execute())
+	cmd, err := rootCmd.ExecuteC()
+	if err == nil {
+		return
+	}
+	fmt.Fprintln(os.Stderr, "Error:", err)
+	os.Exit(exitStatus(cmd, err))
+}
+
+// Exit statuses of the process. Scripts that run check rely on them, so
+// their values never change.
+const (
+	// exitFailed is any command's status for an error, except check's.
+	exitFailed = 1
+	// exitProblemsFound is check's status when the folder breaks a rule
+	// and the report lists the problems.
+	exitProblemsFound = 1
+	// exitNotChecked is check's status when it could not check the folder
+	// at all: a wrong path, an unknown profile, a missing argument.
+	exitNotChecked = 2
+)
+
+// exitStatus is the process exit status for err, which cmd ended with.
+// check tells its two failures apart for a script that runs it; every
+// other command has one status for any error.
+func exitStatus(cmd *cobra.Command, err error) int {
+	if cmd != checkCmd {
+		return exitFailed
+	}
+	if _, ok := errors.AsType[problemsFound](err); ok {
+		return exitProblemsFound
+	}
+	return exitNotChecked
 }
