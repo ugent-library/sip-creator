@@ -62,7 +62,7 @@ uuid-<uuid>/
 
 A descriptive document the producer supplied as a file lands at the same path as a generated one, copied as it is.
 
-The CLI zips the directory **uncompressed** (`zip.Store`) to `dest/<identifier>.zip`, unless `--no-zip` is given. Under the eark profiles the zip is the deliverable; under `basic` the deliverable is the package directory in a BagIt bag, which this tool does not produce.
+The CLI zips the directory **uncompressed** (`zip.Store`) to `dest/<identifier>.zip`, unless `--no-zip` is given. The zip is written to a temporary file next to it and renamed when complete, so `<identifier>.zip` only ever names a whole zip; a zip that already exists is refused, never replaced. Under the eark profiles the zip is the deliverable; under `basic` the deliverable is the package directory in a BagIt bag, which this tool does not produce.
 
 ## Metadata
 

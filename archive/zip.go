@@ -4,6 +4,7 @@ package archive
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -40,18 +41,50 @@ func New(config *Config) *Archive {
 }
 
 // Zip writes the package directory to dest/uuid-<uuid>.zip with every
-// entry stored uncompressed.
-func (a *Archive) Zip(pkg *sip.Package) error {
-	src := pkg.Location
+// entry stored uncompressed. The final name only ever holds a complete
+// zip: Zip refuses a zip that already exists, writes to a temporary file
+// next to it, and renames that file once every entry is written. A failed
+// zip leaves nothing behind; a process killed partway leaves only the
+// temporary file, whose name does not end in .zip.
+func (a *Archive) Zip(pkg *sip.Package) (err error) {
 	dest := filepath.Join(a.Destination, pkg.Identifier+".zip")
+	if _, err := os.Lstat(dest); err == nil {
+		return fmt.Errorf("zip %s already exists; move it away first", dest)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking zip %s: %w", dest, err)
+	}
 
-	file, err := os.Create(dest)
+	// The temporary file sits in the same directory, so the rename stays on
+	// one file system, where it is atomic. It is opened with the mode
+	// os.Create uses, so the zip gets the permissions it always had.
+	tmp := filepath.Join(a.Destination, "."+pkg.Identifier+".zip.tmp")
+	file, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
 		return fmt.Errorf("creating zip %s: %w", dest, err)
 	}
-	defer file.Close()
+	defer func() {
+		if err != nil {
+			file.Close() // after a failed Close this fails too; the first error is returned
+			os.Remove(tmp)
+		}
+	}()
 
-	w := zip.NewWriter(file)
+	if err := a.writeEntries(file, pkg.Location); err != nil {
+		return err
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("closing zip %s: %w", dest, err)
+	}
+	if err := os.Rename(tmp, dest); err != nil {
+		return fmt.Errorf("finalizing zip %s: %w", dest, err)
+	}
+	return nil
+}
+
+// writeEntries writes every entry under src to out as a zip, entry names
+// relative to the archive's destination.
+func (a *Archive) writeEntries(out io.Writer, src string) error {
+	w := zip.NewWriter(out)
 
 	walker := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -124,10 +157,7 @@ func (a *Archive) Zip(pkg *sip.Package) error {
 	// here means the file on disk is truncated and unreadable, so it must
 	// not be discarded via defer.
 	if err := w.Close(); err != nil {
-		return fmt.Errorf("finalizing zip %s: %w", dest, err)
-	}
-	if err := file.Close(); err != nil {
-		return fmt.Errorf("closing zip %s: %w", dest, err)
+		return fmt.Errorf("finalizing zip of %s: %w", src, err)
 	}
 	return nil
 }
