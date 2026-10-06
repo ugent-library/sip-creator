@@ -55,9 +55,9 @@ func TestRegistrySchemas(t *testing.T) {
 	if got := shipped(t, "basic"); !slices.Equal(got, basic) {
 		t.Errorf("basic ships %v, want the METS set plus Meemoo's descriptive schemas %v", got, basic)
 	}
-	eark := withMETS("dc.xsd")
+	eark := withMETS("simpledc.xsd", "xml.xsd")
 	if got := shipped(t, "eark"); !slices.Equal(got, eark) {
-		t.Errorf("eark ships %v, want the METS set plus dc.xsd %v", got, eark)
+		t.Errorf("eark ships %v, want the METS set plus the simpledc schema and xml.xsd %v", got, eark)
 	}
 	earkmods := withMETS("mods-3-7.xsd")
 	if got := shipped(t, "eark-mods"); !slices.Equal(got, earkmods) {

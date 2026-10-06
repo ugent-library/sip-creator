@@ -179,7 +179,7 @@ A record that already exists as a document, or one richer than the rows can hold
 
 - At each level the document takes the place of `description.csv`: one or the other, never both.
 - The file MUST be well-formed XML with the profile's root element:
-  - under `eark`: `simpledc` without namespace, the shape the tool itself writes. A Dublin Core export in another wrapper, such as `oai_dc:dc`, must be rewrapped.
+  - under `eark`: `simpledc` without namespace, the shape the tool itself writes. A Dublin Core export in another wrapper, such as `oai_dc:dc`, must be rewrapped. The elements inside SHOULD carry no namespace either (`<title>`, not `<dc:title>`): that is the form RODA reads, and the only one the schema the package ships (`simpledc.xsd`) accepts.
   - under `eark-mods`: `mods:mods` in the MODS v3 namespace (`http://www.loc.gov/mods/v3`) with `version="3.7"`, the version the package's METS declares.
 - Nothing else in the document is checked: not its validity against the schema, and not whether it has an identifier or a title. Schema validity is the producer's responsibility; the validators downstream check it.
 - The file name must be the profile's: a `mods.xml` under `eark` is content, not a document.

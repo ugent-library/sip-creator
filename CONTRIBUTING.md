@@ -12,7 +12,7 @@ the [README](README.md).
   * `sf` ([Siegfried](https://github.com/richardlehane/siegfried)) on your `PATH`,
     because `build.sh` generates a `siegfried.json` for the input before building;
   * `xmllint` (part of libxml2, present on macOS and most Linux systems), which checks
-    every `mods.xml` in an `eark-mods` package against the bundled MODS schema.
+    every descriptive document in the package against the schema the package ships.
 
 To run commons-ip on a local Java instead of in Docker, set `CSIP_CMD` to the command,
 using the jar version that `docker/validator/Dockerfile` pins:
@@ -52,11 +52,16 @@ your own. It:
    changed;
 3. validates the zip with [commons-ip](https://github.com/keeps/commons-ip), printing
    every failed check with its messages;
-4. runs `xmllint` over every `mods.xml` in the package against the MODS 3.7 schema the
-   package ships, offline through the XML catalog in `scripts/schema-catalog.xml`,
-   because commons-ip does not validate the descriptive documents the METS points at.
+4. runs `xmllint` over every descriptive document in the package against the schema the
+   package ships for it, offline through the XML catalog in `scripts/schema-catalog.xml`,
+   because commons-ip does not validate the descriptive documents the METS points at:
+   `mods.xml` against `mods-3-7.xsd`, `dc.xml` against `simpledc.xsd`, and
+   `dc+schema.xml` against Meemoo's `descriptive_basic.xsd`. Meemoo's schema checks
+   element names only; the cardinality and required elements of Meemoo SIP 1.2 are
+   checked by the library, and EDTF dates by nothing yet (see docs/TODO.md).
 
-It exits non-zero when the package is not `VALID` or a `mods.xml` is not valid MODS. Each
+It exits non-zero when the package is not `VALID` or a descriptive document is not
+valid against its schema. Each
 profile validates against its E-ARK spec version: `basic` (Meemoo 1.2) against 2.0.4,
 `eark` and `eark-mods` against 2.2.0. All three are expected to report `VALID`.
 

@@ -4,13 +4,14 @@
 #
 # usage: build.sh [profile] [input]    (default: basic, examples/<profile>)
 #
-# Exits non-zero iff the generated package is not VALID, or a mods.xml in it
-# is not valid MODS 3.7. Each profile validates against the E-ARK spec
-# version of its era: basic (Meemoo 1.2) against 2.0.4, eark and eark-mods
-# against 2.2.0 (docs/archive/meemoo-12.md). commons-ip does not validate
-# the descriptive documents the METS points at, so every mods.xml in the
-# package is checked with xmllint against the schema the package ships,
-# offline through scripts/schema-catalog.xml (docs/input-spec.md §3).
+# Exits non-zero iff the generated package is not VALID, or a descriptive
+# document in it is not valid against its schema. Each profile validates
+# against the E-ARK spec version of its era: basic (Meemoo 1.2) against
+# 2.0.4, eark and eark-mods against 2.2.0 (docs/archive/meemoo-12.md).
+# commons-ip does not validate the descriptive documents the METS points
+# at, so every mods.xml, dc.xml and dc+schema.xml in the package is checked
+# with xmllint against the schema the package ships, offline through
+# scripts/schema-catalog.xml (docs/input-spec.md §3).
 #
 # The input is copied to tmp/build/<profile> and built from there, because
 # the siegfried.json sidecar is written next to the input on every run and
@@ -70,21 +71,26 @@ pkg="${pkg%/}"
 
 status=0
 
-# A supplied mods.xml is copied into the package as it is, and commons-ip
-# checks the METS, not the documents it points at, so each mods.xml is
-# validated here against the MODS schema the package ships. The schema
-# imports two loc.gov URLs; the catalog maps them onto the bundled copies
-# so xmllint stays offline.
-mods_files=()
-while IFS= read -r f; do mods_files+=("$f"); done < <(find "$pkg" -name mods.xml | sort)
-if [ "${#mods_files[@]}" -gt 0 ]; then
+# commons-ip checks the METS, not the descriptive documents it points at,
+# and a supplied document is copied into the package as it is, so each
+# descriptive document is validated here against the schema the package
+# ships for it. The MODS schema imports two loc.gov URLs; the catalog maps
+# them onto the bundled copies so xmllint stays offline.
+validate_documents() {
+    local name="$1" schema="$2"
+    local files=()
+    while IFS= read -r f; do files+=("$f"); done < <(find "$pkg" -name "$name" | sort)
+    [ "${#files[@]}" -gt 0 ] || return 0
     if ! command -v xmllint >/dev/null; then
-        echo "xmllint not on PATH; it checks every mods.xml in the package against the MODS schema" >&2
+        echo "xmllint not on PATH; it checks every $name in the package against $schema" >&2
         exit 2
     fi
     XML_CATALOG_FILES="$PWD/scripts/schema-catalog.xml" \
-        xmllint --noout --nonet --schema "$pkg/schemas/mods-3-7.xsd" "${mods_files[@]}" || status=1
-fi
+        xmllint --noout --nonet --schema "$pkg/schemas/$schema" "${files[@]}" || status=1
+}
+validate_documents mods.xml mods-3-7.xsd
+validate_documents dc.xml simpledc.xsd
+validate_documents dc+schema.xml descriptive_basic.xsd
 
 run_dir="reports/runs/$(date -u +%Y%m%dT%H%M%SZ)-$PROFILE"
 mkdir -p "$run_dir"

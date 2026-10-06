@@ -28,7 +28,7 @@ func TestEncode(t *testing.T) {
 
 	for _, want := range []string{
 		"<simpledc",
-		`xsi:noNamespaceSchemaLocation="../../schemas/dc.xsd"`,
+		`xsi:noNamespaceSchemaLocation="../../schemas/simpledc.xsd"`,
 		"<identifier>uuid-x</identifier>",
 		// language tags are accepted but not emitted
 		"<title>Fotoalbum 2026</title>",
@@ -57,7 +57,7 @@ func TestEncodeSchemaLocation(t *testing.T) {
 	if err := (simpledc{}).Encode(&buf, testTerms(), "../../../../schemas"); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(buf.String(), `xsi:noNamespaceSchemaLocation="../../../../schemas/dc.xsd"`) {
+	if !strings.Contains(buf.String(), `xsi:noNamespaceSchemaLocation="../../../../schemas/simpledc.xsd"`) {
 		t.Errorf("rep-level schema location hint wrong:\n%s", buf.String())
 	}
 }

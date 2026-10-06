@@ -72,9 +72,10 @@ func (dcschema) ModelTypeVersion() string {
 // Schemas lists the bundled XSD file names the dc+schema document points
 // at, plus what those import by relative path: Meemoo's
 // descriptive_basic.xsd imports dc.xsd, dcterms.xsd, edtf.xsd and
-// schema.xsd, and dcterms.xsd imports dcmitype.xsd. xml.xsd ships as
-// well, although every schema here that imports it names the absolute W3C
-// URL.
+// schema.xsd, and dcterms.xsd imports dcmitype.xsd. descriptive_basic.xsd
+// imports xml.xsd from the file next to it, so xml.xsd ships too; the
+// others name the W3C URL, which a validator then skips as already
+// imported.
 func (dcschema) Schemas() []string {
 	return []string{"descriptive_basic.xsd", "dc.xsd", "dcterms.xsd", "dcmitype.xsd", "edtf.xsd", "schema.xsd", "xml.xsd"}
 }

@@ -69,10 +69,13 @@ func (simpledc) ModelTypeVersion() string {
 }
 
 // Schemas lists the bundled XSD file names the simpledc document points
-// at: dc.xsd alone. Its own import of xml.xsd is an absolute W3C URL, not
-// a file next to it, so nothing else needs to ship.
+// at: simpledc.xsd, the Simple DC container with its elements in no
+// namespace as the template writes them, and xml.xsd, which it imports
+// from the file next to it. It is not DCMI's file of that name, which
+// expects the elements in the DCMES namespace and would reject the
+// document; the schema's header records how it is built from DCMI's files.
 func (simpledc) Schemas() []string {
-	return []string{"dc.xsd"}
+	return []string{"simpledc.xsd", "xml.xsd"}
 }
 
 // simpledcTemplate escapes every value; element names come from
@@ -83,7 +86,7 @@ var simpledcTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 }).Parse(`
 {{ define "simpledc" -}}
 <?xml version='1.0' encoding='UTF-8'?>
-<simpledc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{{ .SchemasDir }}/dc.xsd">
+<simpledc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{{ .SchemasDir }}/simpledc.xsd">
 {{- range .Terms }}
   <{{ el .Key }}>{{ esc .Value }}</{{ el .Key }}>
 {{- end }}
