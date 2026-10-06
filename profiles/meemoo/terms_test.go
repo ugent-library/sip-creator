@@ -119,9 +119,11 @@ func TestTermsValidateDuplicateIdentifier(t *testing.T) {
 		{Key: "dcterms:identifier", Value: "A"},
 		{Key: "dcterms:identifier", Value: "B"},
 	}
+	// The cardinality table also lists the identifier once, with its own
+	// wording; this is the identifier rule's.
 	err := terms.Validate()
-	if err == nil || !strings.Contains(err.Error(), "exactly one") {
-		t.Fatalf("want the exactly-one identifier rule, got %v", err)
+	if want := "dcterms:identifier appears 2 times; give exactly one"; err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("want the identifier rule %q, got %v", want, err)
 	}
 }
 

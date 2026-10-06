@@ -93,8 +93,12 @@ func TestSourcePackageEquivalence(t *testing.T) {
 	if ff.Path != hf.Path {
 		t.Errorf("essence Path differs: folder %q, hand %q", ff.Path, hf.Path)
 	}
-	if ff.Checksum != hf.Checksum || ff.Size != hf.Size {
-		t.Errorf("essence fixity differs: folder %s/%v, hand %s/%v", ff.Checksum, ff.Size, hf.Checksum, hf.Size)
+	// Both are the fixity of "essence bytes", as md5(1) computes it.
+	const wantChecksum, wantSize = "b04fc2b4b05b5c78a2a4fac253cdc66a", "13"
+	for name, f := range map[string]*sip.File{"folder": ff, "hand": hf} {
+		if f.Checksum != wantChecksum || f.Size != wantSize {
+			t.Errorf("%s essence fixity = %s/%s, want %s/%s", name, f.Checksum, f.Size, wantChecksum, wantSize)
+		}
 	}
 }
 

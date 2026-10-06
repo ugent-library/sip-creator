@@ -367,8 +367,9 @@ func TestAssembleReportMissingEntry(t *testing.T) {
 		"somewhere/else.jpg": {MD5: "ab"},
 	}
 
-	if _, err := b.Assemble(in); err == nil {
-		t.Fatal("assemble succeeded despite essence missing from the report")
+	_, err := b.Assemble(in)
+	if want := `characterization report has no entry for "cat.jpg"`; err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("assemble error = %v, want %q", err, want)
 	}
 	requireEmpty(t, outDir)
 }
@@ -383,8 +384,9 @@ func TestAssembleReportChecksumMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := b.Assemble(in); err == nil {
-		t.Fatal("assemble succeeded despite essence changed since the report")
+	_, err := b.Assemble(in)
+	if want := "changed since the characterization report was generated"; err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("assemble error = %v, want %q", err, want)
 	}
 	requireEmpty(t, outDir)
 }
@@ -398,8 +400,11 @@ func TestAssembleReportChecksumless(t *testing.T) {
 		src.Key: {Format: testFormat(), Mime: "image/test"},
 	}
 
-	if _, err := b.Assemble(in); err == nil {
-		t.Fatal("assemble succeeded despite a checksumless report entry")
+	// An empty checksum would also fail the comparison with the file; the
+	// error must come from the rule on a missing checksum.
+	_, err := b.Assemble(in)
+	if want := `characterization report carries no checksum for "cat.jpg"`; err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("assemble error = %v, want %q", err, want)
 	}
 	requireEmpty(t, outDir)
 }
@@ -410,11 +415,13 @@ func TestAssembleReportEntryError(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
 	in.Characterization = characterization.Report{
-		src.Key: {MD5: "ab", Errors: "permission denied"},
+		// The checksum matches, so only the recorded error can refuse it.
+		src.Key: {MD5: fileMD5(t, src.Source), Errors: "permission denied"},
 	}
 
-	if _, err := b.Assemble(in); err == nil {
-		t.Fatal("assemble succeeded despite a characterizer-reported file error")
+	_, err := b.Assemble(in)
+	if want := `characterization report records an error for "cat.jpg": permission denied`; err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("assemble error = %v, want %q", err, want)
 	}
 	requireEmpty(t, outDir)
 }
@@ -455,8 +462,9 @@ func TestAssembleDocumentation(t *testing.T) {
 	if err := os.WriteFile(manual.Source, []byte("changed"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := b.Assemble(in); err == nil {
-		t.Fatal("assemble succeeded despite a stale documentation entry")
+	_, err = b.Assemble(in)
+	if want := "manual.txt changed since the characterization report was generated"; err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("assemble error = %v, want %q", err, want)
 	}
 }
 
@@ -840,8 +848,9 @@ func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {
 	bad := writeEssence(t, inDir, "vendor.xml", "not xml at all")
 	in.Premis = []build.SourceFile{bad}
 
-	if _, err := b.Assemble(in); err == nil {
-		t.Fatal("assemble accepted a non-PREMIS received file")
+	_, err := b.Assemble(in)
+	if want := "package premis vendor.xml: not an XML document"; err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("assemble error = %v, want %q", err, want)
 	}
 	requireEmpty(t, outDir)
 }
@@ -870,8 +879,9 @@ func TestBuildInvalidSourceWritesNothing(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.Representations = nil
 
-	if _, err := b.Build(in); err == nil {
-		t.Fatal("Build succeeded on an invalid source package")
+	_, err := b.Build(in)
+	if want := "no representations supplied"; err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("Build error = %v, want %q", err, want)
 	}
 	requireEmpty(t, outDir)
 }
@@ -955,8 +965,8 @@ func TestNewRefusesDefinitionWithoutModel(t *testing.T) {
 		Destination: t.TempDir(),
 		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
-	if err == nil {
-		t.Fatal("New accepted a definition without a descriptive standard")
+	if want := "names no metadata model"; err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("New error = %v, want %q", err, want)
 	}
 }
 

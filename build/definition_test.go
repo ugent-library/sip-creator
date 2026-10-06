@@ -161,21 +161,30 @@ func TestWithSubmitterEARK(t *testing.T) {
 	}
 }
 
-func TestWithSubmitterLeavesRegistryUntouched(t *testing.T) {
-	before := len(basicDef(t).Declaration.Agents)
+// WithSubmitter returns a copy whose agents never share storage with the
+// definition it was called on. The definition here has room to spare after
+// its agents, as one a program builds with append often does: without the
+// copy, two calls would append into the same array, and the second
+// submitter would overwrite the first one's.
+func TestWithSubmitterCopiesTheAgents(t *testing.T) {
+	def := basicDef(t)
+	agents := make([]sip.Agent, len(def.Declaration.Agents), len(def.Declaration.Agents)+4)
+	copy(agents, def.Declaration.Agents)
+	def.Declaration.Agents = agents
 
-	if _, err := basicDef(t).WithSubmitter("Example Organization", "OR-a1b2c3d"); err != nil {
-		t.Fatalf("WithSubmitter() error = %v", err)
+	first, err := def.WithSubmitter("First Organization", "OR-a1b2c3d")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := def.WithSubmitter("Second Organization", "OR-e4f5g6h"); err != nil {
+		t.Fatal(err)
 	}
 
-	after := basicDef(t)
-	if len(after.Declaration.Agents) != before {
-		t.Fatalf("registry agents = %d after WithSubmitter, want %d", len(after.Declaration.Agents), before)
+	if got := first.Declaration.Agents[len(first.Declaration.Agents)-1].Name; got != "First Organization" {
+		t.Errorf("first definition's submitter = %q after a second call, want %q", got, "First Organization")
 	}
-	for _, a := range after.Declaration.Agents {
-		if a.Type == "ORGANIZATION" {
-			t.Errorf("registry gained an ORGANIZATION agent: %+v", a)
-		}
+	if len(def.Declaration.Agents) != len(agents) {
+		t.Errorf("the definition WithSubmitter was called on has %d agents, want %d", len(def.Declaration.Agents), len(agents))
 	}
 }
 

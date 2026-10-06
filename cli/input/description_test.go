@@ -88,8 +88,8 @@ func TestRowsViolations(t *testing.T) {
 		{"empty value", minimalCSV + "subject,\n", "empty value"},
 		{"missing identifier", "key,value\ntitle,T\n", "identifier is required"},
 		{"missing title", "key,value\nidentifier,ID-1\n", "title is required"},
-		{"duplicate identifier", minimalCSV + "identifier,ID-2\n", "exactly one"},
-		{"single-valued key repeated", minimalCSV + "created,1913\ncreated,1914\n", "exactly one"},
+		{"duplicate identifier", minimalCSV + "identifier,ID-2\n", "dcterms:identifier appears 2 times"},
+		{"single-valued key repeated", minimalCSV + "created,1913\ncreated,1914\n", "created appears more than once; give exactly one value"},
 		{"per-language key repeated in one language", minimalCSV + "abstract[nl],a\nabstract[nl],b\n", `language "nl"`},
 		{"per-language key repeated untagged", minimalCSV + "abstract,a\nabstract,b\n", "a distinct language on each value"},
 		{"bad lang tag", minimalCSV + "subject[nl!],x\n", "not a language tag"},
@@ -167,7 +167,7 @@ func TestRepresentationDescriptionDuplicateIdentifier(t *testing.T) {
 		"representations/master/description.csv": "key,value\nidentifier,A\nidentifier,B\n",
 	})
 	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
-	assertViolation(t, err, "exactly one")
+	assertViolation(t, err, "dcterms:identifier appears 2 times")
 }
 
 // BOM, CRLF, RFC 4180 quoting (a value spanning two lines included), a
