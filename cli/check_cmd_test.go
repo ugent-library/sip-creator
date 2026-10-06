@@ -2,26 +2,41 @@ package cli
 
 import (
 	"bytes"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/spf13/pflag"
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
-// runCLI runs the command line with args, as Run does, and returns what it
-// wrote to stdout and stderr and the error it ended with.
+// runCLI runs the command line with args, as Run does but logging
+// nowhere, and returns what it wrote to stdout and stderr and the error it
+// ended with. Cobra keeps flag values on the commands, which are package
+// variables, so every flag is set back to its default afterwards: a
+// --no-zip in one run must not carry into the next.
 func runCLI(t *testing.T, args ...string) (stdout, stderr string, err error) {
 	t.Helper()
 	var out, errOut bytes.Buffer
+	logger = slog.New(slog.DiscardHandler)
 	rootCmd.SetArgs(args)
 	rootCmd.SetOut(&out)
 	rootCmd.SetErr(&errOut)
 	t.Cleanup(func() {
+		logger = nil
 		rootCmd.SetArgs(nil)
 		rootCmd.SetOut(nil)
 		rootCmd.SetErr(nil)
+		for _, cmd := range rootCmd.Commands() {
+			cmd.Flags().VisitAll(func(f *pflag.Flag) {
+				if err := f.Value.Set(f.DefValue); err != nil {
+					t.Errorf("reset --%s: %v", f.Name, err)
+				}
+				f.Changed = false
+			})
+		}
 	})
 	err = rootCmd.Execute()
 	return out.String(), errOut.String(), err
