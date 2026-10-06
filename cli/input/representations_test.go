@@ -23,7 +23,7 @@ func TestRepresentationsCSV(t *testing.T) {
 	tree["representations.csv"] = "folder,label,type\nmaster,\"Master scan, R&D \"\"A\"\"\",archival\naccess,,\n"
 	root := writeTree(t, tree)
 
-	pkg, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	pkg, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -155,7 +155,7 @@ func TestRepresentationsCSVViolations(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			tree := twoRepTree()
 			tree["representations.csv"] = c.csv
-			_, _, err := Read(writeTree(t, tree), mapping.Meemoo{}, meemooDocumentSpec)
+			_, err := Read(writeTree(t, tree), mapping.Meemoo{}, meemooDocumentSpec)
 			assertViolation(t, err, c.want)
 		})
 	}
@@ -164,7 +164,7 @@ func TestRepresentationsCSVViolations(t *testing.T) {
 func TestRepresentationsCSVUncoveredFolder(t *testing.T) {
 	tree := twoRepTree()
 	tree["representations.csv"] = "folder\nmaster\n"
-	_, _, err := Read(writeTree(t, tree), mapping.Meemoo{}, meemooDocumentSpec)
+	_, err := Read(writeTree(t, tree), mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "representations/access is not listed")
 }
 
@@ -174,28 +174,28 @@ func TestRepresentationsCSVRequiresRepresentationsFolder(t *testing.T) {
 		"scan.tiff":           "a",
 		"representations.csv": "folder\nx\n",
 	})
-	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "requires a representations/ folder")
 }
 
 func TestRepresentationsCSVMustBeAFile(t *testing.T) {
 	tree := twoRepTree()
 	tree["representations.csv/"] = ""
-	_, _, err := Read(writeTree(t, tree), mapping.Meemoo{}, meemooDocumentSpec)
+	_, err := Read(writeTree(t, tree), mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "representations.csv is a folder")
 }
 
 // A CSV with only the folder column, listing every folder in lexical
 // order, is a no-op: the read result equals the no-CSV read.
 func TestRepresentationsCSVFolderOnlyIsANoop(t *testing.T) {
-	plain, _, err := Read(writeTree(t, twoRepTree()), mapping.Meemoo{}, meemooDocumentSpec)
+	plain, err := Read(writeTree(t, twoRepTree()), mapping.Meemoo{}, meemooDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read without CSV: %v", err)
 	}
 
 	tree := twoRepTree()
 	tree["representations.csv"] = "folder\naccess\nmaster\n"
-	withCSV, _, err := Read(writeTree(t, tree), mapping.Meemoo{}, meemooDocumentSpec)
+	withCSV, err := Read(writeTree(t, tree), mapping.Meemoo{}, meemooDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read with CSV: %v", err)
 	}

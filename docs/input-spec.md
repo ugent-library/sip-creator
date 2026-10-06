@@ -44,7 +44,7 @@ Two things do not live in the folder. The submitting organization comes from the
 - A file or folder name MAY hold any character XML can carry, `&`, `%`, `+` and spaces included. A name that is not valid UTF-8, or that holds a control character other than tab, line feed and carriage return, MUST be an error: the package's METS and PREMIS documents cannot carry it, and escaping would change the name.
 - The tool MUST compare paths after Unicode normalization (NFC), because macOS file names and typed CSV values often differ only in normalization form.
 - The tool MUST refuse to build when a MUST rule is broken, and MUST report every violation at once, in plain language, naming the file or folder concerned.
-- The tool MUST offer a check-only mode, `check`, that validates a folder against these rules without building. It takes the same `--profile` as a build and reads no configuration. The checks on file contents, the format report's checksums (§2) and received PREMIS (§5), run only when building.
+- The tool MUST offer a check-only mode, `check`, that validates a folder against these rules without building. It takes the same `--profile` as a build and reads no configuration. It reports every problem, then counts what the folder holds. The checks that read every file or judge a document's kind, the format report's checksums (§2) and the root element of received PREMIS (§5), run only when building.
 
 ## 2. Content files and representations
 

@@ -176,16 +176,30 @@ no configuration: no `.env` and no environment variables:
 ./bin/sip-creator check --profile eark ./your-input
 ```
 
-The report goes to stdout, so it can be saved to a file. A folder with problems lists
-each one:
+The report goes to stdout, so it can be saved to a file. It lists every problem first,
+then a summary of what the tool read, then the verdict:
 
 ```
 1 problem in ./your-input
 
   premis/broken.xml: not well-formed XML: XML syntax error on line 2: unexpected EOF
 
-FAILED: fix the problems above and run check again.
+Input folder:         ./your-input
+Profile:              eark
+
+Descriptive metadata: description.csv
+Representations:      1 (1 with its own description)
+Essence files:        1
+Documentation files:  2
+PREMIS files:         2
+Format report:        not supplied (files carry no format information)
+
+FAILED: fix the problems listed at the top and run check again.
 ```
+
+The summary says where the package description comes from: the rows of
+`description.csv`, from which the tool generates a document, or a supplied `dc.xml` or
+`mods.xml`, which it copies as it is.
 
 The exit status tells a script what happened:
 

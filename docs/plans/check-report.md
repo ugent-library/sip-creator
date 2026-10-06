@@ -1,7 +1,7 @@
 # Plan: the check command reports what a folder holds and every problem in it
 
-*Status: **in progress** (drafted 2026-10-06). Step 1 landed in 2cf8b79, step 2 in 9977f7a, step 3 in 6e07de0, step 4 in 610692e.
-Step 5 lands in two commits: the read details, then the inventory.
+*Status: **in progress** (drafted 2026-10-06). Step 1 landed in 2cf8b79, step 2 in 9977f7a, step 3 in 6e07de0, step 4 in 610692e;
+step 5 follows.
 The plan builds on 4c93b57; line numbers refer to that tree. Update this line as steps
 land.*
 
@@ -48,28 +48,30 @@ Decided in chat on 2026-10-06:
 3. The basic profile takes no supplied descriptive document. A `dc+schema.xml` in a
    basic folder is an error with a message that says so.
 4. The audience is the operator who prepares a folder and builds SIPs from it.
-5. The report shows findings and an inventory of the folder. It does not list every rule
-   with a pass status.
+5. The report shows findings and a summary of the folder in counts. It does not list
+   every rule with a pass status, and it does not list files.
 6. Findings keep their current wording. They do not refer to sections of the input
    specification.
-7. The inventory shows file sizes. A list of files stops after 25 entries, with an
-   ellipsis line that says how many more there are. A `--full` flag lists every file.
-8. Descriptive values longer than a maximum length are cut off with an ellipsis.
-9. The inventory has a section for optional inputs the folder does not supply. Its
-   heading makes clear that these are optional.
-10. The inventory lists the files the reader skipped, by their path in the folder.
-11. The inventory opens with the total size of the folder's files, in human-readable
-    units, and the number of files.
-12. The profile's rules run only on a folder the reader read without violations.
-13. Check exits with status 1 when the folder has problems and 2 when it cannot check the
-    folder at all.
-14. Test folders for the report live under `cli/testdata/`, the Go convention.
-15. When a folder supplies `siegfried.json`, check reports each content file that has no
+7. The summary names where the package description comes from (`description.csv`, a
+   supplied document, or none), and counts representations, those with their own
+   description, essence files, documentation files and PREMIS files across all levels.
+   It says whether a format report was supplied. It shows no sizes, no file lists and no
+   skipped files.
+8. The profile's rules run only on a folder the reader read without violations.
+9. Check exits with status 1 when the folder has problems and 2 when it cannot check the
+   folder at all.
+10. When a folder supplies `siegfried.json`, check reports each content file that has no
     entry in it as an error, as create does. This needs no hashing.
-16. The report is an unexported type `checkReport` in `cli/`. The input reader hands it
-    the facts the source package lacks in a separate small value, `input.ReadDetails`.
-    The walker's internal `inventory` record stays private and unchanged.
-17. Steps 1 to 3 close gaps in the input rules and come first, each as its own step.
+11. The report is an unexported type `checkReport` in `cli/`, built from the source
+    package alone. `input.Read` keeps its signature.
+12. Steps 1 to 3 close gaps in the input rules and come first, each as its own step.
+
+Revised on 2026-10-06 after a first build of step 5: an inventory with file lists,
+sizes, formats, the descriptive rows, skipped files and a `--full` flag, fed by a new
+`input.ReadDetails`, was built and dropped. A check reports violations; listing a
+folder's contents is work for other tools, and a list cut at 25 files with a flag for
+the rest made the report harder to read, not easier. `ReadDetails` (b7b1869) is
+removed again in step 5's commit.
 
 `go test ./...` passes after every step. No step changes an output file, so
 `./scripts/reference-diff.sh` stays clean throughout.
@@ -77,7 +79,7 @@ Decided in chat on 2026-10-06:
 **Relation to [profile-rules-and-names.md](profile-rules-and-names.md).** That plan is in
 progress. It renames the profiles (`meemoo/basic`, `eark/none`, `eark/dc`, `eark/mods`),
 adds a profile without descriptive metadata and allows zero representations under
-`eark/dc` and `eark/mods`. The inventory in step 5 must therefore handle a package without
+`eark/dc` and `eark/mods`. The summary in step 5 must therefore handle a package without
 a description and a package without representations. Whichever plan lands second updates
 the example output in this plan and in the input specification.
 
@@ -183,135 +185,47 @@ the example output in this plan and in the input specification.
 - `create` keeps its current error output and exits with 1 on every failure, as today.
 - Docs: `README.md` lists the exit statuses of check.
 
-### Step 5. The inventory
+### Step 5. The summary
 
-`Added: check lists what the input folder holds: descriptive metadata, representations, files with their sizes, and the optional inputs it does not supply`
+`Added: check summarizes what the input folder holds in counts, below the problems and above the verdict`
 
-Layout for a valid folder:
+Layout for the eark example:
 
 ```
-Input folder: examples/basic
-Profile:      basic
-Contents:     3 files, 243.6 kB
+Input folder:         examples/eark
+Profile:              eark
 
-Descriptive metadata (description.csv)
-  identifier        example-0001
-  title[nl]         Voorbeeldfoto
-  title[en]         Example photograph
-  description[nl]   Een voorbeeldpakket met één afbeelding.
-  description[en]   An example package with one image.
-  created           2026-01-15
-  creator           Example Studio
+Descriptive metadata: description.csv
+Representations:      1 (1 with its own description)
+Essence files:        1
+Documentation files:  2
+PREMIS files:         2
+Format report:        not supplied (files carry no format information)
 
-Representations
-  master   label "master", type "master"
-    Content files: 1, 240 kB
-      image-001.jpg                     240 kB   fmt/43   image/jpeg
-    Documentation: 1 file
-      capture-notes.txt                 1.2 kB
-
-Package documentation: 1 file
-  README.txt                            2.4 kB
-
-Optional inputs not supplied
-  representations.csv   labels and types are the folder names
-  siegfried.json        files carry no format information
-  premis/               no received preservation files
-
-Skipped
-  .DS_Store
-  representations/master/.DS_Store
-
-OK: the folder meets the input specification for profile basic.
+OK: the folder meets the input specification for profile eark.
 ```
 
-Rules for the content:
-
-- **Descriptive metadata** lists the rows of `description.csv` as the producer wrote
-  them: key with its language tag, then the value. A value longer than 60 characters is
-  cut at 60 and ends in `…`. Line breaks inside a value print as spaces. A supplied
-  document (`dc.xml`, `mods.xml`) prints as its file name and size, without its
-  contents. A representation-level description prints under its representation in the
-  same form.
-- **Files** print with their size in decimal units (B, kB, MB, GB), as macOS Finder
-  shows them. With a `siegfried.json`, each content file also shows the PRONOM
-  identifier and MIME type its entry records. The inventory reads these from the
-  report; it does not compare checksums.
-- **Long lists** stop after 25 files with a line `… and 1,975 more files (use --full to
-  list all)`. The limit applies per list: content, documentation, received PREMIS.
-- **Optional inputs not supplied** names each optional input the folder lacks and the
-  default the tool applies instead. The candidates are `representations.csv`,
-  `siegfried.json`, a package-level `documentation/` and `premis/`.
-- **Contents** counts every file the package will take from the folder: content,
-  documentation, received PREMIS and a supplied document. It does not count
-  `description.csv`, `siegfried.json` or `representations.csv`: the package carries a
-  descriptive document generated from the rows, not the rows file.
-  The size uses the same units as the file lines.
-- **Skipped** lists, by path relative to the input folder, each file the reader leaves
-  out without a violation: the operating system files `.DS_Store`, `Thumbs.db`,
-  `desktop.ini` and names starting with `._` (`cli/input/walker.go:373`). The section is
-  left out when nothing was skipped.
-- On a failed check the inventory follows the findings, built from the partial source
-  package that `input.Read` returns. Parts the reader could not read are left out.
-
-Implementation:
-
-- The report needs three facts the source package does not carry. `input.Read` returns
-  them next to the source package as a new exported type, `ReadDetails`, documented
-  field by field:
-
-  ```go
-  // ReadDetails holds what a read of an input folder found beyond the source
-  // package: the descriptive rows as the producer wrote them, which optional
-  // files the folder supplied, and what the reader left out. It describes the
-  // folder for an operator; the build does not use it.
-  type ReadDetails struct {
-      // PackageRows are the rows of the package-level description.csv in file
-      // order, with Key as the row spells it, before the profile's mapping.
-      // Empty when the package level has no description.csv.
-      PackageRows []sip.Term
-      // RepresentationRows are the rows of each representation's
-      // description.csv, by representation name. A representation without
-      // one has no entry.
-      RepresentationRows map[string][]sip.Term
-      // RepresentationsCSV reports whether the folder supplies
-      // representations.csv.
-      RepresentationsCSV bool
-      // SkippedOSArtifacts lists the files the reader left out without a violation,
-      // operating system files such as .DS_Store, by slash path relative to
-      // the input folder, in walk order.
-      SkippedOSArtifacts []string
-  }
-  ```
-
-  The signature becomes
-  `func Read(root string, mapper Mapper, documentSpec DocumentSpec) (*build.SourcePackage, ReadDetails, error)`.
-  `create` ignores the details. Whether `siegfried.json`, a package-level
-  `documentation/` or `premis/` was supplied follows from the source package, so
-  `ReadDetails` does not repeat it. The walker's internal `inventory` record stays
-  private and unchanged. `readDir` records each skipped file where it now drops it. The
-  fields may still change while the step is written; the doc comments are the contract.
-- The report is an unexported type `checkReport` in its own file in `cli/`, next to
-  `check_cmd.go`. It holds the findings and the inventory, is built from the source
-  package and the `ReadDetails`, and prints itself. Nothing moves into `build`, so the
-  library API is unchanged.
-- `--full` is a flag on `check` only.
-- Test folder `cli/testdata/full/`: a folder with every optional input, which the
-  examples leave out: `representations.csv`, `siegfried.json` with entries for its
-  files, and package-level and representation-level `premis/` and `documentation/`.
-  `.gitignore` excludes `.DS_Store`, so the test copies the folder into `t.TempDir()`
-  and adds one there. The go command ignores `testdata` folders when it builds and lists
-  packages, and a test runs in its package folder, so the test reads it as
-  `testdata/full`. The examples stay minimal.
-- Tests in `cli/check_cmd_test.go`: the three examples print an inventory that names
-  their files; `cli/testdata/full` prints formats, received PREMIS files, the totals
-  and the skipped `.DS_Store`; a folder with 30 content files prints 25 and the
-  ellipsis line, and all 30 with `--full`; a long title is cut with `…`; a folder without
-  `siegfried.json` lists it under optional inputs. Folders built in a test, such as the
-  one with 30 files, stay in `t.TempDir()`.
-- Docs: `README.md` usage section shows a report. `sip-creator-design.md` line 116
-  describes the report. `input-spec.md` mentions that check lists the folder's
-  contents.
+- **Descriptive metadata** is `description.csv` when the package description comes from
+  rows, which the build turns into a generated document; the document's name with
+  `(supplied document, copied as it is)` for a `dc.xml` or `mods.xml`; `none` when the
+  reader found no package description.
+- **Representations** adds `(n with its own description)` when any representation has
+  one.
+- **Essence, documentation and PREMIS files** are totals over the package and all
+  representations. PREMIS files are the received ones; the generated documents are not
+  in the folder.
+- **Format report** is `siegfried.json` or `not supplied (files carry no format
+  information)`.
+- On failure the problems come first, the summary of what the reader got follows, and
+  the verdict reads "fix the problems listed at the top".
+- Implementation: `checkReport` in `cli/check_report.go` gains the source package and
+  prints the summary. `input.ReadDetails` and the reader's record of skipped files are
+  removed, and `input.Read` returns to two values.
+- Tests in `cli/check_cmd_test.go`: the eark example's report exactly; a failing folder's
+  report exactly, with the summary of what was read; a supplied `dc.xml` and a supplied
+  `siegfried.json` named in the summary.
+- Docs: `README.md` shows a report. `sip-creator-design.md` describes the summary.
+  `input-spec.md` says check counts what the folder holds.
 
 ### Step 6. Examples and wrap-up
 

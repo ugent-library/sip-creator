@@ -85,8 +85,8 @@ func TestCheckSummarizesAValidFolder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("check: %v\n%s", err, stderr)
 	}
-	if !strings.HasPrefix(stdout, "OK: ") {
-		t.Errorf("stdout = %q, want a summary starting with %q", stdout, "OK: ")
+	if want := "OK: the folder meets the input specification for profile eark.\n"; !strings.HasSuffix(stdout, want) {
+		t.Errorf("stdout = %q, want it to end in %q", stdout, want)
 	}
 	if stderr != "" {
 		t.Errorf("stderr = %q, want nothing", stderr)
@@ -118,10 +118,23 @@ func TestCheckReportsEveryViolation(t *testing.T) {
 	if want := root + ": 2 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
+	// The problems come first, then the summary of what could be read, then
+	// the verdict.
 	want := "2 problems in " + root + "\n\n" +
 		"  descriptive metadata is missing: every package folder needs a description.csv or a dc.xml describing the content (input specification §3)\n" +
 		"  stray.tif: content must live inside representations/ when that folder exists (only the reserved names of the input specification may sit beside it)\n" +
-		"\nFAILED: fix the problems above and run check again.\n"
+		"\n" +
+		"Input folder:         " + root + "\n" +
+		"Profile:              eark\n" +
+		"\n" +
+		"Descriptive metadata: none\n" +
+		"Representations:      1\n" +
+		"Essence files:        1\n" +
+		"Documentation files:  0\n" +
+		"PREMIS files:         0\n" +
+		"Format report:        not supplied (files carry no format information)\n" +
+		"\n" +
+		"FAILED: fix the problems listed at the top and run check again.\n"
 	if stdout != want {
 		t.Errorf("stdout = %q, want %q", stdout, want)
 	}
@@ -202,6 +215,52 @@ func TestCheckReportsContentMissingFromTheReport(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "siegfried.json has no entry for b.tif") {
 		t.Errorf("stdout = %q, want the file without an entry named", stdout)
+	}
+}
+
+// The summary counts what the folder holds, across the package and its
+// representations. The eark example describes its representation too.
+func TestCheckSummarizesTheExample(t *testing.T) {
+	stdout, _, err := runCLI(t, "check", "--profile", "eark", filepath.Join("..", "examples", "eark"))
+	if err != nil {
+		t.Fatalf("check: %v", err)
+	}
+	want := "Input folder:         ../examples/eark\n" +
+		"Profile:              eark\n" +
+		"\n" +
+		"Descriptive metadata: description.csv\n" +
+		"Representations:      1 (1 with its own description)\n" +
+		"Essence files:        1\n" +
+		"Documentation files:  2\n" +
+		"PREMIS files:         2\n" +
+		"Format report:        not supplied (files carry no format information)\n" +
+		"\n" +
+		"OK: the folder meets the input specification for profile eark.\n"
+	if stdout != want {
+		t.Errorf("stdout = %q, want %q", stdout, want)
+	}
+}
+
+// A supplied document is named as the package description, and a supplied
+// characterization report as the format report.
+func TestCheckNamesSuppliedDocumentAndReport(t *testing.T) {
+	root := writeFolder(t, map[string]string{
+		"dc.xml":         "<simpledc><identifier>ID-1</identifier><title>Test</title></simpledc>",
+		"a.tif":          "a",
+		"siegfried.json": `{"siegfried":"1.11.0","files":[{"filename":"a.tif","md5":"0","matches":[]}]}`,
+	})
+
+	stdout, _, err := runCLI(t, "check", "--profile", "eark", root)
+	if err != nil {
+		t.Fatalf("check: %v\n%s", err, stdout)
+	}
+	for _, want := range []string{
+		"Descriptive metadata: dc.xml (supplied document, copied as it is)\n",
+		"Format report:        siegfried.json\n",
+	} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("stdout = %q, want it to contain %q", stdout, want)
+		}
 	}
 }
 

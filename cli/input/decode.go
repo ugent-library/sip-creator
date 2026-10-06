@@ -16,9 +16,8 @@ import (
 // specification: the sidecar and representations.csv (§2), then the
 // description of each level (§3). Only the description decoder needs the
 // profile: the mapper for description.csv, the format for a supplied
-// document. It returns the details of the read it can fill in: the rows
-// as written and whether representations.csv was read.
-func (r *folderReader) decode(source *build.SourcePackage, inv inventory, mapper Mapper, format build.DocumentFormat) ReadDetails {
+// document.
+func (r *folderReader) decode(source *build.SourcePackage, inv inventory, mapper Mapper, format build.DocumentFormat) {
 	if inv.sidecar != "" {
 		source.Characterization = r.decodeSidecar(inv.sidecar)
 	}
@@ -28,21 +27,11 @@ func (r *folderReader) decode(source *build.SourcePackage, inv inventory, mapper
 	if inv.representationsCSV != "" {
 		source.Representations = r.applyRepresentations(inv.representationsCSV, source.Representations)
 	}
-
-	details := ReadDetails{RepresentationsCSV: inv.representationsCSV != ""}
-	source.Description, details.PackageRows = r.description(inv.pkg, true, mapper, format)
+	source.Description = r.description(inv.pkg, true, mapper, format)
 	for i := range source.Representations {
 		rep := &source.Representations[i]
-		var rows []sip.Term
-		rep.Description, rows = r.description(inv.reps[rep.Name], false, mapper, format)
-		if rows != nil {
-			if details.RepresentationRows == nil {
-				details.RepresentationRows = map[string][]sip.Term{}
-			}
-			details.RepresentationRows[rep.Name] = rows
-		}
+		rep.Description = r.description(inv.reps[rep.Name], false, mapper, format)
 	}
-	return details
 }
 
 // decodeSidecar decodes the optional pre-computed characterization report.
@@ -192,42 +181,35 @@ func (r *folderReader) decodeRepresentations(src string) (rows []repRow, decoded
 // description returns the level's description from the one file the walk
 // recorded for it: the rows file, mapped by the profile's mapper, or the
 // profile's supplied document, read as it is and judged by format. It
-// returns nil when the level has neither. rows are the rows as written
-// when the description comes from a rows file.
-func (r *folderReader) description(files descriptionFiles, packageLevel bool, mapper Mapper, format build.DocumentFormat) (description sip.Description, rows []sip.Term) {
+// returns nil when the level has neither.
+func (r *folderReader) description(files descriptionFiles, packageLevel bool, mapper Mapper, format build.DocumentFormat) sip.Description {
 	switch {
 	case files.document != "":
-		return r.readDocument(files.document, format), nil
+		return r.readDocument(files.document, format)
 	case files.rows != "":
 		return r.decodeDescription(files.rows, packageLevel, mapper)
 	}
-	return nil, nil
+	return nil
 }
 
 // decodeDescription decodes the description.csv at src into the profile's
 // description and records a violation per broken rule: the row syntax,
 // the mapper's placement of each term, and the description's own
-// rules, with ValidateRequired at the package level only. It also returns
-// the rows that parsed, as written, before the mapper placed them.
-func (r *folderReader) decodeDescription(src string, packageLevel bool, mapper Mapper) (sip.Description, []sip.Term) {
+// rules, with ValidateRequired at the package level only.
+func (r *folderReader) decodeDescription(src string, packageLevel bool, mapper Mapper) sip.Description {
 	rel := r.rel(src)
 
 	data, err := os.ReadFile(src)
 	if err != nil {
 		r.violate("%s: %v", rel, err)
-		return nil, nil
+		return nil
 	}
 
 	terms, lines, errs, err := parseTerms(data)
 	if err != nil {
 		r.violate("%s: %v", rel, err)
-		return nil, nil
+		return nil
 	}
-	// A mapper may return a description that shares the terms' backing
-	// array (the eark mapping is the identity), and the build may rewrite a
-	// description in place (build.IdentifierSwapper), so the rows as
-	// written are a copy.
-	rows := slices.Clone(terms)
 	description, mapErrs := mapper.Map(terms)
 	errs = append(errs, mapErrs...)
 	// A term the mapper refused is reported once: the description's rules
@@ -265,9 +247,9 @@ func (r *folderReader) decodeDescription(src string, packageLevel bool, mapper M
 		r.violate("%s: %v", rel, err)
 	}
 	if len(terms) == 0 {
-		return nil, nil
+		return nil
 	}
-	return description, rows
+	return description
 }
 
 // readDocument reads the supplied descriptive document at src as the
