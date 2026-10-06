@@ -349,7 +349,8 @@ supply as Go values what the tool reads from the input folder and the environmen
 the library reads no environment variables:
 
 * the submitting organization is added to the profile with `WithSubmitter`;
-* the destination directory and the logger go in `build.Config`;
+* the destination directory and the logger go in `build.Config`; without a logger, the
+  progress messages are discarded;
 * the descriptive metadata and the content files go in `build.SourcePackage`.
 
 The full API is on [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator).

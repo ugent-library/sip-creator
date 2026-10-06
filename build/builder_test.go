@@ -192,6 +192,19 @@ func TestNewRefusesDefinitionWithoutModel(t *testing.T) {
 	}
 }
 
+// A config without a logger builds a package; the progress messages are
+// discarded.
+func TestBuildWithoutLogger(t *testing.T) {
+	_, in, _ := newTestBuilder(t, basicDef(t))
+	b, err := build.New(&build.Config{Profile: basicDef(t), Destination: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.Build(in); err != nil {
+		t.Fatalf("Build error = %v, want nil", err)
+	}
+}
+
 // Build refuses invalid input data before any side effect: a SourcePackage
 // built directly in Go that breaks a rule leaves nothing on disk.
 func TestBuildInvalidSourceWritesNothing(t *testing.T) {

@@ -38,6 +38,16 @@ func writePackage(t *testing.T, baseDir string) *sip.Package {
 	return pkg
 }
 
+// A config without a logger zips the package; the messages are discarded.
+func TestZipWithoutLogger(t *testing.T) {
+	baseDir := t.TempDir()
+	pkg := writePackage(t, baseDir)
+
+	if err := New(&Config{Destination: baseDir}).Zip(pkg); err != nil {
+		t.Fatalf("Zip() = %v, want nil", err)
+	}
+}
+
 func TestZip(t *testing.T) {
 	baseDir := t.TempDir()
 	pkg := writePackage(t, baseDir)

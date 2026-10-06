@@ -20,7 +20,7 @@ import (
 type Config struct {
 	// Destination is the directory the zip is written to.
 	Destination string
-	// Logger receives a message per zipped entry.
+	// Logger receives a message per zipped entry. Nil discards them.
 	Logger *slog.Logger
 }
 
@@ -28,15 +28,19 @@ type Config struct {
 type Archive struct {
 	// Destination is the directory the zip is written to.
 	Destination string
-	// Logger receives a message per zipped entry.
+	// Logger receives a message per zipped entry. It must not be nil.
 	Logger *slog.Logger
 }
 
 // New returns an Archive that writes to config.Destination.
 func New(config *Config) *Archive {
+	logger := config.Logger
+	if logger == nil {
+		logger = slog.New(slog.DiscardHandler)
+	}
 	return &Archive{
 		Destination: config.Destination,
-		Logger:      config.Logger,
+		Logger:      logger,
 	}
 }
 

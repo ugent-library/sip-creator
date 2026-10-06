@@ -23,7 +23,7 @@ type Config struct {
 	Profile Definition
 	// Destination is the directory packages are created under.
 	Destination string
-	// Logger receives the build's progress messages.
+	// Logger receives the build's progress messages. Nil discards them.
 	Logger *slog.Logger
 }
 
@@ -42,10 +42,14 @@ func New(config *Config) (*Builder, error) {
 	if config.Profile.Model == nil {
 		return nil, fmt.Errorf("profile %q names no metadata model; set the definition's Model", config.Profile.Name)
 	}
+	logger := config.Logger
+	if logger == nil {
+		logger = slog.New(slog.DiscardHandler)
+	}
 	return &Builder{
 		profile:     config.Profile,
 		destination: config.Destination,
-		logger:      config.Logger,
+		logger:      logger,
 	}, nil
 }
 
