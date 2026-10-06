@@ -1,4 +1,4 @@
-package eark
+package earkdc
 
 import (
 	"bytes"

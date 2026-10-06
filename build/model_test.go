@@ -27,10 +27,10 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 		desc sip.Description
 		want string
 	}{
-		{"unknown type to eark", earkDef(t), otherDescription{}, "eark.Terms"},
+		{"unknown type to eark", earkDef(t), otherDescription{}, "earkdc.Terms"},
 		{"Meemoo terms to eark", earkDef(t), testDescription(), "meemoo.Terms, not Simple Dublin Core"},
-		{"simple dc terms to basic", basicDef(t), identityTerms(), "eark.Terms, not Meemoo dc+schema"},
-		{"simple dc terms to eark-mods", earkmodsDef(t), identityTerms(), "eark.Terms, not a MODS record"},
+		{"simple dc terms to basic", basicDef(t), identityTerms(), "earkdc.Terms, not Meemoo dc+schema"},
+		{"simple dc terms to eark-mods", earkmodsDef(t), identityTerms(), "earkdc.Terms, not a MODS record"},
 		{"record to eark", earkDef(t), identityRecord(), "earkmods.Record, not Simple Dublin Core"},
 		{"record to basic", basicDef(t), identityRecord(), "earkmods.Record, not Meemoo dc+schema"},
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/ugent-library/sip-creator/cli/input"
 	"github.com/ugent-library/sip-creator/cli/input/mapping"
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
@@ -20,7 +20,7 @@ import (
 // behind.
 var mappers = map[string]input.Mapper{
 	meemoo.Definition.Name:   mapping.Meemoo{},
-	eark.Definition.Name:     mapping.Eark{},
+	earkdc.Definition.Name:   mapping.EarkDC{},
 	earkmods.Definition.Name: mapping.EarkMods{},
 }
 

@@ -21,7 +21,7 @@ A Go library with a cobra CLI on top (`main.go` → `cli/`). [docs/sip-creator-d
 | `cli/` | the `create` and `check` commands, environment config, profile-to-mapper pairing |
 | `cli/input/` | reads an input folder ([docs/input-spec.md](docs/input-spec.md)) into a `build.SourcePackage` |
 | `cli/input/mapping/` | one mapper per profile: `description.csv` rows to the profile's description |
-| `profiles/` | the registry; one package per profile (`meemoo` is `basic`, `eark`, `earkmods` is `eark-mods`) |
+| `profiles/` | the registry; one package per profile (`meemoo` is `basic`, `earkdc` is `eark`, `earkmods` is `eark-mods`) |
 | `build/` | the library's face and the engine: validate, assemble the graph, write it |
 | `sip/` | the domain graph: `Package`, `Entity`, `Representation`, `File` |
 | `encoders/` | METS and PREMIS templates; `xmldoc`, the one XML reader |

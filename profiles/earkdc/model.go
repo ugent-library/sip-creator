@@ -1,4 +1,4 @@
-package eark
+package earkdc
 
 import (
 	"bytes"
@@ -29,7 +29,7 @@ var (
 
 func (simpledc) ValidateType(d sip.Description) error {
 	if _, ok := d.(Terms); !ok {
-		return fmt.Errorf("descriptive metadata is %T, not Simple Dublin Core terms (eark.Terms)", d)
+		return fmt.Errorf("descriptive metadata is %T, not Simple Dublin Core terms (earkdc.Terms)", d)
 	}
 	return nil
 }

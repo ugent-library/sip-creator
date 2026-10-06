@@ -4,7 +4,7 @@ import "fmt"
 
 // Description is the descriptive metadata of an entity or a
 // representation, in the descriptive standard the profile writes. Each
-// profile package supplies its own type: meemoo.Terms and eark.Terms are
+// profile package supplies its own type: meemoo.Terms and earkdc.Terms are
 // lists of Term values, earkmods.Record is a struct typed by field, and
 // build.EncodedDescription is a finished document supplied as a file, for
 // the profiles that accept one. Only the profile package works with the

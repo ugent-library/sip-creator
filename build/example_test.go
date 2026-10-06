@@ -12,7 +12,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -48,7 +48,7 @@ func ExampleBuilder_Build() {
 	}
 
 	pkg, err := builder.Build(&build.SourcePackage{
-		Description: eark.Terms{
+		Description: earkdc.Terms{
 			{Key: "identifier", Value: "example-0001"},
 			{Key: "title", Value: "Example photograph"},
 			{Key: "description", Value: "An example package with one image."},
@@ -324,7 +324,7 @@ func ExampleBuilder_Build_update() {
 		PackageIdentifier: "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e",
 		RecordStatus:      sip.RecordStatusReplacement,
 		ContentCategory:   "Photographs – Digital",
-		Description: eark.Terms{
+		Description: earkdc.Terms{
 			{Key: "identifier", Value: "example-0001"},
 			{Key: "title", Value: "Example photograph"},
 		},

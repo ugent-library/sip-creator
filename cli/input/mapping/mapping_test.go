@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
@@ -21,13 +21,13 @@ var terms = []sip.Term{
 // Under eark the terms become Simple Dublin Core terms unchanged, in order:
 // the keys are the elements' own names.
 func TestEarkKeepsTheTerms(t *testing.T) {
-	description, errs := Eark{}.Map(terms)
+	description, errs := EarkDC{}.Map(terms)
 	if len(errs) != 0 {
 		t.Fatalf("errors %v for terms the mapping places", errs)
 	}
-	got, ok := description.(eark.Terms)
+	got, ok := description.(earkdc.Terms)
 	if !ok {
-		t.Fatalf("description is %T, want eark.Terms", description)
+		t.Fatalf("description is %T, want earkdc.Terms", description)
 	}
 	if !slices.Equal([]sip.Term(got), terms) {
 		t.Errorf("terms = %+v, want %+v", got, terms)

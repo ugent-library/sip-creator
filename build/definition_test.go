@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -127,7 +127,7 @@ func TestValidateSourceAppliesProfileRules(t *testing.T) {
 	requireEmpty(t, outDir)
 
 	in.Description = identityTerms()
-	in.Representations[1].Description = eark.Terms{{Key: "title", Value: "Access copy"}}
+	in.Representations[1].Description = earkdc.Terms{{Key: "title", Value: "Access copy"}}
 	if err := earkDef(t).ValidateSource(in); err != nil {
 		t.Errorf("eark has no such rules, yet ValidateSource refused: %v", err)
 	}

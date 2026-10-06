@@ -12,14 +12,14 @@ import (
 	"slices"
 
 	"github.com/ugent-library/sip-creator/build"
-	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
 
 var registry = map[string]build.Definition{
 	"basic":     meemoo.Definition,
-	"eark":      eark.Definition,
+	"eark":      earkdc.Definition,
 	"eark-mods": earkmods.Definition,
 }
 

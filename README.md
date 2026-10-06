@@ -47,7 +47,7 @@ Choose a profile with `--profile` on the command line, or with `profiles.Get` in
 | [`description.csv` keys](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) | the 15 Dublin Core elements | `identifier`, `title` | Meemoo's key table |
 | Required keys | `identifier`, `title` | `identifier`, `title` | `identifier`, `title`, `description`, `created` |
 | [Finished document](docs/input-spec.md#supplying-a-finished-document-eark-and-eark-mods) accepted | `dc.xml` | `mods.xml` | none |
-| Go description type | `eark.Terms` | `earkmods.Record` | `meemoo.Terms` |
+| Go description type | `earkdc.Terms` | `earkmods.Record` | `meemoo.Terms` |
 | Submitter | name | name | name and Meemoo OR-id |
 | Representation type | written to the METS | written to the METS | ignored |
 | You deliver | the zip | the zip | the package directory, in a BagIt bag |
@@ -374,7 +374,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkdc"
 )
 
 def, ok := profiles.Get("eark")
@@ -398,7 +398,7 @@ if err != nil {
 
 pkg, err := builder.Build(&build.SourcePackage{
 	// The description's type belongs to the profile (see Profiles).
-	Description: eark.Terms{
+	Description: earkdc.Terms{
 		{Key: "identifier", Value: "example-0001"},
 		{Key: "title", Value: "Example photograph"},
 		{Key: "description", Value: "An example package with one image."},

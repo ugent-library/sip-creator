@@ -18,7 +18,7 @@ import (
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
@@ -57,8 +57,8 @@ func meemooIdentityTerms() meemoo.Terms {
 
 // identityTerms is the input convention's own MUSTs and nothing more, in
 // the eark profile's standard, Simple Dublin Core.
-func identityTerms() eark.Terms {
-	return eark.Terms{
+func identityTerms() earkdc.Terms {
+	return earkdc.Terms{
 		{Key: "identifier", Value: "local-id-001"},
 		{Key: "title", Value: "Catus Testus"},
 	}
@@ -391,7 +391,7 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 	}{
 		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description is required"},
 		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "dcterms:identifier", Value: "x"}}, "title is required"},
-		{"eark without an identifier", earkDef(t), eark.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
+		{"eark without an identifier", earkDef(t), earkdc.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
 		{"eark-mods without a title", earkmodsDef(t), earkmods.Record{Identifier: "x"}, "title is required"},
 	}
 	for _, c := range cases {

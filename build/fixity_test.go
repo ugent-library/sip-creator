@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/ugent-library/sip-creator/build"
-	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -33,7 +33,7 @@ func TestBuildReferencesMatchDisk(t *testing.T) {
 		repDescription sip.Description
 	}{
 		{"basic", basicDef(t), testDescription(), nil},
-		{"eark", earkDef(t), identityTerms(), eark.Terms{{Key: "rights", Value: "CC BY 4.0"}}},
+		{"eark", earkDef(t), identityTerms(), earkdc.Terms{{Key: "rights", Value: "CC BY 4.0"}}},
 		{"eark-mods", earkmodsDef(t), identityRecord(), earkmods.Record{Titles: []earkmods.Title{{Value: "PDF-versie", Lang: "nl"}}}},
 	}
 	for _, c := range cases {

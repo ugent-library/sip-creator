@@ -10,7 +10,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/cli/input/mapping"
-	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 )
 
@@ -19,7 +19,7 @@ import (
 // so Read's document rules are tested through it; basic takes none.
 var (
 	meemooDocumentSpec = DocumentSpec{Name: meemoo.Definition.DocumentName, Model: meemoo.Definition.Model}
-	earkDocumentSpec   = DocumentSpec{Name: eark.Definition.DocumentName, Model: eark.Definition.Model}
+	earkDocumentSpec   = DocumentSpec{Name: earkdc.Definition.DocumentName, Model: earkdc.Definition.Model}
 )
 
 // minimalCSV is the smallest description.csv that passes check: Meemoo's

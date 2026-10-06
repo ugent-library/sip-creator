@@ -1,9 +1,9 @@
-// Package eark is the eark profile: a plain E-ARK SIP. Its descriptive
+// Package earkdc is the eark profile: a plain E-ARK SIP. Its descriptive
 // standard is Simple Dublin Core, the fifteen elements of the Dublin Core
 // Metadata Element Set, written unqualified inside a simpledc root; its
 // Definition names the rest as data, and the registry in profiles/ hands
 // that out as "eark".
-package eark
+package earkdc
 
 import (
 	"errors"

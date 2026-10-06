@@ -10,7 +10,7 @@ import (
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/xmldoc"
-	"github.com/ugent-library/sip-creator/profiles/eark"
+	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/schemas"
@@ -81,7 +81,7 @@ func TestRegistrySchemas(t *testing.T) {
 // document's root.
 var sampleDescriptions = map[string]sip.Description{
 	"basic":     meemoo.Terms{},
-	"eark":      eark.Terms{},
+	"eark":      earkdc.Terms{},
 	"eark-mods": earkmods.Record{},
 }
 
