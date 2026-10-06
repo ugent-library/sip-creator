@@ -1,6 +1,6 @@
 # Plan: the check command reports what a folder holds and every problem in it
 
-*Status: **in progress** (drafted 2026-10-06). Step 1 landed in 2cf8b79; step 2 follows.
+*Status: **in progress** (drafted 2026-10-06). Step 1 landed in 2cf8b79, step 2 in 9977f7a; step 3 follows.
 The plan builds on 4c93b57; line numbers refer to that tree. Update this line as steps
 land.*
 
@@ -124,11 +124,11 @@ the example output in this plan and in the input specification.
 - `cli/input/decode.go`: after the report decodes, look up each content file of each
   representation by its key, the path relative to the input folder. A file without an
   entry is a violation that names the file and says how to fix it:
-  `siegfried.json: no entry for representations/master/image-001.jpg; regenerate it from
-  the input root with: sf -hash md5 -json .` When every lookup fails, one example key
-  from the report is added to the first message, as create's message does
-  (`build/assemble.go:303`), because the usual cause is a report made from another
-  folder.
+  `siegfried.json has no entry for representations/master/image-001.jpg; regenerate it
+  from the input root with: sf -hash md5 -json .` When no content file has an entry, one
+  line with an example path from the report replaces the line per file, because the usual
+  cause is a report made from another folder, and a folder of thousands of files would
+  otherwise give thousands of lines. An empty report gets its own line.
 - Check does not open or hash the files. Whether an entry's MD5 matches the file stays
   with create.
 - Documentation files need no entry, as in create. Entries for files the package does not
@@ -137,9 +137,9 @@ the example output in this plan and in the input specification.
   source package in Go never passes through the input reader. A comment at the new check
   in `cli/input` names that rule in `build` as the one it mirrors.
 - Tests: `cli/input/read_test.go`, a folder whose report lacks one content file gives one
-  violation naming it; a report with every key prefixed by another folder name gives a
-  violation per file and an example key; a report that lacks a documentation file gives
-  none. `cli/check_cmd_test.go`, such a folder fails check.
+  violation naming it; a report with every key prefixed by another folder name gives one
+  violation with an example path; an empty report gives one violation; a report that
+  lacks the documentation files gives none. `cli/check_cmd_test.go`, such a folder fails check.
 - Docs: `input-spec.md`, section 2 under `siegfried.json`, states that every content file
   needs an entry. `sip-creator-design.md` line 116 says check verifies the entries exist
   and create verifies their checksums.

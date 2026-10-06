@@ -113,7 +113,7 @@ The submitting organization is not part of the profile, because one profile serv
 4. Calls `Build(source)` on a builder from `build.New`.
 5. Zips the package directory, unless `--no-zip` is given.
 
-`check --profile <name> <src>` (`cli/check_cmd.go`) runs step 3 and then `Definition.ValidateSource`, with no configuration. It does not build. It confirms that each received PREMIS file is well-formed XML; whether its root is a `premis:premis` element and whether the characterization report's checksums match the files are checked only by `create`.
+`check --profile <name> <src>` (`cli/check_cmd.go`) runs step 3 and then `Definition.ValidateSource`, with no configuration. It does not build. It confirms that each received PREMIS file is well-formed XML and that a supplied characterization report has an entry for every content file. Whether a received file's root is a `premis:premis` element and whether the report's checksums match the files are checked only by `create`.
 
 `build.New` takes the profile, the destination and a logger, and refuses a profile without a metadata model. `Builder.Build` takes one `build.SourcePackage` per package. It runs a check, then two separate phases: assemble the complete graph in memory, then write it. Errors are returned, never panicked, and a failed build leaves nothing on disk.
 

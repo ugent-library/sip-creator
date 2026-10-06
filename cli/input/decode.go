@@ -2,7 +2,9 @@ package input
 
 import (
 	"errors"
+	"maps"
 	"os"
+	"slices"
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/characterization"
@@ -19,6 +21,9 @@ func (r *folderReader) decode(source *build.SourcePackage, inv inventory, mapper
 	if inv.sidecar != "" {
 		source.Characterization = r.decodeSidecar(inv.sidecar)
 	}
+	if source.Characterization != nil {
+		r.checkCharacterizationCoversContent(source.Characterization, source.Representations)
+	}
 	if inv.representationsCSV != "" {
 		source.Representations = r.applyRepresentations(inv.representationsCSV, source.Representations)
 	}
@@ -30,8 +35,9 @@ func (r *folderReader) decode(source *build.SourcePackage, inv inventory, mapper
 }
 
 // decodeSidecar decodes the optional pre-computed characterization report.
-// A present report must parse (ADR-0009); the assembler verifies each
-// entry's MD5, because only it knows which entries it needs.
+// A present report must parse (ADR-0009);
+// checkCharacterizationCoversContent looks up the content files in it, and
+// the assembler verifies each entry's MD5.
 func (r *folderReader) decodeSidecar(src string) characterization.Report {
 	f, err := os.Open(src)
 	if err != nil {
@@ -46,6 +52,48 @@ func (r *folderReader) decodeSidecar(src string) characterization.Report {
 		return nil
 	}
 	return report
+}
+
+// checkCharacterizationCoversContent reports each content file the report
+// has no entry for. It mirrors the assembler's rule (Builder.essenceRecord in
+// build), which a program building a source package in Go meets there, so
+// that check reports what create would refuse. It looks up paths only: the
+// MD5 comparison, which reads every file, stays with the assembler.
+// Documentation files need no entry. When no content file has an entry,
+// the report was most likely made from another folder, so one line with an
+// example key replaces a line per file.
+func (r *folderReader) checkCharacterizationCoversContent(report characterization.Report, reps []build.SourceRepresentation) {
+	const regenerate = "regenerate it from the input root with: sf -hash md5 -json ."
+
+	var missing []string
+	total := 0
+	for _, rep := range reps {
+		for _, f := range rep.Files {
+			total++
+			if _, ok := report[f.Key]; !ok {
+				missing = append(missing, f.Key)
+			}
+		}
+	}
+
+	switch {
+	case len(missing) == 0:
+		return
+	case len(report) == 0:
+		r.violate("siegfried.json lists no files; %s", regenerate)
+	case len(missing) > 1 && len(missing) == total:
+		r.violate("siegfried.json has no entry for any content file (its paths look like %q); %s", firstKey(report), regenerate)
+	default:
+		for _, key := range missing {
+			r.violate("siegfried.json has no entry for %s; %s", key, regenerate)
+		}
+	}
+}
+
+// firstKey returns the report's first key in sorted order, so a message
+// that shows an example key is the same from run to run.
+func firstKey(report characterization.Report) string {
+	return slices.Sorted(maps.Keys(report))[0]
 }
 
 // applyRepresentations decodes representations.csv and applies it to the

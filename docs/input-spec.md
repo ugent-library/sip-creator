@@ -85,6 +85,7 @@ cd ./your-input && report="$(sf -hash md5 -json .)" && printf '%s\n' "$report" >
 
 - Without the report, the package carries no format information.
 - With it, the build MUST stop when the report is malformed or made without `-hash md5`, when a content file has no entry, when Siegfried reported an error for a content file, or when a file's MD5 no longer matches. A stale format claim is worse than none.
+- `check` reports a malformed report and every content file without an entry. It does not compare checksums: only `create` reads the files to do that.
 - An entry without a match leaves that file without a format.
 - Documentation files need no entry; when they have one, its checksum MUST match.
 - The report may come from another operating system: backslashes in its paths are read as folder separators. A file whose name contains a backslash therefore cannot be matched: a content file is then an error, a documentation file goes without a format.

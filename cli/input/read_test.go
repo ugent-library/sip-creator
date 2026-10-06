@@ -2,6 +2,7 @@ package input
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -136,7 +137,7 @@ func TestReadFlat(t *testing.T) {
 func TestReadRepresentations(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv":                           minimalCSV,
-		"siegfried.json":                            `{"siegfried":"1.11.0","files":[]}`,
+		"siegfried.json":                            sfReport("representations/master/scan_2.tiff", "representations/master/scan_10.tiff", "representations/access/book.pdf"),
 		"documentation/report.pdf":                  "r",
 		"premis/vendor.xml":                         validPremis,
 		"representations/master/scan_2.tiff":        "b",
@@ -381,6 +382,67 @@ func TestReadPremisWellFormed(t *testing.T) {
 	errors.As(err, &v)
 	if len(v) != 2 {
 		t.Errorf("want the two files that are not well-formed XML only, got:\n%s", v.Error())
+	}
+}
+
+// sfReport returns a siegfried.json with one entry, without a match, for
+// each of keys. Read looks up paths only, so the MD5 need not match.
+func sfReport(keys ...string) string {
+	var files []string
+	for _, k := range keys {
+		files = append(files, fmt.Sprintf(`{"filename":%q,"md5":"0","matches":[]}`, k))
+	}
+	return `{"siegfried":"1.11.0","files":[` + strings.Join(files, ",") + `]}`
+}
+
+// A supplied report must have an entry for every content file, as the
+// build requires. Documentation needs none.
+func TestReadSidecarCoversContent(t *testing.T) {
+	regenerate := "regenerate it from the input root with: sf -hash md5 -json ."
+	cases := map[string]struct {
+		report string
+		want   []string
+	}{
+		"one file missing": {
+			report: sfReport("representations/master/a.tiff", "representations/master/b.tiff"),
+			want:   []string{"siegfried.json has no entry for representations/access/c.pdf; " + regenerate},
+		},
+		"made from another folder": {
+			report: sfReport("input/representations/master/a.tiff", "input/representations/master/b.tiff", "input/representations/access/c.pdf"),
+			want:   []string{`siegfried.json has no entry for any content file (its paths look like "input/representations/access/c.pdf"); ` + regenerate},
+		},
+		"empty": {
+			report: sfReport(),
+			want:   []string{"siegfried.json lists no files; " + regenerate},
+		},
+		"documentation without entries": {
+			report: sfReport("representations/master/a.tiff", "representations/master/b.tiff", "representations/access/c.pdf"),
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			root := writeTree(t, map[string]string{
+				"description.csv":                           minimalCSV,
+				"siegfried.json":                            tc.report,
+				"documentation/report.pdf":                  "r",
+				"representations/master/a.tiff":             "a",
+				"representations/master/b.tiff":             "b",
+				"representations/access/c.pdf":              "c",
+				"representations/access/documentation/n.md": "n",
+			})
+
+			_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+			var v Violations
+			errors.As(err, &v)
+			if len(v) != len(tc.want) {
+				t.Fatalf("want %d violations, got:\n%s", len(tc.want), v.Error())
+			}
+			for i, want := range tc.want {
+				if v[i] != want {
+					t.Errorf("violation = %q, want %q", v[i], want)
+				}
+			}
+		})
 	}
 }
 
