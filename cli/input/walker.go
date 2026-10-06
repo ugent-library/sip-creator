@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ugent-library/sip-creator/build"
+	"github.com/ugent-library/sip-creator/encoders/xmldoc"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -287,18 +288,34 @@ func (r *folderReader) collectFiles(dir string) []build.SourceFile {
 }
 
 // collectPremisFiles collects a premis/ folder (package- or
-// representation-level, same rule both places) and flags the one
-// transport-level premis rule: premis.xml belongs to the generated
-// document. Content conformance (a premis:premis document) is
-// deliberately left to assembly.
+// representation-level, same rule both places) and applies the input
+// rules for received preservation files: premis.xml belongs to the
+// generated document, and every file must be well-formed XML. Whether the
+// root is a premis:premis element is left to assembly, which checks it for
+// every source package (build.assembleReceivedPremis).
 func (r *folderReader) collectPremisFiles(dir string) []build.SourceFile {
 	files := r.collectFiles(dir)
 	for _, f := range files {
 		if path.Base(f.Path) == "premis.xml" {
 			r.violate("%s: premis.xml is reserved for the generated preservation document; rename the received file", f.Key)
 		}
+		r.checkWellFormed(f)
 	}
 	return files
+}
+
+// checkWellFormed reports f when it is not well-formed XML.
+func (r *folderReader) checkWellFormed(f build.SourceFile) {
+	file, err := os.Open(f.Source)
+	if err != nil {
+		r.violate("%s: %v", f.Key, err)
+		return
+	}
+	defer file.Close()
+
+	if _, err := xmldoc.Root(file); err != nil {
+		r.violate("%s: %v", f.Key, err)
+	}
 }
 
 func (r *folderReader) walkContent(base, dir string, files *[]build.SourceFile) {

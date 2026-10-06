@@ -290,17 +290,13 @@ func TestReadReservedNameWrongKind(t *testing.T) {
 	assertViolation(t, err, "documentation is a file")
 }
 
-// The read-time premis rule is the naming rule only: premis.xml belongs to
-// the generated document. Content conformance is deliberately NOT a read
-// concern; it is enforced at assembly, like the characterization MD5
-// verification, so a folder with malformed premis content passes Read/check and
-// fails at build.
+// premis.xml belongs to the generated document, so a received file may not
+// take that name.
 func TestReadPremisNamingRule(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"description.csv":    minimalCSV,
-		"scan.tiff":          "x",
-		"premis/premis.xml":  validPremis,
-		"premis/garbage.xml": "not xml; read does not judge content",
+		"description.csv":   minimalCSV,
+		"scan.tiff":         "x",
+		"premis/premis.xml": validPremis,
 	})
 
 	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
@@ -310,6 +306,30 @@ func TestReadPremisNamingRule(t *testing.T) {
 	errors.As(err, &v)
 	if len(v) != 1 {
 		t.Errorf("want only the naming violation, got:\n%s", v.Error())
+	}
+}
+
+// A received preservation file must be well-formed XML, at package and
+// representation level. Read checks nothing more: a well-formed document
+// with another root passes here and is refused at assembly.
+func TestReadPremisWellFormed(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"description.csv":                          minimalCSV,
+		"premis/broken.xml":                        "<premis:premis>",
+		"premis/other-root.xml":                    "<notpremis/>",
+		"representations/master/a.tiff":            "a",
+		"representations/master/premis/notes.txt":  "not xml",
+		"representations/master/premis/vendor.xml": validPremis,
+	})
+
+	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	assertViolation(t, err, "premis/broken.xml: not well-formed XML")
+	assertViolation(t, err, "representations/master/premis/notes.txt: not an XML document")
+
+	var v Violations
+	errors.As(err, &v)
+	if len(v) != 2 {
+		t.Errorf("want the two files that are not well-formed XML only, got:\n%s", v.Error())
 	}
 }
 

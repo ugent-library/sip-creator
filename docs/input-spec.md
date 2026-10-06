@@ -204,6 +204,7 @@ Rules:
 
 - Each file MUST be well-formed XML whose root is a `premis:premis` element in the PREMIS 3 namespace, and SHOULD be valid PREMIS 3.0. The files are copied into the package as received: not parsed, edited or merged.
 - `premis.xml` is reserved for the document the tool generates and MUST NOT be used as a file name here.
+- `check` confirms that each file is well-formed XML. The `premis:premis` root is confirmed by `create`, which refuses the folder otherwise.
 - The files cannot know the identifiers the tool generates, so they SHOULD identify their subject with local identifiers built from your `identifier` and the representation name (e.g. `example-0001-master`), so a future reader can match them with the generated preservation metadata.
 
 ## 6. What comes from configuration and the command line

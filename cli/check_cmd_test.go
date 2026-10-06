@@ -140,6 +140,24 @@ func TestCheckAppliesTheProfileRules(t *testing.T) {
 	}
 }
 
+// Check reads received preservation files: one that is not well-formed XML
+// fails check, not only create.
+func TestCheckReportsMalformedPremis(t *testing.T) {
+	root := writeFolder(t, map[string]string{
+		"description.csv":   "key,value\nidentifier,ID-1\ntitle,Test\n",
+		"a.tif":             "a",
+		"premis/vendor.xml": "<premis:premis>",
+	})
+
+	_, stderr, err := runCLI(t, "check", "--profile", "eark", root)
+	if want := root + ": 1 problem(s) found"; err == nil || err.Error() != want {
+		t.Fatalf("error = %v, want %q", err, want)
+	}
+	if !strings.Contains(stderr, "premis/vendor.xml: not well-formed XML") {
+		t.Errorf("stderr = %q, want the malformed file named", stderr)
+	}
+}
+
 // What stops check before any rule runs is returned as it is: an unknown
 // profile names the ones there are, and a missing folder is named.
 func TestCheckRefusesWhatItCannotRead(t *testing.T) {
