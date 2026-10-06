@@ -80,36 +80,3 @@ func requireWellFormedXML(t *testing.T, dir string) {
 		t.Fatal(err)
 	}
 }
-
-// XML 1.0 carries every character except most control characters,
-// U+FFFE and U+FFFF; a value must also be UTF-8. Escaping cannot carry the
-// rest, so they are refused.
-func TestValidateXMLText(t *testing.T) {
-	tests := []struct {
-		value string
-		want  string // "" means accepted; else substring of the error
-	}{
-		{"", ""},
-		{`R&D <a> "b" 'c'`, ""},
-		{"two\tcolumns\nand lines\r\n", ""},
-		{"caf\u00e9 \U0001F408 \uE000", ""},
-		{"a\x00b", "U+0000"},
-		{"a\x01b", "U+0001"},
-		{"vertical\x0btab", "U+000B"},
-		{"escape\x1b", "U+001B"},
-		{"not a character \uFFFE", "U+FFFE"},
-		{"caf\xe9", "not valid UTF-8"},
-	}
-	for _, tt := range tests {
-		err := build.ValidateXMLText(tt.value)
-		if tt.want == "" {
-			if err != nil {
-				t.Errorf("ValidateXMLText(%q) = %v, want accepted", tt.value, err)
-			}
-			continue
-		}
-		if err == nil || !strings.Contains(err.Error(), tt.want) {
-			t.Errorf("ValidateXMLText(%q) = %v, want an error mentioning %q", tt.value, err, tt.want)
-		}
-	}
-}

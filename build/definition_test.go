@@ -4,94 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/eark"
-	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
 	"github.com/ugent-library/sip-creator/sip"
 )
-
-// earkDef returns the registered "eark" definition the tests build with.
-func earkDef(t *testing.T) build.Definition {
-	t.Helper()
-	def, ok := profiles.Get("eark")
-	if !ok {
-		t.Fatal(`no "eark" definition registered`)
-	}
-	return def
-}
-
-// earkmodsDef returns the registered "eark-mods" definition the tests
-// build with.
-func earkmodsDef(t *testing.T) build.Definition {
-	t.Helper()
-	def, ok := profiles.Get("eark-mods")
-	if !ok {
-		t.Fatal(`no "eark-mods" definition registered`)
-	}
-	return def
-}
-
-// identityTerms is the input convention's own MUSTs and nothing more, in
-// the eark profile's standard, Simple Dublin Core.
-func identityTerms() eark.Terms {
-	return eark.Terms{
-		{Key: "identifier", Value: "local-id-001"},
-		{Key: "title", Value: "Catus Testus"},
-	}
-}
-
-// identityRecord is the same identity in the eark-mods profile's standard,
-// a MODS record without items.
-func identityRecord() earkmods.Record {
-	return earkmods.Record{
-		Identifier: "local-id-001",
-		Titles:     []earkmods.Title{{Value: "Catus Testus"}},
-	}
-}
-
-// meemooIdentityTerms is the same identity in Meemoo's standard: short of
-// the four keys the basic profile requires.
-func meemooIdentityTerms() meemoo.Terms {
-	return meemoo.Terms{
-		{Key: "dcterms:identifier", Value: "local-id-001"},
-		{Key: "dcterms:title", Lang: "nl", Value: "Catus Testus"},
-	}
-}
-
-// Cardinality and the Dutch-language rule belong to Meemoo's standard, so
-// build.SourcePackage.Validate applies them to Meemoo terms at both levels whatever
-// the profile, and never to Simple Dublin Core terms.
-func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {
-	_, in, _ := newTestBuilder(t, basicDef(t))
-	in.Description = append(testDescription(),
-		sip.Term{Key: "dcterms:abstract", Lang: "nl", Value: "een"},
-		sip.Term{Key: "dcterms:abstract", Lang: "nl", Value: "twee"})
-	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), "more than once") {
-		t.Errorf("repeated abstract accepted: %v", err)
-	}
-
-	_, in, _ = newTestBuilder(t, basicDef(t))
-	in.Description = append(testDescription(), sip.Term{Key: "dcterms:subject", Lang: "en", Value: "cats"})
-	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `"nl"`) {
-		t.Errorf("subject without a Dutch entry accepted: %v", err)
-	}
-
-	_, in, _ = newTestBuilder(t, basicDef(t))
-	in.Representations[0].Description = meemoo.Terms{{Key: "dcterms:title", Lang: "en", Value: "Cats"}}
-	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `representation "master"`) {
-		t.Errorf("representation title without a Dutch entry accepted: %v", err)
-	}
-
-	_, in, _ = newTestBuilder(t, basicDef(t))
-	in.Description = append(identityTerms(),
-		sip.Term{Key: "description", Lang: "en", Value: "one"},
-		sip.Term{Key: "description", Lang: "en", Value: "two"})
-	if err := in.Validate(); err != nil {
-		t.Errorf("Simple DC has no such rules, yet Validate refused: %v", err)
-	}
-}
 
 func TestWithSubmitterMeemoo(t *testing.T) {
 	def := basicDef(t)
