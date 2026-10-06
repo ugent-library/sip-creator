@@ -1,9 +1,12 @@
 # Plan: the check command reports what a folder holds and every problem in it
 
-*Status: **in progress** (drafted 2026-10-06). Step 1 landed in 2cf8b79, step 2 in 9977f7a, step 3 in 6e07de0, step 4 in 610692e;
-step 5 follows.
-The plan builds on 4c93b57; line numbers refer to that tree. Update this line as steps
-land.*
+*Status: **shipped** (2026-10-06). Steps 1 to 4 landed in 2cf8b79, 9977f7a, 6e07de0 and
+610692e; step 5 in b7b1869 and 6eeb105, after the inventory was dropped for counts; step 6
+in the commit that moved this plan here. No ADR: the report is CLI output, not a library
+contract. The check command and its report are described in the
+[design doc](../sip-creator-design.md); the input rules it added are in the
+[input specification](../input-spec.md). Exit statuses for `create` stay open in
+[TODO.md](../TODO.md).*
 
 ## Context
 
@@ -76,7 +79,7 @@ removed again in step 5's commit.
 `go test ./...` passes after every step. No step changes an output file, so
 `./scripts/reference-diff.sh` stays clean throughout.
 
-**Relation to [profile-rules-and-names.md](profile-rules-and-names.md).** That plan is in
+**Relation to [profile-rules-and-names.md](../plans/profile-rules-and-names.md).** That plan is in
 progress. It renames the profiles (`meemoo/basic`, `eark/none`, `eark/dc`, `eark/mods`),
 adds a profile without descriptive metadata and allows zero representations under
 `eark/dc` and `eark/mods`. The summary in step 5 must therefore handle a package without

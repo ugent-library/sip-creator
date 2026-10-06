@@ -17,6 +17,22 @@ documentation file.
 ./bin/sip-creator create --profile eark examples/eark sip-out
 ```
 
+`check` lists any problems, then summarizes what it read. For `eark/`:
+
+```
+Input folder:         examples/eark
+Profile:              eark
+
+Descriptive metadata: description.csv
+Representations:      1 (1 with its own description)
+Essence files:        1
+Documentation files:  2
+PREMIS files:         2
+Format report:        not supplied (files carry no format information)
+
+OK: the folder meets the input specification for profile eark.
+```
+
 `create` needs `SIP_SUBMITTER_NAME` set, and `basic` also needs `SIP_SUBMITTER_OR_ID`
 (see [Configuration](../README.md#configuration)). The folders hold no
 `siegfried.json`, so the packages carry no format info unless you generate one
