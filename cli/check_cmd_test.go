@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,8 +12,7 @@ import (
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
-// runCLI runs the command line with args, as Run does but logging
-// nowhere, and returns what it wrote to stdout and stderr and the error it
+// runCLI runs the command line with args, as Run does, and returns what it wrote to stdout and stderr and the error it
 // ended with.
 func runCLI(t *testing.T, args ...string) (stdout, stderr string, err error) {
 	t.Helper()
@@ -29,12 +27,10 @@ func runCLI(t *testing.T, args ...string) (stdout, stderr string, err error) {
 func runCommand(t *testing.T, args ...string) (cmd *cobra.Command, stdout, stderr string, err error) {
 	t.Helper()
 	var out, errOut bytes.Buffer
-	logger = slog.New(slog.DiscardHandler)
 	rootCmd.SetArgs(args)
 	rootCmd.SetOut(&out)
 	rootCmd.SetErr(&errOut)
 	t.Cleanup(func() {
-		logger = nil
 		rootCmd.SetArgs(nil)
 		rootCmd.SetOut(nil)
 		rootCmd.SetErr(nil)

@@ -7,28 +7,18 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/ugent-library/sip-creator/cli/input"
 )
 
-var (
-	logger *slog.Logger
-
-	rootCmd = &cobra.Command{
-		Use:   "sip-creator",
-		Short: "SIP Creator CLI",
-		// Execute would print a RunE error and then CheckErr prints it
-		// again; silence the first so every error appears exactly once.
-		SilenceErrors: true,
-	}
-)
-
-// newLogger logs to stderr, so stdout carries only a command's output.
-func newLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(os.Stderr, nil))
+var rootCmd = &cobra.Command{
+	Use:   "sip-creator",
+	Short: "SIP Creator CLI",
+	// Execute would print a RunE error and then CheckErr prints it
+	// again; silence the first so every error appears exactly once.
+	SilenceErrors: true,
 }
 
 // reportViolations prints each violation in err on its own line to stderr
@@ -50,8 +40,6 @@ func reportViolations(cmd *cobra.Command, src string, err error) error {
 // it, so check runs without it (ADR-0010). An error is printed on stderr,
 // and the process exits with the status exitStatus gives it.
 func Run() {
-	logger = newLogger()
-
 	cmd, err := rootCmd.ExecuteC()
 	if err == nil {
 		return

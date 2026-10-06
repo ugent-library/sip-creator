@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/spf13/cobra"
 	"github.com/ugent-library/sip-creator/archive"
@@ -58,6 +59,9 @@ var createCmd = &cobra.Command{
 			return reportViolations(cmd, args[0], err)
 		}
 
+		// Progress goes to stderr, so stdout carries only the command's
+		// output.
+		logger := slog.New(slog.NewTextHandler(cmd.ErrOrStderr(), nil))
 		builder, err := build.New(&build.Config{
 			Profile:     def,
 			Destination: args[1],
