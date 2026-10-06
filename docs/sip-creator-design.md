@@ -109,7 +109,7 @@ The submitting organization is not part of the profile, because one profile serv
 
 1. Resolves `--profile` in the registry; an unknown or empty name lists the available profiles. Adds the submitting organization from the environment.
 2. Turns the flags into values on the source package: `--status` into `RecordStatus`, `--updates` into `PackageIdentifier`, and `--content-category` (else `SIP_CONTENT_CATEGORY`, else the profile's value) into `ContentCategory`.
-3. Reads the input folder into a `build.SourcePackage` with `input.Read`, reporting every violation at once (see `cli/input/` under [Code organization](#code-organization)).
+3. Reads the input folder into a `build.SourcePackage` with `input.Read`, reporting every violation at once (see `cli/input/` under [Code organization](#code-organization)). `input.Read` also returns `input.ReadDetails`: the descriptive rows as written, whether `representations.csv` was supplied and which operating system files it skipped. `check` reports them; `create` ignores them.
 4. Calls `Build(source)` on a builder from `build.New`.
 5. Zips the package directory, unless `--no-zip` is given.
 

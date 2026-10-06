@@ -12,6 +12,7 @@ import (
 	"github.com/ugent-library/sip-creator/cli/input/mapping"
 	"github.com/ugent-library/sip-creator/profiles/eark"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/sip"
 )
 
 // meemooDocumentSpec and earkDocumentSpec describe the two profiles'
@@ -99,7 +100,7 @@ func TestReadFlat(t *testing.T) {
 		"sub/0003.tiff":   "d",
 	})
 
-	pkg, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	pkg, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -148,7 +149,7 @@ func TestReadRepresentations(t *testing.T) {
 		"representations/access/premis/ocr.xml":     validPremis,
 	})
 
-	pkg, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	pkg, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -198,7 +199,7 @@ func TestReadCollectsAllViolations(t *testing.T) {
 		"representations/empty/":             "",  // no content files
 	})
 
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	if err == nil {
 		t.Fatal("want violations, got none")
 	}
@@ -224,7 +225,7 @@ func TestReadSymlink(t *testing.T) {
 		t.Skipf("cannot create symlink: %v", err)
 	}
 
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "symbolic link")
 }
 
@@ -239,14 +240,46 @@ func TestReadIgnoresOSArtifacts(t *testing.T) {
 		"sub/0001.tiff":   "x",
 	})
 
-	pkg, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	pkg, details, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
 	want := []string{"scan.tiff", "sub/0001.tiff"}
 	got := paths(pkg.Representations[0].Files)
 	if strings.Join(got, ",") != strings.Join(want, ",") {
-		t.Errorf("content = %v, want %v (artifacts silently ignored)", got, want)
+		t.Errorf("content = %v, want %v (artifacts left out without a violation)", got, want)
+	}
+	wantSkipped := ".DS_Store,._scan.tiff,sub/Thumbs.db,sub/desktop.ini"
+	if got := strings.Join(details.SkippedOSArtifacts, ","); got != wantSkipped {
+		t.Errorf("skipped = %s, want %s", got, wantSkipped)
+	}
+}
+
+// The details carry the rows as the producer wrote them, at both levels,
+// before the profile's mapping renames the keys.
+func TestReadDetails(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"description.csv":                        minimalCSV,
+		"representations.csv":                    "folder,label\nmaster,Master\n",
+		"representations/master/a.tiff":          "a",
+		"representations/master/description.csv": "key,value\ntitle[nl],Master\n",
+	})
+
+	_, details, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if len(details.PackageRows) != 4 || details.PackageRows[0] != (sip.Term{Key: "identifier", Value: "ID-1"}) {
+		t.Errorf("package rows = %v, want the four rows of minimalCSV as written", details.PackageRows)
+	}
+	if got := details.RepresentationRows["master"]; len(got) != 1 || got[0] != (sip.Term{Key: "title", Lang: "nl", Value: "Master"}) {
+		t.Errorf("master rows = %v, want its one title row", got)
+	}
+	if !details.RepresentationsCSV {
+		t.Error("representations.csv was read, but the details say it was not supplied")
+	}
+	if details.SkippedOSArtifacts != nil {
+		t.Errorf("skipped = %v, want nothing", details.SkippedOSArtifacts)
 	}
 }
 
@@ -256,7 +289,7 @@ func TestReadArtifactsAreNotContent(t *testing.T) {
 		"representations/master/.DS_Store": "junk",
 	})
 
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "no content files")
 }
 
@@ -266,7 +299,7 @@ func TestReadEmptyRepresentationsDir(t *testing.T) {
 		"representations/": "",
 	})
 
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "no representation folders")
 }
 
@@ -275,7 +308,7 @@ func TestReadNoContent(t *testing.T) {
 		"description.csv": minimalCSV,
 	})
 
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "no content files")
 }
 
@@ -286,7 +319,7 @@ func TestReadReservedNameWrongKind(t *testing.T) {
 		"scan.tiff":                "x",
 	})
 
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "description.csv is a folder")
 	assertViolation(t, err, "documentation is a file")
 }
@@ -300,7 +333,7 @@ func TestReadPremisNamingRule(t *testing.T) {
 		"premis/premis.xml": validPremis,
 	})
 
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "premis.xml is reserved")
 
 	var v Violations
@@ -343,7 +376,7 @@ func TestReadRefusesDocumentUnderBasic(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			pkg, err := Read(writeTree(t, tc.files), mapping.Meemoo{}, meemooDocumentSpec)
+			pkg, _, err := Read(writeTree(t, tc.files), mapping.Meemoo{}, meemooDocumentSpec)
 			var v Violations
 			errors.As(err, &v)
 			if len(v) != len(tc.want) {
@@ -374,7 +407,7 @@ func TestReadPremisWellFormed(t *testing.T) {
 		"representations/master/premis/vendor.xml": validPremis,
 	})
 
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "premis/broken.xml: not well-formed XML")
 	assertViolation(t, err, "representations/master/premis/notes.txt: not an XML document")
 
@@ -431,7 +464,7 @@ func TestReadSidecarCoversContent(t *testing.T) {
 				"representations/access/documentation/n.md": "n",
 			})
 
-			_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+			_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 			var v Violations
 			errors.As(err, &v)
 			if len(v) != len(tc.want) {
@@ -453,7 +486,7 @@ func TestReadBadSidecar(t *testing.T) {
 		"siegfried.json":  `{"not":"a report"}`,
 	})
 
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "siegfried.json")
 }
 
@@ -472,7 +505,7 @@ func TestReadNFCCollision(t *testing.T) {
 		t.Skip("filesystem normalizes names; the collision cannot exist here")
 	}
 
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "Unicode normalization")
 }
 
@@ -491,7 +524,7 @@ func TestReadNameXMLCannotCarry(t *testing.T) {
 		}
 	}
 
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, `"representations/master/scan\x01.tiff" holds the character U+0001, which XML cannot carry; rename the file`)
 	assertViolation(t, err, `"documentation/notes\x1b.txt" holds the character U+001B`)
 }

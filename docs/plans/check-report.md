@@ -1,6 +1,7 @@
 # Plan: the check command reports what a folder holds and every problem in it
 
-*Status: **in progress** (drafted 2026-10-06). Step 1 landed in 2cf8b79, step 2 in 9977f7a, step 3 in 6e07de0; step 4 follows.
+*Status: **in progress** (drafted 2026-10-06). Step 1 landed in 2cf8b79, step 2 in 9977f7a, step 3 in 6e07de0, step 4 in 610692e.
+Step 5 lands in two commits: the read details, then the inventory.
 The plan builds on 4c93b57; line numbers refer to that tree. Update this line as steps
 land.*
 
@@ -191,7 +192,7 @@ Layout for a valid folder:
 ```
 Input folder: examples/basic
 Profile:      basic
-Contents:     4 files, 243.9 kB
+Contents:     3 files, 243.6 kB
 
 Descriptive metadata (description.csv)
   identifier        example-0001
@@ -242,8 +243,9 @@ Rules for the content:
   default the tool applies instead. The candidates are `representations.csv`,
   `siegfried.json`, a package-level `documentation/` and `premis/`.
 - **Contents** counts every file the package will take from the folder: content,
-  documentation, received PREMIS, `description.csv` and a supplied document. It does not
-  count `siegfried.json` or `representations.csv`, which the package does not carry.
+  documentation, received PREMIS and a supplied document. It does not count
+  `description.csv`, `siegfried.json` or `representations.csv`: the package carries a
+  descriptive document generated from the rows, not the rows file.
   The size uses the same units as the file lines.
 - **Skipped** lists, by path relative to the input folder, each file the reader leaves
   out without a violation: the operating system files `.DS_Store`, `Thumbs.db`,
@@ -275,10 +277,10 @@ Implementation:
       // RepresentationsCSV reports whether the folder supplies
       // representations.csv.
       RepresentationsCSV bool
-      // Skipped lists the files the reader left out without a violation,
+      // SkippedOSArtifacts lists the files the reader left out without a violation,
       // operating system files such as .DS_Store, by slash path relative to
       // the input folder, in walk order.
-      Skipped []string
+      SkippedOSArtifacts []string
   }
   ```
 
@@ -296,8 +298,9 @@ Implementation:
 - `--full` is a flag on `check` only.
 - Test folder `cli/testdata/full/`: a folder with every optional input, which the
   examples leave out: `representations.csv`, `siegfried.json` with entries for its
-  files, package-level and representation-level `premis/` and `documentation/`, and a
-  `.DS_Store`. The go command ignores `testdata` folders when it builds and lists
+  files, and package-level and representation-level `premis/` and `documentation/`.
+  `.gitignore` excludes `.DS_Store`, so the test copies the folder into `t.TempDir()`
+  and adds one there. The go command ignores `testdata` folders when it builds and lists
   packages, and a test runs in its package folder, so the test reads it as
   `testdata/full`. The examples stay minimal.
 - Tests in `cli/check_cmd_test.go`: the three examples print an inventory that names

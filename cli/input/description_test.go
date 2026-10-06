@@ -22,7 +22,8 @@ func readCSV(t *testing.T, csv string) (*build.SourcePackage, error) {
 		"description.csv": csv,
 		"scan.tiff":       "x",
 	})
-	return Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	source, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	return source, err
 }
 
 func TestRowsHappy(t *testing.T) {
@@ -149,7 +150,7 @@ func TestRepresentationDescriptionNeedsNoIdentity(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	pkg, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	pkg, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	if err != nil {
 		t.Fatalf("rep-level description.csv must not require identifier/title: %v", err)
 	}
@@ -166,7 +167,7 @@ func TestRepresentationDescriptionDuplicateIdentifier(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nidentifier,A\nidentifier,B\n",
 	})
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "dcterms:identifier appears 2 times")
 }
 
@@ -257,7 +258,7 @@ func TestRowsProfileDecidesTheKeys(t *testing.T) {
 		"description.csv": minimalDC + "coverage,Gent\n",
 		"scan.tiff":       "x",
 	}
-	pkg, err := Read(writeTree(t, tree), mapping.Eark{}, earkDocumentSpec)
+	pkg, _, err := Read(writeTree(t, tree), mapping.Eark{}, earkDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read under eark: %v", err)
 	}
@@ -266,7 +267,7 @@ func TestRowsProfileDecidesTheKeys(t *testing.T) {
 		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Description)
 	}
 
-	_, err = Read(writeTree(t, tree), mapping.Meemoo{}, meemooDocumentSpec)
+	_, _, err = Read(writeTree(t, tree), mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, `unknown key "coverage"`)
 }
 
@@ -278,7 +279,7 @@ func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	_, err := Read(root, mapping.Eark{}, earkDocumentSpec)
+	_, _, err := Read(root, mapping.Eark{}, earkDocumentSpec)
 	assertViolation(t, err, `unknown key "abstract"`)
 	assertViolation(t, err, `unknown key "license"`)
 }
@@ -287,7 +288,7 @@ func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 // refused before the folder is touched.
 func TestReadRequiresAMapper(t *testing.T) {
 	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "scan.tiff": "x"})
-	_, err := Read(root, nil, DocumentSpec{})
+	_, _, err := Read(root, nil, DocumentSpec{})
 	if err == nil || !strings.Contains(err.Error(), "no mapper") {
 		t.Fatalf("want the missing mapper refused, got %v", err)
 	}
@@ -301,7 +302,7 @@ func TestMapperErrorsNameTheLine(t *testing.T) {
 		"description.csv": "key,value\nidentifier,ID-1\ntitle,T\n",
 		"scan.tiff":       "x",
 	})
-	_, err := Read(root, placesNothing{}, DocumentSpec{})
+	_, _, err := Read(root, placesNothing{}, DocumentSpec{})
 	assertViolation(t, err, "description.csv line 3: no place for title")
 	assertViolation(t, err, "description.csv: nothing fits")
 	assertViolation(t, err, "identifier is required")

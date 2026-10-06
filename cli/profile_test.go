@@ -50,7 +50,7 @@ func TestExamplesBuild(t *testing.T) {
 				t.Fatalf("profile %q has no mapping", name)
 			}
 			def, _ := profiles.Get(name)
-			source, err := input.Read(filepath.Join("..", "examples", name), mapper, input.DocumentSpec{Name: def.DocumentName, Model: def.Model})
+			source, _, err := input.Read(filepath.Join("..", "examples", name), mapper, input.DocumentSpec{Name: def.DocumentName, Model: def.Model})
 			if err != nil {
 				t.Fatalf("reading the example: %v", err)
 			}

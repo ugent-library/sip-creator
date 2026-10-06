@@ -15,8 +15,9 @@ import (
 // folderReader holds what one read of an input folder shares across the
 // walk and the decoders; Read makes one per call.
 type folderReader struct {
-	root       string     // all messages and report keys are relative to it
-	violations Violations // the findings so far
+	root               string     // all messages and report keys are relative to it
+	violations         Violations // the findings so far
+	skippedOSArtifacts []string   // left out so far, relative to root
 	// documentName is the file name reserved for the profile's supplied
 	// descriptive document at both levels; empty under a profile that
 	// takes rows only.
@@ -377,9 +378,10 @@ func (r *folderReader) newFile(base, src string) build.SourceFile {
 
 // readDir lists dir under the rules that hold everywhere in the input
 // folder: a symbolic link is a violation and is never followed, OS
-// artifacts are skipped without a word, and two names that are the same
-// after NFC normalization are a collision, because they can coexist on a
-// filesystem that does not normalize but would collide in the package.
+// artifacts are skipped without a violation and recorded in
+// skippedOSArtifacts, and two names that are the same after NFC
+// normalization are a collision, because they can coexist on a filesystem
+// that does not normalize but would collide in the package.
 // os.ReadDir sorts by name, so the order of every file list is the same
 // from run to run; neither CSIP nor Meemoo gives that order a meaning.
 func (r *folderReader) readDir(dir string) []os.DirEntry {
@@ -393,6 +395,7 @@ func (r *folderReader) readDir(dir string) []os.DirEntry {
 	var kept []os.DirEntry
 	for _, e := range entries {
 		if isOSArtifact(e.Name()) {
+			r.skippedOSArtifacts = append(r.skippedOSArtifacts, r.rel(filepath.Join(dir, e.Name())))
 			continue
 		}
 		if e.Type()&fs.ModeSymlink != 0 {
@@ -410,7 +413,8 @@ func (r *folderReader) readDir(dir string) []os.DirEntry {
 	return kept
 }
 
-// isOSArtifact reports whether name is an OS artifact to ignore silently.
+// isOSArtifact reports whether name is an OS artifact to skip without a
+// violation.
 func isOSArtifact(name string) bool {
 	if strings.HasPrefix(name, "._") {
 		return true

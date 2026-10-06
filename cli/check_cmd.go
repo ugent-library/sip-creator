@@ -29,7 +29,7 @@ var checkCmd = &cobra.Command{
 		}
 
 		report := checkReport{folder: args[0], profile: def.Name}
-		source, err := input.Read(args[0], mapper, input.DocumentSpec{Name: def.DocumentName, Model: def.Model})
+		source, _, err := input.Read(args[0], mapper, input.DocumentSpec{Name: def.DocumentName, Model: def.Model})
 		if violations, ok := errors.AsType[input.Violations](err); ok {
 			report.findings = violations
 		} else if err != nil {
