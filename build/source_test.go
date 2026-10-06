@@ -70,6 +70,15 @@ func TestSourcePackageValidate(t *testing.T) {
 		{"rep received premis claims the generated name", func(c *build.SourcePackage) {
 			c.Representations[0].Premis = []build.SourceFile{{Source: "/x/premis.xml", Path: "sub/premis.xml"}}
 		}, "reserved for the generated"},
+		{"received premis without a path", func(c *build.SourcePackage) {
+			c.Premis = []build.SourceFile{{Source: "/x/events.xml"}}
+		}, "package premis: a file needs both a Source and a Path"},
+		{"duplicate documentation path", func(c *build.SourcePackage) {
+			c.Documentation = []build.SourceFile{{Source: "/x/a.txt", Path: "notes.txt"}, {Source: "/y/b.txt", Path: "notes.txt"}}
+		}, `documentation: two files share the logical path "notes.txt"`},
+		{"rep documentation without a source", func(c *build.SourcePackage) {
+			c.Representations[0].Documentation = []build.SourceFile{{Path: "notes.txt"}}
+		}, `representation "master" documentation: a file needs both a Source and a Path`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

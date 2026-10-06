@@ -3,7 +3,9 @@ package build_test
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"io"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -200,6 +202,24 @@ func TestBuildInvalidSourceWritesNothing(t *testing.T) {
 		t.Fatalf("Build error = %v, want %q", err, want)
 	}
 	requireEmpty(t, outDir)
+}
+
+// A package directory that cannot be created ends the build with the
+// file system's error, which a caller can test for with errors.Is.
+func TestBuildReportsAnUnwritableDestination(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("running as root: directory permissions are not enforced")
+	}
+	b, in, outDir := newTestBuilder(t, basicDef(t))
+	if err := os.Chmod(outDir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(outDir, 0o700) })
+
+	_, err := b.Build(in)
+	if !errors.Is(err, fs.ErrPermission) {
+		t.Fatalf("Build error = %v, want a permission error", err)
+	}
 }
 
 // Build enforces what each standard requires of a package-level

@@ -1,6 +1,8 @@
 package build_test
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -258,9 +260,35 @@ func TestAssembleReportMissingEntry(t *testing.T) {
 		"somewhere/else.jpg": {MD5: "ab"},
 	}
 
+	// The message shows a key the report does hold, so a report generated
+	// from the wrong folder explains itself.
 	_, err := b.Assemble(in)
-	if want := `characterization report has no entry for "cat.jpg"`; err == nil || !strings.Contains(err.Error(), want) {
+	if want := `characterization report has no entry for "cat.jpg" (report keys look like "somewhere/else.jpg")`; err == nil || !strings.Contains(err.Error(), want) {
 		t.Fatalf("assemble error = %v, want %q", err, want)
+	}
+	requireEmpty(t, outDir)
+
+	in.Characterization = characterization.Report{}
+	_, err = b.Assemble(in)
+	if want := "(report keys look like (the report is empty))"; err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("assemble error with an empty report = %v, want %q", err, want)
+	}
+}
+
+// With a report, every essence file is read for its checksum during
+// assembly, so a file that is gone ends the build before anything is
+// written, with the file system's error.
+func TestAssembleReportSourceMissing(t *testing.T) {
+	b, in, outDir := newTestBuilder(t, basicDef(t))
+	src := in.Representations[0].Files[0]
+	in.Characterization = report(t, src)
+	if err := os.Remove(src.Source); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := b.Assemble(in)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("assemble error = %v, want the missing file reported", err)
 	}
 	requireEmpty(t, outDir)
 }
@@ -628,7 +656,7 @@ func TestAssembleReceivedPremis(t *testing.T) {
 
 // Representation documentation gets the same treatment as package
 // documentation: nodes under documentation/, no characterization entry
-// required.
+// required, and a present entry's checksum must match.
 func TestAssembleRepresentationDocumentation(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
@@ -651,21 +679,60 @@ func TestAssembleRepresentationDocumentation(t *testing.T) {
 		t.Errorf("Mime = %q, want octet-stream without a report entry", f.Mime)
 	}
 	requireEmpty(t, outDir)
-}
 
-// A received file that is not a PREMIS document aborts assembly: packaging
-// it under metadata/preservation/ would be a false preservation claim.
-func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {
-	b, in, outDir := newTestBuilder(t, basicDef(t))
-	inDir := t.TempDir()
-	bad := writeEssence(t, inDir, "vendor.xml", "not xml at all")
-	in.Premis = []build.SourceFile{bad}
-
-	_, err := b.Assemble(in)
-	if want := "package premis vendor.xml: not an XML document"; err == nil || !strings.Contains(err.Error(), want) {
+	// A stale entry for a representation's documentation file still aborts.
+	in.Characterization = report(t, in.Representations[0].Files[0], note)
+	if err := os.WriteFile(note.Source, []byte("changed"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	_, err = b.Assemble(in)
+	if want := "scan-notes.txt changed since the characterization report was generated"; err == nil || !strings.Contains(err.Error(), want) {
 		t.Fatalf("assemble error = %v, want %q", err, want)
 	}
-	requireEmpty(t, outDir)
+}
+
+// A received file that is not a PREMIS document aborts assembly, at both
+// levels: packaging it under metadata/preservation/ would be a false
+// preservation claim. So does one that cannot be read. The error names the
+// level, and the file where assembly got as far as reading it.
+func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {
+	tests := []struct {
+		name  string
+		place func(in *build.SourcePackage, f build.SourceFile)
+		file  func(t *testing.T, dir string) build.SourceFile
+		want  string
+	}{
+		{"not PREMIS, package level",
+			func(in *build.SourcePackage, f build.SourceFile) { in.Premis = []build.SourceFile{f} },
+			func(t *testing.T, dir string) build.SourceFile {
+				return writeEssence(t, dir, "vendor.xml", "not xml at all")
+			},
+			"package premis vendor.xml: not an XML document"},
+		{"not PREMIS, representation level",
+			func(in *build.SourcePackage, f build.SourceFile) {
+				in.Representations[0].Premis = []build.SourceFile{f}
+			},
+			func(t *testing.T, dir string) build.SourceFile { return writeEssence(t, dir, "capture.xml", "<mets/>") },
+			`representation "master" premis capture.xml: root element is {}mets`},
+		{"missing file",
+			func(in *build.SourcePackage, f build.SourceFile) { in.Premis = []build.SourceFile{f} },
+			func(t *testing.T, dir string) build.SourceFile {
+				return build.SourceFile{Source: filepath.Join(dir, "gone.xml"), Path: "gone.xml"}
+			},
+			"package premis: open "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b, in, outDir := newTestBuilder(t, basicDef(t))
+			tt.place(in, tt.file(t, t.TempDir()))
+
+			_, err := b.Assemble(in)
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("assemble error = %v, want %q", err, tt.want)
+			}
+			requireEmpty(t, outDir)
+		})
+	}
 }
 
 // A supplied package identifier is reused verbatim (how an update keeps
