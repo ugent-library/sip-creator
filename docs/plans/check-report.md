@@ -1,7 +1,8 @@
 # Plan: the check command reports what a folder holds and every problem in it
 
-*Status: **proposed** (drafted 2026-10-06). No step has landed. The plan builds on
-4c93b57; line numbers refer to that tree. Update this line as steps land.*
+*Status: **in progress** (drafted 2026-10-06). Step 1 landed in 2cf8b79; step 2 follows.
+The plan builds on 4c93b57; line numbers refer to that tree. Update this line as steps
+land.*
 
 ## Context
 

@@ -309,6 +309,57 @@ func TestReadPremisNamingRule(t *testing.T) {
 	}
 }
 
+// basic takes no supplied document, so its document name is refused at
+// both levels and in a flat folder, never taken as content. A dc.xml, the
+// eark document name, stays content under basic.
+func TestReadRefusesDocumentUnderBasic(t *testing.T) {
+	refused := "the profile takes no supplied descriptive document"
+	cases := map[string]struct {
+		files map[string]string
+		want  []string
+	}{
+		"flat": {
+			files: map[string]string{
+				"description.csv": minimalCSV,
+				"scan.tiff":       "x",
+				"dc.xml":          "<simpledc/>",
+				"dc+schema.xml":   "<mets:xmlData/>",
+			},
+			want: []string{"dc+schema.xml: " + refused},
+		},
+		"representations": {
+			files: map[string]string{
+				"description.csv":                      minimalCSV,
+				"dc+schema.xml":                        "<mets:xmlData/>",
+				"representations/master/a.tiff":        "a",
+				"representations/master/dc+schema.xml": "<mets:xmlData/>",
+			},
+			want: []string{
+				"dc+schema.xml: " + refused,
+				"representations/master/dc+schema.xml: " + refused,
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			pkg, err := Read(writeTree(t, tc.files), mapping.Meemoo{}, meemooDocumentSpec)
+			var v Violations
+			errors.As(err, &v)
+			if len(v) != len(tc.want) {
+				t.Fatalf("want %d violations, got:\n%s", len(tc.want), v.Error())
+			}
+			for _, want := range tc.want {
+				assertViolation(t, err, want)
+			}
+			for _, f := range pkg.Representations[0].Files {
+				if f.Path == "dc+schema.xml" {
+					t.Errorf("dc+schema.xml was taken as content")
+				}
+			}
+		})
+	}
+}
+
 // A received preservation file must be well-formed XML, at package and
 // representation level. Read checks nothing more: a well-formed document
 // with another root passes here and is refused at assembly.

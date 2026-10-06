@@ -48,6 +48,8 @@ func Read(root string, mapper Mapper, documentSpec DocumentSpec) (*build.SourceP
 	format, takesDocument := documentSpec.Model.(build.DocumentFormat)
 	if takesDocument {
 		r.documentName = documentSpec.Name
+	} else {
+		r.refusedDocumentName = documentSpec.Name
 	}
 
 	source, inv := r.walk()

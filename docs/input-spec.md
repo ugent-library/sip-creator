@@ -181,7 +181,7 @@ A record that already exists as a document, or one richer than the rows can hold
   - under `eark-mods`: `mods:mods` in the MODS v3 namespace (`http://www.loc.gov/mods/v3`) with `version="3.7"`, the version the package's METS declares.
 - Nothing else in the document is checked: not its validity against the schema, and not whether it has an identifier or a title. Schema validity is the producer's responsibility; the validators downstream check it.
 - The file name must be the profile's: a `mods.xml` under `eark` is content, not a document.
-- `basic` takes no document, because Meemoo's document must carry the package identifier the tool mints and the tool does not edit XML.
+- `basic` takes no document, because Meemoo's document must carry the package identifier the tool mints and the tool does not edit XML. A `dc+schema.xml`, at the top level or in a representation folder, MUST NOT be present under `basic`; `check` and `create` report it.
 
 ## 4. Documentation
 

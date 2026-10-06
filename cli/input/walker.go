@@ -21,6 +21,11 @@ type folderReader struct {
 	// descriptive document at both levels; empty under a profile that
 	// takes rows only.
 	documentName string
+	// refusedDocumentName is the profile's document name when its model
+	// takes no supplied document, such as dc+schema.xml under basic: a
+	// file with that name at either level is a violation, never content.
+	// Empty under a profile that takes a document.
+	refusedDocumentName string
 }
 
 // inventory lists the files of an input folder that a decoder reads after
@@ -74,6 +79,9 @@ func (r *folderReader) walk() (*build.SourcePackage, inventory) {
 			if r.expectFile(e, src, "the supplied descriptive document") {
 				found.document = src
 			}
+			continue
+		}
+		if r.refuseDocument(name, src) {
 			continue
 		}
 		switch name {
@@ -164,6 +172,9 @@ func (r *folderReader) readRepresentation(dir, repName string) (build.SourceRepr
 			}
 			continue
 		}
+		if r.refuseDocument(name, src) {
+			continue
+		}
 		switch name {
 		case descriptionName:
 			if r.expectFile(e, src, "the descriptive rows file") {
@@ -228,6 +239,19 @@ func (r *folderReader) violateMissingDescription() {
 // none, no name is: a dc.xml under basic is content like any other file.
 func (r *folderReader) isDocumentName(name string) bool {
 	return r.documentName != "" && name == r.documentName
+}
+
+// refuseDocument reports whether name is the document name of a profile
+// that takes no supplied document, and records a violation at src when it
+// is. Under basic a dc+schema.xml would otherwise pass as content: the
+// producer meant it as the description, and the package would carry it as
+// essence.
+func (r *folderReader) refuseDocument(name, src string) bool {
+	if r.refusedDocumentName == "" || name != r.refusedDocumentName {
+		return false
+	}
+	r.violate("%s: the profile takes no supplied descriptive document; describe the package in description.csv", r.rel(src))
+	return true
 }
 
 // expectFile reports whether the entry at src, which has a reserved name,
