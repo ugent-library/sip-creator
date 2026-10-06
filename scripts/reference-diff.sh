@@ -22,6 +22,8 @@
 #   - the submitting organization's name and IDENTIFICATIONCODE note: these
 #     are operator config (SIP_SUBMITTER_* env vars), so their values vary
 #     per environment; the agent's structure still must match.
+#   - the software agent's SOFTWARE VERSION note: the module version Go
+#     stamps into the binary, which changes with every commit.
 # Deliberately NOT normalized (a diff here is a real regression):
 #   - essence and schema fixity (SIZE/CHECKSUM of data/* and schemas/*),
 #   - PREMIS messageDigest/size element text (essence fixity),
@@ -76,6 +78,10 @@ normalize() {
             $body =~ s{(<note csip:NOTETYPE="IDENTIFICATIONCODE">)[^<]*(</note>)}{$1ORID$2};
             $open . $body . $close;
         }gse;
+
+        # The software version is the build stamp of the binary, so it changes
+        # with every commit; the agent and its name still compare.
+        s{(<note csip:NOTETYPE="SOFTWARE VERSION">)[^<]*(</note>)}{$1VERSION$2}g;
 
         # XML indentation, trailing whitespace, and blank lines are not
         # structural. (Added at plan Step 7: templated metsHdr agents indent

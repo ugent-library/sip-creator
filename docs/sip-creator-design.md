@@ -101,6 +101,8 @@ A profile is data: a `build.Definition`, exported by the profile's package under
 
 `Definition.ValidateSource` checks the profile's rules on a source package. Under `basic` they allow exactly one representation (a maximum of one, with the one every package needs) and no description below the package level, as Meemoo SIP 1.2's basic profile requires.
 
+The software agent is not part of the profile: E-ARK CSIP requires every package to name the software that built it, so the engine adds a `CREATOR` agent of type `SOFTWARE`, named SIP Creator, first in every package METS. Its version is the module version Go stamps into the binary: the tag of a tagged `go install`, otherwise a pseudo-version carrying the commit, with `+dirty` when the working tree had uncommitted changes.
+
 The submitting organization is not part of the profile, because one profile serves every organization that uses it. `Definition.WithSubmitter(name, orID)` returns a copy with the organization as a `CREATOR` agent; under `basic` it requires the organization's Meemoo OR-id as well. The CLI reads both from `SIP_SUBMITTER_*`; a program using the library passes them as arguments.
 
 ## Build lifecycle

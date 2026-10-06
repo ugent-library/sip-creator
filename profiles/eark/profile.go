@@ -31,10 +31,7 @@ var Definition = build.Definition{
 		ProfileURL:             "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
 		Type:                   "Mixed", // CSIP content-category vocabulary
 		ContentInformationType: "MIXED", // package METS value; RODA reads it as the AIP type
-		// Only the software agent; WithSubmitter appends the
-		// submitting organization.
-		Agents: []sip.Agent{
-			{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1", NoteType: "SOFTWARE VERSION"},
-		},
+		// No agents: the engine adds the software agent, and
+		// WithSubmitter the submitting organization.
 	},
 }

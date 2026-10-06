@@ -470,8 +470,9 @@ a Go package with three parts:
   `ModelType` and `ModelTypeVersion`, which name the model as the METS dmdSec types
   the document (`MDTYPE` and `MDTYPEVERSION`);
 * an exported `build.Definition` naming the model, the document's file name and the
-  METS values (`sip.MetsDeclaration`: profile URL, content typing, agents). The
-  model type itself can stay unexported.
+  METS values (`sip.MetsDeclaration`: profile URL, content typing, any agents your
+  archive asks for). The engine adds the software agent itself, and `WithSubmitter`
+  the submitting organization. The model type itself can stay unexported.
 
 Hand that definition to `build.New` as above. The XSDs a model lists must be ones
 this repository bundles in `schemas/`: the build refuses any other name, so a standard

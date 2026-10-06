@@ -488,6 +488,42 @@ func TestAssembleDeclaresPackageValues(t *testing.T) {
 	}
 }
 
+// Every package names the software that built it, once and first, with the
+// version stamped into the binary, whatever the profile; the profile's own
+// agents stay as they were.
+func TestAssembleAddsTheSoftwareAgent(t *testing.T) {
+	for name, def := range map[string]build.Definition{"basic": basicDef(t), "eark": earkDef(t)} {
+		t.Run(name, func(t *testing.T) {
+			before := len(def.Declaration.Agents)
+			b, in, _ := newTestBuilder(t, def)
+
+			pkg, err := b.Assemble(in)
+			if err != nil {
+				t.Fatalf("assemble: %v", err)
+			}
+			agents := pkg.Declaration.Agents
+			if len(agents) != before+1 {
+				t.Fatalf("agents = %+v, want the profile's %d plus the software agent", agents, before)
+			}
+			software := agents[0]
+			if software.Type != "OTHER" || software.OtherType != "SOFTWARE" || software.Name != "SIP Creator" {
+				t.Errorf("first agent = %+v, want the SIP Creator software agent", software)
+			}
+			if software.NoteType != "SOFTWARE VERSION" || software.Note == "" {
+				t.Errorf("software agent note = %q (%q), want a version", software.Note, software.NoteType)
+			}
+			for _, a := range agents[1:] {
+				if a.OtherType == "SOFTWARE" {
+					t.Errorf("a second software agent: %+v", a)
+				}
+			}
+			if after := len(def.Declaration.Agents); after != before {
+				t.Errorf("the profile's agents changed from %d to %d", before, after)
+			}
+		})
+	}
+}
+
 // Both descriptive file nodes, the package's and a representation's, carry
 // the dmdSec label of the profile's metadata model.
 func TestAssembleLabelsDescriptionFilesWithTheModel(t *testing.T) {

@@ -32,10 +32,7 @@ var Definition = build.Definition{
 		Type:                        "Photographs – Digital", // 1.2 content-category vocabulary; --content-category and SIP_CONTENT_CATEGORY override it
 		ContentInformationType:      "OTHER",
 		OtherContentInformationType: "https://data.hetarchief.be/id/sip/1.2/basic",
-		// Only the software agent; WithSubmitter appends the
-		// submitting organization.
-		Agents: []sip.Agent{
-			{Role: "CREATOR", Type: "OTHER", OtherType: "SOFTWARE", Name: "SIP creator", Note: "0.1", NoteType: "SOFTWARE VERSION"},
-		},
+		// No agents: the engine adds the software agent, and
+		// WithSubmitter the submitting organization.
 	},
 }

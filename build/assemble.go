@@ -37,6 +37,10 @@ func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {
 	if source.ContentCategory != "" {
 		decl.Type = source.ContentCategory
 	}
+	// The software agent comes first, ahead of the profile's agents and the
+	// submitter. A new slice, so the profile's backing array is never
+	// written into.
+	decl.Agents = append([]sip.Agent{softwareAgent()}, decl.Agents...)
 	pkg.Declaration = &decl
 
 	e := sip.NewEntity()
