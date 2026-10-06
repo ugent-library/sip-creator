@@ -1,11 +1,7 @@
 package build_test
 
 import (
-	"bytes"
-	"encoding/xml"
-	"io"
 	"io/fs"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,8 +51,8 @@ func TestBuildEscapesValues(t *testing.T) {
 				t.Fatalf("Build: %v", err)
 			}
 			requireWellFormedXML(t, pkg.Location)
-			requireHrefsResolve(t, filepath.Join(pkg.Location, "METS.xml"))
-			requireHrefsResolve(t, filepath.Join(pkg.Location, "representations", "master", "METS.xml"))
+			requireReferencesMatchDisk(t, filepath.Join(pkg.Location, "METS.xml"))
+			requireReferencesMatchDisk(t, filepath.Join(pkg.Location, "representations", "master", "METS.xml"))
 		})
 	}
 }
@@ -82,46 +78,6 @@ func requireWellFormedXML(t *testing.T, dir string) {
 	})
 	if err != nil {
 		t.Fatal(err)
-	}
-}
-
-const xlinkNamespace = "http://www.w3.org/1999/xlink"
-
-// requireHrefsResolve fails the test for every xlink:href in the METS
-// document that, percent-decoded and taken relative to the document, names
-// no file in the package.
-func requireHrefsResolve(t *testing.T, metsPath string) {
-	t.Helper()
-	doc, err := os.ReadFile(metsPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	dec := xml.NewDecoder(bytes.NewReader(doc))
-	for {
-		tok, err := dec.Token()
-		if err == io.EOF {
-			return
-		}
-		if err != nil {
-			t.Fatalf("%s: %v", metsPath, err)
-		}
-		start, ok := tok.(xml.StartElement)
-		if !ok {
-			continue
-		}
-		for _, a := range start.Attr {
-			if a.Name.Space != xlinkNamespace || a.Name.Local != "href" {
-				continue
-			}
-			rel, err := url.PathUnescape(a.Value)
-			if err != nil {
-				t.Errorf("%s: href %q does not decode: %v", metsPath, a.Value, err)
-				continue
-			}
-			if _, err := os.Stat(filepath.Join(filepath.Dir(metsPath), filepath.FromSlash(rel))); err != nil {
-				t.Errorf("%s: href %q names no file: %v", metsPath, a.Value, err)
-			}
-		}
 	}
 }
 
