@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // md5 of "hello world", computed independently; the tests must not
@@ -115,6 +116,43 @@ func TestCopyFile(t *testing.T) {
 	}
 	if got := readFile(t, filepath.Join(root, "cat.jpg")); got != "hello world" {
 		t.Errorf("copied content = %q, want %q", got, "hello world")
+	}
+}
+
+// The copy keeps the source's modification time, while Created reports
+// when the copy was written.
+func TestCopyFileKeepsTheModificationTime(t *testing.T) {
+	root := t.TempDir()
+	s := New(root)
+
+	src := filepath.Join(t.TempDir(), "scan.tif")
+	if err := os.WriteFile(src, []byte("hello world"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	modified := time.Date(2019, 4, 2, 9, 30, 0, 0, time.UTC)
+	if err := os.Chtimes(src, modified, modified); err != nil {
+		t.Fatal(err)
+	}
+
+	before := time.Now().Add(-time.Second)
+	info, err := s.CopyFile(src, "scan.tif")
+	if err != nil {
+		t.Fatalf("CopyFile: %v", err)
+	}
+
+	copied, err := os.Stat(filepath.Join(root, "scan.tif"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !copied.ModTime().Equal(modified) {
+		t.Errorf("copy modification time = %v, want the source's %v", copied.ModTime(), modified)
+	}
+	created, err := time.Parse(time.RFC3339Nano, info.Created)
+	if err != nil {
+		t.Fatalf("Created = %q: %v", info.Created, err)
+	}
+	if created.Before(before) {
+		t.Errorf("Created = %v, want the time of the copy, not the source's %v", created, modified)
 	}
 }
 

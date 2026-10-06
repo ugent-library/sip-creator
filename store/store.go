@@ -37,7 +37,10 @@ type Info struct {
 	Size string
 	// Checksum is the MD5, hex-encoded.
 	Checksum string
-	// Created is the modification time, RFC 3339 with nanoseconds.
+	// Created is the time the file was written into the package, RFC 3339
+	// with nanoseconds: the creation date of the file in the package, which
+	// E-ARK CSIP's CREATED attribute declares. For a copy it differs from
+	// the file's modification time, which keeps the source's.
 	Created string
 }
 
@@ -52,13 +55,20 @@ func (s *Store) MkdirAll(rel string) error {
 
 // CopyFile streams src to rel, computing the MD5 during the copy so large
 // essence files are never buffered in memory, and reads the size from the
-// written file. An existing file is truncated.
+// written file. An existing file is truncated. The copy keeps the source's
+// modification time, as cp -p does: it is the one date the producer's file
+// system holds about the file, and it cannot be recovered once lost. Info
+// still reports the time the copy was written as Created.
 func (s *Store) CopyFile(src, rel string) (Info, error) {
 	in, err := os.Open(src)
 	if err != nil {
 		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
 	}
 	defer in.Close()
+	source, err := in.Stat()
+	if err != nil {
+		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
+	}
 
 	dest := filepath.Join(s.root, rel)
 	out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
@@ -82,11 +92,17 @@ func (s *Store) CopyFile(src, rel string) (Info, error) {
 	if err != nil {
 		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
 	}
+	// Read the copy's own time first: restoring the source's below
+	// replaces it. A zero access time leaves the access time as it is.
+	created := file.ModTime()
+	if err := os.Chtimes(dest, time.Time{}, source.ModTime()); err != nil {
+		return Info{}, fmt.Errorf("copy %s: keeping the modification time: %w", rel, err)
+	}
 
 	return Info{
 		Size:     strconv.FormatInt(file.Size(), 10),
 		Checksum: hex.EncodeToString(hash.Sum(nil)),
-		Created:  file.ModTime().Format(time.RFC3339Nano),
+		Created:  created.Format(time.RFC3339Nano),
 	}, nil
 }
 

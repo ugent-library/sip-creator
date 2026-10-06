@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -177,6 +178,55 @@ func TestZipFillsLocalFileHeaders(t *testing.T) {
 		if want := uint64(len("<mets/>")); f.UncompressedSize64 != want {
 			t.Errorf("%s: size = %d, want %d", f.Name, f.UncompressedSize64, want)
 		}
+	}
+}
+
+// Every entry, file or directory, carries the modification time of what it
+// holds in the package directory, never the zero date. A file entry is
+// written raw and a directory entry by Go's CreateHeader; given the same
+// time, both carry the same MS-DOS date fields, so unzip tools that read
+// only those fields put files and directories in the same time zone.
+func TestZipEntriesCarryTheirModificationTime(t *testing.T) {
+	baseDir := t.TempDir()
+	pkg := writePackage(t, baseDir)
+	// An even second: the MS-DOS date fields have two-second resolution.
+	shared := time.Date(2025, 6, 1, 8, 0, 2, 0, time.UTC)
+	times := map[string]time.Time{
+		"uuid-test/":                 time.Date(2024, 3, 15, 10, 20, 30, 0, time.UTC),
+		"uuid-test/METS.xml":         shared,
+		"uuid-test/representations/": shared,
+	}
+	for name, mtime := range times {
+		if err := os.Chtimes(filepath.Join(baseDir, filepath.FromSlash(name)), mtime, mtime); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := testArchive(baseDir).Zip(pkg); err != nil {
+		t.Fatalf("Zip() = %v, want nil", err)
+	}
+	r, err := zip.OpenReader(filepath.Join(baseDir, "uuid-test.zip"))
+	if err != nil {
+		t.Fatalf("opening produced zip: %v", err)
+	}
+	defer r.Close()
+
+	entries := make(map[string]*zip.File, len(r.File))
+	for _, f := range r.File {
+		entries[f.Name] = f
+		want, ok := times[f.Name]
+		if !ok {
+			t.Errorf("unexpected entry %q", f.Name)
+			continue
+		}
+		if !f.Modified.Equal(want) {
+			t.Errorf("%s: modified = %v, want %v", f.Name, f.Modified, want)
+		}
+	}
+	file, dir := entries["uuid-test/METS.xml"], entries["uuid-test/representations/"]
+	if file.ModifiedDate != dir.ModifiedDate || file.ModifiedTime != dir.ModifiedTime {
+		t.Errorf("MS-DOS date fields differ for the same time: file %d/%d, directory %d/%d",
+			file.ModifiedDate, file.ModifiedTime, dir.ModifiedDate, dir.ModifiedTime)
 	}
 }
 

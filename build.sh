@@ -47,7 +47,8 @@ fi
 
 rm -rf "$SRC"
 mkdir -p "$(dirname "$SRC")"
-cp -R "$INPUT" "$SRC"
+# -p keeps the files' modification times, which the package keeps too.
+cp -Rp "$INPUT" "$SRC"
 
 # Generate the copy's characterization sidecar (ADR-0009). Capture first,
 # write after: sf must never scan its own half-written output.

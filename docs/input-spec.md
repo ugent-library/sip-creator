@@ -56,6 +56,7 @@ A *representation* is one version of the content: the archival master scans are 
 - Inside a representation folder, `description.csv`, `documentation/` and `premis/` are reserved (§3–5), and under the eark profiles the profile's document name (§3). Everything else is content, with free names and nesting.
 - Files are packaged in alphabetical order by path. The order carries no meaning in E-ARK CSIP or the Meemoo specification. If a reading order matters, zero-pad your numbering (`0001.tiff`, `0002.tiff`); explicit ordering is deferred (§8).
 - The tool computes checksums and sizes itself; you never supply them.
+- Every file keeps its modification time in the package and in the zip. Copy files into the input folder in a way that keeps it (`cp -p`, `rsync -t`, or a download that sets it), or the package carries the time of that copy instead.
 
 ### `representations.csv`: labels and types (optional)
 

@@ -4,6 +4,7 @@ package archive
 
 import (
 	"archive/zip"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"hash/crc32"
@@ -12,6 +13,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -101,13 +103,19 @@ func (a *Archive) writeEntries(out io.Writer, src string) error {
 		}
 		name := filepath.ToSlash(rel)
 		a.logger.Info("zipping", slog.String("path", name))
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
 		if d.IsDir() {
 			// Directories need explicit entries (name ending in "/"):
 			// readers otherwise infer them from file paths, and empty
 			// directories vanish from the zip entirely.
+			// CreateHeader encodes Modified itself.
 			_, err := w.CreateHeader(&zip.FileHeader{
-				Name:   name + "/",
-				Method: zip.Store,
+				Name:     name + "/",
+				Method:   zip.Store,
+				Modified: info.ModTime(),
 			})
 			return err
 		}
@@ -136,13 +144,15 @@ func (a *Archive) writeEntries(out io.Writer, src string) error {
 			return err
 		}
 		// For a stored entry the raw bytes are the file bytes.
-		f, err := w.CreateRaw(&zip.FileHeader{
+		header := &zip.FileHeader{
 			Name:               name,
 			Method:             zip.Store,
 			CRC32:              crc.Sum32(),
 			CompressedSize64:   uint64(size),
 			UncompressedSize64: uint64(size),
-		})
+		}
+		setModified(header, info.ModTime())
+		f, err := w.CreateRaw(header)
 		if err != nil {
 			return err
 		}
@@ -162,4 +172,29 @@ func (a *Archive) writeEntries(out io.Writer, src string) error {
 		return fmt.Errorf("finalizing zip of %s: %w", src, err)
 	}
 	return nil
+}
+
+// setModified records t as the entry's modification time, so the entry
+// carries the date of its file in the package directory instead of the
+// zero date. CreateHeader encodes FileHeader.Modified itself, but
+// CreateRaw writes the header as given, so this does what CreateHeader
+// does: the MS-DOS date fields in t's own time zone, which most unzip
+// tools read as local time, and an Info-ZIP extended timestamp with the
+// exact instant, which zip readers that know it prefer. Go's SetModTime
+// would write the MS-DOS fields in UTC, and extracted files would then be
+// off by the local offset.
+func setModified(header *zip.FileHeader, t time.Time) {
+	header.Modified = t
+	header.ModifiedDate = uint16(t.Day() + int(t.Month())<<5 + (t.Year()-1980)<<9)
+	header.ModifiedTime = uint16(t.Second()/2 + t.Minute()<<5 + t.Hour()<<11)
+
+	// The extended timestamp extra field (ID 0x5455): five bytes of data,
+	// a flags byte saying only the modification time follows, then that
+	// time in Unix seconds.
+	var extra [9]byte
+	binary.LittleEndian.PutUint16(extra[0:], 0x5455)
+	binary.LittleEndian.PutUint16(extra[2:], 5)
+	extra[4] = 1
+	binary.LittleEndian.PutUint32(extra[5:], uint32(t.Unix()))
+	header.Extra = append(header.Extra, extra[:]...)
 }
