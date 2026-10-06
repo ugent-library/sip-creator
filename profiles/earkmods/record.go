@@ -1,5 +1,5 @@
-// Package earkmods is the eark-mods profile: a plain E-ARK SIP for
-// RODA-class repositories whose descriptive standard is MODS 3.7. A package
+// Package earkmods is the eark-mods profile: a plain E-ARK SIP whose
+// descriptive standard is MODS 3.7. A package
 // describes one bibliographic record, typed by field where MODS is a tree
 // (ADR-0021): the record's identifier and titles, plus the physical copies
 // the library holds of it. Its Definition names the rest as data, and the

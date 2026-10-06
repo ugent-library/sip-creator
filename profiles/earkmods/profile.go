@@ -6,8 +6,8 @@ import (
 )
 
 // Definition is the eark-mods profile: the eark profile's plain E-ARK SIP
-// (spec 2.2.0) for RODA-class repositories, writing mods.xml from a Record
-// where eark writes dc.xml from Simple Dublin Core terms, and no PREMIS.
+// (spec 2.2.0), writing mods.xml from a Record where eark writes dc.xml
+// from Simple Dublin Core terms, and no PREMIS.
 // Every other value is eark's. The registry in profiles/ hands it out under
 // the name "eark-mods".
 var Definition = build.Definition{
@@ -17,12 +17,13 @@ var Definition = build.Definition{
 	DocumentName: "mods.xml",
 	// As for eark: a representation may carry its own description.
 	AllowRepresentationDescriptions: true,
-	// No PREMIS, as for eark: RODA drops package PREMIS that does not
-	// describe agents or events.
+	// No PREMIS, as for eark: E-ARK SIP makes it optional, and without
+	// agents or events a PREMIS document only repeats the fixity the METS
+	// already declares (ADR-0022).
 	EmitPackagePremis:        false,
 	EmitRepresentationPremis: false,
-	// RODA shows each representation's type from the representation
-	// METS's content typing (ADR-0013).
+	// As for eark: each representation's type goes into its METS content
+	// typing, where an ingest system reads it (ADR-0013).
 	EmitRepresentationType: true,
 	Declaration: sip.MetsDeclaration{
 		// The version-pinned profile URL: commons-ip's SIP2 check for
@@ -30,7 +31,7 @@ var Definition = build.Definition{
 		// message misleadingly prints the unversioned URL).
 		ProfileURL:             "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
 		Type:                   "Mixed", // CSIP content-category vocabulary; --content-category and SIP_CONTENT_CATEGORY override it
-		ContentInformationType: "MIXED", // package METS value; RODA reads it as the AIP type
+		ContentInformationType: "MIXED", // CSIP content information type; the package METS value
 		// No agents: the engine adds the software agent, and
 		// WithSubmitter the submitting organization.
 	},

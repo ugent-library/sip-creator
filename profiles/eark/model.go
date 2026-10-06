@@ -45,9 +45,8 @@ func (simpledc) ValidateDocumentRoot(root xml.StartElement) error {
 	return nil
 }
 
-// Encode writes d as a Simple Dublin Core document (the
-// dc_SimpleDC20021212 shape RODA renders and indexes natively): one
-// unqualified element per term, order preserved, language tags omitted.
+// Encode writes d as a Simple Dublin Core document: a simpledc root with
+// one unqualified element per term, order preserved, language tags omitted.
 func (simpledc) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
 	if err := simpledcTemplate.ExecuteTemplate(&buf, "simpledc", termsDoc{d.(Terms), schemasDir}); err != nil {
@@ -62,8 +61,8 @@ func (simpledc) ModelType() string {
 	return "DC"
 }
 
-// ModelTypeVersion names the SimpleDC20021212 shape the template writes,
-// which RODA renders natively.
+// ModelTypeVersion names the version of Simple Dublin Core the template
+// writes, as the METS dmdSec declares it in MDTYPEVERSION.
 func (simpledc) ModelTypeVersion() string {
 	return "SimpleDC20021212"
 }
