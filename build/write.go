@@ -6,7 +6,6 @@ import (
 
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/premis"
-	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
 	"github.com/ugent-library/sip-creator/store"
 )
@@ -77,10 +76,9 @@ func (b *Builder) writeSkeleton(st *store.Store) error {
 }
 
 func (b *Builder) writeSchemas(st *store.Store, pkg *sip.Package) error {
-	xsds := schemas.Get()
 	for _, sf := range pkg.SchemaFiles {
 		info, err := st.WriteMetadata(sf.Path, func(w io.Writer) error {
-			_, err := w.Write(xsds[sf.Name])
+			_, err := w.Write(sf.Content)
 			return err
 		})
 		if err != nil {

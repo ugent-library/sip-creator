@@ -82,11 +82,11 @@ func (mods) ModelTypeVersion() string {
 	return version
 }
 
-// Schemas lists the bundled XSD file names the MODS document points at:
+// Schemas returns the bundled XSDs the MODS document points at:
 // mods-3-7.xsd alone. Its own imports of xml.xsd and xlink.xsd are absolute
 // loc.gov URLs, not files next to it, so nothing else needs to ship.
-func (mods) Schemas() []string {
-	return []string{"mods-3-7.xsd"}
+func (mods) Schemas() []build.Schema {
+	return build.BundledSchemas("mods-3-7.xsd")
 }
 
 // localIdentifierType is the type attribute on the mods:identifier the

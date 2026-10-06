@@ -469,7 +469,8 @@ a Go package with three parts:
   `ValidateRequired` are the rules of your standard;
 * a metadata model implementing `build.MetadataModel`: `ValidateType`, which refuses a
   description of another type, `Encode`, which writes the document (the profiles here
-  use `text/template`), `Schemas`, the list of XSDs the document points at, and
+  use `text/template`), `Schemas`, the XSDs the document points at with their
+  contents, and
   `ModelType` and `ModelTypeVersion`, which name the model as the METS dmdSec types
   the document (`MDTYPE` and `MDTYPEVERSION`);
 * an exported `build.Definition` naming the model, the document's file name and the
@@ -477,11 +478,19 @@ a Go package with three parts:
   archive asks for). The engine adds the software agent itself, and `WithSubmitter`
   the submitting organization. The model type itself can stay unexported.
 
-Hand that definition to `build.New` as above. The XSDs a model lists must be ones
-this repository bundles in `schemas/`: the build refuses any other name, so a standard
-whose schema is not bundled needs its XSD added there first. Your package does not need
-to be added to the registry in `profiles/`: the registry only lists the names `--profile`
-accepts on the command line, and `build.New` takes any definition.
+Hand that definition to `build.New` as above. Your package supplies its own XSDs: embed
+them with `go:embed` and return each as a `build.Schema`, a file name and its contents.
+The package ships them in `schemas/` next to the ones its METS documents need. Where your
+document uses a schema this repository bundles, such as `xml.xsd`, `build.BundledSchemas`
+returns it. A schema name must be a plain file name, its contents must not be empty, and
+a name the METS schemas already use must come with the same contents. Your package does
+not need to be added to the registry in `profiles/`: the registry only lists the names
+`--profile` accepts on the command line, and `build.New` takes any definition. The
+example `Example_ownProfile` in [build/example_test.go](build/example_test.go) builds a
+package with a profile defined entirely outside `profiles/`.
+
+A format the METS `MDTYPE` vocabulary does not list is typed `OTHER`. The METS documents
+cannot name it in `OTHERMDTYPE` yet (see docs/TODO.md).
 
 When your profile leaves a value to the program that builds the description, such as the
 `type` of a MODS identifier, offer a fixed set of typed constants rather than free text.

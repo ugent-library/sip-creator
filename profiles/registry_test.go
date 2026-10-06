@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/xmldoc"
 	"github.com/ugent-library/sip-creator/profiles/eark"
@@ -25,7 +26,16 @@ func shipped(t *testing.T, name string) []string {
 	if !ok {
 		t.Fatalf("no %q definition registered", name)
 	}
-	return slices.Compact(slices.Sorted(slices.Values(slices.Concat(mets.Schemas, def.Model.Schemas()))))
+	return slices.Compact(slices.Sorted(slices.Values(slices.Concat(mets.Schemas, schemaNames(def.Model.Schemas())))))
+}
+
+// schemaNames returns the file names of the schemas in list.
+func schemaNames(list []build.Schema) []string {
+	names := make([]string, 0, len(list))
+	for _, s := range list {
+		names = append(names, s.Name)
+	}
+	return names
 }
 
 // withMETS returns the sorted set a profile ships when its descriptive
@@ -100,8 +110,9 @@ func TestRegistryDescriptiveDocumentsPointAtShippedSchemas(t *testing.T) {
 		}
 		for _, loc := range locations {
 			dir, file := path.Split(loc)
-			if path.Clean(dir) != schemasDir || !slices.Contains(def.Model.Schemas(), file) {
-				t.Errorf("profile %q: the document points at %q, want a file under %s/ that Schemas() lists (%v)", name, loc, schemasDir, def.Model.Schemas())
+			listed := schemaNames(def.Model.Schemas())
+			if path.Clean(dir) != schemasDir || !slices.Contains(listed, file) {
+				t.Errorf("profile %q: the document points at %q, want a file under %s/ that Schemas() lists (%v)", name, loc, schemasDir, listed)
 			}
 		}
 	}

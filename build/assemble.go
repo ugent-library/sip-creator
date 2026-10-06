@@ -1,17 +1,18 @@
 package build
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"maps"
 	"os"
 	"path"
 	"slices"
+	"strings"
 
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/premis"
-	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -44,11 +45,11 @@ func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {
 	b.logger.Info("created an intellectual entity", slog.String("id", e.Identifier))
 
 	b.assembleDescriptive(e, source)
-	// The package ships the XSDs the METS documents point at and those the
-	// metadata model lists. Each knows its own list. The
+	// The package ships the XSDs the METS documents point at, which this
+	// module bundles, and those the metadata model supplies. The
 	// descriptive list ships for a supplied document too, whatever that
 	// document's own schema-location hint names.
-	schemaFiles, err := schemaFileNodes(slices.Concat(mets.Schemas, b.profile.Model.Schemas()))
+	schemaFiles, err := schemaFileNodes(slices.Concat(BundledSchemas(mets.Schemas...), b.profile.Model.Schemas()))
 	if err != nil {
 		return nil, fmt.Errorf("profile %q: %w", b.profile.Name, err)
 	}
@@ -117,26 +118,52 @@ func (b *Builder) descriptionFile() *sip.File {
 	return df
 }
 
-// schemaFileNodes declares one graph node per XSD the package ships, sorted
-// so METS emission is deterministic whatever order the lists give them
-// in, and each name once: the METS list and the metadata model's list
-// overlap where two documents point at the same schema. A name the bundle
-// does not hold is a mistake in one of the lists and is refused here,
-// before any write, rather than landing in the package as an empty file.
-func schemaFileNodes(names []string) ([]*sip.File, error) {
-	xsds := schemas.Get()
-	files := make([]*sip.File, 0, len(names))
-	for _, name := range slices.Compact(slices.Sorted(slices.Values(names))) {
-		if _, ok := xsds[name]; !ok {
-			return nil, fmt.Errorf("the schema %q is not bundled", name)
+// schemaFileNodes declares one graph node per XSD the package ships,
+// sorted by name so METS emission is deterministic whatever order the
+// lists give them in, and each name once: the METS list and the metadata
+// model's list overlap where two documents point at the same schema. It
+// refuses, before any write, a schema that would land in the package
+// wrong: a name that is not a plain file name, no contents, or two
+// different schemas under one name, where one would silently replace the
+// other.
+func schemaFileNodes(list []Schema) ([]*sip.File, error) {
+	contents := make(map[string][]byte, len(list))
+	for _, s := range list {
+		if err := validateSchemaName(s.Name); err != nil {
+			return nil, err
 		}
+		if len(s.Content) == 0 {
+			return nil, fmt.Errorf("the schema %q has no contents", s.Name)
+		}
+		if seen, ok := contents[s.Name]; ok && !bytes.Equal(seen, s.Content) {
+			return nil, fmt.Errorf("two different schemas are named %q", s.Name)
+		}
+		contents[s.Name] = s.Content
+	}
+
+	files := make([]*sip.File, 0, len(contents))
+	for _, name := range slices.Sorted(maps.Keys(contents)) {
 		f := sip.NewFile()
 		f.Name = name
 		f.Path = "schemas/" + name
 		f.Mime = "application/xml"
+		f.Content = contents[name]
 		files = append(files, f)
 	}
 	return files, nil
+}
+
+// validateSchemaName returns why name cannot be a schema's file name under
+// schemas/: empty, a path rather than a file name, or text XML cannot
+// carry in the documents' schema-location hints.
+func validateSchemaName(name string) error {
+	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, `/\`) {
+		return fmt.Errorf("the schema name %q is not a plain file name", name)
+	}
+	if err := ValidateXMLText(name); err != nil {
+		return fmt.Errorf("the schema name: %w", err)
+	}
+	return nil
 }
 
 // assembleDocumentationNodes declares graph nodes for documentation files

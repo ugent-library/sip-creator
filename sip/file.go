@@ -26,9 +26,13 @@ type File struct {
 	// was supplied or the report found no match.
 	Format *Format
 	// Source is the absolute path the file is copied from; empty for the
-	// METS and PREMIS documents the build writes and for the descriptive
-	// document, whose source, when supplied, the description carries.
+	// METS and PREMIS documents the build writes, for the descriptive
+	// document, whose source, when supplied, the description carries, and
+	// for a schema, which carries its Content.
 	Source string
+	// Content is the bytes of a schema, which the writer writes as they
+	// are; nil for every other file.
+	Content []byte
 	// Path is the href relative to the METS document that references the
 	// file: package-relative for package-level files, representation-relative
 	// for files inside a representation.

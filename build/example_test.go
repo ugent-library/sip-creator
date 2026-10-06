@@ -1,7 +1,11 @@
 package build_test
 
 import (
+	"bytes"
+	"encoding/xml"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"os"
@@ -158,6 +162,129 @@ func ExampleEncodedDescription() {
 	}
 	fmt.Println(pkg.Root.DescriptionFile.Path)
 	// Output: metadata/descriptive/mods.xml
+}
+
+// catalogueRecord is the description type of a profile written outside
+// this module, for a record format of the institution's own.
+type catalogueRecord struct {
+	Title string
+}
+
+func (r catalogueRecord) Validate() error {
+	return build.ValidateXMLText(r.Title)
+}
+
+func (r catalogueRecord) ValidateRequired() error {
+	if r.Title == "" {
+		return errors.New("title is required but missing")
+	}
+	return nil
+}
+
+// catalogueSchema is the record format's XSD. A real profile embeds its
+// XSD files in its own package with go:embed.
+const catalogueSchema = `<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="record">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="title" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
+`
+
+// catalogueModel is the profile's metadata model: it accepts a
+// catalogueRecord, writes it as a document, and supplies the XSD the
+// document points at.
+type catalogueModel struct{}
+
+func (catalogueModel) ValidateType(d sip.Description) error {
+	if _, ok := d.(catalogueRecord); !ok {
+		return fmt.Errorf("descriptive metadata is %T, not a catalogue record", d)
+	}
+	return nil
+}
+
+func (catalogueModel) Encode(w io.Writer, d sip.Description, schemasDir string) error {
+	var title bytes.Buffer
+	if err := xml.EscapeText(&title, []byte(d.(catalogueRecord).Title)); err != nil {
+		return err
+	}
+	_, err := fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?>
+<record xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="%s/catalogue.xsd">
+  <title>%s</title>
+</record>
+`, schemasDir, title.String())
+	return err
+}
+
+func (catalogueModel) Schemas() []build.Schema {
+	return []build.Schema{{Name: "catalogue.xsd", Content: []byte(catalogueSchema)}}
+}
+
+// ModelType is OTHER: the METS MDTYPE vocabulary does not list the
+// institution's own format.
+func (catalogueModel) ModelType() string        { return "OTHER" }
+func (catalogueModel) ModelTypeVersion() string { return "" }
+
+// Build a package with a profile of your own: a description type, a
+// metadata model that writes it and supplies its own XSD, and a definition
+// handed to build.New. Nothing in this module's profiles/ is involved, and
+// the package ships the XSD next to the ones its METS documents need.
+func Example_ownProfile() {
+	destination, err := os.MkdirTemp("", "sip")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.RemoveAll(destination)
+
+	def := build.Definition{
+		Name:         "catalogue",
+		Model:        catalogueModel{},
+		DocumentName: "record.xml",
+		Declaration: sip.MetsDeclaration{
+			ProfileURL:             "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
+			Type:                   "Mixed",
+			ContentInformationType: "MIXED",
+		},
+	}
+	def, err = def.WithSubmitter("Example Organization", "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	builder, err := build.New(&build.Config{
+		Profile:     def,
+		Destination: destination,
+		Logger:      slog.New(slog.DiscardHandler),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pkg, err := builder.Build(&build.SourcePackage{
+		Description: catalogueRecord{Title: "Example photograph"},
+		Representations: []build.SourceRepresentation{{
+			Name: "master",
+			Files: []build.SourceFile{{
+				Source: "../examples/eark/representations/master/image-001.jpg",
+				Path:   "image-001.jpg",
+			}},
+		}},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, sf := range pkg.SchemaFiles {
+		fmt.Println(sf.Path)
+	}
+	// Output:
+	// schemas/DILCISExtensionMETS.xsd
+	// schemas/DILCISExtensionSIPMETS.xsd
+	// schemas/catalogue.xsd
+	// schemas/mets1_12.xsd
+	// schemas/xlink.xsd
 }
 
 // Build a package that replaces an earlier one. The earlier package's

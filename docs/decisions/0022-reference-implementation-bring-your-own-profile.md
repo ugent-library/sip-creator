@@ -4,7 +4,14 @@ Status: **Accepted** (2026-10-01, when the
 [descriptive-model plan](../archive/descriptive-model.md)'s S5 shipped;
 drafted 2026-09-30 and agreed in review the same day). **Note,
 2026-10-06:** `build.DescriptionEncoder` below is `build.MetadataModel`
-since 2026-10-02 ([ADR-0024](0024-the-metadata-model.md)).
+since 2026-10-02 ([ADR-0024](0024-the-metadata-model.md)). **Note,
+2026-10-06:** a profile brings its own XSDs as well: `MetadataModel.Schemas`
+returns each schema with its contents (`build.Schema`), so an XSD no longer
+has to be bundled in this repository. `build.BundledSchemas` returns the
+bundled ones, and `Example_ownProfile` in `build/example_test.go` builds a
+package with a profile defined outside `profiles/`. The tagged release and
+changelog the consequences below call for wait for the first outside
+caller (docs/TODO.md).
 
 ## Context
 

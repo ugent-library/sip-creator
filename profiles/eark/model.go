@@ -67,14 +67,14 @@ func (simpledc) ModelTypeVersion() string {
 	return "SimpleDC20021212"
 }
 
-// Schemas lists the bundled XSD file names the simpledc document points
+// Schemas returns the bundled XSDs the simpledc document points
 // at: simpledc.xsd, the Simple DC container with its elements in no
 // namespace as the template writes them, and xml.xsd, which it imports
 // from the file next to it. It is not DCMI's file of that name, which
 // expects the elements in the DCMES namespace and would reject the
 // document; the schema's header records how it is built from DCMI's files.
-func (simpledc) Schemas() []string {
-	return []string{"simpledc.xsd", "xml.xsd"}
+func (simpledc) Schemas() []build.Schema {
+	return build.BundledSchemas("simpledc.xsd", "xml.xsd")
 }
 
 // simpledcTemplate escapes every value; element names come from

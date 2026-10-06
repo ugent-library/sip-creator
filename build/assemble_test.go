@@ -1,6 +1,7 @@
 package build_test
 
 import (
+	"bytes"
 	"errors"
 	"io/fs"
 	"os"
@@ -70,7 +71,10 @@ func TestAssemble(t *testing.T) {
 			t.Errorf("schema Path = %q, want %q", sf.Path, "schemas/"+sf.Name)
 		}
 	}
-	referenced := slices.Concat(mets.Schemas, basicDef(t).Model.Schemas())
+	referenced := slices.Clone(mets.Schemas)
+	for _, s := range basicDef(t).Model.Schemas() {
+		referenced = append(referenced, s.Name)
+	}
 	if want := slices.Compact(slices.Sorted(slices.Values(referenced))); !slices.Equal(names, want) {
 		t.Errorf("schema nodes = %v, want the referenced XSDs sorted and deduplicated: %v", names, want)
 	}
@@ -794,20 +798,90 @@ func TestAssemblePackageIdentifier(t *testing.T) {
 
 // unbundledSchemas wraps a real metadata model and claims an XSD the bundle does
 // not hold.
-type unbundledSchemas struct{ build.MetadataModel }
+// ownSchemas is a profile's metadata model with the schema list replaced,
+// the way a profile outside this module supplies its own XSDs.
+type ownSchemas struct {
+	build.MetadataModel
+	list []build.Schema
+}
 
-func (unbundledSchemas) Schemas() []string { return []string{"nope.xsd"} }
+func (m ownSchemas) Schemas() []build.Schema { return m.list }
 
-// A metadata model listing a schema the bundle does not hold is refused at
-// assembly, before any write: the alternative is an empty XSD in the
-// package.
-func TestBuildRefusesUnbundledSchema(t *testing.T) {
+// A schema the metadata model supplies itself, not one this module
+// bundles, ships in the package with its contents as given.
+func TestBuildShipsAModelsOwnSchema(t *testing.T) {
 	def := basicDef(t)
-	def.Model = unbundledSchemas{def.Model}
-	b, in, outDir := newTestBuilder(t, def)
-	_, err := b.Build(in)
-	if err == nil || !strings.Contains(err.Error(), `"nope.xsd"`) {
-		t.Fatalf("Build error = %v, want the unbundled schema named", err)
+	own := build.Schema{Name: "own.xsd", Content: []byte(`<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>`)}
+	def.Model = ownSchemas{def.Model, append(def.Model.Schemas(), own)}
+	b, in, _ := newTestBuilder(t, def)
+
+	pkg, err := b.Build(in)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
 	}
-	requireEmpty(t, outDir)
+	got, err := os.ReadFile(filepath.Join(pkg.Location, "schemas", "own.xsd"))
+	if err != nil {
+		t.Fatalf("the model's own schema is not in the package: %v", err)
+	}
+	if !bytes.Equal(got, own.Content) {
+		t.Errorf("own.xsd = %q, want the contents the model supplied", got)
+	}
+	mets, err := os.ReadFile(filepath.Join(pkg.Location, "METS.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(mets, []byte(`xlink:href="schemas/own.xsd"`)) {
+		t.Errorf("the package METS does not list schemas/own.xsd")
+	}
+}
+
+// A schema that would land in the package wrong is refused at assembly,
+// before any write: a name that is not a plain file name, no contents, or
+// a second, different schema under a name already taken, here a METS one.
+func TestBuildRefusesASchemaThatWouldLandWrong(t *testing.T) {
+	xsd := []byte(`<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>`)
+	for name, tc := range map[string]struct {
+		schema build.Schema
+		want   string
+	}{
+		"a path":           {build.Schema{Name: "sub/own.xsd", Content: xsd}, `"sub/own.xsd" is not a plain file name`},
+		"no name":          {build.Schema{Name: "", Content: xsd}, `"" is not a plain file name`},
+		"no contents":      {build.Schema{Name: "own.xsd"}, `"own.xsd" has no contents`},
+		"not bundled":      {build.BundledSchemas("nope.xsd")[0], `"nope.xsd" has no contents`},
+		"a METS name, new": {build.Schema{Name: "mets1_12.xsd", Content: xsd}, `two different schemas are named "mets1_12.xsd"`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			def := basicDef(t)
+			def.Model = ownSchemas{def.Model, append(def.Model.Schemas(), tc.schema)}
+			b, in, outDir := newTestBuilder(t, def)
+
+			_, err := b.Build(in)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("Build error = %v, want %q", err, tc.want)
+			}
+			requireEmpty(t, outDir)
+		})
+	}
+}
+
+// A model may list a schema the METS documents also point at, such as
+// xlink.xsd, when its contents are the same: the package ships it once.
+func TestBuildShipsASharedSchemaOnce(t *testing.T) {
+	def := basicDef(t)
+	def.Model = ownSchemas{def.Model, append(def.Model.Schemas(), build.BundledSchemas("xlink.xsd")...)}
+	b, in, _ := newTestBuilder(t, def)
+
+	pkg, err := b.Assemble(in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	count := 0
+	for _, sf := range pkg.SchemaFiles {
+		if sf.Name == "xlink.xsd" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Errorf("xlink.xsd nodes = %d, want 1", count)
+	}
 }

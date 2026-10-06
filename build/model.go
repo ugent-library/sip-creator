@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -34,13 +35,15 @@ type MetadataModel interface {
 	// and the description's Validate have run before Encode is called, and
 	// Encode repeats neither. A failed render writes nothing to w.
 	Encode(w io.Writer, d sip.Description, schemasDir string) error
-	// Schemas lists the bundled XSD file names the encoded document points
-	// at, plus what those import by relative path. The package ships them
-	// under schemas/ next to the ones the METS documents point at, also
-	// when the description is a supplied document. List nothing else: an
-	// XSD no document references is noise to whoever reads the package
-	// later.
-	Schemas() []string
+	// Schemas lists the XSDs the encoded document points at, plus what
+	// those import by relative path, each with its contents. The package
+	// ships them under schemas/ next to the ones the METS documents point
+	// at, also when the description is a supplied document. List nothing
+	// else: an XSD no document references is noise to whoever reads the
+	// package later. A profile outside this module embeds its own XSDs and
+	// returns them here; BundledSchemas returns the ones this module
+	// bundles.
+	Schemas() []Schema
 	// ModelType names the model as METS types a descriptive document, a
 	// value of the METS MDTYPE vocabulary such as DC or MODS. With
 	// ModelTypeVersion it describes the document Encode writes and a
@@ -52,6 +55,31 @@ type MetadataModel interface {
 	// follows, as METS records it in MDTYPEVERSION, such as 3.7 for MODS;
 	// empty when the model has no version to name.
 	ModelTypeVersion() string
+}
+
+// Schema is one XSD file a package ships under schemas/.
+type Schema struct {
+	// Name is the file name under schemas/, such as mods-3-7.xsd: a plain
+	// file name, without folders, because every schema lands directly in
+	// schemas/. The documents' schema-location hints point at it by this
+	// name.
+	Name string
+	// Content is the file's bytes, written into the package as they are.
+	// Must not be empty.
+	Content []byte
+}
+
+// BundledSchemas returns the XSDs this module bundles under the given file
+// names, such as dc.xsd or xml.xsd, for a metadata model to return from
+// Schemas. A name the bundle does not hold comes back without contents,
+// which the build refuses before anything is written.
+func BundledSchemas(names ...string) []Schema {
+	bundle := schemas.Get()
+	list := make([]Schema, 0, len(names))
+	for _, name := range names {
+		list = append(list, Schema{Name: name, Content: bundle[name]})
+	}
+	return list
 }
 
 // IdentifierSwapper is the optional part of a MetadataModel whose
