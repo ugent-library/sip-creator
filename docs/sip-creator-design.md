@@ -62,7 +62,7 @@ uuid-<uuid>/
 
 A descriptive document the producer supplied as a file lands at the same path as a generated one, copied as it is.
 
-The CLI zips the directory **uncompressed** (`zip.Store`) to `dest/<identifier>.zip`, unless `--no-zip` is given. The zip is written to a temporary file next to it and renamed when complete, so `<identifier>.zip` only ever names a whole zip; a zip that already exists is refused, never replaced. Under the eark profiles the zip is the deliverable; under `basic` the deliverable is the package directory in a BagIt bag, which this tool does not produce.
+The CLI zips the directory **uncompressed** (`zip.Store`) to `dest/<identifier>.zip`, unless `--no-zip` is given. The zip is written to a temporary file next to it and renamed when complete, so `<identifier>.zip` only ever names a whole zip; a zip that already exists is refused, never replaced ([ADR-0031](decisions/0031-final-names-hold-complete-output.md)). Under the eark profiles the zip is the deliverable; under `basic` the deliverable is the package directory in a BagIt bag, which this tool does not produce.
 
 ## Metadata
 
@@ -115,13 +115,13 @@ The submitting organization is not part of the profile, because one profile serv
 
 `check --profile <name> <src>` (`cli/check_cmd.go`) runs step 3 and then `Definition.ValidateSource`, with no configuration. It does not build, so the checks on file contents (received PREMIS, the characterization report's checksums) run only in `create`.
 
-`build.New` takes the profile, the destination and a logger, and refuses a profile without a metadata model. `Builder.Build` takes one `build.SourcePackage` per package. It runs a check, then two separate phases: assemble the complete graph in memory, then write it. Errors are returned, never panicked, and a failure before the write phase leaves nothing on disk.
+`build.New` takes the profile, the destination and a logger, and refuses a profile without a metadata model. `Builder.Build` takes one `build.SourcePackage` per package. It runs a check, then two separate phases: assemble the complete graph in memory, then write it. Errors are returned, never panicked, and a failed build leaves nothing on disk.
 
 **Check.** First the profile's rules: every description is of the model's type, a supplied document has the right root element, and the profile's rules on representations hold. Then the source package's own rules: names, attribute text, each description against its standard, and the required elements of the package-level description.
 
 **Phase 1: assemble** (`build/assemble.go`) builds the complete graph without writing anything: the package and its METS values (with the source package's record status and content category over the profile's), the entity and its description, every file node with its path and MIME type, the schemas the documents point at (a schema the bundle does not hold stops the build), and which PREMIS documents exist. When a characterization report is supplied, each essence file takes its format from it, and the report is strict: a missing entry, an sf error, a missing checksum or an MD5 that doesn't match the source file stops the build; an entry without a match leaves the format empty. Documentation files need no entry, but their checksum is checked when one exists. Received PREMIS files must be well-formed `premis:premis` documents. After assembly the writer only writes; it creates no nodes.
 
-**Phase 2: write** (`build/write.go`, through `store/`) writes the graph in one fixed order, set in `write()`. The order follows from what each document records: a representation's METS comes after every file it lists (essence, PREMIS, documentation, its descriptive document), and the package METS comes last, after everything else. Fixity is computed while each file is copied or rendered, so it describes the bytes in the package, and the writer fills it into the graph for the METS documents written after it.
+**Phase 2: write** (`build/write.go`, through `store/`) writes the graph in one fixed order, set in `write()`. The order follows from what each document records: a representation's METS comes after every file it lists (essence, PREMIS, documentation, its descriptive document), and the package METS comes last, after everything else. Fixity is computed while each file is copied or rendered, so it describes the bytes in the package, and the writer fills it into the graph for the METS documents written after it. The package is written into `dest/.<identifier>.tmp` and renamed to `dest/<identifier>` when complete; a package directory that already exists is refused, never written into, and a failed write removes the temporary directory ([ADR-0031](decisions/0031-final-names-hold-complete-output.md)).
 
 ## Code organization
 

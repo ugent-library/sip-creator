@@ -222,6 +222,89 @@ func TestBuildReportsAnUnwritableDestination(t *testing.T) {
 	}
 }
 
+// An update reuses the earlier package's identifier, and so its directory
+// name. Build refuses a package directory that already exists instead of
+// writing into it, where the earlier package's files would stay beside the
+// new ones, and leaves that directory as it was.
+func TestBuildRefusesAnExistingPackageDirectory(t *testing.T) {
+	b, in, outDir := newTestBuilder(t, basicDef(t))
+	in.PackageIdentifier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
+	in.RecordStatus = sip.RecordStatusReplacement
+	earlier := filepath.Join(outDir, in.PackageIdentifier)
+	if err := os.MkdirAll(earlier, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(earlier, "METS.xml"), []byte("the earlier package"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := b.Build(in)
+	if want := "package directory " + earlier + " already exists"; err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("Build error = %v, want %q", err, want)
+	}
+	if got, _ := os.ReadFile(filepath.Join(earlier, "METS.xml")); string(got) != "the earlier package" {
+		t.Errorf("the earlier package's METS was changed: %q", got)
+	}
+	requireDirectoryHolds(t, outDir, in.PackageIdentifier)
+}
+
+// A build that fails while writing leaves nothing behind, whatever the
+// cause: here an essence file that is gone by the time it is copied, which
+// assembly does not notice without a characterization report.
+func TestBuildLeavesNothingWhenWritingFails(t *testing.T) {
+	b, in, outDir := newTestBuilder(t, basicDef(t))
+	if err := os.Remove(in.Representations[0].Files[0].Source); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := b.Build(in)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("Build error = %v, want the missing file reported", err)
+	}
+	requireEmpty(t, outDir)
+}
+
+// A temporary directory left by a build that was killed partway is
+// removed, not written into, so none of its files reach the package; a
+// successful build leaves only the package directory.
+func TestBuildRemovesAStaleTemporaryDirectory(t *testing.T) {
+	b, in, outDir := newTestBuilder(t, basicDef(t))
+	in.PackageIdentifier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
+	stale := filepath.Join(outDir, "."+in.PackageIdentifier+".tmp", "representations", "master", "data")
+	if err := os.MkdirAll(stale, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(stale, "left-over.jpg"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	pkg, err := b.Build(in)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(pkg.Location, "representations", "master", "data", "left-over.jpg")); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("a file from the stale temporary directory reached the package (%v)", err)
+	}
+	requireDirectoryHolds(t, outDir, in.PackageIdentifier)
+}
+
+// requireDirectoryHolds fails the test unless dir holds exactly the named
+// entries.
+func requireDirectoryHolds(t *testing.T, dir string, want ...string) {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, e := range entries {
+		got = append(got, e.Name())
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("%s holds %v, want %v", dir, got, want)
+	}
+}
+
 // Build enforces what each standard requires of a package-level
 // description. Identity-only terms build a complete eark package; under
 // basic they are refused, and a missing identity is refused under every

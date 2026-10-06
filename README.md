@@ -157,7 +157,9 @@ Further flags:
   status, which the E-ARK SIP specification reads as `new`. A status
   that updates an earlier package requires `--updates <identifier>`: the
   original package's identifier is reused as this package's identifier
-  (`mets/@OBJID`).
+  (`mets/@OBJID`). Build the update into a destination that does not
+  still hold the original: an existing package directory or zip with that
+  identifier is refused, never written into.
 * `--no-zip` to skip zipping when the package directory itself is what you need.
 
 What you deliver depends on the profile: the zip for `eark` and `eark-mods`, a bagged
