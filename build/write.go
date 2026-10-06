@@ -111,9 +111,10 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 			if err := st.MkdirAll(base + "/" + path.Dir(f.Path)); err != nil {
 				return err
 			}
-			// Fixity comes from the streamed copy: it describes the bytes
-			// actually in the package, not the source they came from.
-			info, err := st.CopyFile(f.Source, base+"/"+f.Path)
+			// The checksum is the characterization report's when assembly
+			// took it from there (ADR-0032); otherwise the copy computes
+			// it from the bytes it writes.
+			info, err := st.CopyFile(f.Source, base+"/"+f.Path, f.Checksum)
 			if err != nil {
 				return err
 			}
@@ -135,7 +136,7 @@ func (b *Builder) writeDescription(st *store.Store, base string, df *sip.File, d
 	var info store.Info
 	var err error
 	if doc, ok := d.(EncodedDescription); ok {
-		info, err = st.CopyFile(doc.Source, base+df.Path)
+		info, err = st.CopyFile(doc.Source, base+df.Path, "")
 	} else {
 		info, err = st.WriteMetadata(base+df.Path, func(w io.Writer) error {
 			return b.profile.Model.Encode(w, d, schemasDir)
@@ -224,7 +225,7 @@ func copyFiles(st *store.Store, prefix string, files []*sip.File) error {
 		if err := st.MkdirAll(path.Dir(prefix + f.Path)); err != nil {
 			return err
 		}
-		info, err := st.CopyFile(f.Source, prefix+f.Path)
+		info, err := st.CopyFile(f.Source, prefix+f.Path, f.Checksum)
 		if err != nil {
 			return err
 		}

@@ -120,8 +120,10 @@ type SourcePackage struct {
 	Premis []SourceFile
 	// Characterization optionally supplies a pre-decoded characterization
 	// report; nil means the build proceeds without format info (ADR-0009).
-	// Fully strict when present: every essence file must have an entry
-	// whose checksum matches the source bytes.
+	// When present, every essence file must have an entry without a
+	// characterizer error and with an MD5. That MD5 is the checksum the
+	// package declares for the file, taken as given: the caller vouches
+	// that the report describes the files (ADR-0032).
 	Characterization characterization.Report
 }
 

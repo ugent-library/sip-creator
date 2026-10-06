@@ -103,7 +103,7 @@ func TestCopyFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	info, err := s.CopyFile(src, "cat.jpg")
+	info, err := s.CopyFile(src, "cat.jpg", "")
 	if err != nil {
 		t.Fatalf("CopyFile: %v", err)
 	}
@@ -115,6 +115,34 @@ func TestCopyFile(t *testing.T) {
 		t.Errorf("Size = %q, want %q", info.Size, "11")
 	}
 	if got := readFile(t, filepath.Join(root, "cat.jpg")); got != "hello world" {
+		t.Errorf("copied content = %q, want %q", got, "hello world")
+	}
+}
+
+// A checksum the caller already holds is reported as given, without one
+// being computed; the bytes are copied all the same.
+func TestCopyFileWithAKnownChecksum(t *testing.T) {
+	root := t.TempDir()
+	s := New(root)
+
+	src := filepath.Join(t.TempDir(), "scan.tif")
+	if err := os.WriteFile(src, []byte("hello world"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Not the MD5 of the bytes: the store must not compute or compare one.
+	const known = "00112233445566778899aabbccddeeff"
+	info, err := s.CopyFile(src, "scan.tif", known)
+	if err != nil {
+		t.Fatalf("CopyFile: %v", err)
+	}
+	if info.Checksum != known {
+		t.Errorf("Checksum = %q, want the known %q", info.Checksum, known)
+	}
+	if info.Size != "11" {
+		t.Errorf("Size = %q, want %q", info.Size, "11")
+	}
+	if got := readFile(t, filepath.Join(root, "scan.tif")); got != "hello world" {
 		t.Errorf("copied content = %q, want %q", got, "hello world")
 	}
 }
@@ -135,7 +163,7 @@ func TestCopyFileKeepsTheModificationTime(t *testing.T) {
 	}
 
 	before := time.Now().Add(-time.Second)
-	info, err := s.CopyFile(src, "scan.tif")
+	info, err := s.CopyFile(src, "scan.tif", "")
 	if err != nil {
 		t.Fatalf("CopyFile: %v", err)
 	}
@@ -170,10 +198,10 @@ func TestCopyFileTruncatesOnRewrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := s.CopyFile(long, "essence.bin"); err != nil {
+	if _, err := s.CopyFile(long, "essence.bin", ""); err != nil {
 		t.Fatalf("CopyFile: %v", err)
 	}
-	if _, err := s.CopyFile(short, "essence.bin"); err != nil {
+	if _, err := s.CopyFile(short, "essence.bin", ""); err != nil {
 		t.Fatalf("CopyFile: %v", err)
 	}
 
@@ -186,7 +214,7 @@ func TestCopyFileMissingSource(t *testing.T) {
 	root := t.TempDir()
 	s := New(root)
 
-	_, err := s.CopyFile(filepath.Join(t.TempDir(), "nope.jpg"), "nope.jpg")
+	_, err := s.CopyFile(filepath.Join(t.TempDir(), "nope.jpg"), "nope.jpg", "")
 	if !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("error = %v, want wrapped os.ErrNotExist", err)
 	}

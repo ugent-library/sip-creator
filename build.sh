@@ -17,9 +17,9 @@
 # the siegfried.json sidecar is written next to the input on every run and
 # examples/ is tracked in git.
 # Requires: go, docker, jq, xmllint. Siegfried (sf) on PATH is recommended:
-# the copy's siegfried.json sidecar is generated each run: the assembler
-# verifies its MD5s against the source bytes, so a stale sidecar is a hard
-# build failure by design (ADR-0009).
+# the copy's siegfried.json sidecar is generated each run, because the
+# build takes its MD5s as the package's checksums without checking them
+# (ADR-0032), so a stale sidecar would put wrong checksums in the package.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -57,7 +57,7 @@ if command -v sf >/dev/null; then
     report="$(cd "$SRC" && sf -hash md5 -json .)"
     printf '%s\n' "$report" > "$SRC/siegfried.json"
 elif [ -f "$SRC/siegfried.json" ]; then
-    echo "warning: sf not on PATH; $SRC/siegfried.json may be stale, and a stale sidecar aborts the build" >&2
+    echo "warning: sf not on PATH; $SRC/siegfried.json may be stale, and its checksums go into the package unchecked" >&2
 else
     echo "warning: sf not on PATH and no $SRC/siegfried.json; building without format info" >&2
 fi

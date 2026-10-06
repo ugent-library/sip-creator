@@ -338,9 +338,12 @@ root, capturing it before writing so `sf` does not scan its own half-written out
 cd ./your-input && report="$(sf -hash md5 -json .)" && printf '%s\n' "$report" > siegfried.json
 ```
 
-Without the report, the package has no format info; checksums and sizes are always
-computed. With it, the build stops when the report is malformed, made without
-`-hash md5`, misses a content file, or no longer matches a file's checksum.
+Without the report, the package has no format info, and the tool computes every
+checksum itself. With it, the build stops when the report is malformed, made without
+`-hash md5`, or misses a content file. The report's MD5 is the checksum the package
+declares for each file it covers, taken as given and not checked against the file
+(ADR-0032): the build is much faster, and keeping the report true to the files is up to
+you. Generate it right before the build, from the folder as you will build it.
 
 ## Go library
 

@@ -53,13 +53,17 @@ func (s *Store) MkdirAll(rel string) error {
 	return nil
 }
 
-// CopyFile streams src to rel, computing the MD5 during the copy so large
-// essence files are never buffered in memory, and reads the size from the
-// written file. An existing file is truncated. The copy keeps the source's
-// modification time, as cp -p does: it is the one date the producer's file
-// system holds about the file, and it cannot be recovered once lost. Info
-// still reports the time the copy was written as Created.
-func (s *Store) CopyFile(src, rel string) (Info, error) {
+// CopyFile streams src to rel, so large essence files are never buffered
+// in memory, and reads the size from the written file. An existing file is
+// truncated. knownMD5 is the file's MD5 as the caller already holds it,
+// such as from a characterization report: when set, the copy computes no
+// checksum and Info reports knownMD5 as given, because MD5 on one core is
+// slower than the disk; when empty, the MD5 is computed during the copy.
+// The copy keeps the source's modification time, as cp -p does: it is the
+// one date the producer's file system holds about the file, and it cannot
+// be recovered once lost. Info still reports the time the copy was written
+// as Created.
+func (s *Store) CopyFile(src, rel, knownMD5 string) (Info, error) {
 	in, err := os.Open(src)
 	if err != nil {
 		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
@@ -76,8 +80,8 @@ func (s *Store) CopyFile(src, rel string) (Info, error) {
 		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
 	}
 
-	hash := md5.New()
-	if _, err := io.Copy(io.MultiWriter(out, hash), in); err != nil {
+	checksum, err := copyBytes(out, in, knownMD5)
+	if err != nil {
 		out.Close()
 		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
 	}
@@ -101,9 +105,23 @@ func (s *Store) CopyFile(src, rel string) (Info, error) {
 
 	return Info{
 		Size:     strconv.FormatInt(file.Size(), 10),
-		Checksum: hex.EncodeToString(hash.Sum(nil)),
+		Checksum: checksum,
 		Created:  created.Format(time.RFC3339Nano),
 	}, nil
+}
+
+// copyBytes copies in to out and returns the MD5 of the bytes copied, or
+// knownMD5 as given when it is set, without computing one.
+func copyBytes(out io.Writer, in io.Reader, knownMD5 string) (string, error) {
+	if knownMD5 != "" {
+		_, err := io.Copy(out, in)
+		return knownMD5, err
+	}
+	hash := md5.New()
+	if _, err := io.Copy(io.MultiWriter(out, hash), in); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 // WriteMetadata renders a document to memory before writing it to rel, so

@@ -4,6 +4,10 @@ Status: **Accepted** (2026-08-18, with the [characterization-sidecar plan](../ar
 Supersedes [ADR-0006](0006-format-identification-optional.md) **in part**: the
 capability (format enrichment) and its optionality stand; the mechanism (exec
 behind an `Identificator` interface) is replaced.
+**Superseded in part by [ADR-0032](0032-the-report-checksum-is-taken-as-given.md)**
+(2026-10-06): the report's MD5 is the checksum the package declares, taken
+as given; the build no longer reads the files to check it, so the MD5
+binding and the double read below are retired. The rest stands.
 **Note, 2026-10-06:** `Definition.CharacterizationSource` and
 `DescriptiveSource` were removed on 2026-08-19, when the builder became
 purely data-fed: `siegfried.json` is a reserved name the CLI's input reader

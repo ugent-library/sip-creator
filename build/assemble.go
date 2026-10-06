@@ -1,10 +1,7 @@
 package build
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
-	"io"
 	"log/slog"
 	"maps"
 	"os"
@@ -57,11 +54,7 @@ func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {
 	}
 	pkg.SchemaFiles = schemaFiles
 
-	docs, err := b.assembleDocumentationNodes(source.Documentation, source.Characterization)
-	if err != nil {
-		return nil, err
-	}
-	pkg.DocumentationFiles = docs
+	pkg.DocumentationFiles = b.assembleDocumentationNodes(source.Documentation, source.Characterization)
 	received, err := b.assembleReceivedPremis("package", source.Premis)
 	if err != nil {
 		return nil, err
@@ -148,10 +141,10 @@ func schemaFileNodes(names []string) ([]*sip.File, error) {
 
 // assembleDocumentationNodes declares graph nodes for documentation files
 // (package and representation level alike), each Path relative to its
-// container and under documentation/. Unlike essence, documentation needs no characterization
-// entry (ADR-0009), but a present entry's checksum must match: a mismatch
-// proves the report stale.
-func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars characterization.Report) ([]*sip.File, error) {
+// container and under documentation/. Unlike essence, documentation needs
+// no characterization entry (ADR-0009); a present entry gives the file its
+// mime type and its checksum (ADR-0032).
+func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars characterization.Report) []*sip.File {
 	var files []*sip.File
 	for _, src := range sources {
 		f := sip.NewFile()
@@ -160,20 +153,16 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 		f.Path = "documentation/" + src.Path
 		f.Mime = "application/octet-stream" // unknown; a report entry may refine it below
 
-		if chars != nil {
-			if rec, ok := chars[src.Key]; ok && rec.MD5 != "" {
-				if err := verifyReportMD5(src.Source, rec); err != nil {
-					return nil, err
-				}
-				if rec.Mime != "" {
-					f.Mime = rec.Mime
-				}
+		if rec, ok := chars[src.Key]; ok {
+			f.Checksum = rec.MD5
+			if rec.Mime != "" {
+				f.Mime = rec.Mime
 			}
 		}
 
 		files = append(files, f)
 	}
-	return files, nil
+	return files
 }
 
 // assembleRepresentations turns each supplied representation into a graph
@@ -212,10 +201,10 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 			f.Name = path.Base(src.Path)
 			f.Source = src.Source
 			f.Path = "data/" + src.Path // rep-relative, per File.Path semantics
-			// Characterization is an optional enricher (ADR-0009): the report
-			// asserts formats for SOURCE files, and the MD5 check proves each
-			// record still describes the bytes on disk. Fixity is not its job;
-			// the writer computes that during the streamed copy.
+			// Characterization is optional (ADR-0009). A report gives each
+			// file its format, its mime type and its checksum; the operator
+			// who supplies the report vouches for that checksum, and the
+			// writer then copies the file without computing one (ADR-0032).
 			f.Mime = "application/octet-stream" // unknown; the report may refine it below
 			if source.Characterization != nil {
 				rec, err := b.essenceRecord(source.Characterization, src)
@@ -223,6 +212,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 					return err
 				}
 				f.Format = rec.Format
+				f.Checksum = rec.MD5
 				if rec.Mime != "" {
 					f.Mime = rec.Mime
 				}
@@ -238,11 +228,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 		}
 		r.ReceivedPremisFiles = received
 
-		docs, err := b.assembleDocumentationNodes(sr.Documentation, source.Characterization)
-		if err != nil {
-			return err
-		}
-		r.DocumentationFiles = docs
+		r.DocumentationFiles = b.assembleDocumentationNodes(sr.Documentation, source.Characterization)
 
 		if b.profile.EmitRepresentationPremis {
 			pf := sip.NewFile()
@@ -297,9 +283,9 @@ func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile)
 }
 
 // essenceRecord looks up the file's record and refuses it unless it is
-// present, error-free, and its checksum matches the bytes on disk
-// (ADR-0009): a stale format claim in preservation metadata is worse than
-// none.
+// present, error-free and carries a checksum (ADR-0009). Whether that
+// checksum still describes the file is the operator's judgement about the
+// report, not the build's: the build takes it as given (ADR-0032).
 func (b *Builder) essenceRecord(chars characterization.Report, src SourceFile) (characterization.Record, error) {
 	rec, ok := chars[src.Key]
 	if !ok {
@@ -313,9 +299,6 @@ func (b *Builder) essenceRecord(chars characterization.Report, src SourceFile) (
 	if rec.MD5 == "" {
 		return characterization.Record{}, fmt.Errorf("characterization report carries no checksum for %q; generate it with sf -hash md5 -json", src.Key)
 	}
-	if err := verifyReportMD5(src.Source, rec); err != nil {
-		return characterization.Record{}, err
-	}
 	return rec, nil
 }
 
@@ -327,32 +310,4 @@ func sampleKey(chars characterization.Report) string {
 		return "(the report is empty)"
 	}
 	return fmt.Sprintf("%q", keys[0])
-}
-
-// verifyReportMD5 checks that the report's checksum for src matches the
-// file: the MD5 proves the record still describes these bytes.
-func verifyReportMD5(src string, rec characterization.Record) error {
-	sum, err := md5File(src)
-	if err != nil {
-		return err
-	}
-	if sum != rec.MD5 {
-		return fmt.Errorf("%s changed since the characterization report was generated (file md5 %s, report has %s); regenerate the report", src, sum, rec.MD5)
-	}
-	return nil
-}
-
-// md5File streams the file's MD5; essence can be large.
-func md5File(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	h := md5.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
 }

@@ -13,11 +13,15 @@ type File struct {
 	// Name is the file's basename; for essence, emitted as
 	// premis:originalName.
 	Name string
-	// Checksum, Size, and Created describe the file as written into the
-	// package; the writer back-fills them as the file lands.
+	// Checksum is the file's MD5, hex-encoded. The assembler sets it from a
+	// characterization report when one supplies it, and the writer then
+	// copies the file without computing one; otherwise the writer computes
+	// it from the bytes it writes.
 	Checksum string
-	Size     string
-	Created  string
+	// Size and Created describe the file as written into the package; the
+	// writer back-fills them as the file lands.
+	Size    string
+	Created string
 	// Format is the file's characterization result; nil when no report
 	// was supplied or the report found no match.
 	Format *Format

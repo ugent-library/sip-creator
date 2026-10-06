@@ -275,10 +275,10 @@ func TestAssembleReportMissingEntry(t *testing.T) {
 	}
 }
 
-// With a report, every essence file is read for its checksum during
-// assembly, so a file that is gone ends the build before anything is
-// written, with the file system's error.
-func TestAssembleReportSourceMissing(t *testing.T) {
+// With a report, assembly no longer reads the essence, so a file that is
+// gone ends the build when the writer opens it, with the file system's
+// error, and nothing reaches the destination.
+func TestBuildReportSourceMissing(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
 	in.Characterization = report(t, src)
@@ -286,32 +286,37 @@ func TestAssembleReportSourceMissing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := b.Assemble(in)
+	_, err := b.Build(in)
 	if !errors.Is(err, fs.ErrNotExist) {
-		t.Fatalf("assemble error = %v, want the missing file reported", err)
+		t.Fatalf("build error = %v, want the missing file reported", err)
 	}
 	requireEmpty(t, outDir)
 }
 
-// Changed bytes fail the MD5 check: a stale report must never lend its
-// format claims to different content.
-func TestAssembleReportChecksumMismatch(t *testing.T) {
-	b, in, outDir := newTestBuilder(t, basicDef(t))
+// The report's checksum is the one the package declares, also when the
+// bytes on disk no longer match it: whether a report still describes the
+// files is the operator's judgement, not the build's (ADR-0032). An ingest
+// system that checks fixity rejects such a package.
+func TestAssembleTakesTheReportChecksum(t *testing.T) {
+	b, in, _ := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
 	in.Characterization = report(t, src)
+	reported := in.Characterization[src.Key].MD5
 	if err := os.WriteFile(src.Source, []byte("different bytes now"), 0600); err != nil {
 		t.Fatal(err)
 	}
 
-	_, err := b.Assemble(in)
-	if want := "changed since the characterization report was generated"; err == nil || !strings.Contains(err.Error(), want) {
-		t.Fatalf("assemble error = %v, want %q", err, want)
+	pkg, err := b.Assemble(in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
 	}
-	requireEmpty(t, outDir)
+	if got := pkg.Root.Representations[0].Files[0].Checksum; got != reported {
+		t.Errorf("essence Checksum = %q, want the report's %q", got, reported)
+	}
 }
 
-// A record without a checksum can't be verified against the bytes, so it
-// aborts rather than being trusted.
+// A record without a checksum gives the package nothing to declare, so it
+// aborts: the report was made without -hash md5.
 func TestAssembleReportChecksumless(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
@@ -319,8 +324,6 @@ func TestAssembleReportChecksumless(t *testing.T) {
 		src.Key: {Format: testFormat(), Mime: "image/test"},
 	}
 
-	// An empty checksum would also fail the comparison with the file; the
-	// error must come from the rule on a missing checksum.
 	_, err := b.Assemble(in)
 	if want := `characterization report carries no checksum for "cat.jpg"`; err == nil || !strings.Contains(err.Error(), want) {
 		t.Fatalf("assemble error = %v, want %q", err, want)
@@ -334,7 +337,8 @@ func TestAssembleReportEntryError(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
 	in.Characterization = characterization.Report{
-		// The checksum matches, so only the recorded error can refuse it.
+		// The entry carries a checksum, so only the recorded error can
+		// refuse it.
 		src.Key: {MD5: fileMD5(t, src.Source), Errors: "permission denied"},
 	}
 
@@ -346,7 +350,8 @@ func TestAssembleReportEntryError(t *testing.T) {
 }
 
 // Documentation needs no characterization entry (ADR-0009): no entry is
-// fine, a present entry enriches the mime but its checksum must match.
+// fine, and a present entry gives the file its mime type and its checksum
+// (ADR-0032).
 func TestAssembleDocumentation(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
@@ -375,16 +380,13 @@ func TestAssembleDocumentation(t *testing.T) {
 	if withoutEntry.Mime != "application/octet-stream" {
 		t.Errorf("documentation Mime = %q, want octet-stream without an entry", withoutEntry.Mime)
 	}
+	if want := in.Characterization[manual.Key].MD5; withEntry.Checksum != want {
+		t.Errorf("documentation Checksum = %q, want the report's %q", withEntry.Checksum, want)
+	}
+	if withoutEntry.Checksum != "" {
+		t.Errorf("documentation Checksum = %q, want none until the writer computes it", withoutEntry.Checksum)
+	}
 	requireEmpty(t, outDir)
-
-	// A stale entry for a documentation file still aborts.
-	if err := os.WriteFile(manual.Source, []byte("changed"), 0600); err != nil {
-		t.Fatal(err)
-	}
-	_, err = b.Assemble(in)
-	if want := "manual.txt changed since the characterization report was generated"; err == nil || !strings.Contains(err.Error(), want) {
-		t.Fatalf("assemble error = %v, want %q", err, want)
-	}
 }
 
 // A representation may carry its own descriptive terms: they
@@ -692,7 +694,7 @@ func TestAssembleReceivedPremis(t *testing.T) {
 
 // Representation documentation gets the same treatment as package
 // documentation: nodes under documentation/, no characterization entry
-// required, and a present entry's checksum must match.
+// required, and a present entry gives the file its checksum.
 func TestAssembleRepresentationDocumentation(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
@@ -716,14 +718,15 @@ func TestAssembleRepresentationDocumentation(t *testing.T) {
 	}
 	requireEmpty(t, outDir)
 
-	// A stale entry for a representation's documentation file still aborts.
+	// With a report entry, the file takes the report's checksum.
 	in.Characterization = report(t, in.Representations[0].Files[0], note)
-	if err := os.WriteFile(note.Source, []byte("changed"), 0600); err != nil {
-		t.Fatal(err)
+	pkg, err = b.Assemble(in)
+	if err != nil {
+		t.Fatalf("assemble with a report: %v", err)
 	}
-	_, err = b.Assemble(in)
-	if want := "scan-notes.txt changed since the characterization report was generated"; err == nil || !strings.Contains(err.Error(), want) {
-		t.Fatalf("assemble error = %v, want %q", err, want)
+	got := pkg.Root.Representations[0].DocumentationFiles[0].Checksum
+	if want := in.Characterization[note.Key].MD5; got != want {
+		t.Errorf("Checksum = %q, want the report's %q", got, want)
 	}
 }
 
