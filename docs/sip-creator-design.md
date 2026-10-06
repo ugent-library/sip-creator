@@ -166,4 +166,5 @@ Tracked in [TODO.md](TODO.md):
 
 - **PREMIS events are not modeled.** `sip.Event` is an empty stub.
 - **Essence arrives as file paths, not streams, and fixity cannot be supplied pre-computed.** A program using the library can build a `SourcePackage` without the input folder, but its essence must be files on disk.
+- **On Windows, the final rename of the package or the zip can fail** while a virus scanner holds a just-written file open; the build reports an error and a rerun works.
 - **Not all administrative values are implemented.** [ADR-0010](decisions/0010-config-over-self-describing-input.md) assigns the archival creator, contact persons and a submission agreement reference to configuration; the tool reads and writes none of them yet.

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -170,6 +171,9 @@ func TestZipFillsLocalFileHeaders(t *testing.T) {
 }
 
 func TestZipUnreadableFileReturnsError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not make a file unreadable through its mode bits")
+	}
 	if os.Getuid() == 0 {
 		t.Skip("running as root: file permissions are not enforced")
 	}

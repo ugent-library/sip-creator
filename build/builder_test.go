@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -207,6 +208,9 @@ func TestBuildInvalidSourceWritesNothing(t *testing.T) {
 // A package directory that cannot be created ends the build with the
 // file system's error, which a caller can test for with errors.Is.
 func TestBuildReportsAnUnwritableDestination(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not make a folder read-only through its mode bits")
+	}
 	if os.Getuid() == 0 {
 		t.Skip("running as root: directory permissions are not enforced")
 	}
