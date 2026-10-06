@@ -5,7 +5,9 @@ Status: **Accepted** (2026-09-28). Supersedes in part
 standard is an exported interface on the engine, implemented by each
 profile package, and the set of standards is closed by the registry rather
 than by an unexported field. ADR-0015's descriptive worlds stand; they
-moved.
+moved. **Note, 2026-10-06:** `DescriptionEncoder` below is
+`build.MetadataModel` since 2026-10-02 (ADR-0024), with `ValidateType` in
+place of `Check`.
 
 ## Context
 

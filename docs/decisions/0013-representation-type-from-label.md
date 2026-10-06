@@ -1,6 +1,9 @@
 # 0013 — The eark profile types each representation METS by its label
 
-Status: Accepted (2026-09-03)
+Status: Accepted (2026-09-03). **Note, 2026-10-06:**
+`Definition.RepresentationTypeFromLabel` became `EmitRepresentationType`,
+and the type is the representation's own `Type`, defaulting to its label
+([ADR-0014](0014-representations-csv-strict-when-present.md)).
 
 ## Context
 

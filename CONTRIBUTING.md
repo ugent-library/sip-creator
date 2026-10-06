@@ -98,6 +98,9 @@ Update the docs in the same change as the code:
   [build/example_test.go](build/example_test.go), which pkg.go.dev shows;
 * a changed design: [docs/sip-creator-design.md](docs/sip-creator-design.md), and an ADR
   in [docs/decisions/](docs/decisions/) when the change records a decision;
+* a renamed or removed exported symbol: a dated note under the Status line of every ADR
+  whose decision text names it, giving the current name. ADRs are frozen, so the note is
+  how a reader who greps for the old name finds the new one;
 * a resolved item: remove it from [docs/TODO.md](docs/TODO.md).
 
 [docs/README.md](docs/README.md) explains which document answers which question.

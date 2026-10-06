@@ -2,7 +2,8 @@
 
 Status: **Accepted** (2026-08-21, with the
 [input-convention plan](../archive/input-convention.md); drafted 2026-08-18,
-the I3 cut-over landed 2026-08-19).
+the I3 cut-over landed 2026-08-19). **Note, 2026-10-06:** `sip.Spec` below
+is `sip.MetsDeclaration` since 2026-08-24.
 
 ## Context
 

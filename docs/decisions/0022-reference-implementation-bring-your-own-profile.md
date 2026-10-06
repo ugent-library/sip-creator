@@ -1,8 +1,10 @@
 # 0022 — The library is a reference implementation others can use; an institution brings its own profile
 
-Status: **Proposed** (drafted 2026-09-30; agreed in review the same day
-with the [descriptive-model plan](../archive/descriptive-model.md)'s S5.
-Becomes Accepted when that step ships.)
+Status: **Accepted** (2026-10-01, when the
+[descriptive-model plan](../archive/descriptive-model.md)'s S5 shipped;
+drafted 2026-09-30 and agreed in review the same day). **Note,
+2026-10-06:** `build.DescriptionEncoder` below is `build.MetadataModel`
+since 2026-10-02 ([ADR-0024](0024-the-metadata-model.md)).
 
 ## Context
 

@@ -1,6 +1,6 @@
 # 0007 — Profile families share one writer and select encodings
 
-Status: **Accepted** (2026-07-17, with the [eark-writer plan](../plans/eark-writer.md)). **Superseded in part by [ADR-0015](0015-descriptive-worlds-dc-and-mods.md)** (2026-09-23): the `Family` constant is gone; a profile names its descriptive standard directly on its registry entry. The one-writer rule and the fork triggers below stand. **Revised in part by [ADR-0024](0024-the-metadata-model.md)** (2026-10-02): the dmdSec typing is data on the metadata model (`ModelType`, `ModelTypeVersion`), not on the profile.
+Status: **Accepted** (2026-07-17, with the [eark-writer plan](../plans/eark-writer.md)). **Superseded in part by [ADR-0015](0015-descriptive-worlds-dc-and-mods.md)** (2026-09-23): the `Family` constant is gone; a profile names its descriptive standard directly on its registry entry. The one-writer rule and the fork triggers below stand. **Revised in part by [ADR-0024](0024-the-metadata-model.md)** (2026-10-02): the dmdSec typing is data on the metadata model (`ModelType`, `ModelTypeVersion`), not on the profile. **Note, 2026-10-06:** names the code has changed since: `sip.Spec` is `sip.MetsDeclaration` (2026-08-24), and `metadata.EncodeDC` is the `Encode` method of each profile's metadata model under `profiles/` (ADR-0024).
 
 ## Context
 

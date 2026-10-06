@@ -5,7 +5,8 @@ plan](../archive/metadata-model.md) shipped). Revises in part
 [ADR-0007](0007-profile-families-share-one-writer.md),
 [ADR-0011](0011-closed-descriptive-vocabulary.md),
 [ADR-0021](0021-descriptive-model-follows-its-standard.md) and
-[ADR-0023](0023-cli-input-one-package.md).
+[ADR-0023](0023-cli-input-one-package.md). **Note, 2026-10-06:**
+`input.Document` below is `input.DocumentSpec` since 2026-10-05.
 
 ## Context
 

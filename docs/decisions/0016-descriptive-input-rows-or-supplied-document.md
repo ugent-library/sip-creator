@@ -23,7 +23,9 @@ and the no-identity rule below stand, the essence-path mechanics do not.
 record's copies reach a package through the library's record or a
 supplied `mods.xml`. The CLI no longer hands rows to a `NewDescription`
 on the profile: an adapter per profile on the CLI side builds the
-description.
+description. **Note, 2026-10-06:** the supplied document is
+`build.EncodedDescription` (2026-10-02); `DescriptiveDocument` below is its
+earlier name.
 
 ## Context
 

@@ -5,7 +5,10 @@ meemoo descriptive standard's own behavior, the `swap` function on its
 value in `profiles/descriptive.go`, no longer a `Definition` flag. The
 Simple DC standard has no swap, so the eark profile keeps the producer's
 identifier as decided below; a standard without a swap keeps it, which is
-what the flag's zero value used to guarantee.
+what the flag's zero value used to guarantee. **Note, 2026-10-06:** the
+swap now lives on the metadata model: Meemoo's model in `profiles/meemoo`
+implements the optional `build.IdentifierSwapper` interface, and a model
+that does not implement it keeps the producer's identifier (ADR-0024).
 
 ## Context
 

@@ -22,7 +22,11 @@ statements only, and copies reach a package through the library's record
 or a supplied `mods.xml`. **Extended by
 [ADR-0030](0030-profile-names-by-family.md)** (2026-10-05): profile names carry
 the family and, after a slash, the descriptive standard (`eark/dc`, `eark/mods`,
-`eark/none`) or Meemoo's content profile (`meemoo/basic`).
+`eark/none`) or Meemoo's content profile (`meemoo/basic`). **Note, 2026-10-06:** names
+the code has changed since: `build.DescriptionEncoder` is
+`build.MetadataModel` (2026-10-02, ADR-0024); `sip.Description` no longer
+has `LocalIdentifier` (2026-09-28), it has `Validate` and
+`ValidateRequired`; `ResolveKey` is gone (ADR-0018).
 
 ## Context
 
