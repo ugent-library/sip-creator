@@ -32,8 +32,8 @@ See [Profiles](#profiles) for what each one requires.
   `create`), reporting every violation of the input rules at once.
 * Optional PRONOM format identification based on a pre-computed
   [Siegfried](https://github.com/richardlehane/siegfried) report (see Format characterization).
-* Profiles of your own for other archives or descriptive standards (see
-  [Bringing your own profile](#bringing-your-own-profile)).
+* A profile of your own, for a program that embeds the library (see
+  [Profiles of your own](#profiles-of-your-own)).
 
 ## Profiles
 
@@ -459,11 +459,12 @@ Set `Characterization` on the `SourcePackage` to add format info. Decode a Siegf
 report with `characterization.DecodeSiegfried`; the library verifies it as strictly as
 the command-line tool does (see [Format characterization](#format-characterization)).
 
-### Bringing your own profile
+### Profiles of your own
 
 The three profiles above are written the same way a profile of your own would be, and
-the engine imports none of them. An institution with its own descriptive standard writes
-a Go package with three parts:
+the engine imports none of them. A program that embeds the library can keep a profile
+of its own, for a descriptive standard the three do not cover, in a Go package with
+three parts:
 
 * a description type implementing `sip.Description`, whose `Validate` and
   `ValidateRequired` are the rules of your standard;

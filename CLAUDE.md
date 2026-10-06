@@ -10,7 +10,7 @@ SIP Creator is a Go library and CLI that builds Submission Information Packages 
 
 ## Audience
 
-Digital-preservation staff at UGent Library, preparing SIPs for Meemoo and for UGent's RODA. The code is also a reference implementation for other institutions, which bring their own profile for their own descriptive standard ([ADR-0022](docs/decisions/0022-reference-implementation-bring-your-own-profile.md)). Use the vocabulary of the Meemoo spec and OAIS: SIP, essence, representation, intellectual entity, fixity, descriptive and preservation metadata.
+Digital-preservation staff at UGent Library, preparing SIPs for Meemoo and for UGent's RODA. The library serves UGent's use first; a program that embeds it can keep a profile of its own, but the docs promise nothing to other institutions ([ADR-0033](docs/decisions/0033-ugent-first-profiles-of-your-own.md)). Use the vocabulary of the Meemoo spec and OAIS: SIP, essence, representation, intellectual entity, fixity, descriptive and preservation metadata.
 
 ## System shape
 

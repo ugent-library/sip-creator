@@ -2,7 +2,12 @@
 
 Status: **Accepted** (2026-10-01, when the
 [descriptive-model plan](../archive/descriptive-model.md)'s S5 shipped;
-drafted 2026-09-30 and agreed in review the same day). **Note,
+drafted 2026-09-30 and agreed in review the same day). **Superseded in
+part by [ADR-0033](0033-ugent-first-profiles-of-your-own.md)** (2026-10-06):
+the library serves UGent Library first and is no longer a reference
+implementation for other institutions; the MODS model's vocabulary is
+decided again when the mods-coverage plan resumes. The extension point and
+the typed constants stand. **Note,
 2026-10-06:** `build.DescriptionEncoder` below is `build.MetadataModel`
 since 2026-10-02 ([ADR-0024](0024-the-metadata-model.md)). **Note,
 2026-10-06:** a profile brings its own XSDs as well: `MetadataModel.Schemas`

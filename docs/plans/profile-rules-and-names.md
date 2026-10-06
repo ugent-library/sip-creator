@@ -126,7 +126,7 @@ lines on the three in ADR-0017's form.
   `def.Model != nil` for now.
 - Docs: design doc Profiles ("the one behavior a profile brings is its metadata model, or
   none"), Build lifecycle (drop "refuses a profile without a metadata model"; the Check
-  paragraph), Code organization; README "Bringing your own profile": a profile without
+  paragraph), Code organization; README "Profiles of your own": a profile without
   descriptive metadata leaves `Model` nil.
 
 ### Step 4. The input reader without a model

@@ -9,6 +9,14 @@ records why: the eark-mods profile is plain E-ARK with a MODS 3.7 writer,
 and as a reference implementation the writer speaks MODS. Update this
 line as steps land.*
 
+*Note, 2026-10-06: [ADR-0033](../decisions/0033-ugent-first-profiles-of-your-own.md)
+drops the reference-implementation role, and with it this plan's premise
+that MODS's own words are needed because other institutions would
+otherwise translate UGent's twice. Before the plan resumes, decide again
+whether the model speaks MODS (`TitleInfo`, `ShelfLocator`) or UGent's
+catalogue words (call number, barcode). The typed constants for values a
+caller chooses stand either way.*
+
 ## Context
 
 `earkmods.Record` is typed by field since ADR-0021, but its three fields
