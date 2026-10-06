@@ -224,9 +224,10 @@ func (catalogueModel) Schemas() []build.Schema {
 	return []build.Schema{{Name: "catalogue.xsd", Content: []byte(catalogueSchema)}}
 }
 
-// ModelType is OTHER: the METS MDTYPE vocabulary does not list the
-// institution's own format.
-func (catalogueModel) ModelType() string        { return "OTHER" }
+// ModelType names the institution's own format. The METS MDTYPE
+// vocabulary does not list it, so the METS dmdSec records it as MDTYPE
+// OTHER with the name in OTHERMDTYPE.
+func (catalogueModel) ModelType() string        { return "catalogue-record" }
 func (catalogueModel) ModelTypeVersion() string { return "" }
 
 // Build a package with a profile of your own: a description type, a
@@ -276,10 +277,13 @@ func Example_ownProfile() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	description := pkg.Root.DescriptionFile
+	fmt.Println(description.Path, description.MDType, description.OtherMDType)
 	for _, sf := range pkg.SchemaFiles {
 		fmt.Println(sf.Path)
 	}
 	// Output:
+	// metadata/descriptive/record.xml OTHER catalogue-record
 	// schemas/DILCISExtensionMETS.xsd
 	// schemas/DILCISExtensionSIPMETS.xsd
 	// schemas/catalogue.xsd

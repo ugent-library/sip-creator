@@ -9,6 +9,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"text/template"
 	"time"
@@ -21,6 +22,26 @@ import (
 // xsi:schemaLocation: METS 1.12, xlink and the two E-ARK extension schemas.
 // A profile that writes METS ships them in its package's schemas/ dir.
 var Schemas = []string{"mets1_12.xsd", "xlink.xsd", "DILCISExtensionMETS.xsd", "DILCISExtensionSIPMETS.xsd"}
+
+// mdTypes is the METS 1.12 MDTYPE vocabulary, the closed list of values
+// mets1_12.xsd allows for mdRef/@MDTYPE. E-ARK CSIP fixes the METS
+// version, so the list changes only with a new CSIP version.
+var mdTypes = []string{
+	"MARC", "MODS", "EAD", "DC", "NISOIMG", "LC-AV", "VRA", "TEIHDR", "DDI",
+	"FGDC", "LOM", "PREMIS", "PREMIS:OBJECT", "PREMIS:AGENT", "PREMIS:RIGHTS",
+	"PREMIS:EVENT", "TEXTMD", "METSRIGHTS", "ISO 19115:2003 NAP", "EAC-CPF",
+	"LIDO", "OTHER",
+}
+
+// MDType returns how METS records a metadata format named format: a name
+// the MDTYPE vocabulary lists, spelled as it spells it, is the MDTYPE
+// itself, and any other name is MDTYPE OTHER with the name as OTHERMDTYPE.
+func MDType(format string) (mdType, otherMDType string) {
+	if slices.Contains(mdTypes, format) {
+		return format, ""
+	}
+	return "OTHER", format
+}
 
 // identifier mints a fresh uuid-<uuid> METS ID. The templates mint shared
 // IDs ($fileGrpID, $docGrpID, $SCHEMAID, $DOCID) once, up front, so the
@@ -113,7 +134,7 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
   {{- with .DescriptionFile }}
 
   <dmdSec ID="{{ esc .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
-    <mdRef LOCTYPE="URL" MDTYPE="{{ esc .MDType }}"{{ with .MDTypeVersion }} MDTYPEVERSION="{{ esc . }}"{{ end }} xlink:type="simple" xlink:href="{{ href .Path }}" MIMETYPE="{{ esc .Mime }}" SIZE="{{ esc .Size }}" CREATED="{{ esc .Created }}" CHECKSUM="{{ esc .Checksum }}" CHECKSUMTYPE="MD5" />
+    <mdRef LOCTYPE="URL" MDTYPE="{{ esc .MDType }}"{{ with .OtherMDType }} OTHERMDTYPE="{{ esc . }}"{{ end }}{{ with .MDTypeVersion }} MDTYPEVERSION="{{ esc . }}"{{ end }} xlink:type="simple" xlink:href="{{ href .Path }}" MIMETYPE="{{ esc .Mime }}" SIZE="{{ esc .Size }}" CREATED="{{ esc .Created }}" CHECKSUM="{{ esc .Checksum }}" CHECKSUMTYPE="MD5" />
   </dmdSec>
   {{- end }}
   {{- with .PremisFiles }}
@@ -198,7 +219,7 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
   <!-- ref to descriptive metadata about IE -->
   {{- range .DescriptiveFiles }}
   <dmdSec ID="{{ esc .Identifier }}" CREATED="{{ now }}" STATUS="CURRENT">
-    <mdRef LOCTYPE="URL" MDTYPE="{{ esc .MDType }}"{{ with .MDTypeVersion }} MDTYPEVERSION="{{ esc . }}"{{ end }} xlink:type="simple" xlink:href="{{ href .Path }}" MIMETYPE="{{ esc .Mime }}" SIZE="{{ esc .Size }}" CREATED="{{ esc .Created }}" CHECKSUM="{{ esc .Checksum }}" CHECKSUMTYPE="MD5" />
+    <mdRef LOCTYPE="URL" MDTYPE="{{ esc .MDType }}"{{ with .OtherMDType }} OTHERMDTYPE="{{ esc . }}"{{ end }}{{ with .MDTypeVersion }} MDTYPEVERSION="{{ esc . }}"{{ end }} xlink:type="simple" xlink:href="{{ href .Path }}" MIMETYPE="{{ esc .Mime }}" SIZE="{{ esc .Size }}" CREATED="{{ esc .Created }}" CHECKSUM="{{ esc .Checksum }}" CHECKSUMTYPE="MD5" />
   </dmdSec>
   {{- end }}
   {{- with .PremisFiles }}

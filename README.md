@@ -471,8 +471,8 @@ a Go package with three parts:
   description of another type, `Encode`, which writes the document (the profiles here
   use `text/template`), `Schemas`, the XSDs the document points at with their
   contents, and
-  `ModelType` and `ModelTypeVersion`, which name the model as the METS dmdSec types
-  the document (`MDTYPE` and `MDTYPEVERSION`);
+  `ModelType` and `ModelTypeVersion`, which name the document's format and its version
+  for the METS dmdSec (`MDTYPE`, or `OTHERMDTYPE`, and `MDTYPEVERSION`);
 * an exported `build.Definition` naming the model, the document's file name and the
   METS values (`sip.MetsDeclaration`: profile URL, content typing, any agents your
   archive asks for). The engine adds the software agent itself, and `WithSubmitter`
@@ -489,8 +489,9 @@ not need to be added to the registry in `profiles/`: the registry only lists the
 example `Example_ownProfile` in [build/example_test.go](build/example_test.go) builds a
 package with a profile defined entirely outside `profiles/`.
 
-A format the METS `MDTYPE` vocabulary does not list is typed `OTHER`. The METS documents
-cannot name it in `OTHERMDTYPE` yet (see docs/TODO.md).
+`ModelType` returns your format's name. A name the METS `MDTYPE` vocabulary lists, such
+as `DC` or `MODS`, is written as `MDTYPE`; any other name, such as `EBUCore`, is written
+as `MDTYPE="OTHER"` with the name in `OTHERMDTYPE`, as the example shows.
 
 When your profile leaves a value to the program that builds the description, such as the
 `type` of a MODS identifier, offer a fixed set of typed constants rather than free text.

@@ -192,6 +192,56 @@ func TestNewRefusesDefinitionWithoutModel(t *testing.T) {
 	}
 }
 
+// namedFormat is a profile's metadata model with its format name replaced.
+type namedFormat struct {
+	build.MetadataModel
+	name string
+}
+
+func (m namedFormat) ModelType() string { return m.name }
+
+// A model whose format the METS MDTYPE vocabulary does not list gets
+// MDTYPE OTHER, with its format's name in OTHERMDTYPE, on the METS dmdSec
+// that points at its document.
+func TestBuildWritesOtherMDType(t *testing.T) {
+	def := basicDef(t)
+	def.Model = namedFormat{def.Model, "catalogue-record"}
+	b, in, _ := newTestBuilder(t, def)
+
+	pkg, err := b.Build(in)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	mets, err := os.ReadFile(filepath.Join(pkg.Location, "METS.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := `MDTYPE="OTHER" OTHERMDTYPE="catalogue-record"`; !strings.Contains(string(mets), want) {
+		t.Errorf("the package METS lacks %s", want)
+	}
+}
+
+// A format name METS cannot record is refused when the builder is
+// constructed: none at all, since METS requires MDTYPE, or text XML cannot
+// carry.
+func TestNewRefusesAFormatNameMETSCannotRecord(t *testing.T) {
+	for name, tc := range map[string]struct {
+		format, want string
+	}{
+		"no name":          {"", "names no format"},
+		"not text for XML": {"catalogue\x01record", "XML cannot carry"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			def := basicDef(t)
+			def.Model = namedFormat{def.Model, tc.format}
+			_, err := build.New(&build.Config{Profile: def, Destination: t.TempDir()})
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("New error = %v, want %q", err, tc.want)
+			}
+		})
+	}
+}
+
 // A config without a logger builds a package; the progress messages are
 // discarded.
 func TestBuildWithoutLogger(t *testing.T) {

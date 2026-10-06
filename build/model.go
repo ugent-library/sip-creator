@@ -44,12 +44,13 @@ type MetadataModel interface {
 	// returns them here; BundledSchemas returns the ones this module
 	// bundles.
 	Schemas() []Schema
-	// ModelType names the model as METS types a descriptive document, a
-	// value of the METS MDTYPE vocabulary such as DC or MODS. With
-	// ModelTypeVersion it describes the document Encode writes and a
-	// supplied document must match, so it belongs to the model, not to the
-	// profile's METS values: a profile cannot pair a model with another
-	// model's type.
+	// ModelType names the document's format, such as DC, MODS or EBUCore.
+	// A name the METS MDTYPE vocabulary lists, spelled as the vocabulary
+	// spells it, is recorded as MDTYPE; any other name is recorded as
+	// MDTYPE OTHER with the name in OTHERMDTYPE. With ModelTypeVersion it
+	// describes the document Encode writes and a supplied document must
+	// match, so it belongs to the model, not to the profile's METS values:
+	// a profile cannot pair a model with another model's type.
 	ModelType() string
 	// ModelTypeVersion names the version of the model the document
 	// follows, as METS records it in MDTYPEVERSION, such as 3.7 for MODS;

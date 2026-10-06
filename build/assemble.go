@@ -113,7 +113,7 @@ func (b *Builder) descriptionFile() *sip.File {
 	df.Name = b.profile.DocumentName
 	df.Path = "metadata/descriptive/" + df.Name // relative to the METS of its level, per File.Path
 	df.Mime = "text/xml"                        // rendered, or supplied and read as XML
-	df.MDType = b.profile.Model.ModelType()
+	df.MDType, df.OtherMDType = mets.MDType(b.profile.Model.ModelType())
 	df.MDTypeVersion = b.profile.Model.ModelTypeVersion()
 	return df
 }

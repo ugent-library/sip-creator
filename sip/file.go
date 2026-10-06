@@ -49,6 +49,10 @@ type File struct {
 	// MDTypeVersion is the descriptive document's mdRef/@MDTYPEVERSION,
 	// rendered only when set.
 	MDTypeVersion string
+	// OtherMDType is the descriptive document's mdRef/@OTHERMDTYPE, the
+	// name of a format the MDTYPE vocabulary does not list; set only when
+	// MDType is OTHER, and rendered only when set.
+	OtherMDType string
 	// Representation is the owning representation; nil for package-level
 	// files.
 	Representation *Representation

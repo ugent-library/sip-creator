@@ -37,10 +37,14 @@ type Builder struct {
 }
 
 // New returns a builder for the config's profile. A profile without a
-// metadata model is refused here, before any build.
+// metadata model, or whose model names no format or one METS cannot
+// record, is refused here, before any build.
 func New(config *Config) (*Builder, error) {
 	if config.Profile.Model == nil {
 		return nil, fmt.Errorf("profile %q names no metadata model; set the definition's Model", config.Profile.Name)
+	}
+	if err := validateModelType(config.Profile.Model.ModelType()); err != nil {
+		return nil, fmt.Errorf("profile %q: %w", config.Profile.Name, err)
 	}
 	logger := config.Logger
 	if logger == nil {
@@ -51,6 +55,19 @@ func New(config *Config) (*Builder, error) {
 		destination: config.Destination,
 		logger:      logger,
 	}, nil
+}
+
+// validateModelType returns why a metadata model's format name cannot be
+// recorded in METS: METS requires MDTYPE, so the name must not be empty,
+// and it must be text the METS document can carry.
+func validateModelType(name string) error {
+	if name == "" {
+		return errors.New("the metadata model names no format; ModelType must return one, such as DC or MODS")
+	}
+	if err := ValidateXMLText(name); err != nil {
+		return fmt.Errorf("the metadata model's format name: %w", err)
+	}
+	return nil
 }
 
 // Build validates the source package, assembles the complete package graph
