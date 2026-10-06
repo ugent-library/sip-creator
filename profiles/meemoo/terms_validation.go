@@ -39,28 +39,19 @@ func validateTerm(t sip.Term) error {
 // profile).
 const RequiredLang = "nl"
 
-// Validate checks every term, the one-identifier rule, and Meemoo's own
-// rules: the elements' cardinality limits and a Dutch entry wherever a
-// language-tagged element appears. Every finding is reported, joined into
-// one error, so a producer corrects a document in one round; a finding
-// about one term is a *sip.TermError naming the term's position. The
-// identifier rule stands on its own because the local identifier is an
-// identity, and two of them is an ambiguity no consumer can resolve; the
-// table also lists the identifier as `once`, and that overlap is
-// deliberate.
+// Validate checks every term and Meemoo's own rules: the elements'
+// cardinality limits and a Dutch entry wherever a language-tagged element
+// appears. Every finding is reported, joined into one error, so a producer
+// corrects a document in one round; a finding about one term is a
+// *sip.TermError naming the term's position. The cardinality table lists
+// the identifier as once, so a second identifier is reported there: unlike
+// the eark profile, this one needs no identifier rule of its own.
 func (t Terms) Validate() error {
 	var errs []error
-	identifiers := 0
 	for i, term := range t {
 		if err := validateTerm(term); err != nil {
 			errs = append(errs, &sip.TermError{Index: i, Err: err})
 		}
-		if term.Key == identifierElement {
-			identifiers++
-		}
-	}
-	if identifiers > 1 {
-		errs = append(errs, fmt.Errorf("%s appears %d times; give exactly one", identifierElement, identifiers))
 	}
 	errs = append(errs, t.validateCardinality(), t.validateRequiredLang(RequiredLang))
 	return errors.Join(errs...)
