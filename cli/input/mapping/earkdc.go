@@ -5,7 +5,7 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// EarkDC is the eark profile's mapping: the fifteen Simple Dublin Core
+// EarkDC is the eark/dc profile's mapping: the fifteen Simple Dublin Core
 // elements, the table in profiles/earkdc. The terms become earkdc.Terms
 // unchanged; their Validate decides which keys exist and what a term may
 // say.

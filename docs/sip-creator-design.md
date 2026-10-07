@@ -4,9 +4,9 @@ SIP Creator is a Go library and CLI that builds a Submission Information Package
 
 | Profile | Package | Descriptive metadata | E-ARK SIP version |
 |---|---|---|---|
-| `basic` | [Meemoo SIP 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) basic content profile (the stable version; 2.0 and 2.1 are release candidates) | Meemoo's Dublin Core terms and schema.org (`dc+schema.xml`) | 2.0.4 |
-| `eark` | plain E-ARK SIP | Simple Dublin Core (`dc.xml`) | 2.2.0 |
-| `eark-mods` | plain E-ARK SIP | [MODS 3.7](https://www.loc.gov/standards/mods/) (`mods.xml`) | 2.2.0 |
+| `meemoo/basic` | [Meemoo SIP 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) basic content profile (the stable version; 2.0 and 2.1 are release candidates) | Meemoo's Dublin Core terms and schema.org (`dc+schema.xml`) | 2.0.4 |
+| `eark/dc` | plain E-ARK SIP | Simple Dublin Core (`dc.xml`) | 2.2.0 |
+| `eark/mods` | plain E-ARK SIP | [MODS 3.7](https://www.loc.gov/standards/mods/) (`mods.xml`) | 2.2.0 |
 
 The BagIt envelope Meemoo's transfer requires is out of scope ([ADR-0008](decisions/0008-bag-layer-out-of-scope.md)): bag the package directory with a reference BagIt implementation.
 
@@ -37,7 +37,7 @@ uuid-<uuid>/
   METS.xml                     package METS
   metadata/
     descriptive/
-      dc+schema.xml            the descriptive document: dc.xml under eark, mods.xml under eark-mods
+      dc+schema.xml            the descriptive document: dc.xml under eark/dc, mods.xml under eark/mods
     preservation/
       premis.xml               package PREMIS (basic only)
       ...                      received PREMIS from the input's premis/ folder
@@ -48,7 +48,7 @@ uuid-<uuid>/
         ...                    the essence
       metadata/
         descriptive/
-          dc.xml               optional, eark profiles only: a description of this version (mods.xml under eark-mods)
+          dc.xml               optional, eark profiles only: a description of this version (mods.xml under eark/mods)
         preservation/
           premis.xml           representation PREMIS (basic only)
           ...                  received PREMIS
@@ -62,7 +62,7 @@ uuid-<uuid>/
 
 A descriptive document the producer supplied as a file lands at the same path as a generated one, copied as it is.
 
-The CLI zips the directory **uncompressed** (`zip.Store`) to `dest/<identifier>.zip`, unless `--no-zip` is given. Every file copied into the package keeps the modification time of its source, as `cp -p` does, because it is the one date the producer's file system holds and it cannot be recovered later; a generated document has the build time. Each zip entry carries the modification time of its file in the package directory, as both MS-DOS date fields and an Info-ZIP extended timestamp, so the producer's dates survive the zip. METS `CREATED` is a different date: when the file was written into the package, which is what E-ARK CSIP defines it as. The zip is written to a temporary file next to it and renamed when complete, so `<identifier>.zip` only ever names a whole zip; a zip that already exists is refused, never replaced ([ADR-0031](decisions/0031-final-names-hold-complete-output.md)). Under the eark profiles the zip is the deliverable; under `basic` the deliverable is the package directory in a BagIt bag, which this tool does not produce.
+The CLI zips the directory **uncompressed** (`zip.Store`) to `dest/<identifier>.zip`, unless `--no-zip` is given. Every file copied into the package keeps the modification time of its source, as `cp -p` does, because it is the one date the producer's file system holds and it cannot be recovered later; a generated document has the build time. Each zip entry carries the modification time of its file in the package directory, as both MS-DOS date fields and an Info-ZIP extended timestamp, so the producer's dates survive the zip. METS `CREATED` is a different date: when the file was written into the package, which is what E-ARK CSIP defines it as. The zip is written to a temporary file next to it and renamed when complete, so `<identifier>.zip` only ever names a whole zip; a zip that already exists is refused, never replaced ([ADR-0031](decisions/0031-final-names-hold-complete-output.md)). Under the eark profiles the zip is the deliverable; under `meemoo/basic` the deliverable is the package directory in a BagIt bag, which this tool does not produce.
 
 ## Metadata
 
@@ -85,11 +85,11 @@ Each model lives in its profile's package ([ADR-0015](decisions/0015-descriptive
 
 **MODS 3.7** (`profiles/earkmods`): one bibliographic record with a local identifier, titles per language, and the library's physical copies as items (call number, optional barcode, optional volume or issue), written as one `location/holdingSimple`. Copies belong on the package-level record, because a copy is never a representation ([ADR-0015](decisions/0015-descriptive-worlds-dc-and-mods.md)). A further MODS element is a field on the record, a template line, a key in the CLI's mapper and a line in the input spec.
 
-**Supplied documents.** Under the eark profiles a description can also be a finished document supplied as a file (`build.EncodedDescription`, [ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md)). The build checks only its root element (`simpledc` without namespace; `mods:mods` in the MODS v3 namespace with `version="3.7"`) and copies it as it is, computing fixity on the way. Schema validity stays with the validators downstream ([ADR-0003](decisions/0003-validation-stays-external.md)). `basic` takes no supplied document, because its document must carry the identifier the build mints. The input reader reports a `dc+schema.xml` in a basic folder instead of packaging it as content.
+**Supplied documents.** Under the eark profiles a description can also be a finished document supplied as a file (`build.EncodedDescription`, [ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md)). The build checks only its root element (`simpledc` without namespace; `mods:mods` in the MODS v3 namespace with `version="3.7"`) and copies it as it is, computing fixity on the way. Schema validity stays with the validators downstream ([ADR-0003](decisions/0003-validation-stays-external.md)). `meemoo/basic` takes no supplied document, because its document must carry the identifier the build mints. The input reader reports a `dc+schema.xml` in a basic folder instead of packaging it as content.
 
 ### Preservation metadata
 
-`premis.xml` at package and representation level ([PREMIS](https://www.loc.gov/standards/premis/) 3.0), written by `encoders/premis`: object identifiers, fixity, format registry entries, and the relationships between entity, representations and files (`represents`, `is represented by`, `includes`, `is included in`). Only `basic` writes PREMIS. The PREMIS documents point `xsi:schemaLocation` at the remote `https://www.loc.gov/standards/premis/premis.xsd`, as Meemoo SIP 1.2 requires, so the package ships no PREMIS schema.
+`premis.xml` at package and representation level ([PREMIS](https://www.loc.gov/standards/premis/) 3.0), written by `encoders/premis`: object identifiers, fixity, format registry entries, and the relationships between entity, representations and files (`represents`, `is represented by`, `includes`, `is included in`). Only `meemoo/basic` writes PREMIS. The PREMIS documents point `xsi:schemaLocation` at the remote `https://www.loc.gov/standards/premis/premis.xsd`, as Meemoo SIP 1.2 requires, so the package ships no PREMIS schema.
 
 ### Structural metadata
 
@@ -99,11 +99,11 @@ Each model lives in its profile's package ([ADR-0015](decisions/0015-descriptive
 
 A profile is data: a `build.Definition`, exported by the profile's package under `profiles/` and listed by name in the registry (`profiles.Get`, `profiles.Names`). The fields are documented on the type. The one behavior a profile brings is its metadata model; everything else is a value: the descriptive document's file name, whether the package carries PREMIS and representation types, the profile's rules on representations, and the METS values. All profiles share one writer ([ADR-0007](decisions/0007-profile-families-share-one-writer.md)), and the engine imports no profile ([ADR-0018](decisions/0018-engine-and-profile-packages.md)). A further Meemoo content profile (such as material artwork or newspapers) is a definition in a profile package and one registry line.
 
-`Definition.ValidateSource` checks the profile's rules on a source package. Under `basic` they allow exactly one representation (a maximum of one, with the one every package needs) and no description below the package level, as Meemoo SIP 1.2's basic profile requires.
+`Definition.ValidateSource` checks the profile's rules on a source package. Under `meemoo/basic` they allow exactly one representation (a maximum of one, with the one every package needs) and no description below the package level, as Meemoo SIP 1.2's basic profile requires.
 
 The software agent is not part of the profile: E-ARK CSIP requires every package to name the software that built it, so the engine adds a `CREATOR` agent of type `SOFTWARE`, named SIP Creator, first in every package METS. Its version is the module version Go stamps into the binary: the tag of a tagged `go install`, otherwise a pseudo-version carrying the commit, with `+dirty` when the working tree had uncommitted changes.
 
-The submitting organization is not part of the profile, because one profile serves every organization that uses it. `Definition.WithSubmitter(name, orID)` returns a copy with the organization as a `CREATOR` agent; under `basic` it requires the organization's Meemoo OR-id as well. The CLI reads both from `SIP_SUBMITTER_*`; a program using the library passes them as arguments.
+The submitting organization is not part of the profile, because one profile serves every organization that uses it. `Definition.WithSubmitter(name, orID)` returns a copy with the organization as a `CREATOR` agent; under `meemoo/basic` it requires the organization's Meemoo OR-id as well. The CLI reads both from `SIP_SUBMITTER_*`; a program using the library passes them as arguments.
 
 ## Build lifecycle
 
@@ -131,7 +131,7 @@ The submitting organization is not part of the profile, because one profile serv
 
 - **`sip/`**: the domain model as plain data: the package graph, the `Description` interface each profile's description type implements, the record status vocabulary and the identifier format. It does no I/O, no validation and imports no profile, so templates, the engine and every profile can share it. Its fields are set by the assembler, which keeps the graph's invariants.
 - **`build/`**: the library's face and the engine. Everything a program using the library works with lives here: the definition of a profile, the metadata model interface, the source package and its validation, the builder. The engine runs the check and the two phases described under [Build lifecycle](#build-lifecycle) and imports no profile.
-- **`profiles/`**: the registry the CLI uses for `--profile`, and one package per profile (`meemoo` for `basic`, `earkdc` for `eark`, `earkmods` for `eark-mods`). A profile package holds everything that needs its concrete description type: the type and its rules, the template, the list of XSDs its document points at, and the exported definition. The in-tree profiles take their XSDs from the bundle in `schemas/` (`build.BundledSchemas`).
+- **`profiles/`**: the registry the CLI uses for `--profile`, and one package per profile (`meemoo` for `meemoo/basic`, `earkdc` for `eark/dc`, `earkmods` for `eark/mods`). A profile package holds everything that needs its concrete description type: the type and its rules, the template, the list of XSDs its document points at, and the exported definition. The in-tree profiles take their XSDs from the bundle in `schemas/` (`build.BundledSchemas`).
 - **`encoders/`**: the METS and PREMIS documents, rendered from the graph with `text/template` ([ADR-0002](decisions/0002-xml-via-text-template.md)). Every profile difference arrives as data. The templates escape every value they read from the graph and percent-encode every `xlink:href`, so file names, labels and agent names may hold any character XML can carry; `build.ValidateXMLText` refuses the rest before anything is written ([ADR-0028](decisions/0028-encoders-escape-every-value.md)). METS elements that describe a graph node carry that node's identifier, so METS and PREMIS agree on which file is which; other METS IDs are minted per render. `encoders/xmldoc` reads the root element of a well-formed document and is the tool's only XML reader.
 - **`store/`**: writes files into the package directory, by package-relative path. A copy computes its checksum as it streams, unless the caller already holds one, and reads its size from the written file; a rendered document is written only when the template succeeds; every write replaces what was there.
 - **`schemas/`**: the XSDs the METS documents and the in-tree profiles need, embedded in the binary. A package ships only those its documents point at. A profile outside this module supplies its own XSDs; the build checks each name and refuses empty contents or two different schemas under one name.
@@ -160,7 +160,7 @@ The library is meant to be embedded in systems that automate ingest workflows, w
 
 ## Validation
 
-Generated packages are validated externally with commons-ip, the E-ARK CSIP reference validator; CSIP rules are not reimplemented as Go tests ([ADR-0003](decisions/0003-validation-stays-external.md), [ADR-0005](decisions/0005-dockerized-validation-and-html-reporting.md)). Each profile is validated against its own E-ARK SIP version: `basic` against 2.0.4, whose profile URL Meemoo 1.2 requires, and the eark profiles against 2.2.0. commons-ip does not validate the descriptive documents the METS points at, so every `mods.xml`, `dc.xml` and `dc+schema.xml` is also validated with xmllint against the schema the package ships for it. Meemoo's `descriptive_basic.xsd` checks element names only: Meemoo SIP 1.2's cardinality and required elements are the library's checks, and EDTF date syntax is checked by neither ([TODO.md](TODO.md)). Go tests cover what the validator cannot see: internal contracts and failure paths, such as fixity in the store, every reference in a built package naming a file with its size and checksum, assembly writing nothing to disk, the refusals of supplied documents, the input reader's violations, and each profile's template agreeing with its XSD list. [CONTRIBUTING.md](../CONTRIBUTING.md) has the commands.
+Generated packages are validated externally with commons-ip, the E-ARK CSIP reference validator; CSIP rules are not reimplemented as Go tests ([ADR-0003](decisions/0003-validation-stays-external.md), [ADR-0005](decisions/0005-dockerized-validation-and-html-reporting.md)). Each profile is validated against its own E-ARK SIP version: `meemoo/basic` against 2.0.4, whose profile URL Meemoo 1.2 requires, and the eark profiles against 2.2.0. commons-ip does not validate the descriptive documents the METS points at, so every `mods.xml`, `dc.xml` and `dc+schema.xml` is also validated with xmllint against the schema the package ships for it. Meemoo's `descriptive_basic.xsd` checks element names only: Meemoo SIP 1.2's cardinality and required elements are the library's checks, and EDTF date syntax is checked by neither ([TODO.md](TODO.md)). Go tests cover what the validator cannot see: internal contracts and failure paths, such as fixity in the store, every reference in a built package naming a file with its size and checksum, assembly writing nothing to disk, the refusals of supplied documents, the input reader's violations, and each profile's template agreeing with its XSD list. [CONTRIBUTING.md](../CONTRIBUTING.md) has the commands.
 
 ## Known gaps
 

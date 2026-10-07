@@ -3,7 +3,7 @@
 # Normalizes run-varying values, then diffs; exits non-zero on any difference.
 #
 # usage: reference-diff.sh <ref-pkg-dir> <new-pkg-dir>
-#   e.g. reference-diff.sh tmp/reference/pkg basic-uuid/uuid-*/
+#   e.g. reference-diff.sh tmp/reference/meemoo/basic/pkg meemoo-basic-uuid/uuid-*/
 #
 # Normalized (legitimately different on every run):
 #   - UUIDs, mapped to uuid-1, uuid-2, ... in first-seen order per document,

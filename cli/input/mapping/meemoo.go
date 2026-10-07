@@ -15,7 +15,7 @@ import (
 // is decided by the terms' Validate.
 type Meemoo struct{}
 
-// meemooElements maps each key of description.csv under basic onto the
+// meemooElements maps each key of description.csv under meemoo/basic onto the
 // element it states, in the input specification's table order.
 var meemooElements = map[string]string{
 	"identifier":   "dcterms:identifier",
@@ -54,7 +54,7 @@ func (Meemoo) Map(terms []sip.Term) (sip.Description, []error) {
 		out[i] = t
 		element, ok := meemooElements[t.Key]
 		if !ok {
-			errs = append(errs, &sip.TermError{Index: i, Err: fmt.Errorf("unknown key %q: not a key of the basic profile; see the supported keys in the input specification", t.Key)})
+			errs = append(errs, &sip.TermError{Index: i, Err: fmt.Errorf("unknown key %q: not a key of the %s profile; see the supported keys in the input specification", t.Key, meemoo.Definition.Name)})
 			continue
 		}
 		out[i].Key = element

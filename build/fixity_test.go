@@ -32,9 +32,9 @@ func TestBuildReferencesMatchDisk(t *testing.T) {
 		description    sip.Description
 		repDescription sip.Description
 	}{
-		{"basic", basicDef(t), testDescription(), nil},
-		{"eark", earkDef(t), identityTerms(), earkdc.Terms{{Key: "rights", Value: "CC BY 4.0"}}},
-		{"eark-mods", earkmodsDef(t), identityRecord(), earkmods.Record{Titles: []earkmods.Title{{Value: "PDF-versie", Lang: "nl"}}}},
+		{"meemoo/basic", basicDef(t), testDescription(), nil},
+		{"eark/dc", earkDef(t), identityTerms(), earkdc.Terms{{Key: "rights", Value: "CC BY 4.0"}}},
+		{"eark/mods", earkmodsDef(t), identityRecord(), earkmods.Record{Titles: []earkmods.Title{{Value: "PDF-versie", Lang: "nl"}}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

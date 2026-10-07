@@ -28,9 +28,9 @@ func ExampleBuilder_Build() {
 	}
 	defer os.RemoveAll(destination)
 
-	def, ok := profiles.Get("eark")
+	def, ok := profiles.Get("eark/dc")
 	if !ok {
-		log.Fatal("no eark profile")
+		log.Fatal("no eark/dc profile")
 	}
 	// The second argument is the Meemoo OR-id, used by the basic profile only.
 	def, err = def.WithSubmitter("Example Organization", "")
@@ -57,7 +57,7 @@ func ExampleBuilder_Build() {
 		Representations: []build.SourceRepresentation{{
 			Name: "master",
 			Files: []build.SourceFile{{
-				Source: "../examples/eark/representations/master/image-001.jpg",
+				Source: "../examples/eark/dc/representations/master/image-001.jpg",
 				Path:   "image-001.jpg",
 			}},
 		}},
@@ -78,9 +78,9 @@ func ExampleBuilder_Build_mods() {
 	}
 	defer os.RemoveAll(destination)
 
-	def, ok := profiles.Get("eark-mods")
+	def, ok := profiles.Get("eark/mods")
 	if !ok {
-		log.Fatal("no eark-mods profile")
+		log.Fatal("no eark/mods profile")
 	}
 	def, err = def.WithSubmitter("Example Organization", "")
 	if err != nil {
@@ -109,7 +109,7 @@ func ExampleBuilder_Build_mods() {
 		Representations: []build.SourceRepresentation{{
 			Name: "master",
 			Files: []build.SourceFile{{
-				Source: "../examples/eark-mods/representations/master/image-001.jpg",
+				Source: "../examples/eark/mods/representations/master/image-001.jpg",
 				Path:   "image-001.jpg",
 			}},
 		}},
@@ -130,9 +130,9 @@ func ExampleEncodedDescription() {
 	}
 	defer os.RemoveAll(destination)
 
-	def, ok := profiles.Get("eark-mods")
+	def, ok := profiles.Get("eark/mods")
 	if !ok {
-		log.Fatal("no eark-mods profile")
+		log.Fatal("no eark/mods profile")
 	}
 	def, err = def.WithSubmitter("Example Organization", "")
 	if err != nil {
@@ -148,11 +148,11 @@ func ExampleEncodedDescription() {
 	}
 
 	pkg, err := builder.Build(&build.SourcePackage{
-		Description: build.EncodedDescription{Source: "../examples/eark-mods/mods.xml"},
+		Description: build.EncodedDescription{Source: "../examples/eark/mods/mods.xml"},
 		Representations: []build.SourceRepresentation{{
 			Name: "master",
 			Files: []build.SourceFile{{
-				Source: "../examples/eark-mods/representations/master/image-001.jpg",
+				Source: "../examples/eark/mods/representations/master/image-001.jpg",
 				Path:   "image-001.jpg",
 			}},
 		}},
@@ -269,7 +269,7 @@ func Example_ownProfile() {
 		Representations: []build.SourceRepresentation{{
 			Name: "master",
 			Files: []build.SourceFile{{
-				Source: "../examples/eark/representations/master/image-001.jpg",
+				Source: "../examples/eark/dc/representations/master/image-001.jpg",
 				Path:   "image-001.jpg",
 			}},
 		}},
@@ -303,9 +303,9 @@ func ExampleBuilder_Build_update() {
 	}
 	defer os.RemoveAll(destination)
 
-	def, ok := profiles.Get("eark")
+	def, ok := profiles.Get("eark/dc")
 	if !ok {
-		log.Fatal("no eark profile")
+		log.Fatal("no eark/dc profile")
 	}
 	def, err = def.WithSubmitter("Example Organization", "")
 	if err != nil {
@@ -331,7 +331,7 @@ func ExampleBuilder_Build_update() {
 		Representations: []build.SourceRepresentation{{
 			Name: "master",
 			Files: []build.SourceFile{{
-				Source: "../examples/eark/representations/master/image-001.jpg",
+				Source: "../examples/eark/dc/representations/master/image-001.jpg",
 				Path:   "image-001.jpg",
 			}},
 		}},

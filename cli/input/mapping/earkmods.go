@@ -8,7 +8,7 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// EarkMods is the eark-mods profile's mapping: the MODS keys the input
+// EarkMods is the eark/mods profile's mapping: the MODS keys the input
 // specification lists and where each one goes in the record. The record is
 // typed by field (ADR-0021), so the key table lives here, not in the
 // profile package. A term that breaks a rule on its own (an unknown key,
@@ -59,7 +59,7 @@ func (EarkMods) Map(terms []sip.Term) (sip.Description, []error) {
 	for i, t := range terms {
 		key, ok := modsKeys[t.Key]
 		if !ok {
-			errs = append(errs, &sip.TermError{Index: i, Err: fmt.Errorf("unknown key %q: not a key of the eark-mods profile; see the supported keys in the input specification", t.Key)})
+			errs = append(errs, &sip.TermError{Index: i, Err: fmt.Errorf("unknown key %q: not a key of the %s profile; see the supported keys in the input specification", t.Key, earkmods.Definition.Name)})
 			continue
 		}
 		if t.Lang != "" && !key.takesLang {

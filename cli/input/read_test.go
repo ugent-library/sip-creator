@@ -312,7 +312,7 @@ func TestReadPremisNamingRule(t *testing.T) {
 
 // basic takes no supplied document, so its document name is refused at
 // both levels and in a flat folder, never taken as content. A dc.xml, the
-// eark document name, stays content under basic.
+// eark document name, stays content under meemoo/basic.
 func TestReadRefusesDocumentUnderBasic(t *testing.T) {
 	refused := "the profile takes no supplied descriptive document"
 	cases := map[string]struct {

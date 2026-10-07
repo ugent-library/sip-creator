@@ -5,14 +5,14 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Definition is the eark profile: a plain E-ARK SIP (spec 2.2.0), writing
+// Definition is the eark/dc profile: a plain E-ARK SIP (spec 2.2.0), writing
 // dc.xml from Terms and no PREMIS. The registry in profiles/ hands it out
-// under the name "eark".
+// under the name "eark/dc".
 var Definition = build.Definition{
-	Name:  "eark",
+	Name:  "eark/dc",
 	Model: simpledc{},
 	// Named after the simple-DC document it holds; Meemoo's naming
-	// convention doesn't apply to the eark profile.
+	// convention doesn't apply to the eark/dc profile.
 	DocumentName: "dc.xml",
 	// A representation may carry its own description, such as a license
 	// that holds for one version only; CSIP has no rule against it.

@@ -89,8 +89,8 @@ func TestBuildSuppliedDocument(t *testing.T) {
 		wantFile string
 		wantMETS string
 	}{
-		{"dc.xml under eark", earkDef(t), simpleDCDocument, "dc.xml", `MDTYPE="DC"`},
-		{"mods.xml under eark-mods", earkmodsDef(t), modsDocument, "mods.xml", `MDTYPE="MODS" MDTYPEVERSION="3.7"`},
+		{"dc.xml under eark/dc", earkDef(t), simpleDCDocument, "dc.xml", `MDTYPE="DC"`},
+		{"mods.xml under eark/mods", earkmodsDef(t), modsDocument, "mods.xml", `MDTYPE="MODS" MDTYPEVERSION="3.7"`},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -164,11 +164,11 @@ func TestBuildRefusesWrongDocument(t *testing.T) {
 		doc  build.EncodedDescription
 		want string
 	}{
-		{"dc document to eark-mods", earkmodsDef(t), writeDocument(t, dir, "dc.xml", simpleDCDocument), "expected a mods:mods document"},
+		{"dc document to eark/mods", earkmodsDef(t), writeDocument(t, dir, "dc.xml", simpleDCDocument), "expected a mods:mods document"},
 		{"mods document to eark", earkDef(t), writeDocument(t, dir, "mods.xml", modsDocument), "expected a simpledc document"},
 		{"oai_dc document to eark", earkDef(t), writeDocument(t, dir, "oai.xml", oaiDCDocument), "expected a simpledc document"},
-		{"mods 3.6 to eark-mods", earkmodsDef(t), writeDocument(t, dir, "old.xml", modsOldVersion), `version="3.6"`},
-		{"mods without a version to eark-mods", earkmodsDef(t), writeDocument(t, dir, "nov.xml", modsNoVersion), "declares no version"},
+		{"mods 3.6 to eark/mods", earkmodsDef(t), writeDocument(t, dir, "old.xml", modsOldVersion), `version="3.6"`},
+		{"mods without a version to eark/mods", earkmodsDef(t), writeDocument(t, dir, "nov.xml", modsNoVersion), "declares no version"},
 		{"malformed to eark", earkDef(t), writeDocument(t, dir, "bad.xml", malformedDocument), "not well-formed"},
 		{"missing file to eark", earkDef(t), build.EncodedDescription{Source: filepath.Join(dir, "nope.xml")}, "no such file"},
 		{"any document to basic", basicDef(t), writeDocument(t, dir, "dcschema.xml", simpleDCDocument), "supplied descriptive document is not accepted"},

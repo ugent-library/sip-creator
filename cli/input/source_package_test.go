@@ -19,9 +19,9 @@ import (
 // the input folder produces. The folder is one way to supply a package,
 // not the API.
 func TestSourcePackageEquivalence(t *testing.T) {
-	def, ok := profiles.Get("basic")
+	def, ok := profiles.Get("meemoo/basic")
 	if !ok {
-		t.Fatal(`no "basic" definition registered`)
+		t.Fatal(`no "meemoo/basic" definition registered`)
 	}
 	def, err := def.WithSubmitter("Test Org", "OR-test")
 	if err != nil {

@@ -45,7 +45,7 @@ const RequiredLang = "nl"
 // corrects a document in one round; a finding about one term is a
 // *sip.TermError naming the term's position. The cardinality table lists
 // the identifier as once, so a second identifier is reported there: unlike
-// the eark profile, this one needs no identifier rule of its own.
+// the eark/dc profile, this one needs no identifier rule of its own.
 func (t Terms) Validate() error {
 	var errs []error
 	for i, term := range t {

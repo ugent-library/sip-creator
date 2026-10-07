@@ -124,8 +124,8 @@ func TestDocumentIsAFolder(t *testing.T) {
 }
 
 // Under a profile that takes no document the name is not reserved: a
-// dc.xml under basic is content like any other file, as is a mods.xml
-// under eark, another standard's document.
+// dc.xml under meemoo/basic is content like any other file, as is a mods.xml
+// under eark/dc, another standard's document.
 func TestDocumentNameIsContentElsewhere(t *testing.T) {
 	pkg, err := Read(writeTree(t, map[string]string{
 		"description.csv": minimalCSV,
@@ -133,10 +133,10 @@ func TestDocumentNameIsContentElsewhere(t *testing.T) {
 		"scan.tiff":       "x",
 	}), mapping.Meemoo{}, meemooDocumentSpec)
 	if err != nil {
-		t.Fatalf("Read under basic: %v", err)
+		t.Fatalf("Read under meemoo/basic: %v", err)
 	}
 	if got := paths(pkg.Representations[0].Files); strings.Join(got, ",") != "dc.xml,scan.tiff" {
-		t.Errorf("content under basic = %v, want dc.xml packaged as content", got)
+		t.Errorf("content under meemoo/basic = %v, want dc.xml packaged as content", got)
 	}
 
 	pkg, err = Read(writeTree(t, map[string]string{
@@ -145,10 +145,10 @@ func TestDocumentNameIsContentElsewhere(t *testing.T) {
 		"scan.tiff":       "x",
 	}), mapping.EarkDC{}, earkDocumentSpec)
 	if err != nil {
-		t.Fatalf("Read under eark: %v", err)
+		t.Fatalf("Read under eark/dc: %v", err)
 	}
 	if got := paths(pkg.Representations[0].Files); strings.Join(got, ",") != "mods.xml,scan.tiff" {
-		t.Errorf("content under eark = %v, want mods.xml packaged as content", got)
+		t.Errorf("content under eark/dc = %v, want mods.xml packaged as content", got)
 	}
 }
 
@@ -160,9 +160,9 @@ func TestDocumentBuilds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	def, ok := profiles.Get("eark")
+	def, ok := profiles.Get("eark/dc")
 	if !ok {
-		t.Fatal(`no "eark" definition registered`)
+		t.Fatal(`no "eark/dc" definition registered`)
 	}
 	def, err = def.WithSubmitter("Test Org", "")
 	if err != nil {

@@ -96,7 +96,7 @@ type packageMETS struct {
 // be ingested as new beside the one it was meant to replace.
 func TestCreateCarriesFlagsAndConfiguration(t *testing.T) {
 	const earlier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
-	basicDefault := profileDefaultType(t, "basic")
+	basicDefault := profileDefaultType(t, "meemoo/basic")
 	tests := []struct {
 		name            string
 		profile         string
@@ -107,13 +107,13 @@ func TestCreateCarriesFlagsAndConfiguration(t *testing.T) {
 		wantType        string
 		wantZip         bool
 	}{
-		{"the profile's values and a zip", "basic", "", nil, "", "", basicDefault, true},
-		{"an update of an earlier package", "eark", "",
+		{"the profile's values and a zip", "meemoo/basic", "", nil, "", "", basicDefault, true},
+		{"an update of an earlier package", "eark/dc", "",
 			[]string{"--status", "replacement", "--updates", earlier}, earlier, "REPLACEMENT", "Mixed", true},
-		{"the configured content category", "eark", "Textual works – Print", nil, "", "", "Textual works – Print", true},
-		{"the flag before the configured content category", "eark", "Textual works – Print",
+		{"the configured content category", "eark/dc", "Textual works – Print", nil, "", "", "Textual works – Print", true},
+		{"the flag before the configured content category", "eark/dc", "Textual works – Print",
 			[]string{"--content-category", "Maps"}, "", "", "Maps", true},
-		{"no zip", "eark", "", []string{"--no-zip"}, "", "", "Mixed", false},
+		{"no zip", "eark/dc", "", []string{"--no-zip"}, "", "", "Mixed", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -123,7 +123,7 @@ func TestCreateCarriesFlagsAndConfiguration(t *testing.T) {
 			dest := t.TempDir()
 
 			args := append([]string{"create", "--profile", tt.profile}, tt.flags...)
-			args = append(args, filepath.Join("..", "examples", tt.profile), dest)
+			args = append(args, filepath.Join("..", "examples", filepath.FromSlash(tt.profile)), dest)
 			if _, stderr, err := runCLI(t, args...); err != nil {
 				t.Fatalf("create: %v\n%s", err, stderr)
 			}
@@ -160,7 +160,7 @@ func TestCreateRefusesBeforeWriting(t *testing.T) {
 		t.Setenv("SIP_SUBMITTER_NAME", "")
 		t.Setenv("SIP_SUBMITTER_OR_ID", "")
 		dest := t.TempDir()
-		_, _, err := runCLI(t, "create", "--profile", "eark", filepath.Join("..", "examples", "eark"), dest)
+		_, _, err := runCLI(t, "create", "--profile", "eark/dc", filepath.Join("..", "examples", "eark", "dc"), dest)
 		if want := "(set SIP_SUBMITTER_NAME and SIP_SUBMITTER_OR_ID)"; err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("error = %v, want one ending %q", err, want)
 		}
@@ -170,7 +170,7 @@ func TestCreateRefusesBeforeWriting(t *testing.T) {
 		t.Setenv("SIP_SUBMITTER_NAME", "Example Organization")
 		src := writeFolder(t, map[string]string{"scan.tif": "x"}) // no description
 		dest := t.TempDir()
-		_, stderr, err := runCLI(t, "create", "--profile", "eark", src, dest)
+		_, stderr, err := runCLI(t, "create", "--profile", "eark/dc", src, dest)
 		if want := src + ": 1 problem(s) found"; err == nil || err.Error() != want {
 			t.Errorf("error = %v, want %q", err, want)
 		}

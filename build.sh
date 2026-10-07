@@ -2,12 +2,12 @@
 # Local CI loop: rebuild, regenerate the sample SIP for a profile, validate
 # with commons-ip, publish the HTML report (serve it: docker compose up -d reports).
 #
-# usage: build.sh [profile] [input]    (default: basic, examples/<profile>)
+# usage: build.sh [profile] [input]    (default: meemoo/basic, examples/<profile>)
 #
 # Exits non-zero iff the generated package is not VALID, or a descriptive
 # document in it is not valid against its schema. Each profile validates
-# against the E-ARK spec version of its era: basic (Meemoo 1.2) against
-# 2.0.4, eark and eark-mods against 2.2.0 (docs/archive/meemoo-12.md).
+# against the E-ARK spec version of its era: meemoo/basic (Meemoo 1.2) against
+# 2.0.4, eark/dc and eark/mods against 2.2.0 (docs/archive/meemoo-12.md).
 # commons-ip does not validate the descriptive documents the METS points
 # at, so every mods.xml, dc.xml and dc+schema.xml in the package is checked
 # with xmllint against the schema the package ships, offline through
@@ -23,16 +23,19 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-PROFILE="${1:-basic}"
+PROFILE="${1:-meemoo/basic}"
 INPUT="${2:-examples/$PROFILE}"
 SRC="tmp/build/$PROFILE"
-OUT="$PROFILE-uuid"
+# The profile name carries a slash (meemoo/basic); NAME flattens it for
+# what must be one path component: the output and report directories.
+NAME="${PROFILE//\//-}"
+OUT="$NAME-uuid"
 
 case "$PROFILE" in
-    basic)          SPEC_VERSION=2.0.4 ;;
-    eark|eark-mods) SPEC_VERSION=2.2.0 ;;
+    meemoo/basic)        SPEC_VERSION=2.0.4 ;;
+    eark/dc|eark/mods)   SPEC_VERSION=2.2.0 ;;
     *)
-        echo "unknown profile $PROFILE (one of: basic, eark, eark-mods)" >&2
+        echo "unknown profile $PROFILE (one of: meemoo/basic, eark/dc, eark/mods)" >&2
         exit 2
         ;;
 esac
@@ -92,7 +95,7 @@ validate_documents mods.xml mods-3-7.xsd
 validate_documents dc.xml simpledc.xsd
 validate_documents dc+schema.xml descriptive_basic.xsd
 
-run_dir="reports/runs/$(date -u +%Y%m%dT%H%M%SZ)-$PROFILE"
+run_dir="reports/runs/$(date -u +%Y%m%dT%H%M%SZ)-$NAME"
 mkdir -p "$run_dir"
 
 # The acceptance check: validate the zip only; the zip is the deliverable that gets ingested.

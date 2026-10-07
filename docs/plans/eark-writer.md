@@ -1,5 +1,8 @@
 # Plan: the eark profile, a plain E-ARK SIP
 
+*Note, 2026-10-06: the `eark` profile this plan built is named `eark/dc` since
+[ADR-0030](../decisions/0030-profile-names-by-family.md); the body keeps the old name.*
+
 *Status: **implemented through E5** (2026-07-17); awaiting field acceptance: the first real ingest into UGent's RODA instance, per the [RODA ingest runbook](../development-roda-ingest.md). Drafted 2026-07-16, reworked 2026-07-17 after design review (see "Duplication lessons").
 
 ## Execution record (2026-07-17)

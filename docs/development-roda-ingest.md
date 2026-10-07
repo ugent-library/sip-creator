@@ -1,6 +1,6 @@
 # Runbook: ingesting an eark SIP into RODA
 
-*The field-acceptance procedure for the [eark profile](plans/eark-writer.md):
+*The field-acceptance procedure for the [eark/dc profile](plans/eark-writer.md):
 produce a package, pre-flight it, ingest it into UGent's RODA instance, and
 verify what arrived. Written 2026-07-17 from a desk-check of RODA's ingest
 code (`EARKSIP2ToAIPPlugin` / `EARKSIP2ToAIPPluginUtils`, commons-ip2 2.11.2,
@@ -10,7 +10,7 @@ and should be checked against the instance's RODA version on first use.*
 ## 1. Produce the package
 
 ```sh
-./bin/sip-creator create --profile eark <source-dir> <dest-dir>
+./bin/sip-creator create --profile eark/dc <source-dir> <dest-dir>
 ```
 
 The **zip is the deliverable** (`<dest-dir>/uuid-<uuid>.zip`): RODA ingests

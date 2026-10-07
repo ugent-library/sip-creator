@@ -3,7 +3,7 @@
 // dc+schema document, Dublin Core terms plus schema.org properties in the
 // Meemoo namespace, with the profile's required, cardinality and language
 // rules; its Definition names the rest as data, and the registry in
-// profiles/ hands that out as "basic".
+// profiles/ hands that out as "meemoo/basic".
 package meemoo
 
 import "github.com/ugent-library/sip-creator/sip"

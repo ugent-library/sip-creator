@@ -498,7 +498,7 @@ func TestAssembleDeclaresPackageValues(t *testing.T) {
 // version stamped into the binary, whatever the profile; the profile's own
 // agents stay as they were.
 func TestAssembleAddsTheSoftwareAgent(t *testing.T) {
-	for name, def := range map[string]build.Definition{"basic": basicDef(t), "eark": earkDef(t)} {
+	for name, def := range map[string]build.Definition{"meemoo/basic": basicDef(t), "eark/dc": earkDef(t)} {
 		t.Run(name, func(t *testing.T) {
 			before := len(def.Declaration.Agents)
 			b, in, _ := newTestBuilder(t, def)
@@ -552,7 +552,7 @@ func TestAssembleLabelsDescriptionFilesWithTheModel(t *testing.T) {
 	}
 }
 
-// The eark profile keeps the producer's identifier in the descriptive
+// The eark/dc profile keeps the producer's identifier in the descriptive
 // terms, at both levels, and lifts no MEEMOO-LOCAL-ID onto the entity: its
 // standard has no swap (ADR-0012).
 func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
@@ -578,7 +578,7 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	}
 }
 
-// The eark profile types each representation METS by its resolved type,
+// The eark/dc profile types each representation METS by its resolved type,
 // in both the TYPE and the CONTENTINFORMATIONTYPE pair; the basic profile
 // keeps the profile declaration unchanged; the package declaration never
 // changes (ADR-0013).

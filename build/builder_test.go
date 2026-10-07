@@ -56,7 +56,7 @@ func meemooIdentityTerms() meemoo.Terms {
 }
 
 // identityTerms is the input convention's own MUSTs and nothing more, in
-// the eark profile's standard, Simple Dublin Core.
+// the eark/dc profile's standard, Simple Dublin Core.
 func identityTerms() earkdc.Terms {
 	return earkdc.Terms{
 		{Key: "identifier", Value: "local-id-001"},
@@ -64,7 +64,7 @@ func identityTerms() earkdc.Terms {
 	}
 }
 
-// identityRecord is the same identity in the eark-mods profile's standard,
+// identityRecord is the same identity in the eark/mods profile's standard,
 // a MODS record without items.
 func identityRecord() earkmods.Record {
 	return earkmods.Record{
@@ -134,33 +134,33 @@ func newTestBuilder(t *testing.T, def build.Definition) (b *build.Builder, in *b
 	return b, in, outDir
 }
 
-// basicDef returns the registered "basic" definition the tests build with.
+// basicDef returns the registered "meemoo/basic" definition the tests build with.
 func basicDef(t *testing.T) build.Definition {
 	t.Helper()
-	def, ok := profiles.Get("basic")
+	def, ok := profiles.Get("meemoo/basic")
 	if !ok {
-		t.Fatal(`no "basic" definition registered`)
+		t.Fatal(`no "meemoo/basic" definition registered`)
 	}
 	return def
 }
 
-// earkDef returns the registered "eark" definition the tests build with.
+// earkDef returns the registered "eark/dc" definition the tests build with.
 func earkDef(t *testing.T) build.Definition {
 	t.Helper()
-	def, ok := profiles.Get("eark")
+	def, ok := profiles.Get("eark/dc")
 	if !ok {
-		t.Fatal(`no "eark" definition registered`)
+		t.Fatal(`no "eark/dc" definition registered`)
 	}
 	return def
 }
 
-// earkmodsDef returns the registered "eark-mods" definition the tests
+// earkmodsDef returns the registered "eark/mods" definition the tests
 // build with.
 func earkmodsDef(t *testing.T) build.Definition {
 	t.Helper()
-	def, ok := profiles.Get("eark-mods")
+	def, ok := profiles.Get("eark/mods")
 	if !ok {
-		t.Fatal(`no "eark-mods" definition registered`)
+		t.Fatal(`no "eark/mods" definition registered`)
 	}
 	return def
 }
@@ -392,7 +392,7 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description is required"},
 		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "dcterms:identifier", Value: "x"}}, "title is required"},
 		{"eark without an identifier", earkDef(t), earkdc.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
-		{"eark-mods without a title", earkmodsDef(t), earkmods.Record{Identifier: "x"}, "title is required"},
+		{"eark/mods without a title", earkmodsDef(t), earkmods.Record{Identifier: "x"}, "title is required"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -407,7 +407,7 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 	}
 }
 
-// The eark-mods profile builds a complete package from a record: mods.xml
+// The eark/mods profile builds a complete package from a record: mods.xml
 // under metadata/descriptive with the items rendered, the METS set plus the
 // MODS schema and nothing else under schemas/, and a package METS whose
 // dmdSec types the document as MODS 3.7. No swap: the record keeps the
@@ -440,7 +440,7 @@ func TestBuildEarkMods(t *testing.T) {
 		t.Errorf("description identifier = %q, want the producer's %q", got, "local-id-001")
 	}
 	if _, ok := pkg.Root.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; ok {
-		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; eark-mods has no swap")
+		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; eark/mods has no swap")
 	}
 
 	names := make([]string, 0, len(pkg.SchemaFiles))

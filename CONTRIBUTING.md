@@ -18,17 +18,18 @@ To run commons-ip on a local Java instead of in Docker, set `CSIP_CMD` to the co
 using the jar version that `docker/validator/Dockerfile` pins:
 
 ```sh
-CSIP_CMD="java -jar commons-ip2-cli-2.11.2.jar" ./build.sh eark
+CSIP_CMD="java -jar commons-ip2-cli-2.11.2.jar" ./build.sh eark/dc
 ```
 
 ## Building
 
 ```sh
 go build -o bin/sip-creator .
-./bin/sip-creator create --profile basic examples/basic basic-uuid
+./bin/sip-creator create --profile meemoo/basic examples/meemoo/basic meemoo-basic-uuid
 ```
 
-`bin/` and `<profile>-uuid/` are ignored by git.
+`bin/` and the output directories, named after the profile with a hyphen for the slash
+(`meemoo-basic-uuid/`, `eark-dc-uuid/`), are ignored by git.
 
 ## Tests
 
@@ -42,14 +43,14 @@ invalid fails the tests.
 
 ## Validating generated packages
 
-`./build.sh [profile] [input]` is the local CI loop. The profile defaults to `basic` and
+`./build.sh [profile] [input]` is the local CI loop. The profile defaults to `meemoo/basic` and
 the input to [`examples/<profile>`](examples/); pass another input folder to validate
 your own. It:
 
 1. rebuilds the binary;
 2. copies the input to `tmp/build/<profile>`, generates its `siegfried.json` there, and
-   builds the package into `<profile>-uuid/`, so the input folder itself is never
-   changed;
+   builds the package into `<profile>-uuid/` (`eark-dc-uuid/` for `eark/dc`), so the
+   input folder itself is never changed;
 3. validates the zip with [commons-ip](https://github.com/keeps/commons-ip), printing
    every failed check with its messages;
 4. runs `xmllint` over every descriptive document in the package against the schema the
@@ -62,8 +63,8 @@ your own. It:
 
 It exits non-zero when the package is not `VALID` or a descriptive document is not
 valid against its schema. Each
-profile validates against its E-ARK spec version: `basic` (Meemoo 1.2) against 2.0.4,
-`eark` and `eark-mods` against 2.2.0. All three are expected to report `VALID`.
+profile validates against its E-ARK spec version: `meemoo/basic` (Meemoo 1.2) against 2.0.4,
+`eark/dc` and `eark/mods` against 2.2.0. All three are expected to report `VALID`.
 
 Each run's reports are written to `reports/runs/<timestamp>-<profile>/`. To browse them
 as HTML (run history, per-check detail, links into the E-ARK specs):
@@ -79,7 +80,7 @@ its own, including an unzipped package directory when debugging structure.
 ## Comparing against the reference copy
 
 ```sh
-./scripts/reference-diff.sh tmp/reference/<pkg> <profile>-uuid/uuid-<uuid>
+./scripts/reference-diff.sh tmp/reference/<profile>/pkg <profile>-uuid/uuid-<uuid>
 ```
 
 compares a generated package with a reference copy kept in `tmp/reference/`, after

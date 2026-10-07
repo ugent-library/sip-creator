@@ -10,7 +10,7 @@ import "github.com/ugent-library/sip-creator/build"
 // profiles' models do, a file with that name is read as the level's
 // description. When the model takes none, as basic's does, a file with
 // that name is a violation. Other names are content like any other file:
-// a dc.xml under basic, or the zero DocumentSpec's empty name.
+// a dc.xml under meemoo/basic, or the zero DocumentSpec's empty name.
 type DocumentSpec struct {
 	// Name is the file name of the document, such as dc.xml or mods.xml:
 	// the profile's build.Definition.DocumentName.

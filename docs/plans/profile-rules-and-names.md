@@ -4,7 +4,8 @@
 ([ADR-0029](../decisions/0029-eark-profiles-offer-csip-as-written.md),
 [ADR-0030](../decisions/0030-profile-names-by-family.md)). Steps 6 and 7, the renames,
 follow, one commit each. The plan builds on 5074f49 (the escaping series, ADR-0028);
-line numbers refer to that tree and are out of date since 2026-10-06. Update this line
+line numbers refer to that tree and are out of date since 2026-10-06. Step 6 landed in
+f5d2e7f; step 7 lands with the commit that renames the registry keys. Update this line
 as steps land.*
 
 *Parked 2026-10-06: steps 2 to 5 and 8.* They implement ADR-0029's two packages, one

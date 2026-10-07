@@ -1,11 +1,11 @@
-# Plan: MODS 3.7 coverage for the eark-mods profile, in tiers
+# Plan: MODS 3.7 coverage for the eark/mods profile, in tiers
 
 *Status: **parked** (drafted 2026-09-30). Its precondition is met: the
 [descriptive-model plan](../archive/descriptive-model.md) shipped the
 supplied document route on 2026-10-01, so coverage can grow tier by tier
 while a record the model cannot yet say travels as a `mods.xml`.
 [ADR-0022](../decisions/0022-reference-implementation-bring-your-own-profile.md)
-records why: the eark-mods profile is plain E-ARK with a MODS 3.7 writer,
+records why: the eark/mods profile is plain E-ARK with a MODS 3.7 writer,
 and as a reference implementation the writer speaks MODS. Update this
 line as steps land.*
 
@@ -72,7 +72,7 @@ whole MODS record, and `extension` holds arbitrary XML.
 ## Tiers
 
 Each tier ends with `go test ./...` green, the golden test passing, both
-DC profiles VALID and identical to their reference copies, the eark-mods
+DC profiles VALID and identical to their reference copies, the eark/mods
 fixture VALID with the xmllint pass clean (once the descriptive-model plan
 has captured it), and the README's library example and the design doc's
 descriptive bullet current. One commit per box, proposed in chat first.
@@ -157,12 +157,12 @@ records; the rest follows element by element behind the same golden test.
 ## Open questions
 
 - **One identifier or several.** Decided when tier 1 starts; it changes
-  the identity rule (`ValidateRequired`) and the eark-mods vocabulary's
+  the identity rule (`ValidateRequired`) and the eark/mods vocabulary's
   `identifier` key.
 - **The constant sets' exact members**, per attribute: which identifier
   types, which relator authority, whether `dateOther` needs its own
   `type`. Settled per box against the schema and the MODS user guidelines.
-- **The CSV keys for new elements**: which flat keys the eark-mods
+- **The CSV keys for new elements**: which flat keys the eark/mods
   vocabulary gains (`creator` as a personal name with role `aut`?
   `issued` as `dateIssued` with `encoding="edtf"`?), each a decision of
   the vocabulary, made when the repository's index fields are known.

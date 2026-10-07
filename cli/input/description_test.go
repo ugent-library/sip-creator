@@ -250,7 +250,7 @@ func TestParseTermsNotUTF8(t *testing.T) {
 }
 
 // The profile, not the file, says which keys the rows may use: the
-// same description.csv is Simple Dublin Core under eark and refused under
+// same description.csv is Simple Dublin Core under eark/dc and refused under
 // basic, where coverage is not a key.
 func TestRowsProfileDecidesTheKeys(t *testing.T) {
 	tree := map[string]string{
@@ -259,7 +259,7 @@ func TestRowsProfileDecidesTheKeys(t *testing.T) {
 	}
 	pkg, err := Read(writeTree(t, tree), mapping.EarkDC{}, earkDocumentSpec)
 	if err != nil {
-		t.Fatalf("Read under eark: %v", err)
+		t.Fatalf("Read under eark/dc: %v", err)
 	}
 	got, ok := pkg.Description.(earkdc.Terms)
 	if !ok || len(got) != 3 || got[0].Key != "identifier" || got[2].Key != "coverage" {

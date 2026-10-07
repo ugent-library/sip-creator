@@ -22,7 +22,7 @@ type folderReader struct {
 	// takes rows only.
 	documentName string
 	// refusedDocumentName is the profile's document name when its model
-	// takes no supplied document, such as dc+schema.xml under basic: a
+	// takes no supplied document, such as dc+schema.xml under meemoo/basic: a
 	// file with that name at either level is a violation, never content.
 	// Empty under a profile that takes a document.
 	refusedDocumentName string
@@ -236,7 +236,7 @@ func (r *folderReader) violateMissingDescription() {
 
 // isDocumentName reports whether name is the file name reserved for the
 // profile's supplied descriptive document. Under a profile that takes
-// none, no name is: a dc.xml under basic is content like any other file.
+// none, no name is: a dc.xml under meemoo/basic is content like any other file.
 func (r *folderReader) isDocumentName(name string) bool {
 	return r.documentName != "" && name == r.documentName
 }

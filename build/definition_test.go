@@ -58,9 +58,9 @@ func TestWithSubmitterRequiresName(t *testing.T) {
 }
 
 func TestWithSubmitterEARK(t *testing.T) {
-	def, ok := profiles.Get("eark")
+	def, ok := profiles.Get("eark/dc")
 	if !ok {
-		t.Fatal(`no "eark" definition registered`)
+		t.Fatal(`no "eark/dc" definition registered`)
 	}
 
 	// The OR-id is a Meemoo concept; a configured value is ignored here.

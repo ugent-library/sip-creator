@@ -7,9 +7,9 @@ import (
 
 // Definition is the basic profile: Meemoo SIP 1.2's basic content profile
 // on the E-ARK SIP profile of its era, writing dc+schema.xml from Terms.
-// The registry in profiles/ hands it out under the name "basic".
+// The registry in profiles/ hands it out under the name "meemoo/basic".
 var Definition = build.Definition{
-	Name:  "basic",
+	Name:  "meemoo/basic",
 	Model: dcschema{},
 	// Meemoo identifies the submitting organization by its OR-id
 	// (Meemoo SIP 1.2, metsHdr agent note).

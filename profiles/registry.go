@@ -18,9 +18,9 @@ import (
 )
 
 var registry = map[string]build.Definition{
-	"basic":     meemoo.Definition,
-	"eark":      earkdc.Definition,
-	"eark-mods": earkmods.Definition,
+	"meemoo/basic": meemoo.Definition,
+	"eark/dc":      earkdc.Definition,
+	"eark/mods":    earkmods.Definition,
 }
 
 // Get resolves a profile name to its definition.
