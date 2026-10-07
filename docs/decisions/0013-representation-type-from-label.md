@@ -3,7 +3,11 @@
 Status: Accepted (2026-09-03). **Note, 2026-10-06:**
 `Definition.RepresentationTypeFromLabel` became `EmitRepresentationType`,
 and the type is the representation's own `Type`, defaulting to its label
-([ADR-0014](0014-representations-csv-strict-when-present.md)).
+([ADR-0014](0014-representations-csv-strict-when-present.md)). **Note, 2026-10-07:**
+the eark profiles become `ugent/basic` and `ugent/bibliographic`
+([ADR-0034](0034-a-profile-is-a-content-type.md)). The representation METS keeps the
+declaration below. The package METS of the UGent profiles declares `OTHER` with the
+profile's name, so RODA's AIP type depends on the same commons-ip reading.
 
 ## Context
 

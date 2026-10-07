@@ -1,6 +1,9 @@
 # 0030 — Profile names carry the family and the one choice the family leaves open
 
-Status: **Accepted** (2026-10-05). Extends
+Status: **Superseded by [ADR-0034](0034-a-profile-is-a-content-type.md)** (2026-10-07):
+a profile name is `<owner>/<content type>`; `eark/dc` and `eark/mods` become
+`ugent/basic` and `ugent/bibliographic`, and `eark/none` is dropped. Accepted
+(2026-10-05). Extends
 [ADR-0015](0015-descriptive-worlds-dc-and-mods.md): a profile still names its
 descriptive standard; the name now also carries the family. **Note, 2026-10-06:** the
 renames ship without `eark/none`, which waits with ADR-0029's implementation. Three

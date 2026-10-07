@@ -17,6 +17,11 @@ whether the model speaks MODS (`TitleInfo`, `ShelfLocator`) or UGent's
 catalogue words (call number, barcode). The typed constants for values a
 caller chooses stand either way.*
 
+*Note, 2026-10-07: [ADR-0034](../decisions/0034-a-profile-is-a-content-type.md) answers
+the question: the model keeps UGent's catalogue words. It is UGent's application profile
+of MODS, written by `ugent/bibliographic`, which replaces `eark/mods`. Before the plan
+resumes, its tiers are read again against that.*
+
 ## Context
 
 `earkmods.Record` is typed by field since ADR-0021, but its three fields

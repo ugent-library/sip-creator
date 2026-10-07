@@ -11,11 +11,15 @@ to 5 and 8 of the [plan](../plans/profile-rules-and-names.md) are parked until a
 arrives. Until then the engine keeps its two rules: every package carries a package-level
 description and at least one representation. **Note, 2026-10-07:** that plan is retired
 ([archive](../archive/profile-rules-and-names.md)). The representation minimum lands as
-step 7 of the [ugent-profiles plan](../plans/ugent-profiles.md); `eark/none` is dropped,
+step 8 of the [ugent-profiles plan](../plans/ugent-profiles.md); `eark/none` is dropped,
 because `ugent/basic` requires a description; a profile without descriptive metadata is
 the empty case of the model list in the parked
 [entities-and-descriptions plan](../plans/entities-and-descriptions.md). The table's names
-change with ADR-0034.
+change with [ADR-0034](0034-a-profile-is-a-content-type.md): `eark/dc` is `ugent/basic`
+and `eark/mods` is `ugent/bibliographic`, both with any number of representations,
+including none. The reader no longer reads a folder without content files as zero
+representations: ADR-0034 drops the flat input folder, so a folder without
+`representations/`, or with an empty one, has none.
 
 ## Context
 

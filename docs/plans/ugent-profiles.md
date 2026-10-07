@@ -1,7 +1,8 @@
 # Plan: a profile is a content type; the ugent family replaces eark
 
-*Status: **proposed** (drafted and revised 2026-10-07), not started. Nothing has landed. Each step is
-proposed in chat before it starts. The plan takes over from the retired
+*Status: **in progress** (drafted and revised 2026-10-07). Step 1 landed 2026-10-07:
+[ADR-0034](../decisions/0034-a-profile-is-a-content-type.md) records decisions 1, 2, 3, 8
+and 9. Each step is proposed in chat before it starts. The plan takes over from the retired
 [profile-rules-and-names plan](../archive/profile-rules-and-names.md): its parked step 5
 (the representation minimum) returns here as step 8; its step 8 (`eark/none`) is dropped;
 its steps 2 to 4 (a profile without descriptive metadata) are absorbed by the parked
@@ -191,8 +192,9 @@ The owner in the name keeps them apart; the profile pages say so.
   Meemoo declares; keep the flat input folder and let the vocabulary refuse its name),
   the consequences (the name changes, the import path changes, the output change of step
   5, the retired `eark/none`, the flat input folder gone for every profile).
-- Dated notes under the status lines of ADR-0030 (superseded), ADR-0029 (its table and
-  `eark/none`), ADR-0015 (the standard is the model's, no longer in the name), ADR-0022
+- Dated notes under the status lines of ADR-0030 (superseded), ADR-0018 (superseded in
+  part: a model's package is named after its standard, a second profile imports it),
+  ADR-0029 (its table and `eark/none`), ADR-0015 (the standard is the model's, no longer in the name), ADR-0022
   and ADR-0033 (the MODS vocabulary question is settled: the library's words), ADR-0014
   (its flat single-representation case is gone), ADR-0013 (cited, unchanged). The
   mods-coverage plan's note of 2026-10-06 gets its answer.

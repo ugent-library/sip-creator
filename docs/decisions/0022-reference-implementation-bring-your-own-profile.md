@@ -16,7 +16,10 @@ has to be bundled in this repository. `build.BundledSchemas` returns the
 bundled ones, and `Example_ownProfile` in `build/example_test.go` builds a
 package with a profile defined outside `profiles/`. The tagged release and
 changelog the consequences below call for wait for the first outside
-caller (docs/TODO.md).
+caller (docs/TODO.md). **Note, 2026-10-07:**
+[ADR-0034](0034-a-profile-is-a-content-type.md) settles the MODS model's vocabulary:
+it keeps the library's catalogue words, because it is UGent's application profile of
+MODS, written by `ugent/bibliographic`.
 
 ## Context
 

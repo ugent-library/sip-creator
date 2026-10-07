@@ -1,6 +1,6 @@
 # 0033 — The library serves UGent Library first; a profile of your own stays possible
 
-Status: **Accepted** (2026-10-06). Supersedes in part [ADR-0022](0022-reference-implementation-bring-your-own-profile.md): the library is no longer a reference implementation for other institutions, and the MODS model's "speak MODS for others" premise no longer holds on its own. ADR-0022's extension point and its typed constants stand.
+Status: **Accepted** (2026-10-06). Supersedes in part [ADR-0022](0022-reference-implementation-bring-your-own-profile.md): the library is no longer a reference implementation for other institutions, and the MODS model's "speak MODS for others" premise no longer holds on its own. ADR-0022's extension point and its typed constants stand. **Note, 2026-10-07:** the MODS vocabulary question below is settled by [ADR-0034](0034-a-profile-is-a-content-type.md): the model keeps the library's catalogue words, as UGent's application profile of MODS that `ugent/bibliographic` writes.
 
 ## Context
 
