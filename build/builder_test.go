@@ -18,9 +18,9 @@ import (
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
-	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/profiles/mods"
+	"github.com/ugent-library/sip-creator/profiles/simpledc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -57,8 +57,8 @@ func meemooIdentityTerms() meemoo.Terms {
 
 // identityTerms is the input convention's own MUSTs and nothing more, in
 // the eark/dc profile's standard, Simple Dublin Core.
-func identityTerms() earkdc.Terms {
-	return earkdc.Terms{
+func identityTerms() simpledc.Terms {
+	return simpledc.Terms{
 		{Key: "identifier", Value: "local-id-001"},
 		{Key: "title", Value: "Catus Testus"},
 	}
@@ -66,10 +66,10 @@ func identityTerms() earkdc.Terms {
 
 // identityRecord is the same identity in the eark/mods profile's standard,
 // a MODS record without items.
-func identityRecord() earkmods.Record {
-	return earkmods.Record{
+func identityRecord() mods.Record {
+	return mods.Record{
 		Identifier: "local-id-001",
-		Titles:     []earkmods.Title{{Value: "Catus Testus"}},
+		Titles:     []mods.Title{{Value: "Catus Testus"}},
 	}
 }
 
@@ -391,8 +391,8 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 	}{
 		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description is required"},
 		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "dcterms:identifier", Value: "x"}}, "title is required"},
-		{"eark without an identifier", earkDef(t), earkdc.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
-		{"eark/mods without a title", earkmodsDef(t), earkmods.Record{Identifier: "x"}, "title is required"},
+		{"eark without an identifier", earkDef(t), simpledc.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
+		{"eark/mods without a title", earkmodsDef(t), mods.Record{Identifier: "x"}, "title is required"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -415,7 +415,7 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 func TestBuildEarkMods(t *testing.T) {
 	b, in, _ := newTestBuilder(t, earkmodsDef(t))
 	rec := identityRecord()
-	rec.Items = []earkmods.Item{{CallNumber: "EX.0001", Barcode: "000000123"}}
+	rec.Items = []mods.Item{{CallNumber: "EX.0001", Barcode: "000000123"}}
 	in.Description = rec
 
 	pkg, err := b.Build(in)

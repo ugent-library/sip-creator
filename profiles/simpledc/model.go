@@ -1,4 +1,4 @@
-package earkdc
+package simpledc
 
 import (
 	"bytes"
@@ -11,25 +11,26 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// simpledc is the Simple Dublin Core metadata model: it accepts Terms,
+// Model is the Simple Dublin Core metadata model, for a profile's
+// definition.
+var Model build.MetadataModel = model{}
+
+// model is the Simple Dublin Core metadata model: it accepts Terms,
 // writes them as a simpledc document with Encode, and says which supplied
 // document is one of its own. It never swaps: dc.xml keeps the producer's identifier, because
 // CSIP has no rule tying it to the package identifier and the ingesting
 // catalogue indexes dc.xml, so operators find the package by the
 // identifier they know (ADR-0012).
-type simpledc struct{}
+type model struct{}
 
 // DocumentFormat is optional to the engine, so a drift in
 // ValidateDocumentRoot's signature would fail silently; the assertion
 // makes it a build error.
-var (
-	_ build.MetadataModel  = simpledc{}
-	_ build.DocumentFormat = simpledc{}
-)
+var _ build.DocumentFormat = model{}
 
-func (simpledc) ValidateType(d sip.Description) error {
+func (model) ValidateType(d sip.Description) error {
 	if _, ok := d.(Terms); !ok {
-		return fmt.Errorf("descriptive metadata is %T, not Simple Dublin Core terms (earkdc.Terms)", d)
+		return fmt.Errorf("descriptive metadata is %T, not Simple Dublin Core terms (simpledc.Terms)", d)
 	}
 	return nil
 }
@@ -38,7 +39,7 @@ func (simpledc) ValidateType(d sip.Description) error {
 // template emits, without namespace. A document of another shape (an oai_dc
 // wrapper, a MODS record) would make the METS declare a type the file does
 // not have.
-func (simpledc) ValidateDocumentRoot(root xml.StartElement) error {
+func (model) ValidateDocumentRoot(root xml.StartElement) error {
 	if root.Name.Space != "" || root.Name.Local != "simpledc" {
 		return fmt.Errorf("root element is {%s}%s, expected a simpledc document without namespace", root.Name.Space, root.Name.Local)
 	}
@@ -47,7 +48,7 @@ func (simpledc) ValidateDocumentRoot(root xml.StartElement) error {
 
 // Encode writes d as a Simple Dublin Core document: a simpledc root with
 // one unqualified element per term, order preserved, language tags omitted.
-func (simpledc) Encode(w io.Writer, d sip.Description, schemasDir string) error {
+func (model) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
 	if err := simpledcTemplate.ExecuteTemplate(&buf, "simpledc", termsDoc{d.(Terms), schemasDir}); err != nil {
 		return err
@@ -57,13 +58,13 @@ func (simpledc) Encode(w io.Writer, d sip.Description, schemasDir string) error 
 }
 
 // ModelType types the document as DC.
-func (simpledc) ModelType() string {
+func (model) ModelType() string {
 	return "DC"
 }
 
 // ModelTypeVersion names the version of Simple Dublin Core the template
 // writes, as the METS dmdSec declares it in MDTYPEVERSION.
-func (simpledc) ModelTypeVersion() string {
+func (model) ModelTypeVersion() string {
 	return "SimpleDC20021212"
 }
 
@@ -73,7 +74,7 @@ func (simpledc) ModelTypeVersion() string {
 // from the file next to it. It is not DCMI's file of that name, which
 // expects the elements in the DCMES namespace and would reject the
 // document; the schema's header records how it is built from DCMI's files.
-func (simpledc) Schemas() []build.Schema {
+func (model) Schemas() []build.Schema {
 	return build.BundledSchemas("simpledc.xsd", "xml.xsd")
 }
 

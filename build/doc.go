@@ -22,8 +22,8 @@
 // assembly writes nothing. Zipping the directory is a separate step, in the
 // archive package.
 //
-// The Go type of a description belongs to its profile: earkdc.Terms,
-// earkmods.Record or meemoo.Terms, or an [EncodedDescription] for a
+// The Go type of a description belongs to the profile's model: simpledc.Terms,
+// mods.Record or meemoo.Terms, or an [EncodedDescription] for a
 // finished document where the profile accepts one. A profile for another
 // descriptive standard implements [MetadataModel] and exports its own
 // [Definition].

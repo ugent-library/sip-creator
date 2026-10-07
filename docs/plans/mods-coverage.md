@@ -24,7 +24,7 @@ resumes, its tiers are read again against that.*
 
 ## Context
 
-`earkmods.Record` is typed by field since ADR-0021, but its three fields
+`mods.Record` is typed by field since ADR-0021, but its three fields
 are UGent's application profile of MODS: a catalogue identifier whose
 `type` the profile decides, titles, and holdings named in a librarian's
 words (call number, barcode, enumeration). The template maps them onto

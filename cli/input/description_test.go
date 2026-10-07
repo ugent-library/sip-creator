@@ -8,8 +8,8 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/cli/input/mapping"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/profiles/simpledc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -257,11 +257,11 @@ func TestRowsProfileDecidesTheKeys(t *testing.T) {
 		"description.csv": minimalDC + "coverage,Gent\n",
 		"scan.tiff":       "x",
 	}
-	pkg, err := Read(writeTree(t, tree), mapping.EarkDC{}, earkDocumentSpec)
+	pkg, err := Read(writeTree(t, tree), mapping.SimpleDC{}, earkDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read under eark/dc: %v", err)
 	}
-	got, ok := pkg.Description.(earkdc.Terms)
+	got, ok := pkg.Description.(simpledc.Terms)
 	if !ok || len(got) != 3 || got[0].Key != "identifier" || got[2].Key != "coverage" {
 		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Description)
 	}
@@ -278,7 +278,7 @@ func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	_, err := Read(root, mapping.EarkDC{}, earkDocumentSpec)
+	_, err := Read(root, mapping.SimpleDC{}, earkDocumentSpec)
 	assertViolation(t, err, `unknown key "abstract"`)
 	assertViolation(t, err, `unknown key "license"`)
 }
@@ -317,5 +317,5 @@ func (placesNothing) Map(terms []sip.Term) (sip.Description, []error) {
 	for i, t := range terms {
 		errs = append(errs, &sip.TermError{Index: i, Err: fmt.Errorf("no place for %s", t.Key)})
 	}
-	return earkdc.Terms(nil), errs
+	return simpledc.Terms(nil), errs
 }

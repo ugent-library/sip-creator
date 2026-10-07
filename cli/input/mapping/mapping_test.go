@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
-	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/profiles/mods"
+	"github.com/ugent-library/sip-creator/profiles/simpledc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -21,13 +21,13 @@ var terms = []sip.Term{
 // Under eark the terms become Simple Dublin Core terms unchanged, in order:
 // the keys are the elements' own names.
 func TestEarkKeepsTheTerms(t *testing.T) {
-	description, errs := EarkDC{}.Map(terms)
+	description, errs := SimpleDC{}.Map(terms)
 	if len(errs) != 0 {
 		t.Fatalf("errors %v for terms the mapping places", errs)
 	}
-	got, ok := description.(earkdc.Terms)
+	got, ok := description.(simpledc.Terms)
 	if !ok {
-		t.Fatalf("description is %T, want earkdc.Terms", description)
+		t.Fatalf("description is %T, want simpledc.Terms", description)
 	}
 	if !slices.Equal([]sip.Term(got), terms) {
 		t.Errorf("terms = %+v, want %+v", got, terms)
@@ -83,19 +83,19 @@ func TestMeemooElementsAreAccepted(t *testing.T) {
 // Under eark/mods the terms fill the record's fields: the identifier once
 // and the titles in order with their language. The rows carry no items;
 // those reach a record through the library or a supplied document.
-func TestEarkModsTermsFillTheRecord(t *testing.T) {
-	description, errs := EarkMods{}.Map(terms)
+func TestMODSTermsFillTheRecord(t *testing.T) {
+	description, errs := MODS{}.Map(terms)
 	if len(errs) != 0 {
 		t.Fatalf("errors %v for terms the mapping places", errs)
 	}
-	record, ok := description.(earkmods.Record)
+	record, ok := description.(mods.Record)
 	if !ok {
-		t.Fatalf("description is %T, want earkmods.Record", description)
+		t.Fatalf("description is %T, want mods.Record", description)
 	}
 	if record.Identifier != "ID-1" {
 		t.Errorf("Identifier = %q", record.Identifier)
 	}
-	wantTitles := []earkmods.Title{{Value: "Kat", Lang: "nl"}, {Value: "Cat", Lang: "en"}}
+	wantTitles := []mods.Title{{Value: "Kat", Lang: "nl"}, {Value: "Cat", Lang: "en"}}
 	if !slices.Equal(record.Titles, wantTitles) {
 		t.Errorf("Titles = %+v, want %+v", record.Titles, wantTitles)
 	}
@@ -107,7 +107,7 @@ func TestEarkModsTermsFillTheRecord(t *testing.T) {
 // A term the MODS mapping cannot place is a TermError at its index, and
 // the term is not placed; the terms around it still are. A repeat is
 // reported at the repeated term.
-func TestEarkModsErrorsNameTheTerm(t *testing.T) {
+func TestMODSErrorsNameTheTerm(t *testing.T) {
 	tests := []struct {
 		name  string
 		terms []sip.Term
@@ -125,7 +125,7 @@ func TestEarkModsErrorsNameTheTerm(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			description, errs := EarkMods{}.Map(tt.terms)
+			description, errs := MODS{}.Map(tt.terms)
 			if len(errs) != 1 {
 				t.Fatalf("errors = %v, want exactly one", errs)
 			}
@@ -138,7 +138,7 @@ func TestEarkModsErrorsNameTheTerm(t *testing.T) {
 			}
 			// The refused term left no trace: the record holds the terms
 			// before it and nothing else.
-			record := description.(earkmods.Record)
+			record := description.(mods.Record)
 			placed := len(record.Titles)
 			if record.Identifier != "" {
 				placed++

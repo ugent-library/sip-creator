@@ -1,4 +1,4 @@
-package earkdc
+package simpledc
 
 // elements is the Dublin Core Metadata Element Set (ISO 15836), in the
 // order DCMI lists it. In Simple Dublin Core a term's key is the element

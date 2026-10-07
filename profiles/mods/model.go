@@ -1,4 +1,4 @@
-package earkmods
+package mods
 
 import (
 	"bytes"
@@ -12,20 +12,20 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// mods is the MODS 3.7 metadata model: it accepts Record, writes it as a
+// Model is the MODS 3.7 metadata model, for a profile's definition.
+var Model build.MetadataModel = model{}
+
+// model is the MODS 3.7 metadata model: it accepts Record, writes it as a
 // MODS document with Encode, and says which supplied document is one of its
 // own. It never swaps: mods.xml keeps the
 // producer's identifier, the catalogue number the ingesting repository
 // indexes and operators search by (ADR-0012).
-type mods struct{}
+type model struct{}
 
 // DocumentFormat is optional to the engine, so a drift in
 // ValidateDocumentRoot's signature would fail silently; the assertion
 // makes it a build error.
-var (
-	_ build.MetadataModel  = mods{}
-	_ build.DocumentFormat = mods{}
-)
+var _ build.DocumentFormat = model{}
 
 // The namespace and version the template declares and a supplied document
 // must declare. ModelTypeVersion gives the METS dmdSec the same version,
@@ -35,16 +35,16 @@ const (
 	version   = "3.7"
 )
 
-func (mods) ValidateType(d sip.Description) error {
+func (model) ValidateType(d sip.Description) error {
 	if _, ok := d.(Record); !ok {
-		return fmt.Errorf("descriptive metadata is %T, not a MODS record (earkmods.Record)", d)
+		return fmt.Errorf("descriptive metadata is %T, not a MODS record (mods.Record)", d)
 	}
 	return nil
 }
 
 // ValidateDocumentRoot returns why root is not a mods:mods element in the
 // MODS v3 namespace declaring the version the package's METS declares.
-func (mods) ValidateDocumentRoot(root xml.StartElement) error {
+func (model) ValidateDocumentRoot(root xml.StartElement) error {
 	if root.Name.Space != namespace || root.Name.Local != "mods" {
 		return fmt.Errorf("root element is {%s}%s, expected a mods:mods document in the MODS v3 namespace (%s)", root.Name.Space, root.Name.Local, namespace)
 	}
@@ -62,7 +62,7 @@ func (mods) ValidateDocumentRoot(root xml.StartElement) error {
 // states one, one titleInfo per title in the order given, then the items
 // as one location/holdingSimple with one copyInformation each, omitted
 // when there are none.
-func (mods) Encode(w io.Writer, d sip.Description, schemasDir string) error {
+func (model) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
 	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemasDir, localIdentifierType, namespace, version}); err != nil {
 		return err
@@ -72,20 +72,20 @@ func (mods) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 }
 
 // ModelType types the document as MODS.
-func (mods) ModelType() string {
+func (model) ModelType() string {
 	return "MODS"
 }
 
 // ModelTypeVersion is the MODS version the template writes and a supplied
 // document must declare.
-func (mods) ModelTypeVersion() string {
+func (model) ModelTypeVersion() string {
 	return version
 }
 
 // Schemas returns the bundled XSDs the MODS document points at:
 // mods-3-7.xsd alone. Its own imports of xml.xsd and xlink.xsd are absolute
 // loc.gov URLs, not files next to it, so nothing else needs to ship.
-func (mods) Schemas() []build.Schema {
+func (model) Schemas() []build.Schema {
 	return build.BundledSchemas("mods-3-7.xsd")
 }
 

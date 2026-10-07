@@ -12,8 +12,8 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
-	"github.com/ugent-library/sip-creator/profiles/earkmods"
+	"github.com/ugent-library/sip-creator/profiles/mods"
+	"github.com/ugent-library/sip-creator/profiles/simpledc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -48,7 +48,7 @@ func ExampleBuilder_Build() {
 	}
 
 	pkg, err := builder.Build(&build.SourcePackage{
-		Description: earkdc.Terms{
+		Description: simpledc.Terms{
 			{Key: "identifier", Value: "example-0001"},
 			{Key: "title", Value: "Example photograph"},
 			{Key: "description", Value: "An example package with one image."},
@@ -96,12 +96,12 @@ func ExampleBuilder_Build_mods() {
 	}
 
 	pkg, err := builder.Build(&build.SourcePackage{
-		Description: earkmods.Record{
+		Description: mods.Record{
 			Identifier: "example-0001",
-			Titles: []earkmods.Title{
+			Titles: []mods.Title{
 				{Value: "Example book", Lang: "en"},
 			},
-			Items: []earkmods.Item{
+			Items: []mods.Item{
 				{CallNumber: "EX.0001", Barcode: "0000000001"},
 				{CallNumber: "EX.0002", Enumeration: "vol. 2"},
 			},
@@ -324,7 +324,7 @@ func ExampleBuilder_Build_update() {
 		PackageIdentifier: "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e",
 		RecordStatus:      sip.RecordStatusReplacement,
 		ContentCategory:   "Photographs – Digital",
-		Description: earkdc.Terms{
+		Description: simpledc.Terms{
 			{Key: "identifier", Value: "example-0001"},
 			{Key: "title", Value: "Example photograph"},
 		},

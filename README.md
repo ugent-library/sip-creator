@@ -47,7 +47,7 @@ Choose a profile with `--profile` on the command line, or with `profiles.Get` in
 | [`description.csv` keys](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) | the 15 Dublin Core elements | `identifier`, `title` | Meemoo's key table |
 | Required keys | `identifier`, `title` | `identifier`, `title` | `identifier`, `title`, `description`, `created` |
 | [Finished document](docs/input-spec.md#supplying-a-finished-document-earkdc-and-earkmods) accepted | `dc.xml` | `mods.xml` | none |
-| Go description type | `earkdc.Terms` | `earkmods.Record` | `meemoo.Terms` |
+| Go description type | `simpledc.Terms` | `mods.Record` | `meemoo.Terms` |
 | Submitter | name | name | name and Meemoo OR-id |
 | Representation type | written to the METS | written to the METS | ignored |
 | You deliver | the zip | the zip | the package directory, in a BagIt bag |
@@ -72,7 +72,7 @@ metadata works as under `eark/dc`.
 
 MODS is a tree, so `description.csv` holds only `identifier` and `title`. A richer
 record, such as one listing the library's physical copies of the work (call number,
-barcode, volume), comes as a finished `mods.xml`, or in Go as an `earkmods.Record` with
+barcode, volume), comes as a finished `mods.xml`, or in Go as a `mods.Record` with
 `Items`. Physical copies belong on the package-level record, because a representation is
 a version of the content, never a copy. The library does not refuse items on a
 representation's record; it writes them to that representation's `mods.xml`.
@@ -374,10 +374,10 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
+	"github.com/ugent-library/sip-creator/profiles/simpledc"
 )
 
-def, ok := profiles.Get("eark")
+def, ok := profiles.Get("eark/dc")
 if !ok {
 	// ...
 }
@@ -398,7 +398,7 @@ if err != nil {
 
 pkg, err := builder.Build(&build.SourcePackage{
 	// The description's type belongs to the profile (see Profiles).
-	Description: earkdc.Terms{
+	Description: simpledc.Terms{
 		{Key: "identifier", Value: "example-0001"},
 		{Key: "title", Value: "Example photograph"},
 		{Key: "description", Value: "An example package with one image."},
@@ -422,7 +422,7 @@ input folder's `documentation/` and `premis/`.
 
 ### Descriptive metadata
 
-The `eark/mods` profile takes an `earkmods.Record` instead of a list of terms: an
+The `eark/mods` profile takes a `mods.Record` instead of a list of terms: an
 identifier, titles, and physical copies as items, each a call number with an optional
 barcode and an optional volume or issue designation (example: `ExampleBuilder_Build_mods`).
 

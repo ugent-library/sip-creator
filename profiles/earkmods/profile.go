@@ -1,18 +1,21 @@
+// Package earkmods is the eark/mods profile: a plain E-ARK SIP whose
+// descriptive standard is MODS 3.7.
 package earkmods
 
 import (
 	"github.com/ugent-library/sip-creator/build"
+	"github.com/ugent-library/sip-creator/profiles/mods"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
 // Definition is the eark/mods profile: the eark/dc profile's plain E-ARK SIP
-// (spec 2.2.0), writing mods.xml from a Record where eark writes dc.xml
-// from Simple Dublin Core terms, and no PREMIS.
-// Every other value is eark's. The registry in profiles/ hands it out under
+// (spec 2.2.0), writing mods.xml from a mods.Record where eark/dc writes
+// dc.xml from Simple Dublin Core terms, and no PREMIS.
+// Every other value is eark/dc's. The registry in profiles/ hands it out under
 // the name "eark/mods".
 var Definition = build.Definition{
 	Name:  "eark/mods",
-	Model: mods{},
+	Model: mods.Model,
 	// Named after the MODS document it holds.
 	DocumentName: "mods.xml",
 	// As for eark: a representation may carry its own description.

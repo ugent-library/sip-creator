@@ -9,7 +9,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/encoders/xmldoc"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
+	"github.com/ugent-library/sip-creator/profiles/simpledc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -30,7 +30,7 @@ func TestBuildEscapesValues(t *testing.T) {
 		description sip.Description
 	}{
 		{"meemoo/basic", basicDef(t), meemooTerms},
-		{"eark/dc", earkDef(t), earkdc.Terms{{Key: "identifier", Value: localID}, {Key: "title", Value: "Catus Testus"}}},
+		{"eark/dc", earkDef(t), simpledc.Terms{{Key: "identifier", Value: localID}, {Key: "title", Value: "Catus Testus"}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

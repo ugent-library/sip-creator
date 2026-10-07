@@ -1,4 +1,4 @@
-package earkmods
+package mods
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 func encode(t *testing.T, r Record, schemasDir string) string {
 	t.Helper()
 	var buf bytes.Buffer
-	if err := (mods{}).Encode(&buf, r, schemasDir); err != nil {
+	if err := (model{}).Encode(&buf, r, schemasDir); err != nil {
 		t.Fatalf("Encode: %v", err)
 	}
 	return buf.String()

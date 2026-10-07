@@ -13,9 +13,9 @@ import (
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/mets"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
-	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/profiles/mods"
+	"github.com/ugent-library/sip-creator/profiles/simpledc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -455,9 +455,9 @@ func identifierTerm(d sip.Description) string {
 	switch v := d.(type) {
 	case meemoo.Terms:
 		terms, key = v, "dcterms:identifier"
-	case earkdc.Terms:
+	case simpledc.Terms:
 		terms = v
-	case earkmods.Record:
+	case mods.Record:
 		return v.Identifier
 	}
 	for _, term := range terms {
@@ -535,7 +535,7 @@ func TestAssembleAddsTheSoftwareAgent(t *testing.T) {
 func TestAssembleLabelsDescriptionFilesWithTheModel(t *testing.T) {
 	b, in, _ := newTestBuilder(t, earkDef(t))
 	in.Description = identityTerms()
-	in.Representations[0].Description = earkdc.Terms{{Key: "rights", Value: "CC BY 4.0"}}
+	in.Representations[0].Description = simpledc.Terms{{Key: "rights", Value: "CC BY 4.0"}}
 
 	pkg, err := b.Assemble(in)
 	if err != nil {
@@ -558,7 +558,7 @@ func TestAssembleLabelsDescriptionFilesWithTheModel(t *testing.T) {
 func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	b, in, _ := newTestBuilder(t, earkDef(t))
 	in.Description = identityTerms()
-	in.Representations[0].Description = earkdc.Terms{
+	in.Representations[0].Description = simpledc.Terms{
 		{Key: "identifier", Value: "rep-local-1"},
 	}
 

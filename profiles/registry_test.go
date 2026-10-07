@@ -10,9 +10,9 @@ import (
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/xmldoc"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
-	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/profiles/mods"
+	"github.com/ugent-library/sip-creator/profiles/simpledc"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -81,8 +81,8 @@ func TestRegistrySchemas(t *testing.T) {
 // document's root.
 var sampleDescriptions = map[string]sip.Description{
 	"meemoo/basic": meemoo.Terms{},
-	"eark/dc":      earkdc.Terms{},
-	"eark/mods":    earkmods.Record{},
+	"eark/dc":      simpledc.Terms{},
+	"eark/mods":    mods.Record{},
 }
 
 // The schema-location hint of each profile's descriptive document points

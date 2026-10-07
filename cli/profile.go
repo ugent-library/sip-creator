@@ -20,8 +20,8 @@ import (
 // behind.
 var mappers = map[string]input.Mapper{
 	meemoo.Definition.Name:   mapping.Meemoo{},
-	earkdc.Definition.Name:   mapping.EarkDC{},
-	earkmods.Definition.Name: mapping.EarkMods{},
+	earkdc.Definition.Name:   mapping.SimpleDC{},
+	earkmods.Definition.Name: mapping.MODS{},
 }
 
 // addProfileFlag declares the required --profile flag on cmd. check and

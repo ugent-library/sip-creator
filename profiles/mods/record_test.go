@@ -1,4 +1,4 @@
-package earkmods
+package mods
 
 import (
 	"strings"

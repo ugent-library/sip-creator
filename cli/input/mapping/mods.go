@@ -5,24 +5,25 @@ import (
 	"strings"
 
 	"github.com/ugent-library/sip-creator/profiles/earkmods"
+	"github.com/ugent-library/sip-creator/profiles/mods"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// EarkMods is the eark/mods profile's mapping: the MODS keys the input
+// MODS is the eark/mods profile's mapping: the MODS keys the input
 // specification lists and where each one goes in the record. The record is
-// typed by field (ADR-0021), so the key table lives here, not in the
-// profile package. A term that breaks a rule on its own (an unknown key,
+// typed by field (ADR-0021), so the key table lives here, not in
+// profiles/mods. A term that breaks a rule on its own (an unknown key,
 // a language tag where none is taken, an empty value, a repeat) is an
 // error at its index and is not placed. The rows carry flat terms only: a
 // record's copies reach the package through the library's record or a
 // supplied mods.xml.
-type EarkMods struct{}
+type MODS struct{}
 
 // placement is what the mapping knows about one key: where its value
 // goes in the record, whether the key takes a language tag, and how often
 // it may occur.
 type placement struct {
-	fill      func(*earkmods.Record, sip.Term)
+	fill      func(*mods.Record, sip.Term)
 	takesLang bool
 	occurs    cardinality
 }
@@ -37,12 +38,12 @@ const (
 
 var modsKeys = map[string]placement{
 	"identifier": {
-		fill:   func(r *earkmods.Record, t sip.Term) { r.Identifier = t.Value },
+		fill:   func(r *mods.Record, t sip.Term) { r.Identifier = t.Value },
 		occurs: once,
 	},
 	"title": {
-		fill: func(r *earkmods.Record, t sip.Term) {
-			r.Titles = append(r.Titles, earkmods.Title{Value: t.Value, Lang: t.Lang})
+		fill: func(r *mods.Record, t sip.Term) {
+			r.Titles = append(r.Titles, mods.Title{Value: t.Value, Lang: t.Lang})
 		},
 		takesLang: true,
 		occurs:    oncePerLanguage,
@@ -52,8 +53,8 @@ var modsKeys = map[string]placement{
 // Map fills a record from the terms in order, reporting each term
 // it cannot place as a *sip.TermError at its index. A repeat is reported
 // at the repeated term; the first one is placed.
-func (EarkMods) Map(terms []sip.Term) (sip.Description, []error) {
-	var record earkmods.Record
+func (MODS) Map(terms []sip.Term) (sip.Description, []error) {
+	var record mods.Record
 	var errs []error
 	placed := map[string]bool{} // key, or key and language
 	for i, t := range terms {

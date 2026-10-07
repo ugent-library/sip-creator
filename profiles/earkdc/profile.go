@@ -1,16 +1,19 @@
+// Package earkdc is the eark/dc profile: a plain E-ARK SIP whose
+// descriptive standard is Simple Dublin Core.
 package earkdc
 
 import (
 	"github.com/ugent-library/sip-creator/build"
+	"github.com/ugent-library/sip-creator/profiles/simpledc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
 // Definition is the eark/dc profile: a plain E-ARK SIP (spec 2.2.0), writing
-// dc.xml from Terms and no PREMIS. The registry in profiles/ hands it out
-// under the name "eark/dc".
+// dc.xml from simpledc.Terms and no PREMIS. The registry in profiles/ hands
+// it out under the name "eark/dc".
 var Definition = build.Definition{
 	Name:  "eark/dc",
-	Model: simpledc{},
+	Model: simpledc.Model,
 	// Named after the simple-DC document it holds; Meemoo's naming
 	// convention doesn't apply to the eark/dc profile.
 	DocumentName: "dc.xml",

@@ -1,10 +1,9 @@
-// Package earkmods is the eark/mods profile: a plain E-ARK SIP whose
-// descriptive standard is MODS 3.7. A package
-// describes one bibliographic record, typed by field where MODS is a tree
-// (ADR-0021): the record's identifier and titles, plus the physical copies
-// the library holds of it. Its Definition names the rest as data, and the
-// registry in profiles/ hands that out as "eark/mods".
-package earkmods
+// Package mods is the MODS 3.7 model: one bibliographic record, typed by
+// field where MODS is a tree (ADR-0021): the record's identifier and
+// titles, plus the physical copies the library holds of it. A profile
+// whose descriptive standard is MODS 3.7 takes Model as its metadata
+// model.
+package mods
 
 import (
 	"errors"
