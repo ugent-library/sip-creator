@@ -25,6 +25,11 @@ var Basic = build.Definition{
 	// one of preservation, archival and access, exactly, in lowercase."
 	// The name is also the representation's type.
 	RepresentationTypes: []string{"preservation", "archival", "access"},
+	// docs/profiles/ugent-basic.md §4: "A package MAY hold no
+	// representation at all: a description of an intellectual entity whose
+	// content is not, or not yet, in the archive." CSIP58 allows a package
+	// without file references to content.
+	MinRepresentations: 0,
 	// A representation may carry its own description, such as a license
 	// that holds for one version only; CSIP has no rule against it.
 	AllowRepresentationDescriptions: true,
@@ -70,6 +75,9 @@ var Bibliographic = build.Definition{
 	// MUST be one of preservation, archival and access, exactly, in
 	// lowercase." The name is also the representation's type.
 	RepresentationTypes: []string{"preservation", "archival", "access"},
+	// As for Basic: a package may hold no representation at all
+	// (docs/profiles/ugent-bibliographic.md §4).
+	MinRepresentations: 0,
 	// As for Basic: a representation may carry its own description.
 	AllowRepresentationDescriptions: true,
 	// No PREMIS, as for Basic.

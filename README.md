@@ -274,7 +274,7 @@ your-input/
 |---|---|---|---|
 | `description.csv` | yes, or the profile's document | descriptive metadata as `key,value` rows | [§3](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) |
 | `dc.xml`, `mods.xml` | instead of `description.csv`, where the profile accepts one | a finished descriptive document | [§3](docs/input-spec.md#supplying-a-finished-document-ugentbasic-and-ugentbibliographic) |
-| `representations/<name>/` | yes | one folder per version of the content | [§2](docs/input-spec.md#2-content-files-and-representations) |
+| `representations/<name>/` | under `meemoo/basic`, exactly one | one folder per version of the content | [§2](docs/input-spec.md#2-content-files-and-representations) |
 | `representations.csv` | no | a label and type per representation folder | [§2](docs/input-spec.md#representationscsv-labels-and-types-optional) |
 | `documentation/` | no | context material; commons-ip warns when a representation has none | [§4](docs/input-spec.md#4-documentation) |
 | `premis/` | no | received preservation XML, copied as it is | [§5](docs/input-spec.md#5-received-preservation-files-premis) |
@@ -462,6 +462,11 @@ on the `SourcePackage` override them per package (example: `ExampleBuilder_Build
   SIP3 vocabulary). Without it the METS carries no status, which the E-ARK SIP
   specification reads as new.
 * `ContentCategory`: `mets/@TYPE`, the CSIP content category.
+
+Under the UGent profiles an update may carry metadata only: leave `Representations`
+empty, and the package carries the description and no content (CSIP58). The
+command-line tool does the same for a folder with a description and no
+`representations/`.
 
 ### Format characterization
 

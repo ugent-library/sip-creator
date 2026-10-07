@@ -33,7 +33,6 @@ func TestSourcePackageValidate(t *testing.T) {
 		{"no title", func(c *build.SourcePackage) {
 			c.Description = meemoo.Terms{{Key: "dcterms:identifier", Value: "x"}}
 		}, "title is required"},
-		{"no representations", func(c *build.SourcePackage) { c.Representations = nil }, "at least one version"},
 		{"bad name", func(c *build.SourcePackage) { c.Representations[0].Name = "master copy" }, "may only contain"},
 		{"dot name", func(c *build.SourcePackage) { c.Representations[0].Name = "." }, "outside representations/"},
 		{"dot-dot name", func(c *build.SourcePackage) { c.Representations[0].Name = ".." }, "outside representations/"},

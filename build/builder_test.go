@@ -266,13 +266,14 @@ func TestBuildWithoutLogger(t *testing.T) {
 }
 
 // Build refuses invalid input data before any side effect: a SourcePackage
-// built directly in Go that breaks a rule leaves nothing on disk.
+// built directly in Go that breaks a rule, here meemoo/basic's one
+// representation, leaves nothing on disk.
 func TestBuildInvalidSourceWritesNothing(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.Representations = nil
 
 	_, err := b.Build(in)
-	if want := "no representations supplied"; err == nil || !strings.Contains(err.Error(), want) {
+	if want := `profile "meemoo/basic" needs at least 1 representation(s), the package has 0`; err == nil || !strings.Contains(err.Error(), want) {
 		t.Fatalf("Build error = %v, want %q", err, want)
 	}
 	requireEmpty(t, outDir)

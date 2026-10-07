@@ -51,7 +51,7 @@ This document holds the folder rules. The rules on the package itself that diffe
 
 ## 2. Content files and representations
 
-A *representation* is one version of the content: the archival master scans are one, a derived PDF is another. Every package has at least one.
+A *representation* is one version of the content: the archival master scans are one, a derived PDF is another. How many a package needs is the profile's rule: `meemoo/basic` needs exactly one; the UGent profiles take zero or more, so a folder with only a description and no `representations/` builds a package without content, one that carries metadata only (CSIP58).
 
 - Content MUST live in a representation folder: each folder directly inside `representations/` is one representation, named after that folder. A content file or folder at the top level, beside the reserved names, MUST be an error: the tool cannot tell which version of the content loose files are. Under `meemoo/basic` there MUST be exactly one representation, as Meemoo SIP 1.2's basic profile requires ("The IE MUST be represented by exactly one representation."). The UGent profiles set no limit.
 - Under the UGent profiles a representation's name MUST be one of `preservation`, `archival` and `access`, and the name is also its type; their meaning is in the profile pages ([`ugent/basic`](profiles/ugent-basic.md#4-representations), [`ugent/bibliographic`](profiles/ugent-bibliographic.md#4-representations)). `meemoo/basic` names none.
@@ -228,6 +228,7 @@ These values span many packages or belong to the run, so they do not live in the
 
 - Without `--status` the package carries no record status, which the E-ARK SIP specification reads as new.
 - To submit a package that supplements or replaces an earlier one, pass the kind of update and the original package identifier (e.g. `--status replacement --updates <original-package-id>`). The tool reuses the original identifier as the package identifier, so the archive can match the update to the package it holds.
+- Under the UGent profiles an update may carry metadata only: a folder with the new `description.csv` (or document) and no `representations/`, built with `--status` and `--updates`.
 
 Because the submitting organization comes from configuration, the folder alone does not determine the package. The generated METS records the values used: audit the output, not the input.
 

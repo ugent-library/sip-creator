@@ -14,10 +14,11 @@ var Definition = build.Definition{
 	// Meemoo identifies the submitting organization by its OR-id
 	// (Meemoo SIP 1.2, metsHdr agent note).
 	RequireSubmitterORID: true,
-	// The basic profile allows exactly one representation: a maximum of 1
-	// here, with the one every package needs (SourcePackage.Validate). It
-	// allows no descriptive metadata at the representation level
-	// (AllowRepresentationDescriptions left false).
+	// The basic profile allows exactly one representation: "The IE MUST be
+	// represented by exactly one representation." It allows no descriptive
+	// metadata at the representation level (AllowRepresentationDescriptions
+	// left false).
+	MinRepresentations: 1,
 	MaxRepresentations: 1,
 	// The filename Meemoo's basic profile expects for the descriptive
 	// document.

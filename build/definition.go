@@ -25,11 +25,18 @@ type Definition struct {
 	// OR-id, emitted as the agent's IDENTIFICATIONCODE note (Meemoo SIP
 	// 1.2, metsHdr); WithSubmitter needs the OR-id when set.
 	RequireSubmitterORID bool
+	// MinRepresentations is the number of representations a package needs
+	// at least; zero allows a package without any, which carries metadata
+	// only (CSIP58: "In the case that a package only contains metadata
+	// updates, i.e. exclusively metadata files, then no file references need
+	// to be added to this section."; the E-ARK SIP 2.2.0 introduction: "A
+	// package with zero representations means that it only contains
+	// metadata.").
+	MinRepresentations int
 	// MaxRepresentations is the number of representations a package may
-	// have at most; zero sets no limit. With the one representation every
-	// package needs (SourcePackage.Validate), a maximum of 1 means exactly
-	// one, as Meemoo SIP 1.2's basic profile requires: "The IE MUST be
-	// represented by exactly one representation."
+	// have at most; zero sets no limit. With MinRepresentations, a minimum
+	// and maximum of 1 mean exactly one, as Meemoo SIP 1.2's basic profile
+	// requires: "The IE MUST be represented by exactly one representation."
 	MaxRepresentations int
 	// RepresentationTypes is the closed set of names a representation may
 	// have; nil sets none. Under a set, a representation's name is also its
@@ -126,8 +133,9 @@ func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 
 // ValidateSource returns why the source package is not one the profile
 // accepts: a description that is not in the profile's metadata model, or a
-// package that breaks the profile's own rules (MaxRepresentations,
-// RepresentationTypes, AllowRepresentationDescriptions). The profile's rules are joined, one error each,
+// package that breaks the profile's own rules (MinRepresentations,
+// MaxRepresentations, RepresentationTypes,
+// AllowRepresentationDescriptions). The profile's rules are joined, one error each,
 // so all of them can be reported at once. It writes nothing, so a source
 // package can be checked against the profile without building it. What
 // every package needs regardless of profile is SourcePackage.Validate's.
@@ -137,6 +145,9 @@ func (d Definition) ValidateSource(source *SourcePackage) error {
 	}
 
 	var errs []error
+	if len(source.Representations) < d.MinRepresentations {
+		errs = append(errs, fmt.Errorf("profile %q needs at least %d representation(s), the package has %d", d.Name, d.MinRepresentations, len(source.Representations)))
+	}
 	if d.MaxRepresentations > 0 && len(source.Representations) > d.MaxRepresentations {
 		errs = append(errs, fmt.Errorf("profile %q allows at most %d representation(s), the package has %d", d.Name, d.MaxRepresentations, len(source.Representations)))
 	}

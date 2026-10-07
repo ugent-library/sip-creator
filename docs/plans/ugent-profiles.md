@@ -15,7 +15,9 @@ library's `SourcePackage.Validate`. Step 7 landed 2026-10-07: `RepresentationTyp
 a vocabulary an empty type resolves to the name, not the label; the UGent examples hold
 `archival/` (a TIFF) and `access/` (a JPEG). A `representations.csv` type other than the
 folder is refused by `ValidateSource`, naming the representation, not the row's line.
-Each step is proposed in chat before it starts. The plan takes over from the retired
+Step 8 landed 2026-10-07: `MinRepresentations`; the UGent profiles take a package
+without representations, which commons-ip reports VALID with two SHOULD-level warnings
+(CSIPSTR11, CSIPSTR13; see docs/TODO.md). Each step is proposed in chat before it starts. The plan takes over from the retired
 [profile-rules-and-names plan](../archive/profile-rules-and-names.md): its parked step 5
 (the representation minimum) returns here as step 8; its step 8 (`eark/none`) is dropped;
 its steps 2 to 4 (a profile without descriptive metadata) are absorbed by the parked

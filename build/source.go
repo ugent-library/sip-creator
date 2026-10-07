@@ -111,7 +111,9 @@ type SourcePackage struct {
 	// Meemoo profiles, simpledc.Terms for ugent/basic, mods.Record for ugent/bibliographic)
 	// or, for the UGent profiles, an EncodedDescription of that standard.
 	Description sip.Description
-	// Representations is the content, at least one.
+	// Representations is the content. How many a package needs is the
+	// profile's rule (Definition.MinRepresentations); a package without
+	// any carries metadata only.
 	Representations []SourceRepresentation
 	// Documentation optionally documents the whole package.
 	Documentation []SourceFile
@@ -211,9 +213,6 @@ func (sp *SourcePackage) Validate() error {
 		return fmt.Errorf("descriptive metadata: %w", err)
 	}
 
-	if len(sp.Representations) == 0 {
-		return fmt.Errorf("no representations supplied: a package needs at least one version of the content")
-	}
 	names := make(map[string]bool, len(sp.Representations))
 	for _, r := range sp.Representations {
 		if err := ValidateRepresentationName(r.Name); err != nil {

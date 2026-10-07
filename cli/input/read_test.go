@@ -261,23 +261,31 @@ func TestReadArtifactsAreNotContent(t *testing.T) {
 	assertViolation(t, err, "no content files")
 }
 
-func TestReadEmptyRepresentationsDir(t *testing.T) {
-	root := writeTree(t, map[string]string{
-		"description.csv":  minimalCSV,
-		"representations/": "",
-	})
-
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
-	assertViolation(t, err, "no representation folders")
+// A folder whose representations/ is empty, or that has none, holds no
+// representations; whether the package may have none is the profile's
+// verdict, not the reader's.
+func TestReadNoRepresentations(t *testing.T) {
+	for name, files := range map[string]map[string]string{
+		"empty representations/": {"description.csv": minimalCSV, "representations/": ""},
+		"no representations/":    {"description.csv": minimalCSV},
+		"only a documentation/":  {"description.csv": minimalCSV, "documentation/notes.txt": "n"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			pkg, err := Read(writeTree(t, files), mapping.Meemoo{}, meemooDocumentSpec)
+			if err != nil {
+				t.Fatalf("Read: %v", err)
+			}
+			if len(pkg.Representations) != 0 {
+				t.Errorf("representations = %d, want none", len(pkg.Representations))
+			}
+		})
+	}
 }
 
-// Content lives only in a representation folder: a folder without
-// representations/ has none, and its loose content is reported in one
-// violation that names the first entries, however many there are.
-func TestReadNoRepresentationsFolder(t *testing.T) {
-	_, err := Read(writeTree(t, map[string]string{"description.csv": minimalCSV}), mapping.Meemoo{}, meemooDocumentSpec)
-	assertViolation(t, err, "the folder has no representations/ folder: a package needs at least one version of the content")
-
+// Content lives only in a representation folder: the loose content of a
+// folder without representations/ is reported in one violation that names
+// the first entries, however many there are.
+func TestReadLooseContentWithoutRepresentationsFolder(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv": minimalCSV,
 		"a.tiff":          "a",
@@ -286,7 +294,7 @@ func TestReadNoRepresentationsFolder(t *testing.T) {
 		"d.tiff":          "d",
 		"sub/e.tiff":      "e",
 	})
-	_, err = Read(root, mapping.Meemoo{}, meemooDocumentSpec)
+	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 	var v Violations
 	errors.As(err, &v)
 	want := "the folder has no representations/ folder: move the content at the top level (a.tiff, b.tiff, c.tiff and 2 more) into a representation folder, representations/<name>/"

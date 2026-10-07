@@ -169,3 +169,23 @@ func TestValidateSourceAppliesRepresentationTypes(t *testing.T) {
 		t.Errorf("meemoo/basic has no vocabulary, yet ValidateSource refused: %v", err)
 	}
 }
+
+// meemoo/basic needs one representation; the UGent profiles accept a
+// package without any.
+func TestValidateSourceAppliesMinRepresentations(t *testing.T) {
+	_, in, _ := newTestBuilder(t, basicDef(t))
+	in.Representations = nil
+	want := `profile "meemoo/basic" needs at least 1 representation(s), the package has 0`
+	if err := basicDef(t).ValidateSource(in); err == nil || !strings.Contains(err.Error(), want) {
+		t.Errorf("ValidateSource = %v, want %q", err, want)
+	}
+
+	in.Description = identityTerms()
+	if err := ugentBasicDef(t).ValidateSource(in); err != nil {
+		t.Errorf("ugent/basic refused a package without representations: %v", err)
+	}
+	in.Description = identityRecord()
+	if err := bibliographicDef(t).ValidateSource(in); err != nil {
+		t.Errorf("ugent/bibliographic refused a package without representations: %v", err)
+	}
+}

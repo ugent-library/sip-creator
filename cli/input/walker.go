@@ -120,7 +120,11 @@ func (r *folderReader) walk() (*build.SourcePackage, inventory) {
 		if representationsCSVPath != "" {
 			r.violate("representations.csv requires a representations/ folder")
 		}
-		r.violateNoRepresentationsFolder(content)
+		if len(content) > 0 {
+			r.violateLooseContent(content)
+		}
+		// No representations: whether the package may have none is the
+		// profile's verdict (Definition.ValidateSource), not the reader's.
 		return source, inv
 	}
 	for _, name := range content {
@@ -131,17 +135,11 @@ func (r *folderReader) walk() (*build.SourcePackage, inventory) {
 	return source, inv
 }
 
-// violateNoRepresentationsFolder records that the folder has no
-// representations/ folder, in one violation however many content entries
-// sit at the top level: a folder laid out before content had to live in a
-// representation folder would otherwise get one line per file. Without
-// content it repeats the library's rule (SourcePackage.Validate), so that
-// check, which never builds, reports it too.
-func (r *folderReader) violateNoRepresentationsFolder(content []string) {
-	if len(content) == 0 {
-		r.violate("the folder has no representations/ folder: a package needs at least one version of the content, in representations/<name>/")
-		return
-	}
+// violateLooseContent records that content sits at the top level of a
+// folder without representations/, in one violation however many entries
+// there are: a folder laid out before content had to live in a
+// representation folder would otherwise get one line per file.
+func (r *folderReader) violateLooseContent(content []string) {
 	const named = 3 // entries the message names; the rest it counts
 	listed := strings.Join(content[:min(len(content), named)], ", ")
 	if len(content) > named {
@@ -170,9 +168,9 @@ func (r *folderReader) readRepresentations(dir string) ([]build.SourceRepresenta
 		reps = append(reps, rep)
 		descriptions[name] = files
 	}
-	if len(reps) == 0 {
-		r.violate("representations/ contains no representation folders: a package needs at least one version of the content")
-	}
+	// An empty representations/ means no representations; whether the
+	// package may have none is the profile's verdict
+	// (Definition.ValidateSource).
 	return reps, descriptions
 }
 

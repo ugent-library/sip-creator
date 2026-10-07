@@ -41,9 +41,8 @@ func TestWalkIgnoresRepresentationsCSVWithoutRepresentationsFolder(t *testing.T)
 	r := &folderReader{root: root}
 	_, inv := r.walk()
 
-	if len(r.violations) != 2 || !strings.Contains(r.violations[0], "representations.csv requires a representations/ folder") ||
-		!strings.Contains(r.violations[1], "the folder has no representations/ folder") {
-		t.Errorf("violations = %q, want the file without its folder, then the missing folder", r.violations)
+	if len(r.violations) != 1 || !strings.Contains(r.violations[0], "representations.csv requires a representations/ folder") {
+		t.Errorf("violations = %q, want only the file without its folder", r.violations)
 	}
 	if inv.representationsCSV != "" {
 		t.Errorf("representationsCSV = %q, want it left out of the inventory", inv.representationsCSV)

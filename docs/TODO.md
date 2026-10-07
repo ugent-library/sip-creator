@@ -73,3 +73,16 @@ now validate **VALID with zero warnings**.
 the `eark-mods` profile joins them, VALID with zero warnings against
 2.2.0, and `build.sh` validates every `mods.xml` in the package against the
 MODS 3.7 schema with xmllint. All three profiles validate.
+
+**2026-10-07** ([ugent-profiles plan](plans/ugent-profiles.md) step 8): a package
+without representations, allowed under `ugent/basic` and `ugent/bibliographic`, reports
+VALID with two SHOULD-level warnings under commons-ip 2.11.2: CSIPSTR11 and CSIPSTR13,
+"The representation folder SHOULD include a sub-folder named data" and "named
+metadata". CSIP 2.2.0 defines a representation folder as a sub-folder of
+`representations/` (CSIPSTR10), and the package has none: its `representations/` is
+empty, as CSIP58 allows. The report names no path, so why commons-ip raises them is not
+known. Measured on the same package with the empty `representations/` removed: VALID
+with one warning, CSIPSTR9, "The Information Package folder SHOULD include a folder
+named representations.", which CSIP states without a condition. The package keeps the
+empty folder, so it meets CSIPSTR9; the two warnings are expected for such a package,
+and the examples, which hold representations, stay at zero warnings.

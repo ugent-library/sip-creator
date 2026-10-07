@@ -100,7 +100,7 @@ Rules:
   `type` empty, and MUST NOT give another value. **Checked.** The label is free.
 - A package MAY hold no representation at all: a description of an intellectual entity
   whose content is not, or not yet, in the archive. This holds for a new package and for
-  an update (§8). **From step 8**; until then a package needs at least one.
+  an update (§8). **Checked**: the tool accepts it.
 - A representation MUST hold at least one file. **Checked.**
 - Inside a representation, folders and file names are free. A digitisation of several
   physical copies MAY hold one folder per copy, named by the copy's barcode.
