@@ -154,7 +154,8 @@ func TestCreateCarriesFlagsAndConfiguration(t *testing.T) {
 
 // Without a submitter, create stops before reading the folder and names
 // the settings to set; a folder that breaks the input rules gets its
-// violations on stderr. Neither writes anything.
+// violations on stderr; an update whose earlier zip is still in dest is
+// refused before the build. None of them writes anything.
 func TestCreateRefusesBeforeWriting(t *testing.T) {
 	t.Run("no submitter", func(t *testing.T) {
 		t.Setenv("SIP_SUBMITTER_NAME", "")
@@ -178,6 +179,28 @@ func TestCreateRefusesBeforeWriting(t *testing.T) {
 			t.Errorf("stderr = %q, want the violation", stderr)
 		}
 		requireNothingWritten(t, dest)
+	})
+	t.Run("the earlier package's zip in dest", func(t *testing.T) {
+		const earlier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
+		t.Setenv("SIP_SUBMITTER_NAME", "Example Organization")
+		t.Setenv("SIP_SUBMITTER_OR_ID", "OR-a1b2c3d")
+		dest := t.TempDir()
+		oldZip := filepath.Join(dest, earlier+".zip")
+		if err := os.WriteFile(oldZip, []byte("old"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		_, _, err := runCLI(t, "create", "--profile", "eark/dc", "--status", "replacement", "--updates", earlier,
+			filepath.Join("..", "examples", "eark", "dc"), dest)
+		if err == nil || !strings.Contains(err.Error(), "already exists") {
+			t.Errorf("error = %v, want one saying the zip already exists", err)
+		}
+		entries, err := os.ReadDir(dest)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entries) != 1 || entries[0].Name() != earlier+".zip" {
+			t.Errorf("%s holds %v, want only the old zip", dest, entries)
+		}
 	})
 }
 

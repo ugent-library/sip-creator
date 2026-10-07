@@ -77,18 +77,29 @@ var createCmd = &cobra.Command{
 		source.RecordStatus = status
 		source.ContentCategory = contentCategory
 
+		noZip, _ := cmd.Flags().GetBool("no-zip")
+		zipper := archive.New(&archive.Config{
+			Destination: args[1],
+			Logger:      logger,
+		})
+		// An update reuses the earlier package's identifier, so its zip may
+		// still be in dest. Refuse before building, or the refused zip
+		// leaves the new package directory behind. A minted identifier is
+		// new, so there is nothing to check.
+		if !noZip && source.PackageIdentifier != "" {
+			if err := zipper.ValidateDestination(source.PackageIdentifier); err != nil {
+				return err
+			}
+		}
+
 		built, err := builder.Build(source)
 		if err != nil {
 			return err
 		}
 
-		if noZip, _ := cmd.Flags().GetBool("no-zip"); noZip {
+		if noZip {
 			return nil
 		}
-		zipper := archive.New(&archive.Config{
-			Destination: args[1],
-			Logger:      logger,
-		})
 		return zipper.Zip(built)
 	},
 }

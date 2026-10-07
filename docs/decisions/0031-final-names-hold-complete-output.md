@@ -1,6 +1,6 @@
 # 0031 — A package directory or zip appears under its final name only when complete
 
-Status: **Accepted** (2026-10-06).
+Status: **Accepted** (2026-10-06). **Amended 2026-10-07:** for an update, `create` now checks for `dest/<identifier>.zip` before building (`archive.ValidateDestination`), so the last consequence below no longer holds: an old zip is refused before anything is written. A suffix on the new names (`uuid-X_1.zip`) was rejected: the directory would no longer be named after its `OBJID`, the number would say nothing about the record, and a workflow that picks up every `*.zip` would send each copy.
 
 ## Context
 

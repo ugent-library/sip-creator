@@ -44,6 +44,25 @@ func New(config *Config) *Archive {
 	}
 }
 
+// ValidateDestination returns an error when the destination already holds
+// the zip for the package with this identifier. Zip never replaces one: it
+// may be one a transfer has picked up, or another build's. A program that
+// knows the identifier before building calls it first, so a refused zip
+// does not leave a freshly built package directory behind.
+func (a *Archive) ValidateDestination(identifier string) error {
+	dest := a.zipPath(identifier)
+	if _, err := os.Lstat(dest); err == nil {
+		return fmt.Errorf("zip %s already exists; move it away first", dest)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking zip %s: %w", dest, err)
+	}
+	return nil
+}
+
+func (a *Archive) zipPath(identifier string) string {
+	return filepath.Join(a.destination, identifier+".zip")
+}
+
 // Zip writes the package directory to dest/uuid-<uuid>.zip with every
 // entry stored uncompressed. The final name only ever holds a complete
 // zip: Zip refuses a zip that already exists, writes to a temporary file
@@ -51,12 +70,10 @@ func New(config *Config) *Archive {
 // zip leaves nothing behind; a process killed partway leaves only the
 // temporary file, whose name does not end in .zip.
 func (a *Archive) Zip(pkg *sip.Package) (err error) {
-	dest := filepath.Join(a.destination, pkg.Identifier+".zip")
-	if _, err := os.Lstat(dest); err == nil {
-		return fmt.Errorf("zip %s already exists; move it away first", dest)
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("checking zip %s: %w", dest, err)
+	if err := a.ValidateDestination(pkg.Identifier); err != nil {
+		return err
 	}
+	dest := a.zipPath(pkg.Identifier)
 
 	// The temporary file sits in the same directory, so the rename stays on
 	// one file system, where it is atomic. It is opened with the mode
