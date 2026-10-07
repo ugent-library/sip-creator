@@ -2,7 +2,7 @@
 
 *Status: **parked** (drafted 2026-10-07). No UGent case needs either today. The plan
 records the design and the facts checked, so the questions are not researched twice. It is
-written in the terms of the [ugent-profiles plan](ugent-profiles.md): a profile allows one
+written in the terms of the [ugent-profiles plan](../archive/ugent-profiles.md): a profile allows one
 or several models, and sub-entities are a profile rule. It resumes when a profile page
 states a rule that needs one of the two. Update this line when that happens.*
 

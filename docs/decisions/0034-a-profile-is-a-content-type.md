@@ -4,7 +4,7 @@ Status: **Accepted** (2026-10-07). Supersedes
 [ADR-0030](0030-profile-names-by-family.md). Supersedes in part
 [ADR-0018](0018-engine-and-profile-packages.md): a metadata model lives in a package
 named after its standard, and a profile's definition in its owner's package. The
-[ugent-profiles plan](../plans/ugent-profiles.md) carries the implementation.
+[ugent-profiles plan](../archive/ugent-profiles.md) carries the implementation.
 
 ## Context
 

@@ -50,9 +50,11 @@ code does with what our package contains:
 | our package | RODA mapping | verify in the UI |
 |---|---|---|
 | package METS `csip:CONTENTINFORMATIONTYPE="OTHER"` with `csip:OTHERCONTENTINFORMATIONTYPE` `ugent/basic` or `ugent/bibliographic` | becomes the **AIP type** | AIP shows type `ugent/basic` or `ugent/bibliographic`, or the label RODA's AIP type vocabulary gives it, which is RODA configuration and outside this tool |
-| rep METS `OBJID` (the representation's folder name) | becomes the **representation id**, status ORIGINAL | one original representation with that name |
+| rep METS `OBJID` (the representation's folder name: `preservation`, `archival` or `access`) | becomes the **representation id**, status ORIGINAL | one original representation per folder, with that name |
+| rep METS `csip:OTHERCONTENTINFORMATIONTYPE`, the folder name ([ADR-0013](decisions/0013-representation-type-from-label.md)) | becomes the **representation type** (RODA v5.7.0 and later) | each representation shows its type, `preservation`, `archival` or `access`, in the Type column |
 | essence in `data/` with METS checksums | files created; fixity verified at parse | files present, sizes right, no checksum complaints in the job report |
 | `dc.xml` (`ugent/basic`), `MDTYPE="DC"` + `MDTYPEVERSION="SimpleDC20021212"`, simple-DC shape | recognized descriptive metadata (`dc_SimpleDC20021212`) | title/description **rendered and indexed** (searchable), form-editable; if RODA shows raw XML instead, the typing didn't match |
+| `mods.xml` (`ugent/bibliographic`), `MDTYPE="MODS"` + `MDTYPEVERSION="3.7"` | descriptive metadata of type MODS 3.7 | rendered and indexed only if a MODS crosswalk is configured in RODA, which is outside this tool; otherwise shown as XML |
 | `documentation/` files | mapped into AIP documentation | visible under the AIP's documentation |
 | `schemas/` XSDs | mapped into AIP schemas | present (RODA ignores content) |
 | **no PREMIS** (v1 emits none) | nothing to map. Note that package-level PREMIS that isn't an agent/event would be *silently dropped* by RODA anyway | AIP has **no** preservation metadata from the SIP; RODA's own ingest events appear instead. That is expected, not a defect |

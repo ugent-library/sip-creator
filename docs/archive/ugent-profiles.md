@@ -1,6 +1,6 @@
 # Plan: a profile is a content type; the ugent family replaces eark
 
-*Status: **in progress** (drafted and revised 2026-10-07). Step 1 landed 2026-10-07:
+*Status: **shipped** 2026-10-07 and archived (drafted and revised the same day). The design is in [sip-creator-design.md](../sip-creator-design.md), the decisions in [ADR-0034](../decisions/0034-a-profile-is-a-content-type.md), the rules in the [profile pages](../profiles/). Step 1 landed 2026-10-07:
 [ADR-0034](../decisions/0034-a-profile-is-a-content-type.md) records decisions 1, 2, 3, 8
 and 9. Step 2 landed 2026-10-07: [ugent-basic](../profiles/ugent-basic.md) and
 [ugent-bibliographic](../profiles/ugent-bibliographic.md), written ahead of the code,
@@ -18,11 +18,12 @@ folder is refused by `ValidateSource`, naming the representation, not the row's 
 Step 8 landed 2026-10-07: `MinRepresentations`; the UGent profiles take a package
 without representations, which commons-ip reports VALID with two SHOULD-level warnings
 (CSIPSTR11, CSIPSTR13; see docs/TODO.md). Step 9 dropped 2026-10-07: the tool does not
-check an identifier's syntax. Each step is proposed in chat before it starts. The plan takes over from the retired
+check an identifier's syntax. Step 10 landed 2026-10-07: TODO, the runbook and the
+input specification's §4 follow; ADR-0029 has a note on CSIPSTR9. The plan takes over from the retired
 [profile-rules-and-names plan](../archive/profile-rules-and-names.md): its parked step 5
 (the representation minimum) returns here as step 8; its step 8 (`eark/none`) is dropped;
 its steps 2 to 4 (a profile without descriptive metadata) are absorbed by the parked
-[entities-and-descriptions plan](entities-and-descriptions.md), where an empty list of
+[entities-and-descriptions plan](../plans/entities-and-descriptions.md), where an empty list of
 models means no descriptive metadata. Update this line as steps land.*
 
 ## Context
@@ -89,7 +90,7 @@ The owner in the name keeps them apart; the profile pages say so.
 - One SIP becomes one AIP in RODA. Hierarchy is parent AIPs, assigned by the ingest job's
   dropfolder or named by a RODA-specific ancestors structMap. Sub-entities inside a
   package are therefore not this plan's concern; the parked
-  [entities-and-descriptions plan](entities-and-descriptions.md) has them.
+  [entities-and-descriptions plan](../plans/entities-and-descriptions.md) has them.
 - Systems that automate UGent's RODA ingest already enforce, on their own input: a
   representation directory is named from a closed vocabulary (`preservation`, `access`,
   `archival`), one directory per type, at least one, each holding files; the content
@@ -103,7 +104,7 @@ The owner in the name keeps them apart; the profile pages say so.
   catalogue identifier, titles, and copies with call number, barcode and enumeration.
   Naming it `ugent/bibliographic` makes that honest and settles the vocabulary question
   [ADR-0033](../decisions/0033-ugent-first-profiles-of-your-own.md) reopened: the model
-  keeps the library's catalogue words. The parked [mods-coverage plan](mods-coverage.md)
+  keeps the library's catalogue words. The parked [mods-coverage plan](../plans/mods-coverage.md)
   gets a note.
 - commons-ip checks `OTHER` plus a value under 2.2.0 as it does for `meemoo/basic` under
   2.0.4 (CSIP5 and CSIP6), so the declaration change should validate; step 5 confirms

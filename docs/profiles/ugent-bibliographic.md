@@ -1,15 +1,14 @@
 # Profile `ugent/bibliographic`
 
-*Content type `ugent/bibliographic`, defined by UGent Library. Written 2026-10-07, ahead
-of the code: the rules marked "from step N" are checked once that step of the
-[ugent-profiles plan](../plans/ugent-profiles.md) lands. The decision is
+*Content type `ugent/bibliographic`, defined by UGent Library. Written 2026-10-07 with the
+[ugent-profiles plan](../archive/ugent-profiles.md). The decision is
 [ADR-0034](../decisions/0034-a-profile-is-a-content-type.md).*
 
 The key words MUST, SHOULD and MAY are to be interpreted as in RFC 2119. Each MUST says
 who holds it: **checked** (`check` and `create` refuse a package that breaks it, and so
-does a program that builds through the library), **from step N** (checked once that plan
-step lands), **written** (the tool writes the value itself, so no input can break it), or **operator** (the tool cannot see it; the person preparing the package is
-responsible). A SHOULD is advice the tool does not check.
+does a program that builds through the library), **written** (the tool writes the value
+itself, so no input can break it), or **operator** (the tool cannot see it; the person
+preparing the package is responsible). A SHOULD is advice the tool does not check.
 
 ## 1. Scope
 

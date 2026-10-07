@@ -197,7 +197,7 @@ Context material that is not itself the preserved content: scan reports, corresp
 - Files under `representations/<name>/documentation/` document that representation.
 - Free naming and nesting inside.
 
-Documentation is optional. E-ARK CSIP recommends it (CSIPSTR16, a SHOULD), and commons-ip warns when a representation has no `documentation/` folder; the package still validates.
+Documentation is optional. E-ARK CSIP recommends it, at package level and/or per representation (CSIPSTR16, a SHOULD). commons-ip 2.11.2 warns (CSIPSTR16) when the package has no top-level `documentation/` folder, and then names every representation as lacking one, including a representation that has its own; with a top-level `documentation/` it passes, whatever the representations hold. The package validates either way.
 
 ## 5. Received preservation files (`premis/`)
 

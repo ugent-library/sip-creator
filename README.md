@@ -276,7 +276,7 @@ your-input/
 | `dc.xml`, `mods.xml` | instead of `description.csv`, where the profile accepts one | a finished descriptive document | [§3](docs/input-spec.md#supplying-a-finished-document-ugentbasic-and-ugentbibliographic) |
 | `representations/<name>/` | under `meemoo/basic`, exactly one | one folder per version of the content | [§2](docs/input-spec.md#2-content-files-and-representations) |
 | `representations.csv` | no | a label and type per representation folder | [§2](docs/input-spec.md#representationscsv-labels-and-types-optional) |
-| `documentation/` | no | context material; commons-ip warns when a representation has none | [§4](docs/input-spec.md#4-documentation) |
+| `documentation/` | no | context material; commons-ip warns when the package has none at the top level | [§4](docs/input-spec.md#4-documentation) |
 | `premis/` | no | received preservation XML, copied as it is | [§5](docs/input-spec.md#5-received-preservation-files-premis) |
 | `siegfried.json` | no | a format characterization report | [below](#format-characterization) |
 
