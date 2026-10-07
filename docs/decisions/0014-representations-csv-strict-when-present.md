@@ -1,6 +1,6 @@
 # 0014 — representations.csv is strict when present, and defaults cascade
 
-Status: Accepted (2026-09-03). **Superseded in part by [ADR-0028](0028-encoders-escape-every-value.md)** (2026-10-05): the METS and PREMIS templates escape every value, so `Label` and `Type` may contain `< > & "`. **Note, 2026-10-07:** [ADR-0034](0034-a-profile-is-a-content-type.md) drops the flat single-representation case: content always sits in `representations/<name>/`. A `representations.csv` without a `representations/` folder stays a violation.
+Status: Accepted (2026-09-03). **Superseded in part by [ADR-0028](0028-encoders-escape-every-value.md)** (2026-10-05): the METS and PREMIS templates escape every value, so `Label` and `Type` may contain `< > & "`. **Note, 2026-10-07:** [ADR-0034](0034-a-profile-is-a-content-type.md) drops the flat single-representation case: content always sits in `representations/<name>/`. A `representations.csv` without a `representations/` folder stays a violation. **Note, 2026-10-07:** under a profile with `Definition.RepresentationTypes` (the UGent profiles) a representation's type is its name: an empty `type` resolves to the name, not the label, and another type is refused. The cascade below holds for a profile without one.
 
 ## Context
 

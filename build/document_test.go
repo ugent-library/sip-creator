@@ -138,7 +138,7 @@ func TestBuildSuppliedDocumentOnRepresentation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	rep := filepath.Join(pkg.Location, "representations", "master")
+	rep := filepath.Join(pkg.Location, "representations", "archival")
 	if _, err := os.Stat(filepath.Join(rep, "metadata", "descriptive", "dc.xml")); err != nil {
 		t.Fatalf("representation dc.xml not written: %v", err)
 	}

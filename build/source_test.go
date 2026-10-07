@@ -78,7 +78,7 @@ func TestSourcePackageValidate(t *testing.T) {
 		}, `documentation: two files share the logical path "notes.txt"`},
 		{"rep documentation without a source", func(c *build.SourcePackage) {
 			c.Representations[0].Documentation = []build.SourceFile{{Path: "notes.txt"}}
-		}, `representation "master" documentation: a file needs both a Source and a Path`},
+		}, `representation "archival" documentation: a file needs both a Source and a Path`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -116,7 +116,7 @@ func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {
 
 	_, in, _ = newTestBuilder(t, basicDef(t))
 	in.Representations[0].Description = meemoo.Terms{{Key: "dcterms:title", Lang: "en", Value: "Cats"}}
-	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `representation "master"`) {
+	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `representation "archival"`) {
 		t.Errorf("representation title without a Dutch entry accepted: %v", err)
 	}
 

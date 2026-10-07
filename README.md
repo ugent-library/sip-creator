@@ -242,15 +242,16 @@ One folder is one package. Your content files live in a representation folder un
 your-input/
 ├── description.csv
 └── representations/
-    └── master/
+    └── archival/
         ├── scan-001.tif
         └── scan-002.tif
 ```
 
-When the content comes in several versions, such as a preservation master and an access
+When the content comes in several versions, such as scanned master copies and an access
 copy, each version gets its own folder (under the UGent profiles; Meemoo's
 `meemoo/basic` profile allows one representation and no description below the package
-level):
+level). Under the UGent profiles a representation folder is named `preservation`,
+`archival` or `access`, and the name is also its type:
 
 ```
 your-input/
@@ -260,7 +261,7 @@ your-input/
 ├── documentation/
 ├── premis/
 └── representations/
-    ├── master/
+    ├── archival/
     │   ├── scan-001.tif
     │   ├── description.csv
     │   ├── documentation/
@@ -325,12 +326,13 @@ XML with the root element the profile expects, and copies it as it is.
 #### `representations.csv`
 
 Gives each representation folder a display label and a type. `folder` is required; an
-empty `label` means the folder name, an empty `type` means the label:
+empty `label` means the folder name, an empty `type` means the label. Under the UGent
+profiles the type is the folder name, so leave `type` out or repeat the name:
 
 ```csv
-folder,label,type
-master,Master scan (TIFF),archival
-access,Access copy (JPEG),access
+folder,label
+archival,Scanned master copies (TIFF)
+access,Access copy (JPEG)
 ```
 
 When the file is present, every folder must have a row and every row must match a
@@ -413,7 +415,7 @@ pkg, err := builder.Build(&build.SourcePackage{
 		{Key: "date", Value: "2026-01-15"},
 	},
 	Representations: []build.SourceRepresentation{{
-		Name: "master",
+		Name: "archival",
 		Files: []build.SourceFile{
 			{Source: "/data/scans/page-001.tif", Path: "page-001.tif"},
 		},

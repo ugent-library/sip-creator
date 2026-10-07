@@ -30,7 +30,9 @@ func TestBuildEscapesValues(t *testing.T) {
 		description sip.Description
 	}{
 		{"meemoo/basic", basicDef(t), meemooTerms},
-		{"ugent/basic", ugentBasicDef(t), simpledc.Terms{{Key: "identifier", Value: localID}, {Key: "title", Value: "Catus Testus"}}},
+		// Without its vocabulary, so that the representation's type is free
+		// text and its escaping is exercised.
+		{"ugent/basic", ugentBasicWithoutVocabulary(t), simpledc.Terms{{Key: "identifier", Value: localID}, {Key: "title", Value: "Catus Testus"}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -52,7 +54,7 @@ func TestBuildEscapesValues(t *testing.T) {
 			}
 			requireWellFormedXML(t, pkg.Location)
 			requireReferencesMatchDisk(t, filepath.Join(pkg.Location, "METS.xml"))
-			requireReferencesMatchDisk(t, filepath.Join(pkg.Location, "representations", "master", "METS.xml"))
+			requireReferencesMatchDisk(t, filepath.Join(pkg.Location, "representations", "archival", "METS.xml"))
 		})
 	}
 }

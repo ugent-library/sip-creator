@@ -40,8 +40,9 @@ type SourceRepresentation struct {
 	Label string
 	// Type is the representation's type, declared in the representation
 	// METS content typing by profiles with EmitRepresentationType set.
-	// Optional: empty means the resolved Label. Must satisfy
-	// ValidateXMLText.
+	// Optional: empty means the resolved Label, or the Name under a profile
+	// with Definition.RepresentationTypes, where it must equal the Name.
+	// Must satisfy ValidateXMLText.
 	Type string
 	// Files are the content files, in packaging order.
 	Files []SourceFile

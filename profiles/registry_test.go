@@ -160,3 +160,22 @@ func TestRegistryEntriesNameAModel(t *testing.T) {
 		}
 	}
 }
+
+// The UGent profiles name their representations from one vocabulary;
+// meemoo/basic, whose specification names none, has no vocabulary.
+func TestRepresentationTypes(t *testing.T) {
+	want := map[string][]string{
+		"meemoo/basic":        nil,
+		"ugent/basic":         {"preservation", "archival", "access"},
+		"ugent/bibliographic": {"preservation", "archival", "access"},
+	}
+	for name, types := range want {
+		def, ok := Get(name)
+		if !ok {
+			t.Fatalf("no %q definition registered", name)
+		}
+		if !slices.Equal(def.RepresentationTypes, types) {
+			t.Errorf("%s representation types = %v, want %v", name, def.RepresentationTypes, types)
+		}
+	}
+}

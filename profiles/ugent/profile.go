@@ -21,6 +21,10 @@ var Basic = build.Definition{
 	// Named after the Simple DC document it holds; Meemoo's naming
 	// convention doesn't apply here.
 	DocumentName: "dc.xml",
+	// docs/profiles/ugent-basic.md §4: "A representation's name MUST be
+	// one of preservation, archival and access, exactly, in lowercase."
+	// The name is also the representation's type.
+	RepresentationTypes: []string{"preservation", "archival", "access"},
 	// A representation may carry its own description, such as a license
 	// that holds for one version only; CSIP has no rule against it.
 	AllowRepresentationDescriptions: true,
@@ -62,6 +66,10 @@ var Bibliographic = build.Definition{
 	Model: mods.Model,
 	// Named after the MODS document it holds.
 	DocumentName: "mods.xml",
+	// docs/profiles/ugent-bibliographic.md §4: "A representation's name
+	// MUST be one of preservation, archival and access, exactly, in
+	// lowercase." The name is also the representation's type.
+	RepresentationTypes: []string{"preservation", "archival", "access"},
 	// As for Basic: a representation may carry its own description.
 	AllowRepresentationDescriptions: true,
 	// No PREMIS, as for Basic.

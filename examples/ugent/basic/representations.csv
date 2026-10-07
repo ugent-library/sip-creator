@@ -1,2 +1,3 @@
-folder,label,type
-master,Master image (JPEG),archival
+folder,label
+archival,Scanned master copies (TIFF)
+access,Derived access copies (JPG)

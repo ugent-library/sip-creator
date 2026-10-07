@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -30,6 +31,15 @@ type Definition struct {
 	// one, as Meemoo SIP 1.2's basic profile requires: "The IE MUST be
 	// represented by exactly one representation."
 	MaxRepresentations int
+	// RepresentationTypes is the closed set of names a representation may
+	// have; nil sets none. Under a set, a representation's name is also its
+	// type: an empty SourceRepresentation.Type resolves to the name, and a
+	// Type that differs from it is refused. Names are unique within a
+	// package, so a package holds at most one representation of each type.
+	// The UGent profiles name preservation, archival and access
+	// (docs/profiles/ugent-basic.md §4: "A representation's name MUST be one
+	// of preservation, archival and access, exactly, in lowercase.").
+	RepresentationTypes []string
 	// AllowRepresentationDescriptions allows a representation to carry its
 	// own description; false allows one at the package level only. Meemoo
 	// SIP 1.2's basic profile leaves it false: "There MUST NOT be any
@@ -45,7 +55,8 @@ type Definition struct {
 	// representation.
 	EmitRepresentationPremis bool
 	// EmitRepresentationType declares each representation's resolved type
-	// (SourceRepresentation.Type, defaulting to the label, then the name)
+	// (SourceRepresentation.Type, defaulting to the label, then the name;
+	// under RepresentationTypes, the name)
 	// in that representation's METS instead of the profile's fixed content
 	// typing: TYPE="Other" with the type as csip:OTHERTYPE, and
 	// CONTENTINFORMATIONTYPE="OTHER" with the type as
@@ -55,6 +66,15 @@ type Definition struct {
 	EmitRepresentationType bool
 	// Declaration carries the METS values the profile's documents declare.
 	Declaration sip.MetsDeclaration
+}
+
+// representationType returns the type sr declares: its name under a
+// vocabulary of representation types, otherwise its resolved type.
+func (d Definition) representationType(sr SourceRepresentation) string {
+	if d.RepresentationTypes != nil {
+		return sr.Name
+	}
+	return sr.resolvedType()
 }
 
 // representationDeclaration returns the declaration a representation's METS
@@ -107,7 +127,7 @@ func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 // ValidateSource returns why the source package is not one the profile
 // accepts: a description that is not in the profile's metadata model, or a
 // package that breaks the profile's own rules (MaxRepresentations,
-// AllowRepresentationDescriptions). The profile's rules are joined, one error each,
+// RepresentationTypes, AllowRepresentationDescriptions). The profile's rules are joined, one error each,
 // so all of them can be reported at once. It writes nothing, so a source
 // package can be checked against the profile without building it. What
 // every package needs regardless of profile is SourcePackage.Validate's.
@@ -119,6 +139,16 @@ func (d Definition) ValidateSource(source *SourcePackage) error {
 	var errs []error
 	if d.MaxRepresentations > 0 && len(source.Representations) > d.MaxRepresentations {
 		errs = append(errs, fmt.Errorf("profile %q allows at most %d representation(s), the package has %d", d.Name, d.MaxRepresentations, len(source.Representations)))
+	}
+	if d.RepresentationTypes != nil {
+		for _, r := range source.Representations {
+			if !slices.Contains(d.RepresentationTypes, r.Name) {
+				errs = append(errs, fmt.Errorf("profile %q names its representations %s; %q is not one of them", d.Name, strings.Join(d.RepresentationTypes, ", "), r.Name))
+			}
+			if r.Type != "" && r.Type != r.Name {
+				errs = append(errs, fmt.Errorf("under profile %q a representation's type is its name; %q has type %q", d.Name, r.Name, r.Type))
+			}
+		}
 	}
 	if !d.AllowRepresentationDescriptions {
 		for _, r := range source.Representations {

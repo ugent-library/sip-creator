@@ -12,7 +12,7 @@ One folder is one package. In the simplest case:
 example-0001/
 ├── description.csv       ← describes the content (the only file you write)
 └── representations/
-    └── master/           ← one version of the content: your files, any structure you like
+    └── archival/         ← one version of the content: your files, any structure you like
 ```
 
 With several versions of the content and extras:
@@ -23,7 +23,7 @@ example-0001/
 ├── representations.csv   ← optional: a label and type per representation
 ├── siegfried.json        ← optional: a format report
 ├── representations/
-│   ├── master/           ← the archival scans, any structure you like
+│   ├── archival/         ← the scanned master copies, any structure you like
 │   └── access/           ← e.g. a PDF version
 │       └── description.csv  ← optional: describes just this version (e.g. its license)
 ├── documentation/        ← optional: scan reports, context material
@@ -54,6 +54,7 @@ This document holds the folder rules. The rules on the package itself that diffe
 A *representation* is one version of the content: the archival master scans are one, a derived PDF is another. Every package has at least one.
 
 - Content MUST live in a representation folder: each folder directly inside `representations/` is one representation, named after that folder. A content file or folder at the top level, beside the reserved names, MUST be an error: the tool cannot tell which version of the content loose files are. Under `meemoo/basic` there MUST be exactly one representation, as Meemoo SIP 1.2's basic profile requires ("The IE MUST be represented by exactly one representation."). The UGent profiles set no limit.
+- Under the UGent profiles a representation's name MUST be one of `preservation`, `archival` and `access`, and the name is also its type; their meaning is in the profile pages ([`ugent/basic`](profiles/ugent-basic.md#4-representations), [`ugent/bibliographic`](profiles/ugent-bibliographic.md#4-representations)). `meemoo/basic` names none.
 - A representation's name MUST consist of `A–Z a–z 0–9 . _ -` only. It becomes the representation's directory under `representations/` in the package, and, unless `representations.csv` says otherwise, its label and type. Neither E-ARK CSIP nor the Meemoo specification prescribes names; CSIP requires only that they are unique, which folder names are.
 - Inside a representation folder, `description.csv`, `documentation/` and `premis/` are reserved (§3–5), and under the UGent profiles the profile's document name (§3). Everything else is content, with free names and nesting.
 - Files are packaged in alphabetical order by path. The order carries no meaning in E-ARK CSIP or the Meemoo specification. If a reading order matters, zero-pad your numbering (`0001.tiff`, `0002.tiff`); explicit ordering is deferred (§8).
@@ -65,15 +66,15 @@ A *representation* is one version of the content: the archival master scans are 
 A folder name makes a good machine name but not always a good display name. `representations.csv`, next to `description.csv`, gives each representation a label (its display name in the package) and a type (what an ingest system such as RODA shows as its kind):
 
 ```csv
-folder,label,type
-master,Master scan (TIFF),archival
-access,Access copy (PDF),access
+folder,label
+archival,Scanned master copies (TIFF)
+access,Access copy (PDF)
 ```
 
 - The file MUST be UTF-8 with a header row. The columns are `folder` (required), `label` and `type` (optional), in any order; header names are matched case-insensitively, so a spreadsheet's `Folder` works. An unknown or repeated column MUST be an error. A UTF-8 BOM, CRLF line endings and RFC 4180 quoting are accepted.
 - The file MUST have at least one row, and it requires a `representations/` folder: without one it MUST be an error.
-- `folder` names a folder directly under `representations/` by its name alone (`master`, not a path). Every row MUST match an existing folder, no two rows may name the same folder, and every folder MUST have a row. A folder without a row is an error, never an exclusion, so no content can silently drop out of the package. To leave material out, move it out of the input folder.
-- An empty `label` means the folder name; an empty `type` means the label.
+- `folder` names a folder directly under `representations/` by its name alone (`archival`, not a path). Every row MUST match an existing folder, no two rows may name the same folder, and every folder MUST have a row. A folder without a row is an error, never an exclusion, so no content can silently drop out of the package. To leave material out, move it out of the input folder.
+- An empty `label` means the folder name. An empty `type` means the label, except under the UGent profiles, where the type is the folder name: there `type` MUST be empty or equal to the folder name.
 - `label` and `type` may hold any text, `&` and quotes included: the tool escapes them when it writes the package's XML. A control character other than tab, line feed and carriage return MUST be an error.
 - The rows' order is the representations' order in the package.
 - The label is used under every profile. The type is used only under the UGent profiles; under `meemoo/basic` it has no effect (§7).

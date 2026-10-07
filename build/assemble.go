@@ -204,7 +204,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 	for _, sr := range source.Representations {
 		r := sip.NewRepresentation(sr.Name)
 		r.Label = sr.label()
-		r.Declaration = b.profile.representationDeclaration(decl, sr.resolvedType())
+		r.Declaration = b.profile.representationDeclaration(decl, b.profile.representationType(sr))
 		b.logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("name", sr.Name))
 
 		if sr.Description != nil {

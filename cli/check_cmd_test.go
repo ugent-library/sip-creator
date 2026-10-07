@@ -70,11 +70,11 @@ func TestCheckSummarizesAValidFolder(t *testing.T) {
 	t.Setenv("SIP_SUBMITTER_NAME", "")
 	t.Setenv("SIP_SUBMITTER_OR_ID", "")
 	root := writeFolder(t, map[string]string{
-		"description.csv":                   "key,value\nidentifier,ID-1\ntitle,Test\n",
-		"documentation/manual.pdf":          "m",
-		"representations/master/a.tif":      "a",
-		"representations/master/sub/b.tif":  "b",
-		"representations/access/access.pdf": "c",
+		"description.csv":                    "key,value\nidentifier,ID-1\ntitle,Test\n",
+		"documentation/manual.pdf":           "m",
+		"representations/archival/a.tif":     "a",
+		"representations/archival/sub/b.tif": "b",
+		"representations/access/access.pdf":  "c",
 	})
 
 	stdout, stderr, err := runCLI(t, "check", "--profile", "ugent/basic", root)
@@ -225,8 +225,8 @@ func TestCheckSummarizesTheExample(t *testing.T) {
 		"Profile:              ugent/basic\n" +
 		"\n" +
 		"Descriptive metadata: description.csv\n" +
-		"Representations:      1 (1 with its own description)\n" +
-		"Essence files:        1\n" +
+		"Representations:      2 (1 with its own description)\n" +
+		"Essence files:        2\n" +
 		"Documentation files:  2\n" +
 		"PREMIS files:         2\n" +
 		"Format report:        not supplied (files carry no format information)\n" +
@@ -241,9 +241,9 @@ func TestCheckSummarizesTheExample(t *testing.T) {
 // characterization report as the format report.
 func TestCheckNamesSuppliedDocumentAndReport(t *testing.T) {
 	root := writeFolder(t, map[string]string{
-		"dc.xml":                       "<simpledc><identifier>ID-1</identifier><title>Test</title></simpledc>",
-		"representations/master/a.tif": "a",
-		"siegfried.json":               `{"siegfried":"1.11.0","files":[{"filename":"representations/master/a.tif","md5":"0","matches":[]}]}`,
+		"dc.xml":                         "<simpledc><identifier>ID-1</identifier><title>Test</title></simpledc>",
+		"representations/archival/a.tif": "a",
+		"siegfried.json":                 `{"siegfried":"1.11.0","files":[{"filename":"representations/archival/a.tif","md5":"0","matches":[]}]}`,
 	})
 
 	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", root)

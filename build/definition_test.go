@@ -132,3 +132,40 @@ func TestValidateSourceAppliesProfileRules(t *testing.T) {
 		t.Errorf("ugent/basic has no such rules, yet ValidateSource refused: %v", err)
 	}
 }
+
+// Under a vocabulary of representation types a representation's name must
+// be one of the set, and a type, when given, must equal the name. Without
+// a vocabulary, as under meemoo/basic, neither rule applies.
+func TestValidateSourceAppliesRepresentationTypes(t *testing.T) {
+	cases := []struct {
+		name, repName, repType string
+		want                   string // "" when the source is accepted
+	}{
+		{"name in the set", "archival", "", ""},
+		{"type equal to the name", "access", "access", ""},
+		{"name outside the set", "master", "", `profile "ugent/basic" names its representations preservation, archival, access; "master" is not one of them`},
+		{"type other than the name", "archival", "preservation", `under profile "ugent/basic" a representation's type is its name; "archival" has type "preservation"`},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			_, in, _ := newTestBuilder(t, ugentBasicDef(t))
+			in.Description = identityTerms()
+			in.Representations[0].Name = tt.repName
+			in.Representations[0].Type = tt.repType
+			err := ugentBasicDef(t).ValidateSource(in)
+			switch {
+			case tt.want == "" && err != nil:
+				t.Errorf("ValidateSource = %v, want the source accepted", err)
+			case tt.want != "" && (err == nil || !strings.Contains(err.Error(), tt.want)):
+				t.Errorf("ValidateSource = %v, want %q", err, tt.want)
+			}
+		})
+	}
+
+	_, in, _ := newTestBuilder(t, basicDef(t))
+	in.Representations[0].Name = "master"
+	in.Representations[0].Type = "Master scan"
+	if err := basicDef(t).ValidateSource(in); err != nil {
+		t.Errorf("meemoo/basic has no vocabulary, yet ValidateSource refused: %v", err)
+	}
+}

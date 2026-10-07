@@ -50,7 +50,7 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	in.Description = identityTerms()
 	in.Representations[0].Description = otherDescription{}
 	_, err := b.Build(in)
-	if err == nil || !strings.Contains(err.Error(), `representation "master"`) {
+	if err == nil || !strings.Contains(err.Error(), `representation "archival"`) {
 		t.Fatalf("Build error = %v, want the mismatch naming the representation", err)
 	}
 	requireEmpty(t, outDir)

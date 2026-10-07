@@ -93,11 +93,11 @@ entity, named by its kind:
 Rules:
 
 - A representation's name MUST be one of `preservation`, `archival` and `access`,
-  exactly, in lowercase. **From step 7.**
+  exactly, in lowercase. **Checked.**
 - A package MUST NOT hold two representations of the same name. **Checked**, because a
   name is a folder name.
 - A representation's type MUST equal its name. A `representations.csv` row MAY leave
-  `type` empty, and MUST NOT give another value. **From step 7.** The label is free.
+  `type` empty, and MUST NOT give another value. **Checked.** The label is free.
 - A package MAY hold no representation at all: a description of an intellectual entity
   whose content is not, or not yet, in the archive. This holds for a new package and for
   an update (§8). **From step 8**; until then a package needs at least one.

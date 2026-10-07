@@ -10,8 +10,10 @@ invented.
 | [`ugent/basic/`](ugent/basic/) | `ugent/basic` | `description.csv` with Dublin Core keys, a description of the representation, received PREMIS, `representations.csv` |
 | [`ugent/bibliographic/`](ugent/bibliographic/) | `ugent/bibliographic` | a finished `mods.xml` with two physical copies, plus the same extras as `ugent/basic/` |
 
-Each package has one representation, `master`, with one small JPEG and a
-documentation file.
+The `meemoo/basic` package has one representation, `master`, with one small JPEG and a
+documentation file. The UGent packages have two: `archival`, with one small TIFF, its
+own description, documentation and received PREMIS, and `access`, with the same image as
+a JPEG.
 
 ```sh
 ./bin/sip-creator check --profile ugent/basic examples/ugent/basic
@@ -25,8 +27,8 @@ Input folder:         examples/ugent/basic
 Profile:              ugent/basic
 
 Descriptive metadata: description.csv
-Representations:      1 (1 with its own description)
-Essence files:        1
+Representations:      2 (1 with its own description)
+Essence files:        2
 Documentation files:  2
 PREMIS files:         2
 Format report:        not supplied (files carry no format information)

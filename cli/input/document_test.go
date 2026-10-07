@@ -155,7 +155,7 @@ func TestDocumentNameIsContentElsewhere(t *testing.T) {
 // The folder's document builds with the real ugent/basic profile: the engine
 // copies the file Read pointed at, byte for byte.
 func TestDocumentBuilds(t *testing.T) {
-	root := writeTree(t, map[string]string{"dc.xml": validDC, "representations/master/scan.tiff": "x"})
+	root := writeTree(t, map[string]string{"dc.xml": validDC, "representations/archival/scan.tiff": "x"})
 	source, err := Read(root, mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read: %v", err)

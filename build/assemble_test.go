@@ -85,11 +85,11 @@ func TestAssemble(t *testing.T) {
 		t.Fatalf("representations = %d, want 1", len(e.Representations))
 	}
 	r := e.Representations[0]
-	if r.Name != "master" {
-		t.Errorf("Name = %q, want the producer label %q", r.Name, "master")
+	if r.Name != "archival" {
+		t.Errorf("Name = %q, want the producer label %q", r.Name, "archival")
 	}
-	if r.Label != "master" {
-		t.Errorf("Label = %q, want the producer label %q", r.Label, "master")
+	if r.Label != "archival" {
+		t.Errorf("Label = %q, want the producer label %q", r.Label, "archival")
 	}
 	if r.Entity != e {
 		t.Error("representation not wired back to the entity")
@@ -129,8 +129,8 @@ func TestAssemble(t *testing.T) {
 	if got := pkg.PremisFile.Path; got != "metadata/preservation/premis.xml" {
 		t.Errorf("package PREMIS Path = %q, want %q", got, "metadata/preservation/premis.xml")
 	}
-	if got := r.MetsFile.Path; got != "representations/master/METS.xml" {
-		t.Errorf("representation METS Path = %q, want %q", got, "representations/master/METS.xml")
+	if got := r.MetsFile.Path; got != "representations/archival/METS.xml" {
+		t.Errorf("representation METS Path = %q, want %q", got, "representations/archival/METS.xml")
 	}
 	if got := r.PremisFile.Path; got != "metadata/preservation/premis.xml" {
 		t.Errorf("representation PREMIS Path = %q, want %q", got, "metadata/preservation/premis.xml")
@@ -180,7 +180,7 @@ func TestAssembleRepresentations(t *testing.T) {
 	for _, r := range pkg.Root.Representations {
 		names = append(names, r.Name)
 	}
-	want := []string{"master", "access"}
+	want := []string{"archival", "access"}
 	if !slices.Equal(names, want) {
 		t.Fatalf("representation names = %v, want %v", names, want)
 	}
@@ -590,11 +590,11 @@ func TestAssembleRepresentationDeclaration(t *testing.T) {
 		t.Fatalf("assemble: %v", err)
 	}
 	decl := pkg.Root.Representations[0].Declaration
-	if decl.Type != "Other" || decl.OtherType != "master" {
-		t.Errorf("rep TYPE = %q/%q, want Other/master", decl.Type, decl.OtherType)
+	if decl.Type != "Other" || decl.OtherType != "archival" {
+		t.Errorf("rep TYPE = %q/%q, want Other/archival", decl.Type, decl.OtherType)
 	}
-	if decl.ContentInformationType != "OTHER" || decl.OtherContentInformationType != "master" {
-		t.Errorf("rep CONTENTINFORMATIONTYPE = %q/%q, want OTHER/master",
+	if decl.ContentInformationType != "OTHER" || decl.OtherContentInformationType != "archival" {
+		t.Errorf("rep CONTENTINFORMATIONTYPE = %q/%q, want OTHER/archival",
 			decl.ContentInformationType, decl.OtherContentInformationType)
 	}
 	if pkg.Declaration.Type != "Mixed" || pkg.Declaration.OtherType != "" {
@@ -639,18 +639,19 @@ func TestAssembleUGentContentType(t *testing.T) {
 				t.Errorf("package CONTENTINFORMATIONTYPE = %q/%q, want OTHER/%s",
 					got.ContentInformationType, got.OtherContentInformationType, tt.profile)
 			}
-			if got := pkg.Root.Representations[0].Declaration; got.ContentInformationType != "OTHER" || got.OtherContentInformationType != "master" {
-				t.Errorf("rep CONTENTINFORMATIONTYPE = %q/%q, want OTHER/master",
+			if got := pkg.Root.Representations[0].Declaration; got.ContentInformationType != "OTHER" || got.OtherContentInformationType != "archival" {
+				t.Errorf("rep CONTENTINFORMATIONTYPE = %q/%q, want OTHER/archival",
 					got.ContentInformationType, got.OtherContentInformationType)
 			}
 		})
 	}
 }
 
-// Label and type resolve along the name → label → type cascade, and an
-// explicit type reaches the ugent/basic representation declaration.
+// Without a vocabulary of representation types, label and type resolve
+// along the name → label → type cascade, and an explicit type reaches the
+// representation declaration (ADR-0014).
 func TestAssembleRepresentationCascade(t *testing.T) {
-	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
+	b, in, _ := newTestBuilder(t, ugentBasicWithoutVocabulary(t))
 	inDir := t.TempDir()
 	in.Representations = []build.SourceRepresentation{
 		{Name: "master", Label: "Master scan", Type: "archival",
@@ -682,6 +683,31 @@ func TestAssembleRepresentationCascade(t *testing.T) {
 		}
 		if got := r.Declaration.OtherContentInformationType; got != w.typ {
 			t.Errorf("rep %q OTHERCONTENTINFORMATIONTYPE = %q, want %q", w.name, got, w.typ)
+		}
+	}
+}
+
+// Under a vocabulary of representation types the type is the name: a
+// label does not become the type, and an explicit type equal to the name
+// is accepted.
+func TestAssembleRepresentationTypeIsTheName(t *testing.T) {
+	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
+	inDir := t.TempDir()
+	in.Representations = []build.SourceRepresentation{
+		{Name: "archival", Label: "Scanned master copies (tif)",
+			Files: []build.SourceFile{writeEssence(t, inDir, "a.tif", "a")}},
+		{Name: "access", Label: "Derived access copies (jpg)", Type: "access",
+			Files: []build.SourceFile{writeEssence(t, inDir, "b.jpg", "b")}},
+	}
+	in.Description = identityTerms()
+	pkg, err := b.Assemble(in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	for i, name := range []string{"archival", "access"} {
+		decl := pkg.Root.Representations[i].Declaration
+		if decl.OtherType != name || decl.OtherContentInformationType != name {
+			t.Errorf("rep %q type = %q/%q, want its name", name, decl.OtherType, decl.OtherContentInformationType)
 		}
 	}
 }
@@ -788,7 +814,7 @@ func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {
 				in.Representations[0].Premis = []build.SourceFile{f}
 			},
 			func(t *testing.T, dir string) build.SourceFile { return writeEssence(t, dir, "capture.xml", "<mets/>") },
-			`representation "master" premis capture.xml: root element is {}mets`},
+			`representation "archival" premis capture.xml: root element is {}mets`},
 		{"missing file",
 			func(in *build.SourcePackage, f build.SourceFile) { in.Premis = []build.SourceFile{f} },
 			func(t *testing.T, dir string) build.SourceFile {

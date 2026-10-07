@@ -11,7 +11,11 @@ Step 5 landed 2026-10-07: the package METS declares `OTHER` with the profile's n
 profile pages gained a fourth marker, "written", for a rule the tool holds by writing the
 value itself. Step 6 landed 2026-10-07: no flat input folder; until step 8 the reader
 also refuses a folder without `representations/`, because `check` does not run the
-library's `SourcePackage.Validate`. Each step is proposed in chat before it starts. The plan takes over from the retired
+library's `SourcePackage.Validate`. Step 7 landed 2026-10-07: `RepresentationTypes`; under
+a vocabulary an empty type resolves to the name, not the label; the UGent examples hold
+`archival/` (a TIFF) and `access/` (a JPEG). A `representations.csv` type other than the
+folder is refused by `ValidateSource`, naming the representation, not the row's line.
+Each step is proposed in chat before it starts. The plan takes over from the retired
 [profile-rules-and-names plan](../archive/profile-rules-and-names.md): its parked step 5
 (the representation minimum) returns here as step 8; its step 8 (`eark/none`) is dropped;
 its steps 2 to 4 (a profile without descriptive metadata) are absorbed by the parked
@@ -399,6 +403,9 @@ The owner in the name keeps them apart; the profile pages say so.
 `Changed: TODO and the runbook reflect the ugent profiles`
 
 - `docs/TODO.md`: the validator status rows name the UGent profiles.
+- `docs/input-spec.md` §4: the sentence that commons-ip warns when a representation has no
+  `documentation/` folder. Found in step 7: the examples' `access/` has none and commons-ip
+  2.11.2 reports zero warnings. Check what it reports, then correct the sentence.
 - `docs/development-roda-ingest.md`: the profile name, the two new rows for the first
   ingest (AIP type, representation types).
 

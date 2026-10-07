@@ -120,7 +120,7 @@ func newTestBuilder(t *testing.T, def build.Definition) (b *build.Builder, in *b
 	in = &build.SourcePackage{
 		Description: testDescription(),
 		Representations: []build.SourceRepresentation{
-			{Name: "master", Files: []build.SourceFile{cat}},
+			{Name: "archival", Files: []build.SourceFile{cat}},
 		},
 	}
 	b, err := build.New(&build.Config{
@@ -151,6 +151,16 @@ func ugentBasicDef(t *testing.T) build.Definition {
 	if !ok {
 		t.Fatal(`no "ugent/basic" definition registered`)
 	}
+	return def
+}
+
+// ugentBasicWithoutVocabulary returns ugent/basic without its
+// representation types: a profile whose representation names and types are
+// free, for the tests of the label and type cascade (ADR-0014).
+func ugentBasicWithoutVocabulary(t *testing.T) build.Definition {
+	t.Helper()
+	def := ugentBasicDef(t)
+	def.RepresentationTypes = nil
 	return def
 }
 
@@ -337,7 +347,7 @@ func TestBuildLeavesNothingWhenWritingFails(t *testing.T) {
 func TestBuildRemovesAStaleTemporaryDirectory(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.PackageIdentifier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
-	stale := filepath.Join(outDir, "."+in.PackageIdentifier+".tmp", "representations", "master", "data")
+	stale := filepath.Join(outDir, "."+in.PackageIdentifier+".tmp", "representations", "archival", "data")
 	if err := os.MkdirAll(stale, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -349,7 +359,7 @@ func TestBuildRemovesAStaleTemporaryDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(pkg.Location, "representations", "master", "data", "left-over.jpg")); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(pkg.Location, "representations", "archival", "data", "left-over.jpg")); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("a file from the stale temporary directory reached the package (%v)", err)
 	}
 	requireDirectoryHolds(t, outDir, in.PackageIdentifier)
