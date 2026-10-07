@@ -17,7 +17,8 @@ a vocabulary an empty type resolves to the name, not the label; the UGent exampl
 folder is refused by `ValidateSource`, naming the representation, not the row's line.
 Step 8 landed 2026-10-07: `MinRepresentations`; the UGent profiles take a package
 without representations, which commons-ip reports VALID with two SHOULD-level warnings
-(CSIPSTR11, CSIPSTR13; see docs/TODO.md). Each step is proposed in chat before it starts. The plan takes over from the retired
+(CSIPSTR11, CSIPSTR13; see docs/TODO.md). Step 9 dropped 2026-10-07: the tool does not
+check an identifier's syntax. Each step is proposed in chat before it starts. The plan takes over from the retired
 [profile-rules-and-names plan](../archive/profile-rules-and-names.md): its parked step 5
 (the representation minimum) returns here as step 8; its step 8 (`eark/none`) is dropped;
 its steps 2 to 4 (a profile without descriptive metadata) are absorbed by the parked
@@ -141,9 +142,9 @@ The owner in the name keeps them apart; the profile pages say so.
    field on the definition quotes the sentence it enforces.
 5. **Rules are typed fields on `build.Definition`, checked in `ValidateSource`**
    ([ADR-0026](../decisions/0026-profile-rules-on-the-definition.md)), and a field is
-   added only when a profile page states the rule. This plan adds three: the
-   representation vocabulary, the representation minimum (ADR-0029's), and the
-   identifier's syntax. Not added, because no page states them yet: nesting inside a
+   added only when a profile page states the rule. This plan adds two: the
+   representation vocabulary and the representation minimum (ADR-0029's). The
+   identifier's syntax was proposed and dropped (step 9). Not added, because no page states them yet: nesting inside a
    representation, allowed formats per representation, required documentation, the
    fixity algorithm, required PREMIS events, file naming, page order. Each is data when
    it comes; page order also needs the graph and the METS encoder to express an ordered
@@ -384,9 +385,13 @@ The owner in the name keeps them apart; the profile pages say so.
   ("Updating an earlier package"), CONTRIBUTING (validating a metadata-only package with
   build.sh's second argument), the design doc.
 
-### Step 9. The identifier's syntax (decided after step 8)
+### Step 9. The identifier's syntax: dropped (decided 2026-10-07)
 
-`Added: Definition.IdentifierPattern checks the package description's identifier against the profile's syntax`
+Not built. The tool takes an identifier as a string, with the place it came from, and
+does not know the rules of the system that issued it: checking that an MMS ID is well
+formed is the operator's responsibility, as the profile page says. A record that comes
+from the catalogue carries a well-formed identifier already, and a check could not
+reach a supplied `mods.xml`. The proposal, kept for the record:
 
 - The definition speaks `sip.Description`, so the identifier is read through an optional
   interface, `build.Identified` with `Identifier() string`, the way `IdentifierSwapper` is

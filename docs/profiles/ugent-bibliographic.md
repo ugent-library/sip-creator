@@ -56,8 +56,8 @@ was ingested earlier, the value gains one.
   **Checked** when the description comes from `description.csv` or from a program through
   the library; **operator** when the operator supplies a finished `mods.xml`, because the
   tool checks only its root element.
-- The identifier MUST be the record's Alma MMS ID. **Operator.** Whether the tool checks
-  its syntax is decided after step 8 (step 9 of the plan). The tool writes it as
+- The identifier MUST be the record's Alma MMS ID. **Operator.** The tool takes the
+  identifier as given and does not check its syntax. The tool writes it as
   `mods:identifier type="local"`. The package's `mets/@OBJID` is a UUID the tool mints.
 - The description MAY list the library's physical copies of the work, one per copy. A
   copy MUST state its call number, MAY state its barcode, and MAY state its volume or
