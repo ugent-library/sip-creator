@@ -1,6 +1,14 @@
 # Plan: the eark family offers CSIP as written, and profile names by family
 
-*Status: **in progress, reduced** (drafted 2026-10-05). Step 1 landed in 7fc5626
+*Status: **retired** (2026-10-07), kept as history. Steps 1, 6 and 7 landed. Step 5, the
+representation minimum, continues as step 7 of the
+[ugent-profiles plan](../plans/ugent-profiles.md). Steps 2 to 4, a profile without
+descriptive metadata, are absorbed by the parked
+[entities-and-descriptions plan](../plans/entities-and-descriptions.md), where an empty
+list of models means no descriptive metadata. Step 8, `eark/none`, is dropped:
+`ugent/basic` requires a description. The text below is kept as written; the profile
+names it uses are superseded by ADR-0034. Earlier status: in progress, reduced (drafted
+2026-10-05). Step 1 landed in 7fc5626
 ([ADR-0029](../decisions/0029-eark-profiles-offer-csip-as-written.md),
 [ADR-0030](../decisions/0030-profile-names-by-family.md)). Steps 6 and 7, the renames,
 follow, one commit each. The plan builds on 5074f49 (the escaping series, ADR-0028);
