@@ -1,6 +1,7 @@
 package input
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -30,8 +31,7 @@ type folderReader struct {
 
 // inventory lists the files of an input folder that a decoder reads after
 // the walk. An empty path means the folder has no such file. reps has an
-// entry per folder under representations/; a flat folder has none, because
-// its description.csv describes the package.
+// entry per folder under representations/.
 type inventory struct {
 	pkg                descriptionFiles            // the package level
 	reps               map[string]descriptionFiles // by representation name
@@ -62,13 +62,13 @@ const (
 // walk reads the structure of the folder: the source package as far as
 // names, kinds and places fill it, and the inventory of the files the
 // decoders read. The reserved names each go to their collector or into
-// the inventory; everything else is content, whose place depends on
-// whether a representations/ folder exists.
+// the inventory. Content lives only in a representation folder under
+// representations/, so any other entry at the top level is a violation.
 func (r *folderReader) walk() (*build.SourcePackage, inventory) {
 	source := &build.SourcePackage{}
 	var inv inventory
 
-	var content []os.DirEntry
+	var content []string // names of the entries that are neither reserved nor allowed
 	var found descriptionFiles
 	var representationsPath, representationsCSVPath string
 
@@ -110,28 +110,44 @@ func (r *folderReader) walk() (*build.SourcePackage, inventory) {
 				inv.sidecar = src
 			}
 		default:
-			content = append(content, e)
+			content = append(content, name)
 		}
 	}
 
 	inv.pkg = r.levelDescription(found, true)
 
-	if representationsPath != "" {
-		// With a representations/ folder, all content lives inside it;
-		// only the reserved names may sit beside it.
-		for _, e := range content {
-			r.violate("%s: content must live inside representations/ when that folder exists (only the reserved names of the input specification may sit beside it)", e.Name())
-		}
-		source.Representations, inv.reps = r.readRepresentations(representationsPath)
-		inv.representationsCSV = representationsCSVPath
-	} else {
+	if representationsPath == "" {
 		if representationsCSVPath != "" {
-			r.violate("representations.csv requires a representations/ folder; a flat folder is one representation named after the folder itself")
+			r.violate("representations.csv requires a representations/ folder")
 		}
-		source.Representations = []build.SourceRepresentation{r.readFlatRepresentation(content)}
+		r.violateNoRepresentationsFolder(content)
+		return source, inv
 	}
-
+	for _, name := range content {
+		r.violate("%s: content must live in a representation folder, representations/<name>/ (only the reserved names of the input specification may sit beside representations/)", name)
+	}
+	source.Representations, inv.reps = r.readRepresentations(representationsPath)
+	inv.representationsCSV = representationsCSVPath
 	return source, inv
+}
+
+// violateNoRepresentationsFolder records that the folder has no
+// representations/ folder, in one violation however many content entries
+// sit at the top level: a folder laid out before content had to live in a
+// representation folder would otherwise get one line per file. Without
+// content it repeats the library's rule (SourcePackage.Validate), so that
+// check, which never builds, reports it too.
+func (r *folderReader) violateNoRepresentationsFolder(content []string) {
+	if len(content) == 0 {
+		r.violate("the folder has no representations/ folder: a package needs at least one version of the content, in representations/<name>/")
+		return
+	}
+	const named = 3 // entries the message names; the rest it counts
+	listed := strings.Join(content[:min(len(content), named)], ", ")
+	if len(content) > named {
+		listed += fmt.Sprintf(" and %d more", len(content)-named)
+	}
+	r.violate("the folder has no representations/ folder: move the content at the top level (%s) into a representation folder, representations/<name>/", listed)
 }
 
 func (r *folderReader) readRepresentations(dir string) ([]build.SourceRepresentation, map[string]descriptionFiles) {
@@ -274,32 +290,6 @@ func (r *folderReader) expectFolder(e os.DirEntry, src, holds string) bool {
 	}
 	r.violate("%s is a file; the reserved name is for %s", r.rel(src), holds)
 	return false
-}
-
-// readFlatRepresentation handles the simple case: no
-// representations/ folder, so every non-reserved entry is the content of a
-// single representation, named after the input folder itself.
-func (r *folderReader) readFlatRepresentation(entries []os.DirEntry) build.SourceRepresentation {
-	name := filepath.Base(r.root)
-	// The input folder's name becomes the representation's package-side
-	// name, so it must satisfy the same rule as a folder under
-	// representations/.
-	if err := build.ValidateRepresentationName(name); err != nil {
-		r.violate("the folder name names the single representation: %v", err)
-	}
-	rep := build.SourceRepresentation{Name: name}
-	for _, e := range entries {
-		src := filepath.Join(r.root, e.Name())
-		if e.IsDir() {
-			r.walkContent(r.root, src, &rep.Files)
-			continue
-		}
-		rep.Files = append(rep.Files, r.newFile(r.root, src))
-	}
-	if len(rep.Files) == 0 {
-		r.violate("the folder contains no content files")
-	}
-	return rep
 }
 
 // collectFiles gathers every file under dir recursively with Path relative

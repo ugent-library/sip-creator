@@ -234,20 +234,23 @@ SIP_SUBMITTER_OR_ID="OR-a1b2c3d"
 
 ### Input folder
 
-One folder is one package. The smallest valid input is a `description.csv` plus your
-content files, which become the package's single representation:
+One folder is one package. Your content files live in a representation folder under
+`representations/`, one folder per version of the content. The smallest valid input is a
+`description.csv` plus one representation:
 
 ```
 your-input/
 ├── description.csv
-├── scan-001.tif
-└── scan-002.tif
+└── representations/
+    └── master/
+        ├── scan-001.tif
+        └── scan-002.tif
 ```
 
 When the content comes in several versions, such as a preservation master and an access
-copy, each version gets its own folder under `representations/` (under the UGent
-profiles; Meemoo's `meemoo/basic` profile allows one representation and no description below the
-package level):
+copy, each version gets its own folder (under the UGent profiles; Meemoo's
+`meemoo/basic` profile allows one representation and no description below the package
+level):
 
 ```
 your-input/
@@ -270,16 +273,16 @@ your-input/
 |---|---|---|---|
 | `description.csv` | yes, or the profile's document | descriptive metadata as `key,value` rows | [§3](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) |
 | `dc.xml`, `mods.xml` | instead of `description.csv`, where the profile accepts one | a finished descriptive document | [§3](docs/input-spec.md#supplying-a-finished-document-ugentbasic-and-ugentbibliographic) |
-| `representations/<name>/` | no | one folder per version of the content | [§2](docs/input-spec.md#2-content-files-and-representations) |
+| `representations/<name>/` | yes | one folder per version of the content | [§2](docs/input-spec.md#2-content-files-and-representations) |
 | `representations.csv` | no | a label and type per representation folder | [§2](docs/input-spec.md#representationscsv-labels-and-types-optional) |
 | `documentation/` | no | context material; commons-ip warns when a representation has none | [§4](docs/input-spec.md#4-documentation) |
 | `premis/` | no | received preservation XML, copied as it is | [§5](docs/input-spec.md#5-received-preservation-files-premis) |
 | `siegfried.json` | no | a format characterization report | [below](#format-characterization) |
 
-Everything else is content. A representation folder can hold its own `documentation/` and
+Content lives only in the representation folders: anything else at the top level is an
+error. A representation folder can hold its own `documentation/` and
 `premis/`, and under the UGent profiles its own `description.csv` (or document), about
-that version only. Representation folder names may use letters, digits and `._-`; in the
-simple case the representation is named after the input folder.
+that version only. Representation folder names may use letters, digits and `._-`.
 
 [examples/](examples/) has a complete input folder for each profile.
 

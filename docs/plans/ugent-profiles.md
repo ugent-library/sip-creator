@@ -9,7 +9,9 @@ mark each rule with the step that checks it. Step 3 landed 2026-10-07: the model
 2026-10-07: `ugent/basic` and `ugent/bibliographic` replace `eark/dc` and `eark/mods`.
 Step 5 landed 2026-10-07: the package METS declares `OTHER` with the profile's name; the
 profile pages gained a fourth marker, "written", for a rule the tool holds by writing the
-value itself. Each step is proposed in chat before it starts. The plan takes over from the retired
+value itself. Step 6 landed 2026-10-07: no flat input folder; until step 8 the reader
+also refuses a folder without `representations/`, because `check` does not run the
+library's `SourcePackage.Validate`. Each step is proposed in chat before it starts. The plan takes over from the retired
 [profile-rules-and-names plan](../archive/profile-rules-and-names.md): its parked step 5
 (the representation minimum) returns here as step 8; its step 8 (`eark/none`) is dropped;
 its steps 2 to 4 (a profile without descriptive metadata) are absorbed by the parked
@@ -295,8 +297,11 @@ The owner in the name keeps them apart; the profile pages say so.
   reserved names is a violation whether or not `representations/` exists, with one
   message naming the entry and `representations/<name>/`. `representations.csv` without
   `representations/` stays a violation, its message without the flat case.
-- Until step 8, a folder with no representations is still refused, now by the engine's
-  "no representations supplied" in `SourcePackage.Validate`, which `check` reports.
+- Until step 8, a folder with no representations is still refused. `check` does not run
+  `SourcePackage.Validate`, so the reader refuses a folder without `representations/`
+  itself, as it already refuses an empty one; step 8 removes both. Loose content without
+  `representations/` is one violation naming the first entries, so a folder laid out the
+  old way does not get one line per file.
 - Tests: the input tests for the flat case become tests for loose content beside the
   reserved names; a folder holding only `description.csv` reads as zero representations
   and is refused by the engine's rule.
@@ -346,7 +351,9 @@ The owner in the name keeps them apart; the profile pages say so.
   the profile page (a package may describe an intellectual entity whose content is not
   in the archive, new or as an update); `meemoo.Definition` 1 next to its maximum.
 - `cli/input/walker.go`: `readRepresentations` reads an empty `representations/` as zero
-  representations instead of a violation. An empty representation folder stays a
+  representations instead of a violation, and a folder without `representations/` and
+  without loose content is no longer a violation either (step 6 added it for `check`).
+  Loose content at the top level stays a violation. An empty representation folder stays a
   violation; the `representations.csv` rules are unchanged. Comments say the count is
   the profile's verdict, in `ValidateSource`.
 - `build/write.go` `writeSkeleton` unchanged: `representations/` is always created,

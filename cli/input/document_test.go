@@ -25,8 +25,8 @@ const (
 // disk, and not content.
 func TestDocumentAtRoot(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"dc.xml":    validDC,
-		"scan.tiff": "x",
+		"dc.xml":                           validDC,
+		"representations/master/scan.tiff": "x",
 	})
 	pkg, err := Read(root, mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	if err != nil {
@@ -82,9 +82,9 @@ func TestDocumentAndRowsTogether(t *testing.T) {
 // a profile that takes a document; under one that takes rows only it names
 // the rows file alone.
 func TestDocumentOrRowsRequired(t *testing.T) {
-	_, err := Read(writeTree(t, map[string]string{"scan.tiff": "x"}), mapping.SimpleDC{}, ugentBasicDocumentSpec)
+	_, err := Read(writeTree(t, map[string]string{"representations/master/scan.tiff": "x"}), mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	assertViolation(t, err, "needs a description.csv or a dc.xml")
-	_, err = Read(writeTree(t, map[string]string{"scan.tiff": "x"}), mapping.Meemoo{}, meemooDocumentSpec)
+	_, err = Read(writeTree(t, map[string]string{"representations/master/scan.tiff": "x"}), mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "needs a description.csv describing")
 }
 
@@ -104,7 +104,7 @@ func TestDocumentViolations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Read(writeTree(t, map[string]string{"dc.xml": tt.doc, "scan.tiff": "x"}), mapping.SimpleDC{}, ugentBasicDocumentSpec)
+			_, err := Read(writeTree(t, map[string]string{"dc.xml": tt.doc, "representations/master/scan.tiff": "x"}), mapping.SimpleDC{}, ugentBasicDocumentSpec)
 			assertViolation(t, err, tt.want)
 		})
 	}
@@ -124,13 +124,13 @@ func TestDocumentIsAFolder(t *testing.T) {
 }
 
 // Under a profile that takes no document the name is not reserved: a
-// dc.xml under meemoo/basic is content like any other file, as is a mods.xml
-// under ugent/basic, another standard's document.
+// dc.xml in a representation under meemoo/basic is content like any other
+// file, as is a mods.xml under ugent/basic, another standard's document.
 func TestDocumentNameIsContentElsewhere(t *testing.T) {
 	pkg, err := Read(writeTree(t, map[string]string{
-		"description.csv": minimalCSV,
-		"dc.xml":          validDC,
-		"scan.tiff":       "x",
+		"description.csv":                  minimalCSV,
+		"representations/master/dc.xml":    validDC,
+		"representations/master/scan.tiff": "x",
 	}), mapping.Meemoo{}, meemooDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read under meemoo/basic: %v", err)
@@ -140,9 +140,9 @@ func TestDocumentNameIsContentElsewhere(t *testing.T) {
 	}
 
 	pkg, err = Read(writeTree(t, map[string]string{
-		"description.csv": minimalDC,
-		"mods.xml":        validMODS,
-		"scan.tiff":       "x",
+		"description.csv":                  minimalDC,
+		"representations/master/mods.xml":  validMODS,
+		"representations/master/scan.tiff": "x",
 	}), mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read under ugent/basic: %v", err)
@@ -155,7 +155,7 @@ func TestDocumentNameIsContentElsewhere(t *testing.T) {
 // The folder's document builds with the real ugent/basic profile: the engine
 // copies the file Read pointed at, byte for byte.
 func TestDocumentBuilds(t *testing.T) {
-	root := writeTree(t, map[string]string{"dc.xml": validDC, "scan.tiff": "x"})
+	root := writeTree(t, map[string]string{"dc.xml": validDC, "representations/master/scan.tiff": "x"})
 	source, err := Read(root, mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read: %v", err)

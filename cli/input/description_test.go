@@ -19,8 +19,8 @@ import (
 func readCSV(t *testing.T, csv string) (*build.SourcePackage, error) {
 	t.Helper()
 	root := writeTree(t, map[string]string{
-		"description.csv": csv,
-		"scan.tiff":       "x",
+		"description.csv":                  csv,
+		"representations/master/scan.tiff": "x",
 	})
 	return Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 }
@@ -254,8 +254,8 @@ func TestParseTermsNotUTF8(t *testing.T) {
 // basic, where coverage is not a key.
 func TestRowsProfileDecidesTheKeys(t *testing.T) {
 	tree := map[string]string{
-		"description.csv": minimalDC + "coverage,Gent\n",
-		"scan.tiff":       "x",
+		"description.csv":                  minimalDC + "coverage,Gent\n",
+		"representations/master/scan.tiff": "x",
 	}
 	pkg, err := Read(writeTree(t, tree), mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	if err != nil {
@@ -286,7 +286,7 @@ func TestRowsUGentBasicRefusesMeemooKeys(t *testing.T) {
 // Without a mapper Read cannot say what the rows mean; it is
 // refused before the folder is touched.
 func TestReadRequiresAMapper(t *testing.T) {
-	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "scan.tiff": "x"})
+	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "representations/master/scan.tiff": "x"})
 	_, err := Read(root, nil, DocumentSpec{})
 	if err == nil || !strings.Contains(err.Error(), "no mapper") {
 		t.Fatalf("want the missing mapper refused, got %v", err)
@@ -298,8 +298,8 @@ func TestReadRequiresAMapper(t *testing.T) {
 // description's rules.
 func TestMapperErrorsNameTheLine(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"description.csv": "key,value\nidentifier,ID-1\ntitle,T\n",
-		"scan.tiff":       "x",
+		"description.csv":                  "key,value\nidentifier,ID-1\ntitle,T\n",
+		"representations/master/scan.tiff": "x",
 	})
 	_, err := Read(root, placesNothing{}, DocumentSpec{})
 	assertViolation(t, err, "description.csv line 3: no place for title")

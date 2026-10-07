@@ -118,7 +118,7 @@ func TestCheckReportsEveryViolation(t *testing.T) {
 	// the verdict.
 	want := "2 problems in " + root + "\n\n" +
 		"  descriptive metadata is missing: every package folder needs a description.csv or a dc.xml describing the content (input specification §3)\n" +
-		"  stray.tif: content must live inside representations/ when that folder exists (only the reserved names of the input specification may sit beside it)\n" +
+		"  stray.tif: content must live in a representation folder, representations/<name>/ (only the reserved names of the input specification may sit beside representations/)\n" +
 		"\n" +
 		"Input folder:         " + root + "\n" +
 		"Profile:              ugent/basic\n" +
@@ -181,9 +181,9 @@ func TestCheckSkipsTheProfileRulesOnAPartlyReadFolder(t *testing.T) {
 // fails check, not only create.
 func TestCheckReportsMalformedPremis(t *testing.T) {
 	root := writeFolder(t, map[string]string{
-		"description.csv":   "key,value\nidentifier,ID-1\ntitle,Test\n",
-		"a.tif":             "a",
-		"premis/vendor.xml": "<premis:premis>",
+		"description.csv":              "key,value\nidentifier,ID-1\ntitle,Test\n",
+		"representations/master/a.tif": "a",
+		"premis/vendor.xml":            "<premis:premis>",
 	})
 
 	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", root)
@@ -199,17 +199,17 @@ func TestCheckReportsMalformedPremis(t *testing.T) {
 // fails create, although check computes no checksum.
 func TestCheckReportsContentMissingFromTheReport(t *testing.T) {
 	root := writeFolder(t, map[string]string{
-		"description.csv": "key,value\nidentifier,ID-1\ntitle,Test\n",
-		"a.tif":           "a",
-		"b.tif":           "b",
-		"siegfried.json":  `{"siegfried":"1.11.0","files":[{"filename":"a.tif","md5":"0","matches":[]}]}`,
+		"description.csv":              "key,value\nidentifier,ID-1\ntitle,Test\n",
+		"representations/master/a.tif": "a",
+		"representations/master/b.tif": "b",
+		"siegfried.json":               `{"siegfried":"1.11.0","files":[{"filename":"representations/master/a.tif","md5":"0","matches":[]}]}`,
 	})
 
 	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", root)
 	if want := root + ": 1 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
-	if !strings.Contains(stdout, "siegfried.json has no entry for b.tif") {
+	if !strings.Contains(stdout, "siegfried.json has no entry for representations/master/b.tif") {
 		t.Errorf("stdout = %q, want the file without an entry named", stdout)
 	}
 }
@@ -241,9 +241,9 @@ func TestCheckSummarizesTheExample(t *testing.T) {
 // characterization report as the format report.
 func TestCheckNamesSuppliedDocumentAndReport(t *testing.T) {
 	root := writeFolder(t, map[string]string{
-		"dc.xml":         "<simpledc><identifier>ID-1</identifier><title>Test</title></simpledc>",
-		"a.tif":          "a",
-		"siegfried.json": `{"siegfried":"1.11.0","files":[{"filename":"a.tif","md5":"0","matches":[]}]}`,
+		"dc.xml":                       "<simpledc><identifier>ID-1</identifier><title>Test</title></simpledc>",
+		"representations/master/a.tif": "a",
+		"siegfried.json":               `{"siegfried":"1.11.0","files":[{"filename":"representations/master/a.tif","md5":"0","matches":[]}]}`,
 	})
 
 	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", root)
@@ -278,7 +278,7 @@ func TestCheckRefusesWhatItCannotRead(t *testing.T) {
 // check exits with 1 when the folder has problems and with 2 when it could
 // not check the folder at all; create exits with 1 on any error.
 func TestExitStatus(t *testing.T) {
-	broken := writeFolder(t, map[string]string{"a.tif": "a"}) // no description
+	broken := writeFolder(t, map[string]string{"representations/master/a.tif": "a"}) // no description
 	missing := filepath.Join(t.TempDir(), "missing")
 	cases := []struct {
 		name string

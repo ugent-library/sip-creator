@@ -169,7 +169,7 @@ func TestCreateRefusesBeforeWriting(t *testing.T) {
 	})
 	t.Run("input violations", func(t *testing.T) {
 		t.Setenv("SIP_SUBMITTER_NAME", "Example Organization")
-		src := writeFolder(t, map[string]string{"scan.tif": "x"}) // no description
+		src := writeFolder(t, map[string]string{"representations/master/scan.tif": "x"}) // no description
 		dest := t.TempDir()
 		_, stderr, err := runCLI(t, "create", "--profile", "ugent/basic", src, dest)
 		if want := src + ": 1 problem(s) found"; err == nil || err.Error() != want {

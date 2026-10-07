@@ -156,7 +156,7 @@ The library is meant to be embedded in systems that automate ingest workflows, w
 
 ## Input
 
-[input-spec.md](input-spec.md) defines the input folder and every rule for it. In short: one folder is one package, with one description per level (`description.csv` in the profile's keys, or under the UGent profiles a finished `dc.xml` or `mods.xml`), content either flat or under `representations/<name>/`, and optional `representations.csv`, `documentation/`, `premis/` and `siegfried.json`. Administrative values come from configuration ([ADR-0010](decisions/0010-config-over-self-describing-input.md)).
+[input-spec.md](input-spec.md) defines the input folder and every rule for it. In short: one folder is one package, with one description per level (`description.csv` in the profile's keys, or under the UGent profiles a finished `dc.xml` or `mods.xml`), content always under `representations/<name>/` ([ADR-0034](decisions/0034-a-profile-is-a-content-type.md)), and optional `representations.csv`, `documentation/`, `premis/` and `siegfried.json`. Administrative values come from configuration ([ADR-0010](decisions/0010-config-over-self-describing-input.md)).
 
 ## Validation
 
