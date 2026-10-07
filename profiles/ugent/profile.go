@@ -36,9 +36,17 @@ var Basic = build.Definition{
 		// The version-pinned profile URL: commons-ip's SIP2 check for
 		// spec 2.2.0 compares against this exact value (its error
 		// message misleadingly prints the unversioned URL).
-		ProfileURL:             "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
-		Type:                   "Mixed", // CSIP content-category vocabulary; --content-category and SIP_CONTENT_CATEGORY override it
-		ContentInformationType: "MIXED", // CSIP content information type; the package METS value
+		ProfileURL: "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
+		Type:       "Mixed", // CSIP content-category vocabulary; --content-category and SIP_CONTENT_CATEGORY override it
+		// The package METS declares the profile as its content type
+		// (docs/profiles/ugent-basic.md §2: "The package METS MUST declare
+		// ugent/basic as its content information type."). CSIP6: "When the
+		// csip:CONTENTINFORMATIONTYPE has the value OTHER the
+		// csip:OTHERCONTENTINFORMATIONTYPE must state the content
+		// information type." A representation METS declares its type
+		// instead (EmitRepresentationType).
+		ContentInformationType:      "OTHER",
+		OtherContentInformationType: "ugent/basic",
 		// No agents: the engine adds the software agent, and
 		// WithSubmitter the submitting organization.
 	},
@@ -64,8 +72,13 @@ var Bibliographic = build.Definition{
 	EmitRepresentationType: true,
 	Declaration: sip.MetsDeclaration{
 		// As for Basic.
-		ProfileURL:             "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
-		Type:                   "Mixed", // CSIP content-category vocabulary; --content-category and SIP_CONTENT_CATEGORY override it
-		ContentInformationType: "MIXED", // CSIP content information type; the package METS value
+		ProfileURL: "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
+		Type:       "Mixed", // CSIP content-category vocabulary; --content-category and SIP_CONTENT_CATEGORY override it
+		// The package METS declares the profile as its content type
+		// (docs/profiles/ugent-bibliographic.md §2: "The package METS MUST
+		// declare ugent/bibliographic as its content information type."),
+		// as CSIP6 asks for OTHER (see Basic).
+		ContentInformationType:      "OTHER",
+		OtherContentInformationType: "ugent/bibliographic",
 	},
 }

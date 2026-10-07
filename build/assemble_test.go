@@ -615,6 +615,38 @@ func TestAssembleRepresentationDeclaration(t *testing.T) {
 	}
 }
 
+// Each UGent profile declares itself as the package's content information
+// type (ADR-0034), while each representation METS keeps declaring the
+// representation's type (ADR-0013).
+func TestAssembleUGentContentType(t *testing.T) {
+	cases := []struct {
+		profile     string
+		def         build.Definition
+		description sip.Description
+	}{
+		{"ugent/basic", ugentBasicDef(t), identityTerms()},
+		{"ugent/bibliographic", bibliographicDef(t), identityRecord()},
+	}
+	for _, tt := range cases {
+		t.Run(tt.profile, func(t *testing.T) {
+			b, in, _ := newTestBuilder(t, tt.def)
+			in.Description = tt.description
+			pkg, err := b.Assemble(in)
+			if err != nil {
+				t.Fatalf("assemble: %v", err)
+			}
+			if got := pkg.Declaration; got.ContentInformationType != "OTHER" || got.OtherContentInformationType != tt.profile {
+				t.Errorf("package CONTENTINFORMATIONTYPE = %q/%q, want OTHER/%s",
+					got.ContentInformationType, got.OtherContentInformationType, tt.profile)
+			}
+			if got := pkg.Root.Representations[0].Declaration; got.ContentInformationType != "OTHER" || got.OtherContentInformationType != "master" {
+				t.Errorf("rep CONTENTINFORMATIONTYPE = %q/%q, want OTHER/master",
+					got.ContentInformationType, got.OtherContentInformationType)
+			}
+		})
+	}
+}
+
 // Label and type resolve along the name → label → type cascade, and an
 // explicit type reaches the ugent/basic representation declaration.
 func TestAssembleRepresentationCascade(t *testing.T) {

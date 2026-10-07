@@ -49,7 +49,7 @@ code does with what our package contains:
 
 | our package | RODA mapping | verify in the UI |
 |---|---|---|
-| `csip:CONTENTINFORMATIONTYPE="MIXED"` | becomes the **AIP type** | AIP shows type MIXED |
+| package METS `csip:CONTENTINFORMATIONTYPE="OTHER"` with `csip:OTHERCONTENTINFORMATIONTYPE` `ugent/basic` or `ugent/bibliographic` | becomes the **AIP type** | AIP shows type `ugent/basic` or `ugent/bibliographic`, or the label RODA's AIP type vocabulary gives it, which is RODA configuration and outside this tool |
 | rep METS `OBJID` (the representation's folder name) | becomes the **representation id**, status ORIGINAL | one original representation with that name |
 | essence in `data/` with METS checksums | files created; fixity verified at parse | files present, sizes right, no checksum complaints in the job report |
 | `dc.xml` (`ugent/basic`), `MDTYPE="DC"` + `MDTYPEVERSION="SimpleDC20021212"`, simple-DC shape | recognized descriptive metadata (`dc_SimpleDC20021212`) | title/description **rendered and indexed** (searchable), form-editable; if RODA shows raw XML instead, the typing didn't match |

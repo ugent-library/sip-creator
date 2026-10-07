@@ -8,7 +8,7 @@ code: the rules marked "from step N" are checked once that step of the
 The key words MUST, SHOULD and MAY are to be interpreted as in RFC 2119. Each MUST says
 who holds it: **checked** (`check` and `create` refuse a package that breaks it, and so
 does a program that builds through the library), **from step N** (checked once that plan
-step lands), or **operator** (the tool cannot see it; the person preparing the package is
+step lands), **written** (the tool writes the value itself, so no input can break it), or **operator** (the tool cannot see it; the person preparing the package is
 responsible). A SHOULD is advice the tool does not check.
 
 ## 1. Scope
@@ -33,11 +33,10 @@ profile on top.
 |---|---|
 | `mets/@PROFILE` | `https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml` |
 | `mets/@TYPE` | `Mixed`, unless the operator gives another value from the CSIP content category vocabulary with `--content-category` |
-| `mets/@csip:CONTENTINFORMATIONTYPE` | `OTHER` (from step 5; `MIXED` until then) |
-| `mets/@csip:OTHERCONTENTINFORMATIONTYPE` | `ugent/basic` (from step 5) |
+| `mets/@csip:CONTENTINFORMATIONTYPE` | `OTHER` |
+| `mets/@csip:OTHERCONTENTINFORMATIONTYPE` | `ugent/basic` |
 
-- The package METS MUST declare `ugent/basic` as its content information type. **From
-  step 5.**
+- The package METS MUST declare `ugent/basic` as its content information type. **Written.**
 - A representation METS declares its representation's type instead (§4,
   [ADR-0013](../decisions/0013-representation-type-from-label.md)).
 
