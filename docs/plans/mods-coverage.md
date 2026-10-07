@@ -1,7 +1,7 @@
 # Plan: MODS 3.7 coverage for the eark/mods profile, in tiers
 
 *Note, 2026-10-07: `eark/mods` is `ugent/bibliographic` and `earkmods.Record` is
-`mods.Record` in `profiles/mods` since
+`ugent.Record` in `profiles/ugent` since
 [ADR-0034](../decisions/0034-a-profile-is-a-content-type.md); the body keeps the old
 names.*
 
@@ -29,7 +29,7 @@ resumes, its tiers are read again against that.*
 
 ## Context
 
-`mods.Record` is typed by field since ADR-0021, but its three fields
+`earkmods.Record` is typed by field since ADR-0021, but its three fields
 are UGent's application profile of MODS: a catalogue identifier whose
 `type` the profile decides, titles, and holdings named in a librarian's
 words (call number, barcode, enumeration). The template maps them onto

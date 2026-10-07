@@ -1,23 +1,23 @@
 // Package ugent holds the profiles UGent Library defines for its own RODA
-// instance. A profile is a content type, named after its owner and the
-// type (ADR-0034): ugent/basic for resources the library has not
-// necessarily catalogued, ugent/bibliographic for its catalogued holdings.
-// Each profile's rules are written in docs/profiles/.
+// instance, with the metadata models they use. A profile is a content
+// type, named after its owner and the type (ADR-0034): ugent/basic for
+// resources the library has not necessarily catalogued, described as
+// Simple Dublin Core Terms; ugent/bibliographic for its catalogued
+// holdings, described as a MODS Record. Each profile's rules are written in
+// docs/profiles/.
 package ugent
 
 import (
 	"github.com/ugent-library/sip-creator/build"
-	"github.com/ugent-library/sip-creator/profiles/mods"
-	"github.com/ugent-library/sip-creator/profiles/simpledc"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
 // Basic is the ugent/basic profile (docs/profiles/ugent-basic.md): a plain
-// E-ARK SIP (spec 2.2.0), writing dc.xml from simpledc.Terms and no PREMIS.
+// E-ARK SIP (spec 2.2.0), writing dc.xml from Terms and no PREMIS.
 // The registry in profiles/ hands it out under the name "ugent/basic".
 var Basic = build.Definition{
 	Name:  "ugent/basic",
-	Model: simpledc.Model,
+	Model: simpledc{},
 	// Named after the Simple DC document it holds; Meemoo's naming
 	// convention doesn't apply here.
 	DocumentName: "dc.xml",
@@ -63,12 +63,12 @@ var Basic = build.Definition{
 
 // Bibliographic is the ugent/bibliographic profile
 // (docs/profiles/ugent-bibliographic.md): Basic's plain E-ARK SIP, writing
-// mods.xml from a mods.Record where Basic writes dc.xml. Every other value
+// mods.xml from a Record where Basic writes dc.xml. Every other value
 // is Basic's. The registry in profiles/ hands it out under the name
 // "ugent/bibliographic".
 var Bibliographic = build.Definition{
 	Name:  "ugent/bibliographic",
-	Model: mods.Model,
+	Model: mods{},
 	// Named after the MODS document it holds.
 	DocumentName: "mods.xml",
 	// docs/profiles/ugent-bibliographic.md §4: "A representation's name

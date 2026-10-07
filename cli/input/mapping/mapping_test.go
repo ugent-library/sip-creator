@@ -7,8 +7,7 @@ import (
 	"testing"
 
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
-	"github.com/ugent-library/sip-creator/profiles/mods"
-	"github.com/ugent-library/sip-creator/profiles/simpledc"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -25,9 +24,9 @@ func TestSimpleDCKeepsTheTerms(t *testing.T) {
 	if len(errs) != 0 {
 		t.Fatalf("errors %v for terms the mapping places", errs)
 	}
-	got, ok := description.(simpledc.Terms)
+	got, ok := description.(ugent.Terms)
 	if !ok {
-		t.Fatalf("description is %T, want simpledc.Terms", description)
+		t.Fatalf("description is %T, want ugent.Terms", description)
 	}
 	if !slices.Equal([]sip.Term(got), terms) {
 		t.Errorf("terms = %+v, want %+v", got, terms)
@@ -88,14 +87,14 @@ func TestMODSTermsFillTheRecord(t *testing.T) {
 	if len(errs) != 0 {
 		t.Fatalf("errors %v for terms the mapping places", errs)
 	}
-	record, ok := description.(mods.Record)
+	record, ok := description.(ugent.Record)
 	if !ok {
-		t.Fatalf("description is %T, want mods.Record", description)
+		t.Fatalf("description is %T, want ugent.Record", description)
 	}
 	if record.Identifier != "ID-1" {
 		t.Errorf("Identifier = %q", record.Identifier)
 	}
-	wantTitles := []mods.Title{{Value: "Kat", Lang: "nl"}, {Value: "Cat", Lang: "en"}}
+	wantTitles := []ugent.Title{{Value: "Kat", Lang: "nl"}, {Value: "Cat", Lang: "en"}}
 	if !slices.Equal(record.Titles, wantTitles) {
 		t.Errorf("Titles = %+v, want %+v", record.Titles, wantTitles)
 	}
@@ -138,7 +137,7 @@ func TestMODSErrorsNameTheTerm(t *testing.T) {
 			}
 			// The refused term left no trace: the record holds the terms
 			// before it and nothing else.
-			record := description.(mods.Record)
+			record := description.(ugent.Record)
 			placed := len(record.Titles)
 			if record.Identifier != "" {
 				placed++

@@ -14,8 +14,7 @@ import (
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
-	"github.com/ugent-library/sip-creator/profiles/mods"
-	"github.com/ugent-library/sip-creator/profiles/simpledc"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -455,9 +454,9 @@ func identifierTerm(d sip.Description) string {
 	switch v := d.(type) {
 	case meemoo.Terms:
 		terms, key = v, "dcterms:identifier"
-	case simpledc.Terms:
+	case ugent.Terms:
 		terms = v
-	case mods.Record:
+	case ugent.Record:
 		return v.Identifier
 	}
 	for _, term := range terms {
@@ -535,7 +534,7 @@ func TestAssembleAddsTheSoftwareAgent(t *testing.T) {
 func TestAssembleLabelsDescriptionFilesWithTheModel(t *testing.T) {
 	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
-	in.Representations[0].Description = simpledc.Terms{{Key: "rights", Value: "CC BY 4.0"}}
+	in.Representations[0].Description = ugent.Terms{{Key: "rights", Value: "CC BY 4.0"}}
 
 	pkg, err := b.Assemble(in)
 	if err != nil {
@@ -558,7 +557,7 @@ func TestAssembleLabelsDescriptionFilesWithTheModel(t *testing.T) {
 func TestAssembleUGentBasicKeepsProducerIdentifier(t *testing.T) {
 	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
-	in.Representations[0].Description = simpledc.Terms{
+	in.Representations[0].Description = ugent.Terms{
 		{Key: "identifier", Value: "rep-local-1"},
 	}
 

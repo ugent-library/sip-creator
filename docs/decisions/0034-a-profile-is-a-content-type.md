@@ -2,9 +2,11 @@
 
 Status: **Accepted** (2026-10-07). Supersedes
 [ADR-0030](0030-profile-names-by-family.md). Supersedes in part
-[ADR-0018](0018-engine-and-profile-packages.md): a metadata model lives in a package
-named after its standard, and a profile's definition in its owner's package. The
-[ugent-profiles plan](../archive/ugent-profiles.md) carries the implementation.
+[ADR-0018](0018-engine-and-profile-packages.md): a package under `profiles/` belongs to
+an owner and holds the definitions of that owner's profiles with the metadata models they
+use. The [ugent-profiles plan](../archive/ugent-profiles.md) carries the implementation.
+Decision 3 was revised the same day, before the work left its branch: it first gave
+each model a package named after its standard (see Alternatives rejected).
 
 ## Context
 
@@ -64,12 +66,15 @@ state the content information type. The value carries no version; it gains one w
 change to a profile's rules would refuse a package ingested earlier. The representation
 METS keeps the declaration of [ADR-0013](0013-representation-type-from-label.md).
 
-**Models are standards; profiles pick them.** The Simple Dublin Core model moves to
-`profiles/simpledc` and the MODS model to `profiles/mods`. A profile that writes an
-existing standard imports its model. Meemoo's `dc+schema` model stays in
-`profiles/meemoo` while it has one user. The MODS model keeps the library's catalogue
-words (call number, barcode, enumeration): it is UGent's application profile of MODS,
-and `ugent/bibliographic` is the profile that writes it.
+**A model lives with its owner's profiles.** `profiles/ugent` holds both definitions and
+the two models they use: the Simple Dublin Core model (`ugent.Terms`) for `ugent/basic`
+and the MODS 3.7 model (`ugent.Record`) for `ugent/bibliographic`, as Meemoo's
+`dc+schema` model lives in `profiles/meemoo`. Both models are UGent's: each requires
+what its profile page requires (an identifier and a title), and the MODS record is
+UGent's application profile of MODS, named in the library's catalogue words (call
+number, barcode, enumeration), which settles the question
+[ADR-0033](0033-ugent-first-profiles-of-your-own.md) left open. A model moves to a
+package of its own when a profile of another owner needs it.
 
 **Every UGent package carries a description; representations are zero or more.** There
 is no UGent profile without descriptive metadata: a package that nothing describes is
@@ -101,13 +106,20 @@ specification and is the same for all profiles, so `cli/input` stays unaware of 
 - **Keep the flat input folder and let the representation names refuse it.** The
   operator would have to name the input folder after a kind of copy, and the message
   would point at the folder's name instead of at the missing `representations/`.
+- **A package per descriptive standard** (`profiles/simpledc`, `profiles/mods`), which
+  profiles of any owner import. Built first and dropped the same day. It put two kinds
+  of package side by side under `profiles/`, owners and standards, the same mix this
+  decision removes from the names. It was made for a reuse no second profile has:
+  each model has one user, and a Meemoo bibliographic profile would follow Meemoo's
+  MODS rules, not UGent's record. And the packages were not standard-neutral: they
+  carried UGent's required fields and catalogue words.
 
 ## Consequences
 
 - `--profile eark/dc` and `eark/mods` report an unknown profile. A program that resolves
-  a profile by name uses the new names; one that holds a definition imports
-  `profiles/ugent`, and one that builds a description imports `profiles/simpledc` or
-  `profiles/mods`.
+  a profile by name uses the new names; one that holds a definition or builds a
+  description imports `profiles/ugent`: `earkdc.Terms` is `ugent.Terms` and
+  `earkmods.Record` is `ugent.Record`.
 - The package METS of a UGent package changes once: `OTHER` and the profile's name
   replace `MIXED`. The commons-ip validation in `build.sh` confirms that the package
   stays valid when the change ships.

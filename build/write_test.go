@@ -9,7 +9,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/encoders/xmldoc"
-	"github.com/ugent-library/sip-creator/profiles/simpledc"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -32,7 +32,7 @@ func TestBuildEscapesValues(t *testing.T) {
 		{"meemoo/basic", basicDef(t), meemooTerms},
 		// Without its vocabulary, so that the representation's type is free
 		// text and its escaping is exercised.
-		{"ugent/basic", ugentBasicWithoutVocabulary(t), simpledc.Terms{{Key: "identifier", Value: localID}, {Key: "title", Value: "Catus Testus"}}},
+		{"ugent/basic", ugentBasicWithoutVocabulary(t), ugent.Terms{{Key: "identifier", Value: localID}, {Key: "title", Value: "Catus Testus"}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

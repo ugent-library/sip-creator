@@ -1,5 +1,11 @@
 # Plan: a profile is a content type; the ugent family replaces eark
 
+*Note, 2026-10-07, after the plan shipped: the separate model packages of step 3
+(`profiles/simpledc`, `profiles/mods`) were folded into `profiles/ugent` the same day,
+before the branch was merged: `ugent.Terms` and `ugent.Record`. Decision 3 of
+[ADR-0034](../decisions/0034-a-profile-is-a-content-type.md) records why. The text
+below keeps the plan as it ran.*
+
 *Status: **shipped** 2026-10-07 and archived (drafted and revised the same day). The design is in [sip-creator-design.md](../sip-creator-design.md), the decisions in [ADR-0034](../decisions/0034-a-profile-is-a-content-type.md), the rules in the [profile pages](../profiles/). Step 1 landed 2026-10-07:
 [ADR-0034](../decisions/0034-a-profile-is-a-content-type.md) records decisions 1, 2, 3, 8
 and 9. Step 2 landed 2026-10-07: [ugent-basic](../profiles/ugent-basic.md) and

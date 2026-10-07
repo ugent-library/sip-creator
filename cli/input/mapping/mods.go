@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ugent-library/sip-creator/profiles/mods"
 	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -12,7 +11,7 @@ import (
 // MODS is the ugent/bibliographic profile's mapping: the MODS keys the input
 // specification lists and where each one goes in the record. The record is
 // typed by field (ADR-0021), so the key table lives here, not in
-// profiles/mods. A term that breaks a rule on its own (an unknown key,
+// profiles/ugent. A term that breaks a rule on its own (an unknown key,
 // a language tag where none is taken, an empty value, a repeat) is an
 // error at its index and is not placed. The rows carry flat terms only: a
 // record's copies reach the package through the library's record or a
@@ -23,7 +22,7 @@ type MODS struct{}
 // goes in the record, whether the key takes a language tag, and how often
 // it may occur.
 type placement struct {
-	fill      func(*mods.Record, sip.Term)
+	fill      func(*ugent.Record, sip.Term)
 	takesLang bool
 	occurs    cardinality
 }
@@ -38,12 +37,12 @@ const (
 
 var modsKeys = map[string]placement{
 	"identifier": {
-		fill:   func(r *mods.Record, t sip.Term) { r.Identifier = t.Value },
+		fill:   func(r *ugent.Record, t sip.Term) { r.Identifier = t.Value },
 		occurs: once,
 	},
 	"title": {
-		fill: func(r *mods.Record, t sip.Term) {
-			r.Titles = append(r.Titles, mods.Title{Value: t.Value, Lang: t.Lang})
+		fill: func(r *ugent.Record, t sip.Term) {
+			r.Titles = append(r.Titles, ugent.Title{Value: t.Value, Lang: t.Lang})
 		},
 		takesLang: true,
 		occurs:    oncePerLanguage,
@@ -54,7 +53,7 @@ var modsKeys = map[string]placement{
 // it cannot place as a *sip.TermError at its index. A repeat is reported
 // at the repeated term; the first one is placed.
 func (MODS) Map(terms []sip.Term) (sip.Description, []error) {
-	var record mods.Record
+	var record ugent.Record
 	var errs []error
 	placed := map[string]bool{} // key, or key and language
 	for i, t := range terms {

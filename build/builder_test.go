@@ -19,8 +19,7 @@ import (
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
-	"github.com/ugent-library/sip-creator/profiles/mods"
-	"github.com/ugent-library/sip-creator/profiles/simpledc"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -57,8 +56,8 @@ func meemooIdentityTerms() meemoo.Terms {
 
 // identityTerms is the input convention's own MUSTs and nothing more, in
 // the ugent/basic profile's standard, Simple Dublin Core.
-func identityTerms() simpledc.Terms {
-	return simpledc.Terms{
+func identityTerms() ugent.Terms {
+	return ugent.Terms{
 		{Key: "identifier", Value: "local-id-001"},
 		{Key: "title", Value: "Catus Testus"},
 	}
@@ -66,10 +65,10 @@ func identityTerms() simpledc.Terms {
 
 // identityRecord is the same identity in the ugent/bibliographic profile's standard,
 // a MODS record without items.
-func identityRecord() mods.Record {
-	return mods.Record{
+func identityRecord() ugent.Record {
+	return ugent.Record{
 		Identifier: "local-id-001",
-		Titles:     []mods.Title{{Value: "Catus Testus"}},
+		Titles:     []ugent.Title{{Value: "Catus Testus"}},
 	}
 }
 
@@ -402,8 +401,8 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 	}{
 		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description is required"},
 		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "dcterms:identifier", Value: "x"}}, "title is required"},
-		{"ugent/basic without an identifier", ugentBasicDef(t), simpledc.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
-		{"ugent/bibliographic without a title", bibliographicDef(t), mods.Record{Identifier: "x"}, "title is required"},
+		{"ugent/basic without an identifier", ugentBasicDef(t), ugent.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
+		{"ugent/bibliographic without a title", bibliographicDef(t), ugent.Record{Identifier: "x"}, "title is required"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -426,7 +425,7 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 func TestBuildBibliographic(t *testing.T) {
 	b, in, _ := newTestBuilder(t, bibliographicDef(t))
 	rec := identityRecord()
-	rec.Items = []mods.Item{{CallNumber: "EX.0001", Barcode: "000000123"}}
+	rec.Items = []ugent.Item{{CallNumber: "EX.0001", Barcode: "000000123"}}
 	in.Description = rec
 
 	pkg, err := b.Build(in)

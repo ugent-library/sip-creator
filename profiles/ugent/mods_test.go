@@ -1,4 +1,4 @@
-package mods
+package ugent
 
 import (
 	"bytes"
@@ -6,10 +6,10 @@ import (
 	"testing"
 )
 
-func encode(t *testing.T, r Record, schemasDir string) string {
+func encodeRecord(t *testing.T, r Record, schemasDir string) string {
 	t.Helper()
 	var buf bytes.Buffer
-	if err := (model{}).Encode(&buf, r, schemasDir); err != nil {
+	if err := (mods{}).Encode(&buf, r, schemasDir); err != nil {
 		t.Fatalf("Encode: %v", err)
 	}
 	return buf.String()
@@ -42,17 +42,17 @@ const goldenDocument = `<?xml version='1.0' encoding='UTF-8'?>
 </mods:mods>
 `
 
-func TestEncodeGolden(t *testing.T) {
-	if got := encode(t, testRecord(), "../../schemas"); got != goldenDocument {
+func TestRecordEncodeGolden(t *testing.T) {
+	if got := encodeRecord(t, testRecord(), "../../schemas"); got != goldenDocument {
 		t.Errorf("document differs from the golden bytes:\n--- got\n%s--- want\n%s", got, goldenDocument)
 	}
 }
 
-func TestEncode(t *testing.T) {
+func TestRecordEncode(t *testing.T) {
 	r := testRecord()
 	// An untagged title with producer text that must be escaped.
 	r.Titles = append(r.Titles, Title{Value: "R&D <scans> 'quote'"})
-	out := encode(t, r, "../../schemas")
+	out := encodeRecord(t, r, "../../schemas")
 
 	for _, want := range []string{
 		`<mods:mods xmlns:mods="http://www.loc.gov/mods/v3"`,
@@ -99,19 +99,19 @@ func TestEncode(t *testing.T) {
 
 // A record without items has no location at all: an empty holdingSimple
 // would claim the library holds no copy.
-func TestEncodeWithoutItems(t *testing.T) {
+func TestRecordEncodeWithoutItems(t *testing.T) {
 	r := testRecord()
 	r.Items = nil
-	if out := encode(t, r, "../../schemas"); strings.Contains(out, "<mods:location") {
+	if out := encodeRecord(t, r, "../../schemas"); strings.Contains(out, "<mods:location") {
 		t.Errorf("location emitted without items\n%s", out)
 	}
 }
 
 // A representation's record may state no identifier; the document then
 // carries none rather than an empty element.
-func TestEncodeWithoutIdentifier(t *testing.T) {
+func TestRecordEncodeWithoutIdentifier(t *testing.T) {
 	r := Record{Titles: []Title{{Value: "PDF-versie", Lang: "nl"}}}
-	out := encode(t, r, "../../../../schemas")
+	out := encodeRecord(t, r, "../../../../schemas")
 	if strings.Contains(out, "<mods:identifier") {
 		t.Errorf("identifier emitted for a record without one\n%s", out)
 	}
@@ -122,8 +122,8 @@ func TestEncodeWithoutIdentifier(t *testing.T) {
 
 // The schema-location hint follows the document: a representation-level
 // document (four levels deep) must point four levels up.
-func TestEncodeSchemaLocation(t *testing.T) {
-	out := encode(t, testRecord(), "../../../../schemas")
+func TestRecordEncodeSchemaLocation(t *testing.T) {
+	out := encodeRecord(t, testRecord(), "../../../../schemas")
 	if !strings.Contains(out, `xsi:schemaLocation="http://www.loc.gov/mods/v3 ../../../../schemas/mods-3-7.xsd"`) {
 		t.Errorf("rep-level schema location hint wrong:\n%s", out)
 	}

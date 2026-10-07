@@ -1,4 +1,4 @@
-package mods
+package ugent
 
 import (
 	"strings"
@@ -101,7 +101,7 @@ func TestRecordValidate(t *testing.T) {
 
 // A package-level record states an identifier and a title; items alone do
 // not describe anything.
-func TestValidateRequired(t *testing.T) {
+func TestRecordValidateRequired(t *testing.T) {
 	requireError(t, Record{Identifier: "A"}.ValidateRequired(), "title is required")
 	requireError(t, Record{Titles: []Title{{Value: "x"}}}.ValidateRequired(), "identifier is required")
 	requireError(t, testRecord().ValidateRequired(), "")

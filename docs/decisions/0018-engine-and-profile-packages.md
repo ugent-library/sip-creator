@@ -8,10 +8,10 @@ than by an unexported field. ADR-0015's descriptive worlds stand; they
 moved. **Note, 2026-10-06:** `DescriptionEncoder` below is
 `build.MetadataModel` since 2026-10-02 (ADR-0024), with `ValidateType` in
 place of `Check`. **Superseded in part by
-[ADR-0034](0034-a-profile-is-a-content-type.md)** (2026-10-07): a metadata model lives
-in a package named after its standard (`profiles/simpledc`, `profiles/mods`) and a
-profile's definition in its owner's package (`profiles/ugent`); a second profile that
-writes an existing standard imports the model instead of joining its package.
+[ADR-0034](0034-a-profile-is-a-content-type.md)** (2026-10-07): a package under
+`profiles/` belongs to an owner, not to one profile: `profiles/ugent` holds the
+definitions of `ugent/basic` and `ugent/bibliographic` with the models they use, as
+`profiles/meemoo` holds `meemoo/basic` with its model.
 
 ## Context
 

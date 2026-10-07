@@ -1,9 +1,8 @@
 // Package profiles is the registry of the profiles a package can be built
-// to. A profile's definition lives in its owner's package under profiles/
-// (meemoo, ugent), and a descriptive standard's model in a package of its
-// own when a second profile can share it (simpledc, mods); Meemoo's model
-// stays next to its definition. This package only hands definitions out by
-// name; the set is closed here.
+// to. Each owner of profiles has a package under profiles/ (meemoo,
+// ugent) that holds its profiles' definitions and the metadata models they
+// use. This package only hands definitions out by name; the set is closed
+// here.
 package profiles
 
 import (

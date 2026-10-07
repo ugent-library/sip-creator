@@ -6,7 +6,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/profiles"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
-	"github.com/ugent-library/sip-creator/profiles/simpledc"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -127,7 +127,7 @@ func TestValidateSourceAppliesProfileRules(t *testing.T) {
 	requireEmpty(t, outDir)
 
 	in.Description = identityTerms()
-	in.Representations[1].Description = simpledc.Terms{{Key: "title", Value: "Access copy"}}
+	in.Representations[1].Description = ugent.Terms{{Key: "title", Value: "Access copy"}}
 	if err := ugentBasicDef(t).ValidateSource(in); err != nil {
 		t.Errorf("ugent/basic has no such rules, yet ValidateSource refused: %v", err)
 	}

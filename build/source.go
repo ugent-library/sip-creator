@@ -50,7 +50,7 @@ type SourceRepresentation struct {
 	// (identifier, title) is not required here; the package-level
 	// description carries the work's identity. Its concrete type must be
 	// the profile's descriptive standard (meemoo.Terms for Meemoo
-	// profiles, simpledc.Terms for ugent/basic, mods.Record for ugent/bibliographic) or,
+	// profiles, ugent.Terms for ugent/basic, ugent.Record for ugent/bibliographic) or,
 	// for the UGent profiles, an EncodedDescription of that standard.
 	Description sip.Description
 	// Premis optionally supplies received preservation documents about
@@ -108,7 +108,7 @@ type SourcePackage struct {
 	ContentCategory string
 	// Description is the package-level descriptive metadata. Its concrete
 	// type must be the profile's descriptive standard (meemoo.Terms for
-	// Meemoo profiles, simpledc.Terms for ugent/basic, mods.Record for ugent/bibliographic)
+	// Meemoo profiles, ugent.Terms for ugent/basic, ugent.Record for ugent/bibliographic)
 	// or, for the UGent profiles, an EncodedDescription of that standard.
 	Description sip.Description
 	// Representations is the content. How many a package needs is the

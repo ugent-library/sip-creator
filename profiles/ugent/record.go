@@ -1,25 +1,21 @@
-// Package mods is the MODS 3.7 model: one bibliographic record, typed by
-// field where MODS is a tree (ADR-0021): the record's identifier and
-// titles, plus the physical copies the library holds of it. A profile
-// whose descriptive standard is MODS 3.7 takes Model as its metadata
-// model.
-package mods
+package ugent
 
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Record is the descriptive metadata of one bibliographic record in MODS
-// 3.7: what the record states about the work, field by field, and the
+// Record is the descriptive metadata of ugent/bibliographic: one
+// bibliographic record in MODS 3.7, typed by field where MODS is a tree
+// (ADR-0021). It is UGent's application profile of MODS, named in the
+// library's catalogue words: what the record states about the work, and the
 // physical copies of it. It is what a package describes; a representation
-// describes a version of the same content. Validate holds the rules on
-// what a record may say.
+// describes a version of the same content. Validate holds the rules on what
+// a record may say.
 type Record struct {
 	// Identifier is the record's local identifier, the catalogue number
 	// the describing institution finds it by (in a library, the record
@@ -61,10 +57,6 @@ type Item struct {
 // one, so the assertion makes a drift in the interface a build error here
 // rather than in the profile's definition.
 var _ sip.Description = Record{}
-
-// langRx is a pragmatic language-tag shape (primary subtag plus optional
-// subtags), not full BCP 47 validation.
-var langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
 
 // validateTitle reports why the title cannot be emitted: an empty text, a
 // text XML cannot carry, or a malformed language tag.
@@ -142,9 +134,10 @@ func (r Record) Validate() error {
 }
 
 // ValidateRequired reports what a package-level record must state and
-// this one does not: an identifier and a title, as every profile requires
-// (input specification §3). A representation's record need not state
-// them.
+// this one does not: an identifier and a title, as
+// docs/profiles/ugent-bibliographic.md §3 requires ("The description MUST
+// state the catalogue record's identifier and at least one title."). A
+// representation's record need not state them.
 func (r Record) ValidateRequired() error {
 	var errs []error
 	if r.Identifier == "" {

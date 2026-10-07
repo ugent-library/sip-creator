@@ -11,8 +11,7 @@ import (
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/encoders/xmldoc"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
-	"github.com/ugent-library/sip-creator/profiles/mods"
-	"github.com/ugent-library/sip-creator/profiles/simpledc"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/schemas"
 	"github.com/ugent-library/sip-creator/sip"
 )
@@ -81,8 +80,8 @@ func TestRegistrySchemas(t *testing.T) {
 // document's root.
 var sampleDescriptions = map[string]sip.Description{
 	"meemoo/basic":        meemoo.Terms{},
-	"ugent/basic":         simpledc.Terms{},
-	"ugent/bibliographic": mods.Record{},
+	"ugent/basic":         ugent.Terms{},
+	"ugent/bibliographic": ugent.Record{},
 }
 
 // The schema-location hint of each profile's descriptive document points

@@ -28,8 +28,9 @@ the code has changed since: `build.DescriptionEncoder` is
 has `LocalIdentifier` (2026-09-28), it has `Validate` and
 `ValidateRequired`; `ResolveKey` is gone (ADR-0018). **Note, 2026-10-07:**
 [ADR-0034](0034-a-profile-is-a-content-type.md) takes the descriptive standard out of
-the profile name: a profile is named after its content type, and each standard's model
-has a package of its own (`profiles/simpledc`, `profiles/mods`). The worlds stand.
+the profile name: a profile is named after its content type, and the Simple DC and MODS
+models live with the UGent profiles that use them (`ugent.Terms`, `ugent.Record` in
+`profiles/ugent`). The worlds stand.
 
 ## Context
 

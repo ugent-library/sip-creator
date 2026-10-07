@@ -1,8 +1,4 @@
-// Package simpledc is the Simple Dublin Core model: the fifteen elements of
-// the Dublin Core Metadata Element Set, held as Terms and written
-// unqualified inside a simpledc root. A profile whose descriptive standard
-// is Simple Dublin Core takes Model as its metadata model.
-package simpledc
+package ugent
 
 import (
 	"errors"
@@ -14,11 +10,12 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Terms is an ordered list of terms in Simple Dublin Core, each keyed by
-// one of the fifteen element names ("title", "coverage"); the order the
-// producer gave them in is preserved through to the emitted XML. A term's language tag is accepted so producers can
-// state it, but not emitted: the simpledc document carries no xml:lang.
-// Validate holds the rules on what a term may say.
+// Terms is the descriptive metadata of ugent/basic: an ordered list of
+// terms in Simple Dublin Core, each keyed by one of the fifteen element
+// names ("title", "coverage"); the order the producer gave them in is
+// preserved through to the emitted XML. A term's language tag is accepted
+// so producers can state it, but not emitted: the simpledc document
+// carries no xml:lang. Validate holds the rules on what a term may say.
 type Terms []sip.Term
 
 // has reports whether any term states the given key.
@@ -39,7 +36,7 @@ var langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
 // fifteen, a malformed language tag, an empty value, or a value XML cannot
 // carry.
 func validateTerm(t sip.Term) error {
-	if !elementSet[t.Key] {
+	if !dcElementSet[t.Key] {
 		return fmt.Errorf("unknown key %q: not a Simple Dublin Core element; see the supported keys in the input specification", t.Key)
 	}
 	if t.Lang != "" && !langRx.MatchString(t.Lang) {
@@ -81,7 +78,7 @@ func (t Terms) Validate() error {
 // state (required) that the terms do not.
 func (t Terms) ValidateRequired() error {
 	var errs []error
-	for _, key := range required {
+	for _, key := range dcRequired {
 		if !t.has(key) {
 			errs = append(errs, fmt.Errorf("%s is required but missing", key))
 		}

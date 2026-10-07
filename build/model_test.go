@@ -27,12 +27,12 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 		desc sip.Description
 		want string
 	}{
-		{"unknown type to ugent/basic", ugentBasicDef(t), otherDescription{}, "simpledc.Terms"},
+		{"unknown type to ugent/basic", ugentBasicDef(t), otherDescription{}, "ugent.Terms"},
 		{"Meemoo terms to ugent/basic", ugentBasicDef(t), testDescription(), "meemoo.Terms, not Simple Dublin Core"},
-		{"simple dc terms to basic", basicDef(t), identityTerms(), "simpledc.Terms, not Meemoo dc+schema"},
-		{"simple dc terms to ugent/bibliographic", bibliographicDef(t), identityTerms(), "simpledc.Terms, not a MODS record"},
-		{"record to ugent/basic", ugentBasicDef(t), identityRecord(), "mods.Record, not Simple Dublin Core"},
-		{"record to basic", basicDef(t), identityRecord(), "mods.Record, not Meemoo dc+schema"},
+		{"simple dc terms to basic", basicDef(t), identityTerms(), "ugent.Terms, not Meemoo dc+schema"},
+		{"simple dc terms to ugent/bibliographic", bibliographicDef(t), identityTerms(), "ugent.Terms, not a MODS record"},
+		{"record to ugent/basic", ugentBasicDef(t), identityRecord(), "ugent.Record, not Simple Dublin Core"},
+		{"record to basic", basicDef(t), identityRecord(), "ugent.Record, not Meemoo dc+schema"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

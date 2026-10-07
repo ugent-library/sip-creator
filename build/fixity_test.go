@@ -11,8 +11,7 @@ import (
 	"testing"
 
 	"github.com/ugent-library/sip-creator/build"
-	"github.com/ugent-library/sip-creator/profiles/mods"
-	"github.com/ugent-library/sip-creator/profiles/simpledc"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -33,8 +32,8 @@ func TestBuildReferencesMatchDisk(t *testing.T) {
 		repDescription sip.Description
 	}{
 		{"meemoo/basic", basicDef(t), testDescription(), nil},
-		{"ugent/basic", ugentBasicDef(t), identityTerms(), simpledc.Terms{{Key: "rights", Value: "CC BY 4.0"}}},
-		{"ugent/bibliographic", bibliographicDef(t), identityRecord(), mods.Record{Titles: []mods.Title{{Value: "PDF-versie", Lang: "nl"}}}},
+		{"ugent/basic", ugentBasicDef(t), identityTerms(), ugent.Terms{{Key: "rights", Value: "CC BY 4.0"}}},
+		{"ugent/bibliographic", bibliographicDef(t), identityRecord(), ugent.Record{Titles: []ugent.Title{{Value: "PDF-versie", Lang: "nl"}}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

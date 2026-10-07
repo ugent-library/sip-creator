@@ -9,7 +9,7 @@ import (
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/cli/input/mapping"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
-	"github.com/ugent-library/sip-creator/profiles/simpledc"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -261,7 +261,7 @@ func TestRowsProfileDecidesTheKeys(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read under ugent/basic: %v", err)
 	}
-	got, ok := pkg.Description.(simpledc.Terms)
+	got, ok := pkg.Description.(ugent.Terms)
 	if !ok || len(got) != 3 || got[0].Key != "identifier" || got[2].Key != "coverage" {
 		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Description)
 	}
@@ -317,5 +317,5 @@ func (placesNothing) Map(terms []sip.Term) (sip.Description, []error) {
 	for i, t := range terms {
 		errs = append(errs, &sip.TermError{Index: i, Err: fmt.Errorf("no place for %s", t.Key)})
 	}
-	return simpledc.Terms(nil), errs
+	return ugent.Terms(nil), errs
 }

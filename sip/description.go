@@ -4,8 +4,8 @@ import "fmt"
 
 // Description is the descriptive metadata of an entity or a
 // representation, in the descriptive standard the profile writes. Each
-// metadata model supplies its own type: meemoo.Terms and simpledc.Terms are
-// lists of Term values, mods.Record is a struct typed by field, and
+// metadata model supplies its own type: meemoo.Terms and ugent.Terms are
+// lists of Term values, ugent.Record is a struct typed by field, and
 // build.EncodedDescription is a finished document supplied as a file, for
 // the profiles that accept one. Only the model's package works with the
 // concrete type, so nothing in sip/ depends on a profile.

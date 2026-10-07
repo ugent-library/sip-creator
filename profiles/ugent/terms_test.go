@@ -1,4 +1,4 @@
-package simpledc
+package ugent
 
 import (
 	"bytes"
@@ -19,9 +19,9 @@ func testTerms() Terms {
 	}
 }
 
-func TestEncode(t *testing.T) {
+func TestTermsEncode(t *testing.T) {
 	var buf bytes.Buffer
-	if err := (model{}).Encode(&buf, testTerms(), "../../schemas"); err != nil {
+	if err := (simpledc{}).Encode(&buf, testTerms(), "../../schemas"); err != nil {
 		t.Fatalf("Encode: %v", err)
 	}
 	out := buf.String()
@@ -52,9 +52,9 @@ func TestEncode(t *testing.T) {
 
 // The schema-location hint follows the document: a representation-level
 // document (four levels deep) must point four levels up.
-func TestEncodeSchemaLocation(t *testing.T) {
+func TestTermsEncodeSchemaLocation(t *testing.T) {
 	var buf bytes.Buffer
-	if err := (model{}).Encode(&buf, testTerms(), "../../../../schemas"); err != nil {
+	if err := (simpledc{}).Encode(&buf, testTerms(), "../../../../schemas"); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), `xsi:noNamespaceSchemaLocation="../../../../schemas/simpledc.xsd"`) {
@@ -62,10 +62,10 @@ func TestEncodeSchemaLocation(t *testing.T) {
 	}
 }
 
-func TestEncodeRefusesInvalid(t *testing.T) {
+func TestTermsEncodeRefusesInvalid(t *testing.T) {
 	bad := Terms{{Key: "abstract", Value: "x"}} // a qualified term, not Simple DC
 	var buf bytes.Buffer
-	if err := (model{}).Encode(&buf, bad, "../../schemas"); err == nil {
+	if err := (simpledc{}).Encode(&buf, bad, "../../schemas"); err == nil {
 		t.Fatal("Encode accepted a key outside Simple Dublin Core")
 	}
 	if buf.Len() != 0 {
@@ -131,9 +131,10 @@ func TestTermsValidate(t *testing.T) {
 	}
 }
 
-// A package-level description states an identifier and a title; plain
-// E-ARK requires nothing more, and the list names only real elements.
-func TestValidateRequired(t *testing.T) {
+// A package-level description states an identifier and a title, as
+// ugent/basic requires and nothing more, and the list names only real
+// elements.
+func TestTermsValidateRequired(t *testing.T) {
 	err := (Terms{{Key: "identifier", Value: "A"}}).ValidateRequired()
 	if err == nil || !strings.Contains(err.Error(), "title is required") {
 		t.Fatalf("want the missing title named, got %v", err)
@@ -145,8 +146,8 @@ func TestValidateRequired(t *testing.T) {
 	if err := testTerms().ValidateRequired(); err != nil {
 		t.Fatalf("complete terms refused: %v", err)
 	}
-	for _, key := range required {
-		if !elementSet[key] {
+	for _, key := range dcRequired {
+		if !dcElementSet[key] {
 			t.Errorf("required key %q is not a Simple Dublin Core element", key)
 		}
 	}
