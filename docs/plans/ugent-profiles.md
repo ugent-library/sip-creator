@@ -2,7 +2,10 @@
 
 *Status: **in progress** (drafted and revised 2026-10-07). Step 1 landed 2026-10-07:
 [ADR-0034](../decisions/0034-a-profile-is-a-content-type.md) records decisions 1, 2, 3, 8
-and 9. Each step is proposed in chat before it starts. The plan takes over from the retired
+and 9. Step 2 landed 2026-10-07: [ugent-basic](../profiles/ugent-basic.md) and
+[ugent-bibliographic](../profiles/ugent-bibliographic.md), written ahead of the code,
+mark each rule with the step that checks it. Each step is proposed in chat before it
+starts. The plan takes over from the retired
 [profile-rules-and-names plan](../archive/profile-rules-and-names.md): its parked step 5
 (the representation minimum) returns here as step 8; its step 8 (`eark/none`) is dropped;
 its steps 2 to 4 (a profile without descriptive metadata) are absorbed by the parked
@@ -213,7 +216,10 @@ The owner in the name keeps them apart; the profile pages say so.
   outside this tool), documentation and schemas mapped into the AIP, no preservation
   metadata from the SIP.
 - `docs/README.md`: the `profiles/` tier, design genre.
-- Written before the code, so steps 7 to 9 can quote the pages.
+- Written before the code, so steps 7 to 9 can quote the pages. Each rule says who
+  checks it: checked, the operator, or "from step N"; the step that lands a rule turns
+  its marker into "checked", and step 4 removes the note that the profile ships under
+  its eark name.
 
 ### Step 3. Models move to packages named by their standard
 
