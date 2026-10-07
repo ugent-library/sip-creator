@@ -250,16 +250,16 @@ func TestParseTermsNotUTF8(t *testing.T) {
 }
 
 // The profile, not the file, says which keys the rows may use: the
-// same description.csv is Simple Dublin Core under eark/dc and refused under
+// same description.csv is Simple Dublin Core under ugent/basic and refused under
 // basic, where coverage is not a key.
 func TestRowsProfileDecidesTheKeys(t *testing.T) {
 	tree := map[string]string{
 		"description.csv": minimalDC + "coverage,Gent\n",
 		"scan.tiff":       "x",
 	}
-	pkg, err := Read(writeTree(t, tree), mapping.SimpleDC{}, earkDocumentSpec)
+	pkg, err := Read(writeTree(t, tree), mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	if err != nil {
-		t.Fatalf("Read under eark/dc: %v", err)
+		t.Fatalf("Read under ugent/basic: %v", err)
 	}
 	got, ok := pkg.Description.(simpledc.Terms)
 	if !ok || len(got) != 3 || got[0].Key != "identifier" || got[2].Key != "coverage" {
@@ -270,15 +270,15 @@ func TestRowsProfileDecidesTheKeys(t *testing.T) {
 	assertViolation(t, err, `unknown key "coverage"`)
 }
 
-// Under eark only the fifteen Simple DC elements are keys: Meemoo's keys
+// Under ugent/basic only the fifteen Simple DC elements are keys: Meemoo's keys
 // are unknown there, at both levels.
-func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
+func TestRowsUGentBasicRefusesMeemooKeys(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv":                        minimalDC + "abstract,x\n",
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	_, err := Read(root, mapping.SimpleDC{}, earkDocumentSpec)
+	_, err := Read(root, mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	assertViolation(t, err, `unknown key "abstract"`)
 	assertViolation(t, err, `unknown key "license"`)
 }
@@ -308,7 +308,7 @@ func TestMapperErrorsNameTheLine(t *testing.T) {
 }
 
 // placesNothing is a mapper that refuses every term at its index,
-// adds one error about the file, and returns an empty eark description, so
+// adds one error about the file, and returns an empty Simple DC description, so
 // the description's own required-keys rule still runs on the result.
 type placesNothing struct{}
 

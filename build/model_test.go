@@ -18,8 +18,8 @@ func (otherDescription) ValidateRequired() error { return nil }
 // A description of another standard is refused by the profile's
 // descriptive-standard check before validation and before any side effect,
 // at package and representation level alike: a type no profile writes,
-// Meemoo terms handed to eark, Simple DC terms handed to basic or to
-// eark/mods, a MODS record handed to either DC profile.
+// Meemoo terms handed to ugent/basic, Simple DC terms handed to meemoo/basic or to
+// ugent/bibliographic, a MODS record handed to either DC profile.
 func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	cases := []struct {
 		name string
@@ -27,11 +27,11 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 		desc sip.Description
 		want string
 	}{
-		{"unknown type to eark", earkDef(t), otherDescription{}, "simpledc.Terms"},
-		{"Meemoo terms to eark", earkDef(t), testDescription(), "meemoo.Terms, not Simple Dublin Core"},
+		{"unknown type to ugent/basic", ugentBasicDef(t), otherDescription{}, "simpledc.Terms"},
+		{"Meemoo terms to ugent/basic", ugentBasicDef(t), testDescription(), "meemoo.Terms, not Simple Dublin Core"},
 		{"simple dc terms to basic", basicDef(t), identityTerms(), "simpledc.Terms, not Meemoo dc+schema"},
-		{"simple dc terms to eark/mods", earkmodsDef(t), identityTerms(), "simpledc.Terms, not a MODS record"},
-		{"record to eark", earkDef(t), identityRecord(), "mods.Record, not Simple Dublin Core"},
+		{"simple dc terms to ugent/bibliographic", bibliographicDef(t), identityTerms(), "simpledc.Terms, not a MODS record"},
+		{"record to ugent/basic", ugentBasicDef(t), identityRecord(), "mods.Record, not Simple Dublin Core"},
 		{"record to basic", basicDef(t), identityRecord(), "mods.Record, not Meemoo dc+schema"},
 	}
 	for _, c := range cases {
@@ -46,7 +46,7 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 		})
 	}
 
-	b, in, outDir := newTestBuilder(t, earkDef(t))
+	b, in, outDir := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
 	in.Representations[0].Description = otherDescription{}
 	_, err := b.Build(in)

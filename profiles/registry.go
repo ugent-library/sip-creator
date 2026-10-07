@@ -1,10 +1,9 @@
 // Package profiles is the registry of the profiles a package can be built
-// to. Each profile lives in its own package under profiles/, which holds
-// everything the profile knows about its descriptive metadata (its
-// description type and rules, its template, the XSDs its document points
-// at, and for Meemoo and eark the table of keys) next to the
-// build.Definition naming the rest as data. This
-// package only hands definitions out by name; the set is closed here.
+// to. A profile's definition lives in its owner's package under profiles/
+// (meemoo, ugent), and a descriptive standard's model in a package of its
+// own when a second profile can share it (simpledc, mods); Meemoo's model
+// stays next to its definition. This package only hands definitions out by
+// name; the set is closed here.
 package profiles
 
 import (
@@ -12,15 +11,14 @@ import (
 	"slices"
 
 	"github.com/ugent-library/sip-creator/build"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
-	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 )
 
 var registry = map[string]build.Definition{
-	"meemoo/basic": meemoo.Definition,
-	"eark/dc":      earkdc.Definition,
-	"eark/mods":    earkmods.Definition,
+	"meemoo/basic":        meemoo.Definition,
+	"ugent/basic":         ugent.Basic,
+	"ugent/bibliographic": ugent.Bibliographic,
 }
 
 // Get resolves a profile name to its definition.

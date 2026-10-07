@@ -58,9 +58,9 @@ func TestWithSubmitterRequiresName(t *testing.T) {
 }
 
 func TestWithSubmitterEARK(t *testing.T) {
-	def, ok := profiles.Get("eark/dc")
+	def, ok := profiles.Get("ugent/basic")
 	if !ok {
-		t.Fatal(`no "eark/dc" definition registered`)
+		t.Fatal(`no "ugent/basic" definition registered`)
 	}
 
 	// The OR-id is a Meemoo concept; a configured value is ignored here.
@@ -74,7 +74,7 @@ func TestWithSubmitterEARK(t *testing.T) {
 		t.Errorf("submitter name = %q", sub.Name)
 	}
 	if sub.Note != "" || sub.NoteType != "" {
-		t.Errorf("eark submitter note = %q (%q), want none", sub.Note, sub.NoteType)
+		t.Errorf("ugent/basic submitter note = %q (%q), want none", sub.Note, sub.NoteType)
 	}
 }
 
@@ -128,7 +128,7 @@ func TestValidateSourceAppliesProfileRules(t *testing.T) {
 
 	in.Description = identityTerms()
 	in.Representations[1].Description = simpledc.Terms{{Key: "title", Value: "Access copy"}}
-	if err := earkDef(t).ValidateSource(in); err != nil {
-		t.Errorf("eark has no such rules, yet ValidateSource refused: %v", err)
+	if err := ugentBasicDef(t).ValidateSource(in); err != nil {
+		t.Errorf("ugent/basic has no such rules, yet ValidateSource refused: %v", err)
 	}
 }

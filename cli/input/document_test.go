@@ -13,7 +13,7 @@ import (
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
-// validDC and validMODS are the smallest documents the two eark profiles
+// validDC and validMODS are the smallest documents the two UGent profiles
 // accept as supplied: well-formed XML with the standard's root element.
 const (
 	validDC   = `<?xml version="1.0"?><simpledc xmlns:dc="http://purl.org/dc/elements/1.1/"><title>Test</title></simpledc>`
@@ -28,7 +28,7 @@ func TestDocumentAtRoot(t *testing.T) {
 		"dc.xml":    validDC,
 		"scan.tiff": "x",
 	})
-	pkg, err := Read(root, mapping.SimpleDC{}, earkDocumentSpec)
+	pkg, err := Read(root, mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestDocumentInRepresentation(t *testing.T) {
 		"representations/master/scan.tiff": "x",
 		"representations/master/dc.xml":    validDC,
 	})
-	pkg, err := Read(root, mapping.SimpleDC{}, earkDocumentSpec)
+	pkg, err := Read(root, mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -73,7 +73,7 @@ func TestDocumentAndRowsTogether(t *testing.T) {
 		"representations/master/description.csv": "key,value\ntitle,T\n",
 		"representations/master/dc.xml":          validDC,
 	})
-	_, err := Read(root, mapping.SimpleDC{}, earkDocumentSpec)
+	_, err := Read(root, mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	assertViolation(t, err, "description.csv and dc.xml are both present; describe the package")
 	assertViolation(t, err, "representations/master/description.csv and representations/master/dc.xml are both present; describe the representation")
 }
@@ -82,7 +82,7 @@ func TestDocumentAndRowsTogether(t *testing.T) {
 // a profile that takes a document; under one that takes rows only it names
 // the rows file alone.
 func TestDocumentOrRowsRequired(t *testing.T) {
-	_, err := Read(writeTree(t, map[string]string{"scan.tiff": "x"}), mapping.SimpleDC{}, earkDocumentSpec)
+	_, err := Read(writeTree(t, map[string]string{"scan.tiff": "x"}), mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	assertViolation(t, err, "needs a description.csv or a dc.xml")
 	_, err = Read(writeTree(t, map[string]string{"scan.tiff": "x"}), mapping.Meemoo{}, meemooDocumentSpec)
 	assertViolation(t, err, "needs a description.csv describing")
@@ -104,7 +104,7 @@ func TestDocumentViolations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Read(writeTree(t, map[string]string{"dc.xml": tt.doc, "scan.tiff": "x"}), mapping.SimpleDC{}, earkDocumentSpec)
+			_, err := Read(writeTree(t, map[string]string{"dc.xml": tt.doc, "scan.tiff": "x"}), mapping.SimpleDC{}, ugentBasicDocumentSpec)
 			assertViolation(t, err, tt.want)
 		})
 	}
@@ -118,14 +118,14 @@ func TestDocumentIsAFolder(t *testing.T) {
 		"representations/master/scan.tiff": "x",
 		"representations/master/dc.xml/":   "",
 	})
-	_, err := Read(root, mapping.SimpleDC{}, earkDocumentSpec)
+	_, err := Read(root, mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	assertViolation(t, err, "dc.xml is a folder")
 	assertViolation(t, err, "representations/master/dc.xml is a folder")
 }
 
 // Under a profile that takes no document the name is not reserved: a
 // dc.xml under meemoo/basic is content like any other file, as is a mods.xml
-// under eark/dc, another standard's document.
+// under ugent/basic, another standard's document.
 func TestDocumentNameIsContentElsewhere(t *testing.T) {
 	pkg, err := Read(writeTree(t, map[string]string{
 		"description.csv": minimalCSV,
@@ -143,26 +143,26 @@ func TestDocumentNameIsContentElsewhere(t *testing.T) {
 		"description.csv": minimalDC,
 		"mods.xml":        validMODS,
 		"scan.tiff":       "x",
-	}), mapping.SimpleDC{}, earkDocumentSpec)
+	}), mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	if err != nil {
-		t.Fatalf("Read under eark/dc: %v", err)
+		t.Fatalf("Read under ugent/basic: %v", err)
 	}
 	if got := paths(pkg.Representations[0].Files); strings.Join(got, ",") != "mods.xml,scan.tiff" {
-		t.Errorf("content under eark/dc = %v, want mods.xml packaged as content", got)
+		t.Errorf("content under ugent/basic = %v, want mods.xml packaged as content", got)
 	}
 }
 
-// The folder's document builds with the real eark profile: the engine
+// The folder's document builds with the real ugent/basic profile: the engine
 // copies the file Read pointed at, byte for byte.
 func TestDocumentBuilds(t *testing.T) {
 	root := writeTree(t, map[string]string{"dc.xml": validDC, "scan.tiff": "x"})
-	source, err := Read(root, mapping.SimpleDC{}, earkDocumentSpec)
+	source, err := Read(root, mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	def, ok := profiles.Get("eark/dc")
+	def, ok := profiles.Get("ugent/basic")
 	if !ok {
-		t.Fatal(`no "eark/dc" definition registered`)
+		t.Fatal(`no "ugent/basic" definition registered`)
 	}
 	def, err = def.WithSubmitter("Test Org", "")
 	if err != nil {

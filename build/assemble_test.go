@@ -446,9 +446,9 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 }
 
 // identifierTerm returns the identifier any world's description states
-// ("" when absent): what the Meemoo swap wrote, or what the eark profiles
+// ("" when absent): what the Meemoo swap wrote, or what the UGent profiles
 // left alone. No profile package exports an accessor for it; the swap is
-// the Meemoo package's own business, and the eark profiles never swap.
+// the Meemoo package's own business, and the UGent profiles never swap.
 func identifierTerm(d sip.Description) string {
 	var terms []sip.Term
 	key := "identifier"
@@ -498,7 +498,7 @@ func TestAssembleDeclaresPackageValues(t *testing.T) {
 // version stamped into the binary, whatever the profile; the profile's own
 // agents stay as they were.
 func TestAssembleAddsTheSoftwareAgent(t *testing.T) {
-	for name, def := range map[string]build.Definition{"meemoo/basic": basicDef(t), "eark/dc": earkDef(t)} {
+	for name, def := range map[string]build.Definition{"meemoo/basic": basicDef(t), "ugent/basic": ugentBasicDef(t)} {
 		t.Run(name, func(t *testing.T) {
 			before := len(def.Declaration.Agents)
 			b, in, _ := newTestBuilder(t, def)
@@ -533,7 +533,7 @@ func TestAssembleAddsTheSoftwareAgent(t *testing.T) {
 // Both descriptive file nodes, the package's and a representation's, carry
 // the dmdSec label of the profile's metadata model.
 func TestAssembleLabelsDescriptionFilesWithTheModel(t *testing.T) {
-	b, in, _ := newTestBuilder(t, earkDef(t))
+	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
 	in.Representations[0].Description = simpledc.Terms{{Key: "rights", Value: "CC BY 4.0"}}
 
@@ -552,11 +552,11 @@ func TestAssembleLabelsDescriptionFilesWithTheModel(t *testing.T) {
 	}
 }
 
-// The eark/dc profile keeps the producer's identifier in the descriptive
+// The ugent/basic profile keeps the producer's identifier in the descriptive
 // terms, at both levels, and lifts no MEEMOO-LOCAL-ID onto the entity: its
 // standard has no swap (ADR-0012).
-func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
-	b, in, _ := newTestBuilder(t, earkDef(t))
+func TestAssembleUGentBasicKeepsProducerIdentifier(t *testing.T) {
+	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
 	in.Representations[0].Description = simpledc.Terms{
 		{Key: "identifier", Value: "rep-local-1"},
@@ -578,12 +578,12 @@ func TestAssembleEarkKeepsProducerIdentifier(t *testing.T) {
 	}
 }
 
-// The eark/dc profile types each representation METS by its resolved type,
+// The ugent/basic profile types each representation METS by its resolved type,
 // in both the TYPE and the CONTENTINFORMATIONTYPE pair; the basic profile
 // keeps the profile declaration unchanged; the package declaration never
 // changes (ADR-0013).
 func TestAssembleRepresentationDeclaration(t *testing.T) {
-	b, in, _ := newTestBuilder(t, earkDef(t))
+	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
 	pkg, err := b.Assemble(in)
 	if err != nil {
@@ -616,9 +616,9 @@ func TestAssembleRepresentationDeclaration(t *testing.T) {
 }
 
 // Label and type resolve along the name → label → type cascade, and an
-// explicit type reaches the eark representation declaration.
+// explicit type reaches the ugent/basic representation declaration.
 func TestAssembleRepresentationCascade(t *testing.T) {
-	b, in, _ := newTestBuilder(t, earkDef(t))
+	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	inDir := t.TempDir()
 	in.Representations = []build.SourceRepresentation{
 		{Name: "master", Label: "Master scan", Type: "archival",

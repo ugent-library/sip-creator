@@ -7,14 +7,16 @@ SIP Creator packages your content files and their descriptive metadata into an
 [E-ARK](https://earksip.dilcis.eu/) Submission Information Package (SIP), ready to hand
 to a digital archive. It is a Go library, and a command-line tool built on it.
 
-Archives differ in what they expect inside a SIP. A profile captures one set of
-expectations: the specification version, the descriptive metadata standard, and the
-rules your input must meet. Every profile builds an E-ARK SIP. Three are included:
+Archives differ in what they expect inside a SIP. A profile is a content type, defined
+by the archive or institution that owns its rules: the specification version, the
+descriptive metadata standard, and the rules your input must meet. Every profile builds
+an E-ARK SIP. Three are included:
 
-* `eark/dc` describes the content in Simple Dublin Core, for intellectual entities
-  described in general terms;
-* `eark/mods` describes it in MODS, for library material, most likely taken from
-  catalogue records in MARC 21;
+* `ugent/basic`, for UGent Library's RODA: resources the library has not necessarily
+  catalogued, such as a database dump or a deposited set of files, described in Simple
+  Dublin Core;
+* `ugent/bibliographic`, for UGent Library's RODA: the library's catalogued holdings,
+  described in MODS from the catalogue record;
 * `meemoo/basic` follows Meemoo's SIP specification, with Meemoo's own mix of Dublin
   Core terms and schema.org, for ingest into Meemoo, the Flemish heritage archive.
 
@@ -39,21 +41,22 @@ See [Profiles](#profiles) for what each one requires.
 
 Choose a profile with `--profile` on the command line, or with `profiles.Get` in Go.
 
-| | `eark/dc` | `eark/mods` | `meemoo/basic` |
+| | `ugent/basic` | `ugent/bibliographic` | `meemoo/basic` |
 |---|---|---|---|
-| Use for | content described in general terms | library material from catalogue records | ingest into Meemoo (hetarchief.be) |
+| Use for | uncatalogued resources, into UGent's RODA | catalogued holdings, into UGent's RODA | ingest into Meemoo (hetarchief.be) |
 | Specification | E-ARK SIP 2.2.0 | E-ARK SIP 2.2.0 | Meemoo SIP 1.2, on E-ARK SIP 2.0.4 |
 | Descriptive standard | Simple Dublin Core | MODS 3.7 | Meemoo's Dublin Core and schema.org |
 | [`description.csv` keys](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) | the 15 Dublin Core elements | `identifier`, `title` | Meemoo's key table |
 | Required keys | `identifier`, `title` | `identifier`, `title` | `identifier`, `title`, `description`, `created` |
-| [Finished document](docs/input-spec.md#supplying-a-finished-document-earkdc-and-earkmods) accepted | `dc.xml` | `mods.xml` | none |
+| [Finished document](docs/input-spec.md#supplying-a-finished-document-ugentbasic-and-ugentbibliographic) accepted | `dc.xml` | `mods.xml` | none |
 | Go description type | `simpledc.Terms` | `mods.Record` | `meemoo.Terms` |
 | Submitter | name | name | name and Meemoo OR-id |
 | Representation type | written to the METS | written to the METS | ignored |
 | You deliver | the zip | the zip | the package directory, in a BagIt bag |
 
-### `eark/dc`: E-ARK with Dublin Core
+### `ugent/basic`: UGent Library, uncatalogued resources
 
+The rules are written in [docs/profiles/ugent-basic.md](docs/profiles/ugent-basic.md).
 Builds a plain [E-ARK SIP](https://earksip.dilcis.eu/) 2.2.0 with a Simple Dublin Core
 document (`dc.xml`) as its descriptive metadata. `description.csv` takes the fifteen
 Dublin Core elements (`title`, `creator`, `date`, `coverage`, ...) as keys. A language
@@ -64,11 +67,13 @@ Each representation's type goes into that representation's METS content typing
 in the Type column of the AIP's representations. The zip the tool writes is the
 deliverable: ingest it as it is.
 
-### `eark/mods`: E-ARK with MODS
+### `ugent/bibliographic`: UGent Library, catalogued holdings
 
-The same package as `eark/dc`, with a [MODS 3.7](https://www.loc.gov/standards/mods/)
-document (`mods.xml`) for bibliographic records. Everything except the descriptive
-metadata works as under `eark/dc`.
+The rules are written in
+[docs/profiles/ugent-bibliographic.md](docs/profiles/ugent-bibliographic.md). The same
+package as `ugent/basic`, with a [MODS 3.7](https://www.loc.gov/standards/mods/) document
+(`mods.xml`) written from the catalogue record. Everything except the descriptive
+metadata works as under `ugent/basic`.
 
 MODS is a tree, so `description.csv` holds only `identifier` and `title`. A richer
 record, such as one listing the library's physical copies of the work (call number,
@@ -141,12 +146,12 @@ Assuming you have data in a `./your-input` folder (prepared as described under
 [Configuration](#configuration)):
 
 ```
-./bin/sip-creator create --profile eark/dc ./your-input sip-out
+./bin/sip-creator create --profile ugent/basic ./your-input sip-out
 ```
 
 This writes the package directory `sip-out/uuid-<uuid>/` and zips it (uncompressed) to
 `sip-out/uuid-<uuid>.zip`. To try it before preparing your own input, build one of the
-[example folders](examples/): `./bin/sip-creator create --profile eark/dc examples/eark/dc sip-out`.
+[example folders](examples/): `./bin/sip-creator create --profile ugent/basic examples/ugent/basic sip-out`.
 
 Further flags:
 
@@ -162,7 +167,7 @@ Further flags:
   identifier is refused, never written into.
 * `--no-zip` to skip zipping when the package directory itself is what you need.
 
-What you deliver depends on the profile: the zip for `eark/dc` and `eark/mods`, a bagged
+What you deliver depends on the profile: the zip for `ugent/basic` and `ugent/bibliographic`, a bagged
 package directory for `meemoo/basic` (see [Profiles](#profiles)).
 
 ### Checking an input folder
@@ -173,7 +178,7 @@ then checks the profile's own rules, such as `meemoo/basic`'s single representat
 no configuration: no `.env` and no environment variables:
 
 ```
-./bin/sip-creator check --profile eark/dc ./your-input
+./bin/sip-creator check --profile ugent/basic ./your-input
 ```
 
 The report goes to stdout, so it can be saved to a file. It lists every problem first,
@@ -185,7 +190,7 @@ then a summary of what the tool read, then the verdict:
   premis/broken.xml: not well-formed XML: XML syntax error on line 2: unexpected EOF
 
 Input folder:         ./your-input
-Profile:              eark
+Profile:              ugent/basic
 
 Descriptive metadata: description.csv
 Representations:      1 (1 with its own description)
@@ -240,7 +245,7 @@ your-input/
 ```
 
 When the content comes in several versions, such as a preservation master and an access
-copy, each version gets its own folder under `representations/` (under the `eark/dc`
+copy, each version gets its own folder under `representations/` (under the UGent
 profiles; Meemoo's `meemoo/basic` profile allows one representation and no description below the
 package level):
 
@@ -264,7 +269,7 @@ your-input/
 | Name | Required | What it holds | Rules |
 |---|---|---|---|
 | `description.csv` | yes, or the profile's document | descriptive metadata as `key,value` rows | [§3](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) |
-| `dc.xml`, `mods.xml` | instead of `description.csv`, where the profile accepts one | a finished descriptive document | [§3](docs/input-spec.md#supplying-a-finished-document-earkdc-and-earkmods) |
+| `dc.xml`, `mods.xml` | instead of `description.csv`, where the profile accepts one | a finished descriptive document | [§3](docs/input-spec.md#supplying-a-finished-document-ugentbasic-and-ugentbibliographic) |
 | `representations/<name>/` | no | one folder per version of the content | [§2](docs/input-spec.md#2-content-files-and-representations) |
 | `representations.csv` | no | a label and type per representation folder | [§2](docs/input-spec.md#representationscsv-labels-and-types-optional) |
 | `documentation/` | no | context material; commons-ip warns when a representation has none | [§4](docs/input-spec.md#4-documentation) |
@@ -272,7 +277,7 @@ your-input/
 | `siegfried.json` | no | a format characterization report | [below](#format-characterization) |
 
 Everything else is content. A representation folder can hold its own `documentation/` and
-`premis/`, and under the eark profiles its own `description.csv` (or document), about
+`premis/`, and under the UGent profiles its own `description.csv` (or document), about
 that version only. Representation folder names may use letters, digits and `._-`; in the
 simple case the representation is named after the input folder.
 
@@ -285,7 +290,7 @@ language in square brackets where it matters (`title[nl]`). An unknown key is an
 a typo cannot silently drop metadata. Which keys exist and which are required depends on
 the profile (see [Profiles](#profiles)). The smallest valid file per profile:
 
-`eark/dc`:
+`ugent/basic`:
 
 ```csv
 key,value
@@ -293,7 +298,7 @@ identifier,example-0001
 title,Example photograph
 ```
 
-`eark/mods`:
+`ugent/bibliographic`:
 
 ```csv
 key,value
@@ -377,7 +382,7 @@ import (
 	"github.com/ugent-library/sip-creator/profiles/simpledc"
 )
 
-def, ok := profiles.Get("eark/dc")
+def, ok := profiles.Get("ugent/basic")
 if !ok {
 	// ...
 }
@@ -422,7 +427,7 @@ input folder's `documentation/` and `premis/`.
 
 ### Descriptive metadata
 
-The `eark/mods` profile takes a `mods.Record` instead of a list of terms: an
+The `ugent/bibliographic` profile takes a `mods.Record` instead of a list of terms: an
 identifier, titles, and physical copies as items, each a call number with an optional
 barcode and an optional volume or issue designation (example: `ExampleBuilder_Build_mods`).
 

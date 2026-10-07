@@ -9,7 +9,7 @@ import (
 	"github.com/ugent-library/sip-creator/build"
 )
 
-// Sample documents of the shapes the two eark profiles emit themselves,
+// Sample documents of the shapes the two UGent profiles emit themselves,
 // plus the wrong shapes the checks must refuse.
 const (
 	simpleDCDocument = `<?xml version='1.0' encoding='UTF-8'?>
@@ -77,7 +77,7 @@ func TestDocumentValidate(t *testing.T) {
 	}
 }
 
-// The two eark profiles build a package from a supplied document of their
+// The two UGent profiles build a package from a supplied document of their
 // standard: the file lands under metadata/descriptive as it is, with
 // fixity, and the METS types it as the profile declares. No swap, no
 // MEEMOO-LOCAL-ID.
@@ -89,8 +89,8 @@ func TestBuildSuppliedDocument(t *testing.T) {
 		wantFile string
 		wantMETS string
 	}{
-		{"dc.xml under eark/dc", earkDef(t), simpleDCDocument, "dc.xml", `MDTYPE="DC"`},
-		{"mods.xml under eark/mods", earkmodsDef(t), modsDocument, "mods.xml", `MDTYPE="MODS" MDTYPEVERSION="3.7"`},
+		{"dc.xml under ugent/basic", ugentBasicDef(t), simpleDCDocument, "dc.xml", `MDTYPE="DC"`},
+		{"mods.xml under ugent/bibliographic", bibliographicDef(t), modsDocument, "mods.xml", `MDTYPE="MODS" MDTYPEVERSION="3.7"`},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -121,7 +121,7 @@ func TestBuildSuppliedDocument(t *testing.T) {
 				t.Errorf("package METS lacks %s", c.wantMETS)
 			}
 			if _, ok := pkg.Root.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; ok {
-				t.Error("MEEMOO-LOCAL-ID lifted onto the entity; the eark profiles have no swap")
+				t.Error("MEEMOO-LOCAL-ID lifted onto the entity; the UGent profiles have no swap")
 			}
 		})
 	}
@@ -130,7 +130,7 @@ func TestBuildSuppliedDocument(t *testing.T) {
 // A document on a representation lands in that representation's
 // descriptive dir and is referenced from its METS.
 func TestBuildSuppliedDocumentOnRepresentation(t *testing.T) {
-	b, in, _ := newTestBuilder(t, earkDef(t))
+	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
 	in.Representations[0].Description = writeDocument(t, t.TempDir(), "dc.xml", simpleDCDocument)
 
@@ -164,13 +164,13 @@ func TestBuildRefusesWrongDocument(t *testing.T) {
 		doc  build.EncodedDescription
 		want string
 	}{
-		{"dc document to eark/mods", earkmodsDef(t), writeDocument(t, dir, "dc.xml", simpleDCDocument), "expected a mods:mods document"},
-		{"mods document to eark", earkDef(t), writeDocument(t, dir, "mods.xml", modsDocument), "expected a simpledc document"},
-		{"oai_dc document to eark", earkDef(t), writeDocument(t, dir, "oai.xml", oaiDCDocument), "expected a simpledc document"},
-		{"mods 3.6 to eark/mods", earkmodsDef(t), writeDocument(t, dir, "old.xml", modsOldVersion), `version="3.6"`},
-		{"mods without a version to eark/mods", earkmodsDef(t), writeDocument(t, dir, "nov.xml", modsNoVersion), "declares no version"},
-		{"malformed to eark", earkDef(t), writeDocument(t, dir, "bad.xml", malformedDocument), "not well-formed"},
-		{"missing file to eark", earkDef(t), build.EncodedDescription{Source: filepath.Join(dir, "nope.xml")}, "no such file"},
+		{"dc document to ugent/bibliographic", bibliographicDef(t), writeDocument(t, dir, "dc.xml", simpleDCDocument), "expected a mods:mods document"},
+		{"mods document to ugent/basic", ugentBasicDef(t), writeDocument(t, dir, "mods.xml", modsDocument), "expected a simpledc document"},
+		{"oai_dc document to ugent/basic", ugentBasicDef(t), writeDocument(t, dir, "oai.xml", oaiDCDocument), "expected a simpledc document"},
+		{"mods 3.6 to ugent/bibliographic", bibliographicDef(t), writeDocument(t, dir, "old.xml", modsOldVersion), `version="3.6"`},
+		{"mods without a version to ugent/bibliographic", bibliographicDef(t), writeDocument(t, dir, "nov.xml", modsNoVersion), "declares no version"},
+		{"malformed to ugent/basic", ugentBasicDef(t), writeDocument(t, dir, "bad.xml", malformedDocument), "not well-formed"},
+		{"missing file to ugent/basic", ugentBasicDef(t), build.EncodedDescription{Source: filepath.Join(dir, "nope.xml")}, "no such file"},
 		{"any document to basic", basicDef(t), writeDocument(t, dir, "dcschema.xml", simpleDCDocument), "supplied descriptive document is not accepted"},
 	}
 	for _, c := range cases {

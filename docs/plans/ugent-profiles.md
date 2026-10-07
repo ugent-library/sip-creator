@@ -5,8 +5,9 @@
 and 9. Step 2 landed 2026-10-07: [ugent-basic](../profiles/ugent-basic.md) and
 [ugent-bibliographic](../profiles/ugent-bibliographic.md), written ahead of the code,
 mark each rule with the step that checks it. Step 3 landed 2026-10-07: the models live in
-`profiles/simpledc` and `profiles/mods`, each exporting `Model`. Each step is proposed in
-chat before it starts. The plan takes over from the retired
+`profiles/simpledc` and `profiles/mods`, each exporting `Model`. Step 4 landed
+2026-10-07: `ugent/basic` and `ugent/bibliographic` replace `eark/dc` and `eark/mods`.
+Each step is proposed in chat before it starts. The plan takes over from the retired
 [profile-rules-and-names plan](../archive/profile-rules-and-names.md): its parked step 5
 (the representation minimum) returns here as step 8; its step 8 (`eark/none`) is dropped;
 its steps 2 to 4 (a profile without descriptive metadata) are absorbed by the parked

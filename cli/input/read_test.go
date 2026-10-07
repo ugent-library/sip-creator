@@ -10,20 +10,20 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/cli/input/mapping"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 )
 
-// meemooDocumentSpec and earkDocumentSpec describe the two profiles'
-// documents, as the CLI passes them: eark takes a dc.xml, judged by the eark metadata model,
+// meemooDocumentSpec and ugentBasicDocumentSpec describe the two profiles'
+// documents, as the CLI passes them: ugent/basic takes a dc.xml, judged by the Simple DC metadata model,
 // so Read's document rules are tested through it; basic takes none.
 var (
-	meemooDocumentSpec = DocumentSpec{Name: meemoo.Definition.DocumentName, Model: meemoo.Definition.Model}
-	earkDocumentSpec   = DocumentSpec{Name: earkdc.Definition.DocumentName, Model: earkdc.Definition.Model}
+	meemooDocumentSpec     = DocumentSpec{Name: meemoo.Definition.DocumentName, Model: meemoo.Definition.Model}
+	ugentBasicDocumentSpec = DocumentSpec{Name: ugent.Basic.DocumentName, Model: ugent.Basic.Model}
 )
 
 // minimalCSV is the smallest description.csv that passes check: Meemoo's
-// basic content profile requires these four keys. minimalDC is its eark
+// basic content profile requires these four keys. minimalDC is its ugent/basic
 // counterpart: Simple DC requires identity only.
 const (
 	minimalCSV = "key,value\nidentifier,ID-1\ntitle,Test\ndescription,Testbeschrijving\ncreated,2026\n"
@@ -312,7 +312,7 @@ func TestReadPremisNamingRule(t *testing.T) {
 
 // basic takes no supplied document, so its document name is refused at
 // both levels and in a flat folder, never taken as content. A dc.xml, the
-// eark document name, stays content under meemoo/basic.
+// ugent/basic document name, stays content under meemoo/basic.
 func TestReadRefusesDocumentUnderBasic(t *testing.T) {
 	refused := "the profile takes no supplied descriptive document"
 	cases := map[string]struct {

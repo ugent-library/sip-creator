@@ -1,5 +1,10 @@
 # Plan: MODS 3.7 coverage for the eark/mods profile, in tiers
 
+*Note, 2026-10-07: `eark/mods` is `ugent/bibliographic` and `earkmods.Record` is
+`mods.Record` in `profiles/mods` since
+[ADR-0034](../decisions/0034-a-profile-is-a-content-type.md); the body keeps the old
+names.*
+
 *Status: **parked** (drafted 2026-09-30). Its precondition is met: the
 [descriptive-model plan](../archive/descriptive-model.md) shipped the
 supplied document route on 2026-10-01, so coverage can grow tier by tier

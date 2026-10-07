@@ -1,9 +1,8 @@
 # Profile `ugent/bibliographic`
 
 *Content type `ugent/bibliographic`, defined by UGent Library. Written 2026-10-07, ahead
-of the code: until step 4 of the [ugent-profiles plan](../plans/ugent-profiles.md) the
-profile ships as `eark/mods`, and the rules marked "from step N" are checked once that
-step lands. The decision is
+of the code: the rules marked "from step N" are checked once that step of the
+[ugent-profiles plan](../plans/ugent-profiles.md) lands. The decision is
 [ADR-0034](../decisions/0034-a-profile-is-a-content-type.md).*
 
 The key words MUST, SHOULD and MAY are to be interpreted as in RFC 2119. Each MUST says

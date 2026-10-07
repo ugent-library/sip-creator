@@ -108,12 +108,12 @@ func TestCreateCarriesFlagsAndConfiguration(t *testing.T) {
 		wantZip         bool
 	}{
 		{"the profile's values and a zip", "meemoo/basic", "", nil, "", "", basicDefault, true},
-		{"an update of an earlier package", "eark/dc", "",
+		{"an update of an earlier package", "ugent/basic", "",
 			[]string{"--status", "replacement", "--updates", earlier}, earlier, "REPLACEMENT", "Mixed", true},
-		{"the configured content category", "eark/dc", "Textual works – Print", nil, "", "", "Textual works – Print", true},
-		{"the flag before the configured content category", "eark/dc", "Textual works – Print",
+		{"the configured content category", "ugent/basic", "Textual works – Print", nil, "", "", "Textual works – Print", true},
+		{"the flag before the configured content category", "ugent/basic", "Textual works – Print",
 			[]string{"--content-category", "Maps"}, "", "", "Maps", true},
-		{"no zip", "eark/dc", "", []string{"--no-zip"}, "", "", "Mixed", false},
+		{"no zip", "ugent/basic", "", []string{"--no-zip"}, "", "", "Mixed", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -161,7 +161,7 @@ func TestCreateRefusesBeforeWriting(t *testing.T) {
 		t.Setenv("SIP_SUBMITTER_NAME", "")
 		t.Setenv("SIP_SUBMITTER_OR_ID", "")
 		dest := t.TempDir()
-		_, _, err := runCLI(t, "create", "--profile", "eark/dc", filepath.Join("..", "examples", "eark", "dc"), dest)
+		_, _, err := runCLI(t, "create", "--profile", "ugent/basic", filepath.Join("..", "examples", "ugent", "basic"), dest)
 		if want := "(set SIP_SUBMITTER_NAME and SIP_SUBMITTER_OR_ID)"; err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("error = %v, want one ending %q", err, want)
 		}
@@ -171,7 +171,7 @@ func TestCreateRefusesBeforeWriting(t *testing.T) {
 		t.Setenv("SIP_SUBMITTER_NAME", "Example Organization")
 		src := writeFolder(t, map[string]string{"scan.tif": "x"}) // no description
 		dest := t.TempDir()
-		_, stderr, err := runCLI(t, "create", "--profile", "eark/dc", src, dest)
+		_, stderr, err := runCLI(t, "create", "--profile", "ugent/basic", src, dest)
 		if want := src + ": 1 problem(s) found"; err == nil || err.Error() != want {
 			t.Errorf("error = %v, want %q", err, want)
 		}
@@ -189,8 +189,8 @@ func TestCreateRefusesBeforeWriting(t *testing.T) {
 		if err := os.WriteFile(oldZip, []byte("old"), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		_, _, err := runCLI(t, "create", "--profile", "eark/dc", "--status", "replacement", "--updates", earlier,
-			filepath.Join("..", "examples", "eark", "dc"), dest)
+		_, _, err := runCLI(t, "create", "--profile", "ugent/basic", "--status", "replacement", "--updates", earlier,
+			filepath.Join("..", "examples", "ugent", "basic"), dest)
 		if err == nil || !strings.Contains(err.Error(), "already exists") {
 			t.Errorf("error = %v, want one saying the zip already exists", err)
 		}

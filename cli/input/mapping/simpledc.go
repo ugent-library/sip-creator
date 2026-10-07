@@ -5,7 +5,7 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// SimpleDC is the eark/dc profile's mapping: the fifteen Simple Dublin Core
+// SimpleDC is the ugent/basic profile's mapping: the fifteen Simple Dublin Core
 // elements, the table in profiles/simpledc. The terms become simpledc.Terms
 // unchanged; their Validate decides which keys exist and what a term may
 // say.

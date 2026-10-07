@@ -30,7 +30,7 @@ func TestBuildEscapesValues(t *testing.T) {
 		description sip.Description
 	}{
 		{"meemoo/basic", basicDef(t), meemooTerms},
-		{"eark/dc", earkDef(t), simpledc.Terms{{Key: "identifier", Value: localID}, {Key: "title", Value: "Catus Testus"}}},
+		{"ugent/basic", ugentBasicDef(t), simpledc.Terms{{Key: "identifier", Value: localID}, {Key: "title", Value: "Catus Testus"}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

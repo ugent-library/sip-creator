@@ -77,11 +77,11 @@ func TestCheckSummarizesAValidFolder(t *testing.T) {
 		"representations/access/access.pdf": "c",
 	})
 
-	stdout, stderr, err := runCLI(t, "check", "--profile", "eark/dc", root)
+	stdout, stderr, err := runCLI(t, "check", "--profile", "ugent/basic", root)
 	if err != nil {
 		t.Fatalf("check: %v\n%s", err, stderr)
 	}
-	if want := "OK: the folder meets the input specification for profile eark/dc.\n"; !strings.HasSuffix(stdout, want) {
+	if want := "OK: the folder meets the input specification for profile ugent/basic.\n"; !strings.HasSuffix(stdout, want) {
 		t.Errorf("stdout = %q, want it to end in %q", stdout, want)
 	}
 	if stderr != "" {
@@ -110,7 +110,7 @@ func TestCheckReportsEveryViolation(t *testing.T) {
 		"representations/master/a.tif": "a",
 	})
 
-	stdout, stderr, err := runCLI(t, "check", "--profile", "eark/dc", root)
+	stdout, stderr, err := runCLI(t, "check", "--profile", "ugent/basic", root)
 	if want := root + ": 2 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
@@ -121,7 +121,7 @@ func TestCheckReportsEveryViolation(t *testing.T) {
 		"  stray.tif: content must live inside representations/ when that folder exists (only the reserved names of the input specification may sit beside it)\n" +
 		"\n" +
 		"Input folder:         " + root + "\n" +
-		"Profile:              eark/dc\n" +
+		"Profile:              ugent/basic\n" +
 		"\n" +
 		"Descriptive metadata: none\n" +
 		"Representations:      1\n" +
@@ -186,7 +186,7 @@ func TestCheckReportsMalformedPremis(t *testing.T) {
 		"premis/vendor.xml": "<premis:premis>",
 	})
 
-	stdout, _, err := runCLI(t, "check", "--profile", "eark/dc", root)
+	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", root)
 	if want := root + ": 1 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
@@ -205,7 +205,7 @@ func TestCheckReportsContentMissingFromTheReport(t *testing.T) {
 		"siegfried.json":  `{"siegfried":"1.11.0","files":[{"filename":"a.tif","md5":"0","matches":[]}]}`,
 	})
 
-	stdout, _, err := runCLI(t, "check", "--profile", "eark/dc", root)
+	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", root)
 	if want := root + ": 1 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
@@ -215,14 +215,14 @@ func TestCheckReportsContentMissingFromTheReport(t *testing.T) {
 }
 
 // The summary counts what the folder holds, across the package and its
-// representations. The eark example describes its representation too.
+// representations. The ugent/basic example describes its representation too.
 func TestCheckSummarizesTheExample(t *testing.T) {
-	stdout, _, err := runCLI(t, "check", "--profile", "eark/dc", filepath.Join("..", "examples", "eark", "dc"))
+	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", filepath.Join("..", "examples", "ugent", "basic"))
 	if err != nil {
 		t.Fatalf("check: %v", err)
 	}
-	want := "Input folder:         ../examples/eark/dc\n" +
-		"Profile:              eark/dc\n" +
+	want := "Input folder:         ../examples/ugent/basic\n" +
+		"Profile:              ugent/basic\n" +
 		"\n" +
 		"Descriptive metadata: description.csv\n" +
 		"Representations:      1 (1 with its own description)\n" +
@@ -231,7 +231,7 @@ func TestCheckSummarizesTheExample(t *testing.T) {
 		"PREMIS files:         2\n" +
 		"Format report:        not supplied (files carry no format information)\n" +
 		"\n" +
-		"OK: the folder meets the input specification for profile eark/dc.\n"
+		"OK: the folder meets the input specification for profile ugent/basic.\n"
 	if stdout != want {
 		t.Errorf("stdout = %q, want %q", stdout, want)
 	}
@@ -246,7 +246,7 @@ func TestCheckNamesSuppliedDocumentAndReport(t *testing.T) {
 		"siegfried.json": `{"siegfried":"1.11.0","files":[{"filename":"a.tif","md5":"0","matches":[]}]}`,
 	})
 
-	stdout, _, err := runCLI(t, "check", "--profile", "eark/dc", root)
+	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", root)
 	if err != nil {
 		t.Fatalf("check: %v\n%s", err, stdout)
 	}
@@ -269,7 +269,7 @@ func TestCheckRefusesWhatItCannotRead(t *testing.T) {
 	}
 
 	missing := filepath.Join(t.TempDir(), "missing")
-	_, _, err = runCLI(t, "check", "--profile", "eark/dc", missing)
+	_, _, err = runCLI(t, "check", "--profile", "ugent/basic", missing)
 	if err == nil || !strings.Contains(err.Error(), "input folder: ") || !strings.Contains(err.Error(), "no such file") {
 		t.Errorf("error = %v, want the missing input folder named", err)
 	}
@@ -285,11 +285,11 @@ func TestExitStatus(t *testing.T) {
 		args []string
 		want int
 	}{
-		{"check, folder with problems", []string{"check", "--profile", "eark/dc", broken}, 1},
-		{"check, missing folder", []string{"check", "--profile", "eark/dc", missing}, 2},
+		{"check, folder with problems", []string{"check", "--profile", "ugent/basic", broken}, 1},
+		{"check, missing folder", []string{"check", "--profile", "ugent/basic", missing}, 2},
 		{"check, unknown profile", []string{"check", "--profile", "nope", broken}, 2},
-		{"check, no folder given", []string{"check", "--profile", "eark/dc"}, 2},
-		{"create, missing folder", []string{"create", "--profile", "eark/dc", missing, t.TempDir()}, 1},
+		{"check, no folder given", []string{"check", "--profile", "ugent/basic"}, 2},
+		{"create, missing folder", []string{"create", "--profile", "ugent/basic", missing, t.TempDir()}, 1},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

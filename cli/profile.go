@@ -9,9 +9,8 @@ import (
 	"github.com/ugent-library/sip-creator/cli/input"
 	"github.com/ugent-library/sip-creator/cli/input/mapping"
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
-	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 )
 
 // mappers pairs each profile, by the name the registry in profiles/ hands
@@ -20,8 +19,8 @@ import (
 // behind.
 var mappers = map[string]input.Mapper{
 	meemoo.Definition.Name:   mapping.Meemoo{},
-	earkdc.Definition.Name:   mapping.SimpleDC{},
-	earkmods.Definition.Name: mapping.MODS{},
+	ugent.Basic.Name:         mapping.SimpleDC{},
+	ugent.Bibliographic.Name: mapping.MODS{},
 }
 
 // addProfileFlag declares the required --profile flag on cmd. check and

@@ -13,7 +13,7 @@ import (
 // finished document in the model's document format, supplied as a file,
 // such as a dc.xml or mods.xml prepared elsewhere. Where the model's
 // Encode writes a document from a description, this one is copied: the
-// package carries an unchanged copy of it (ADR-0021). The two eark profiles accept
+// package carries an unchanged copy of it (ADR-0021). The two UGent profiles accept
 // one; the basic profile does not, because Meemoo's document must carry
 // the entity identifier the build mints, and the tool does not edit XML.
 // The tool checks only that the file parses as XML and that its root

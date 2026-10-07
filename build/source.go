@@ -49,8 +49,8 @@ type SourceRepresentation struct {
 	// (identifier, title) is not required here; the package-level
 	// description carries the work's identity. Its concrete type must be
 	// the profile's descriptive standard (meemoo.Terms for Meemoo
-	// profiles, simpledc.Terms for eark/dc, mods.Record for eark/mods) or,
-	// for the eark profiles, an EncodedDescription of that standard.
+	// profiles, simpledc.Terms for ugent/basic, mods.Record for ugent/bibliographic) or,
+	// for the UGent profiles, an EncodedDescription of that standard.
 	Description sip.Description
 	// Premis optionally supplies received preservation documents about
 	// this representation: copied, never parsed. Each must be a
@@ -107,8 +107,8 @@ type SourcePackage struct {
 	ContentCategory string
 	// Description is the package-level descriptive metadata. Its concrete
 	// type must be the profile's descriptive standard (meemoo.Terms for
-	// Meemoo profiles, simpledc.Terms for eark/dc, mods.Record for eark/mods)
-	// or, for the eark profiles, an EncodedDescription of that standard.
+	// Meemoo profiles, simpledc.Terms for ugent/basic, mods.Record for ugent/bibliographic)
+	// or, for the UGent profiles, an EncodedDescription of that standard.
 	Description sip.Description
 	// Representations is the content, at least one.
 	Representations []SourceRepresentation

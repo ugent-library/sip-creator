@@ -6,7 +6,7 @@ import "github.com/ugent-library/sip-creator/build"
 // supply in place of description.csv, as the profile defines it: the file
 // name the document must have, and the metadata model that judges its
 // root. It describes the document, it is not one. When the model takes
-// supplied documents (implements build.DocumentFormat), as the two eark
+// supplied documents (implements build.DocumentFormat), as the two UGent
 // profiles' models do, a file with that name is read as the level's
 // description. When the model takes none, as basic's does, a file with
 // that name is a violation. Other names are content like any other file:

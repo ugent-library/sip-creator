@@ -18,9 +18,9 @@ var terms = []sip.Term{
 	{Key: "title", Lang: "en", Value: "Cat"},
 }
 
-// Under eark the terms become Simple Dublin Core terms unchanged, in order:
+// Under ugent/basic the terms become Simple Dublin Core terms unchanged, in order:
 // the keys are the elements' own names.
-func TestEarkKeepsTheTerms(t *testing.T) {
+func TestSimpleDCKeepsTheTerms(t *testing.T) {
 	description, errs := SimpleDC{}.Map(terms)
 	if len(errs) != 0 {
 		t.Fatalf("errors %v for terms the mapping places", errs)
@@ -80,7 +80,7 @@ func TestMeemooElementsAreAccepted(t *testing.T) {
 	}
 }
 
-// Under eark/mods the terms fill the record's fields: the identifier once
+// Under ugent/bibliographic the terms fill the record's fields: the identifier once
 // and the titles in order with their language. The rows carry no items;
 // those reach a record through the library or a supplied document.
 func TestMODSTermsFillTheRecord(t *testing.T) {

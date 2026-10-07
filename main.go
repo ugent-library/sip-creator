@@ -6,7 +6,7 @@
 //	sip-creator create --profile <profile> <input> <destination>
 //	sip-creator check --profile <profile> <input>
 //
-// The profiles are meemoo/basic, eark/dc and eark/mods. The README describes the
+// The profiles are meemoo/basic, ugent/basic and ugent/bibliographic. The README describes the
 // profiles, the input folder and the environment variables create needs.
 package main
 

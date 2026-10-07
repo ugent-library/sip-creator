@@ -36,7 +36,7 @@ func fileMD5(t *testing.T, path string) string {
 
 // testDescription satisfies the strictest registered profile: Meemoo's
 // four required elements, Dutch entries on the lang-tagged ones. It is the
-// basic profile's input; eark tests swap in identityTerms.
+// meemoo/basic profile's input; ugent tests swap in identityTerms.
 func testDescription() meemoo.Terms {
 	return meemoo.Terms{
 		{Key: "dcterms:identifier", Value: "local-id-001"},
@@ -56,7 +56,7 @@ func meemooIdentityTerms() meemoo.Terms {
 }
 
 // identityTerms is the input convention's own MUSTs and nothing more, in
-// the eark/dc profile's standard, Simple Dublin Core.
+// the ugent/basic profile's standard, Simple Dublin Core.
 func identityTerms() simpledc.Terms {
 	return simpledc.Terms{
 		{Key: "identifier", Value: "local-id-001"},
@@ -64,7 +64,7 @@ func identityTerms() simpledc.Terms {
 	}
 }
 
-// identityRecord is the same identity in the eark/mods profile's standard,
+// identityRecord is the same identity in the ugent/bibliographic profile's standard,
 // a MODS record without items.
 func identityRecord() mods.Record {
 	return mods.Record{
@@ -144,23 +144,23 @@ func basicDef(t *testing.T) build.Definition {
 	return def
 }
 
-// earkDef returns the registered "eark/dc" definition the tests build with.
-func earkDef(t *testing.T) build.Definition {
+// ugentBasicDef returns the registered "ugent/basic" definition the tests build with.
+func ugentBasicDef(t *testing.T) build.Definition {
 	t.Helper()
-	def, ok := profiles.Get("eark/dc")
+	def, ok := profiles.Get("ugent/basic")
 	if !ok {
-		t.Fatal(`no "eark/dc" definition registered`)
+		t.Fatal(`no "ugent/basic" definition registered`)
 	}
 	return def
 }
 
-// earkmodsDef returns the registered "eark/mods" definition the tests
+// bibliographicDef returns the registered "ugent/bibliographic" definition the tests
 // build with.
-func earkmodsDef(t *testing.T) build.Definition {
+func bibliographicDef(t *testing.T) build.Definition {
 	t.Helper()
-	def, ok := profiles.Get("eark/mods")
+	def, ok := profiles.Get("ugent/bibliographic")
 	if !ok {
-		t.Fatal(`no "eark/mods" definition registered`)
+		t.Fatal(`no "ugent/bibliographic" definition registered`)
 	}
 	return def
 }
@@ -373,14 +373,14 @@ func requireDirectoryHolds(t *testing.T, dir string, want ...string) {
 }
 
 // Build enforces what each standard requires of a package-level
-// description. Identity-only terms build a complete eark package; under
+// description. Identity-only terms build a complete ugent/basic package; under
 // basic they are refused, and a missing identity is refused under every
 // profile, all before any side effect.
 func TestBuildRequiredPerStandard(t *testing.T) {
-	b, in, _ := newTestBuilder(t, earkDef(t))
+	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
 	if _, err := b.Build(in); err != nil {
-		t.Fatalf("eark Build refused identity-only terms: %v", err)
+		t.Fatalf("ugent/basic Build refused identity-only terms: %v", err)
 	}
 
 	cases := []struct {
@@ -391,8 +391,8 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 	}{
 		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description is required"},
 		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "dcterms:identifier", Value: "x"}}, "title is required"},
-		{"eark without an identifier", earkDef(t), simpledc.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
-		{"eark/mods without a title", earkmodsDef(t), mods.Record{Identifier: "x"}, "title is required"},
+		{"ugent/basic without an identifier", ugentBasicDef(t), simpledc.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
+		{"ugent/bibliographic without a title", bibliographicDef(t), mods.Record{Identifier: "x"}, "title is required"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -407,13 +407,13 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 	}
 }
 
-// The eark/mods profile builds a complete package from a record: mods.xml
+// The ugent/bibliographic profile builds a complete package from a record: mods.xml
 // under metadata/descriptive with the items rendered, the METS set plus the
 // MODS schema and nothing else under schemas/, and a package METS whose
 // dmdSec types the document as MODS 3.7. No swap: the record keeps the
 // producer's identifier and no MEEMOO-LOCAL-ID is lifted (ADR-0012).
-func TestBuildEarkMods(t *testing.T) {
-	b, in, _ := newTestBuilder(t, earkmodsDef(t))
+func TestBuildBibliographic(t *testing.T) {
+	b, in, _ := newTestBuilder(t, bibliographicDef(t))
 	rec := identityRecord()
 	rec.Items = []mods.Item{{CallNumber: "EX.0001", Barcode: "000000123"}}
 	in.Description = rec
@@ -440,7 +440,7 @@ func TestBuildEarkMods(t *testing.T) {
 		t.Errorf("description identifier = %q, want the producer's %q", got, "local-id-001")
 	}
 	if _, ok := pkg.Root.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; ok {
-		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; eark/mods has no swap")
+		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; ugent/bibliographic has no swap")
 	}
 
 	names := make([]string, 0, len(pkg.SchemaFiles))

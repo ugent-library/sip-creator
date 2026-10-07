@@ -48,8 +48,8 @@ func withMETS(names ...string) []string {
 // here rather than at the first build, and each profile ships exactly what
 // its documents point at: meemoo/basic the METS set plus Meemoo's
 // descriptive schema and what it imports (the Dublin Core family, EDTF,
-// schema.org, xml.xsd), eark/dc the METS set plus simpledc.xsd and
-// xml.xsd, eark/mods the METS set plus mods-3-7.xsd. The bundle is the
+// schema.org, xml.xsd), ugent/basic the METS set plus simpledc.xsd and
+// xml.xsd, ugent/bibliographic the METS set plus mods-3-7.xsd. The bundle is the
 // union of what the profiles ship, so no profile ships all of it.
 func TestRegistrySchemas(t *testing.T) {
 	bundle := schemas.Get()
@@ -65,13 +65,13 @@ func TestRegistrySchemas(t *testing.T) {
 	if got := shipped(t, "meemoo/basic"); !slices.Equal(got, basic) {
 		t.Errorf("basic ships %v, want the METS set plus Meemoo's descriptive schemas %v", got, basic)
 	}
-	eark := withMETS("simpledc.xsd", "xml.xsd")
-	if got := shipped(t, "eark/dc"); !slices.Equal(got, eark) {
-		t.Errorf("eark ships %v, want the METS set plus the simpledc schema and xml.xsd %v", got, eark)
+	ugentBasic := withMETS("simpledc.xsd", "xml.xsd")
+	if got := shipped(t, "ugent/basic"); !slices.Equal(got, ugentBasic) {
+		t.Errorf("ugent/basic ships %v, want the METS set plus the simpledc schema and xml.xsd %v", got, ugentBasic)
 	}
-	earkmods := withMETS("mods-3-7.xsd")
-	if got := shipped(t, "eark/mods"); !slices.Equal(got, earkmods) {
-		t.Errorf("eark/mods ships %v, want the METS set plus mods-3-7.xsd %v", got, earkmods)
+	bibliographic := withMETS("mods-3-7.xsd")
+	if got := shipped(t, "ugent/bibliographic"); !slices.Equal(got, bibliographic) {
+		t.Errorf("ugent/bibliographic ships %v, want the METS set plus mods-3-7.xsd %v", got, bibliographic)
 	}
 }
 
@@ -80,9 +80,9 @@ func TestRegistrySchemas(t *testing.T) {
 // key for the template to refuse, so it is enough to render the
 // document's root.
 var sampleDescriptions = map[string]sip.Description{
-	"meemoo/basic": meemoo.Terms{},
-	"eark/dc":      simpledc.Terms{},
-	"eark/mods":    mods.Record{},
+	"meemoo/basic":        meemoo.Terms{},
+	"ugent/basic":         simpledc.Terms{},
+	"ugent/bibliographic": mods.Record{},
 }
 
 // The schema-location hint of each profile's descriptive document points
