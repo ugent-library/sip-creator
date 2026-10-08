@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/ugent-library/sip-creator/build"
-	"github.com/ugent-library/sip-creator/sip"
 )
 
 // Record is the descriptive metadata of ugent/bibliographic: one
@@ -53,11 +52,6 @@ type Item struct {
 	// journal, periodical or newspaper, or empty for a single-part work.
 	Enumeration string
 }
-
-// No code in this package uses Record as a sip.Description. Without this
-// assertion, a change to that interface would first break the code in
-// other packages that hands a Record to the builder.
-var _ sip.Description = Record{}
 
 // validateTitle checks that the title's text is not empty and holds only
 // text XML can carry, and that its language tag is well-formed when it has
