@@ -139,7 +139,7 @@ func TestAssemble(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-func TestAssemblePremislessProfile(t *testing.T) {
+func TestAssembleProfileWithoutPremis(t *testing.T) {
 	def := basicDef(t)
 	def.EmitPackagePremis = false
 	def.EmitRepresentationPremis = false
@@ -319,7 +319,7 @@ func TestAssembleTakesTheReportChecksum(t *testing.T) {
 
 // An entry without a checksum gives the package nothing to declare, so
 // assembly stops.
-func TestAssembleReportChecksumless(t *testing.T) {
+func TestAssembleReportEntryWithoutChecksum(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
 	in.Characterization = characterization.Report{
@@ -892,7 +892,7 @@ func TestBuildShipsAModelsOwnSchema(t *testing.T) {
 // write. Such a schema has a name that is not a plain file name, has no
 // contents, or has the name of a different schema already in the package.
 // The last case uses the name of a METS schema.
-func TestBuildRefusesASchemaThatWouldLandWrong(t *testing.T) {
+func TestBuildRefusesASchemaItCannotPlace(t *testing.T) {
 	xsd := []byte(`<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>`)
 	for name, tc := range map[string]struct {
 		schema build.Schema

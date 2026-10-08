@@ -57,7 +57,7 @@ func TestWithSubmitterRequiresName(t *testing.T) {
 	}
 }
 
-func TestWithSubmitterEARK(t *testing.T) {
+func TestWithSubmitterUGent(t *testing.T) {
 	def, ok := profiles.Get("ugent/basic")
 	if !ok {
 		t.Fatal(`no "ugent/basic" definition registered`)
