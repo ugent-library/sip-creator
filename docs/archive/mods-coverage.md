@@ -1,9 +1,13 @@
 # Plan: the ugent/bibliographic MODS record follows the catalogue
 
-*Status: **active**. Drafted 2026-09-30 as full MODS 3.7 coverage for `eark/mods`;
-rewritten 2026-10-08 after [ADR-0033](../decisions/0033-ugent-first-profiles-of-your-own.md)
-and [ADR-0034](../decisions/0034-a-profile-is-a-content-type.md) made the record UGent's
-application profile of MODS. Update this line as steps land.*
+*Status: **shipped** 2026-10-08, archived. Drafted 2026-09-30 as full MODS 3.7 coverage
+for `eark/mods`; rewritten 2026-10-08 after
+[ADR-0033](../decisions/0033-ugent-first-profiles-of-your-own.md) and
+[ADR-0034](../decisions/0034-a-profile-is-a-content-type.md) made the record UGent's
+application profile of MODS. The mapping lives on in
+[docs/profiles/ugent-bibliographic-mods.md](../profiles/ugent-bibliographic-mods.md),
+which also records why the record does not split joined strings; the open questions
+moved to [docs/TODO.md](../TODO.md). No ADR: ADR-0034 covers the catalogue's words.*
 
 ## Context
 
@@ -70,13 +74,7 @@ per step, proposed in chat first.
       The name is the catalogue's word for every name on the record, the main author
       included, not Dublin Core's narrower one. MODS sets no order for its top-level
       elements; the template writes contributors after the titles.
-- [ ] **Closing.** The design doc's description of `ugent/bibliographic`, the README's
-      library example, and this plan archived. An ADR only if a decision here is not
-      already covered by ADR-0034.
-
-## Open questions
-
-- **The 035 prefix.** A 035 $a value starts with its source in parentheses, such as
-  `(RUG01)`. Whether that prefix becomes the identifier's `type`, and is stripped from
-  the value, is decided when the catalogue delivers 035 and the values can be seen.
-- **The fields in the mapping's §2.** Each one comes into scope by its own decision.
+- [x] **Closing.** The design doc and the README's library example were kept current by
+      each step. The mapping page gained the reason the record does not split joined
+      strings, in place of an ADR. The open questions (the 035 prefix, the fields in the
+      mapping's §2) moved to `docs/TODO.md`, and this plan is archived.

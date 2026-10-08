@@ -15,6 +15,12 @@ joined. A name is written as one `mods:namePart`, without the name's type or rol
 title holds its statement of responsibility. When the catalogue delivers a field with
 its parts, the mapping gains them.
 
+The record does not split the joined strings back into parts, such as cutting a title
+on " / " or taking a relator term off a name. That would guess at cataloguing
+punctuation and go wrong without anyone noticing. A mapping at the level of MARC
+subfields, as the Library of Congress maps MARC to MODS, waits until the catalogue
+delivers the subfields.
+
 ## 1. Mapped fields
 
 | what the record states | from MARC (Alma) | `ugent.Record` field | MODS 3.7 |

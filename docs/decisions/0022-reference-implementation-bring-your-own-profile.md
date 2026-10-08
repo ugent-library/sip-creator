@@ -74,7 +74,7 @@ two callers making the same choice emit the same document.
 writer speaks MODS.** Its model covers the standard's top-level elements
 in MODS's own words (`TitleInfo`, `NamePart`, `ShelfLocator`), one type
 per element with the subelements and attributes implementers use, built
-in tiers under the [mods-coverage plan](../plans/mods-coverage.md). What
+in tiers under the [mods-coverage plan](../archive/mods-coverage.md). What
 the model cannot say travels as a supplied `mods.xml` (ADR-0021).
 
 **The eark profiles' RODA choices are named as such.** No PREMIS and the
