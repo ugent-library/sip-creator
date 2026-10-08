@@ -109,6 +109,20 @@ func TestRecordEncodeWithoutItems(t *testing.T) {
 	}
 }
 
+// A copy without a call number has no shelfLocator rather than an empty one.
+func TestRecordEncodeItemWithoutCallNumber(t *testing.T) {
+	r := testRecord()
+	r.Items = []Item{{Barcode: "000000456"}}
+	out := encodeRecord(t, r, "../../schemas")
+	if strings.Contains(out, "<mods:shelfLocator") {
+		t.Errorf("shelfLocator emitted for a copy without a call number\n%s", out)
+	}
+	want := "<mods:copyInformation>\n        <mods:itemIdentifier type=\"barcode\">000000456</mods:itemIdentifier>\n      </mods:copyInformation>"
+	if !strings.Contains(out, want) {
+		t.Errorf("output missing %s\n%s", want, out)
+	}
+}
+
 // A representation's record may state no identifier. The document then
 // carries none rather than an empty element.
 func TestRecordEncodeWithoutIdentifier(t *testing.T) {

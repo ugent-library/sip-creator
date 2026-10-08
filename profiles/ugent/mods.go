@@ -92,8 +92,7 @@ func (mods) Schemas() []build.Schema {
 // for the record's identifier. MODS leaves the type vocabulary open.
 // "local" is the value its own list suggests for an identifier local to
 // the describing institution's system, such as a record number in a
-// library catalogue. The constant stands in until the mods-coverage plan
-// makes the type a choice per record from a closed set.
+// library catalogue, which the MMS ID is.
 const localIdentifierType = "local"
 
 // modsTemplate escapes every value from the record. The only values it
@@ -118,7 +117,9 @@ var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
     <mods:holdingSimple>
       {{- range . }}
       <mods:copyInformation>
-        <mods:shelfLocator>{{ esc .CallNumber }}</mods:shelfLocator>
+        {{- with .CallNumber }}
+        <mods:shelfLocator>{{ esc . }}</mods:shelfLocator>
+        {{- end }}
         {{- with .Enumeration }}
         <mods:enumerationAndChronology>{{ esc . }}</mods:enumerationAndChronology>
         {{- end }}

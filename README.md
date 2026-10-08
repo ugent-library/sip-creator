@@ -432,8 +432,8 @@ input folder's `documentation/` and `premis/`.
 ### Descriptive metadata
 
 The `ugent/bibliographic` profile takes a `ugent.Record` instead of a list of terms: an
-identifier, titles, and physical copies as items, each a call number with an optional
-barcode and an optional volume or issue designation (example: `ExampleBuilder_Build_mods`).
+identifier, titles, and physical copies as items, each with a call number, a barcode or
+both, and an optional volume or issue designation (example: `ExampleBuilder_Build_mods`).
 
 A record that already exists as a document travels as a file: profiles that accept a
 finished document (see [Profiles](#profiles)) take a `build.EncodedDescription` in place

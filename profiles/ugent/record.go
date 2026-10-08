@@ -41,9 +41,11 @@ type Title struct {
 }
 
 // Item is one physical copy of a bibliographic record: where it is shelved,
-// how it is identified, and which part of a multi-part work it is.
+// how it is identified, and which part of a multi-part work it is. An item
+// states a call number, a barcode, or both.
 type Item struct {
-	// CallNumber is the copy's call number, the one value every item states.
+	// CallNumber is the copy's call number, or empty when the catalogue has
+	// none for it.
 	CallNumber string
 	// Barcode is the copy's item barcode, or empty when the copy has none.
 	// No two items of a record share a barcode.
@@ -69,15 +71,19 @@ func validateTitle(t Title) error {
 	return nil
 }
 
-// validateItem checks that the item states a call number, that its barcode
-// and enumeration are not blank when set, and that every value holds only
-// text XML can carry. It returns an error naming the first rule the item
-// breaks. A blank value would be written as an empty element, so an item
-// without a barcode or an enumeration leaves that field empty. Validate
-// checks that barcodes are unique, because that rule spans items.
+// validateItem checks that the item states a call number or a barcode, that
+// none of its values is blank when set, and that every value holds only text
+// XML can carry. It returns an error naming the first rule the item breaks.
+// An item with neither a call number nor a barcode would be written as a
+// copyInformation that names no copy. A blank value would be written as an
+// empty element, so an item without a value leaves that field empty.
+// Validate checks that barcodes are unique, because that rule spans items.
 func validateItem(it Item) error {
-	if strings.TrimSpace(it.CallNumber) == "" {
-		return errors.New("has no call number; every item states one")
+	if it.CallNumber == "" && it.Barcode == "" {
+		return errors.New("has neither a call number nor a barcode; an item states at least one")
+	}
+	if it.CallNumber != "" && strings.TrimSpace(it.CallNumber) == "" {
+		return errors.New("has a blank call number; leave it empty instead")
 	}
 	if it.Barcode != "" && strings.TrimSpace(it.Barcode) == "" {
 		return errors.New("has a blank barcode; leave it empty instead")

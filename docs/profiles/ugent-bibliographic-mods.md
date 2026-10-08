@@ -25,7 +25,7 @@ its parts, the mapping gains them.
 | legacy and external system numbers: the Aleph `RUG01` number, Ufora, Plato, Antilope | 035 $a | `mods:identifier`, without `type` | planned; the catalogue does not deliver 035 yet, but will |
 | title, with its statement of responsibility | 245, all subfields, joined with spaces | `mods:titleInfo/mods:title` | written today; at least one required on a package-level record |
 | names: authors and other contributors, persons and organizations alike | 100, 110, 700, 710, 711, 720, all subfields of each, joined with spaces | `mods:name/mods:namePart`, without `type` and without `mods:role` | planned |
-| a physical copy's call number | item field Z30 $3 | `mods:location/mods:holdingSimple/mods:copyInformation/mods:shelfLocator` | written today; becomes optional (planned) |
+| a physical copy's call number | item field Z30 $3 | `mods:location/mods:holdingSimple/mods:copyInformation/mods:shelfLocator` | written today; optional |
 | a physical copy's barcode | item field Z30 $4 | `mods:copyInformation/mods:itemIdentifier type="barcode"` | written today |
 | a copy's volume or issue | none | `mods:copyInformation/mods:enumerationAndChronology` | written today; the catalogue delivers no value for it |
 

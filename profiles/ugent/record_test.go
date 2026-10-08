@@ -64,10 +64,12 @@ func TestValidateItem(t *testing.T) {
 		want string
 	}{
 		{"call number alone", Item{CallNumber: "A"}, ""},
+		{"barcode alone", Item{Barcode: "1"}, ""},
 		{"complete", Item{CallNumber: "A", Barcode: "1", Enumeration: "vol. 1"}, ""},
-		{"no call number", Item{Barcode: "1"}, "no call number"},
-		{"blank call number", Item{CallNumber: " "}, "no call number"},
+		{"empty", Item{}, "neither a call number nor a barcode"},
+		{"enumeration alone", Item{Enumeration: "vol. 1"}, "neither a call number nor a barcode"},
 		// empty means none, but blank would be written as an empty element
+		{"blank call number", Item{CallNumber: " ", Barcode: "1"}, "blank call number"},
 		{"blank barcode", Item{CallNumber: "A", Barcode: " "}, "blank barcode"},
 		{"blank enumeration", Item{CallNumber: "A", Enumeration: "\t"}, "blank enumeration"},
 		// XML cannot carry it, in any of the three values
@@ -130,15 +132,16 @@ func TestRecordValidateReportsEveryFinding(t *testing.T) {
 		},
 		Items: []Item{
 			{CallNumber: "A"},
-			{Barcode: "1"},
+			{Enumeration: "vol. 1"},
 			{CallNumber: "C", Barcode: "1"},
+			{Barcode: "1"},
 		},
 	}
 	err := r.Validate()
 	if err == nil {
 		t.Fatal("want four findings, got none")
 	}
-	for _, want := range []string{"title 2: has an empty value", `title 3: "nl!" is not a language tag`, "item 2: has no call number", "item 3: barcode"} {
+	for _, want := range []string{"title 2: has an empty value", `title 3: "nl!" is not a language tag`, "item 2: has neither a call number nor a barcode", "item 4: barcode"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("findings do not include %q: %v", want, err)
 		}

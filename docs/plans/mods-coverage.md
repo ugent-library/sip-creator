@@ -56,7 +56,7 @@ reporting VALID for `meemoo/basic`, `ugent/basic` and `ugent/bibliographic`,
 commit, and the profile page §3, the mapping page and the design doc current. One commit
 per step, proposed in chat first.
 
-- [ ] **Copies without a call number.** `validateItem` accepts an item without a call
+- [x] **Copies without a call number.** `validateItem` accepts an item without a call
       number and refuses one that states neither a call number nor a barcode; the
       template leaves out `mods:shelfLocator` when the call number is empty. The profile
       page §3 changes "A copy MUST state its call number" to the rule in decision 4.
