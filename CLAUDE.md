@@ -22,14 +22,14 @@ A Go library with a cobra CLI on top (`main.go` → `cli/`). [docs/sip-creator-d
 | `cli/input/` | reads an input folder ([docs/input-spec.md](docs/input-spec.md)) into a `build.SourcePackage` |
 | `cli/input/mapping/` | one mapper per profile: `description.csv` rows to the profile's description |
 | `profiles/` | the registry; one package per owner of profiles, holding their definitions and metadata models (`meemoo` holds `meemoo/basic`, `ugent` holds `ugent/basic` and `ugent/bibliographic`) |
-| `build/` | the library's face and the engine: validate, assemble the graph, write it |
+| `build/` | the library's face, and the code that validates a source package, assembles the graph and writes it |
 | `sip/` | the domain graph: `Package`, `Entity`, `Representation`, `File` |
 | `encoders/` | METS and PREMIS templates; `xmldoc`, the one XML reader |
 | `store/`, `schemas/`, `archive/`, `characterization/` | file writes with fixity, embedded XSDs, the zip, the Siegfried report decoder |
 
 Rules of the architecture, each easy to break from a change that looks local:
 
-- The engine imports no profile; a profile is a `build.Definition` plus its metadata model ([ADR-0018](docs/decisions/0018-engine-and-profile-packages.md)).
+- Package `build` imports no profile; a profile is a `build.Definition` plus its metadata model ([ADR-0018](docs/decisions/0018-engine-and-profile-packages.md)).
 - The library never imports `cli/`. Within `cli/input`, only `mapping/` imports the profiles.
 - Assembly writes nothing to disk. The writer emits in one fixed order, package METS last, because later files carry the checksums of earlier ones.
 - Every profile difference reaches the encoders as data on the definition, never as a branch on the profile's name.
@@ -80,7 +80,7 @@ Write idiomatic Go (Effective Go, Go Code Review Comments, Google's Go Style Gui
 
 - Default to unexported, and export only what has a caller in another package: every exported symbol is a commitment.
 - `build` is the library's face: the source package, the definition, the config, the builder and the metadata model interface live there ([ADR-0019](docs/decisions/0019-build-is-the-library-face.md)).
-- `sip/` exports what a template or a second package reads. The assembler builds the graph by assigning fields, so the graph has no setters and no checks; its invariants are the assembler's to keep.
+- `sip/` exports what a template or a second package reads. The assembler builds the graph by assigning fields, so the graph has no setters and no checks. The assembler makes sure every node has an identifier, a path and a media type.
 - Validation of what a program hands to the library lives in `build`: `SourcePackage.Validate` and the name and attribute rules next to it.
 
 **Errors and I/O**
@@ -104,7 +104,7 @@ Write idiomatic Go (Effective Go, Go Code Review Comments, Google's Go Style Gui
 
 [CONTRIBUTING.md](CONTRIBUTING.md) lists the required tools and every command: building, tests, `build.sh`, the validation scripts and the reference comparison. What a change must pass:
 
-- `go test ./...`, which needs no docker, `sf` or `.env`. Go tests pin internal contracts and failure paths; the commons-ip validation in `build.sh` pins spec conformance, so CSIP rules are not reimplemented as Go tests ([ADR-0003](docs/decisions/0003-validation-stays-external.md)).
+- `go test ./...`, which needs no docker, `sf` or `.env`. Go tests pin how packages call each other and how they fail; the commons-ip validation in `build.sh` pins spec conformance, so CSIP rules are not reimplemented as Go tests ([ADR-0003](docs/decisions/0003-validation-stays-external.md)).
 - `./build.sh <profile>` reports `VALID` for all three profiles.
 - A refactor leaves `./scripts/reference-diff.sh` clean against the reference copy in `tmp/reference/`. A deliberate output change updates the reference copy and says so in the commit message and `tmp/reference/README.md`.
 
@@ -124,6 +124,7 @@ Write every text a human reads (chat, markdown, code comments) in plain, direct 
 
 - Avoid em-dashes (—); write separate sentences instead.
 - Don't invent abbreviations (`initialVerification` → `IV`).
+- Don't use generic programming terms or jargon that stand in for a concrete fact ("invariant", "contract", "idempotent", "side effect"). Write the condition itself: "every node has an identifier, a path and a media type", not "the graph's invariants".
 - Don't coin hyphenated shorthand ("premis-less", "checksum-bound", "gate-safe", "two-bar acceptance"); write the phrase out ("without PREMIS", "whose checksum matches"). Established terms stay ("well-formed", "fail-fast", "read-only", "pre-computed"). The test is whether a new reader must stop to unpack the word.
 - Call a check by what it does, never by a nickname: "the commons-ip validation in build.sh", "scripts/reference-diff.sh, which compares a generated package with the reference copy in tmp/reference/", "both validations pass", never "the gate is green" or "the equivalence check".
 
