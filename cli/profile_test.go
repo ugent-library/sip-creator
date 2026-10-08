@@ -11,10 +11,10 @@ import (
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
-// Every registered profile has a mapping, and each builds what its
-// profile's metadata model accepts: Read hands terms to the one, the
-// engine runs ValidateType on the result. A profile without a mapping
-// could not read a folder.
+// Every registered profile has a mapping, and every mapping belongs to a
+// registered profile. Each mapping builds a description of the type its
+// profile's metadata model accepts (ValidateType). A profile without a
+// mapping could not read a folder.
 func TestEveryProfileHasAMappingItsModelAccepts(t *testing.T) {
 	for _, name := range profiles.Names() {
 		def, _ := profiles.Get(name)
@@ -40,8 +40,7 @@ func TestEveryProfileHasAMappingItsModelAccepts(t *testing.T) {
 
 // Every registered profile has an example input folder under examples/,
 // and it builds. The examples are what producers copy and what build.sh
-// validates, so a rule change that breaks one must fail here first. The
-// examples carry no siegfried.json, so the build needs no sf.
+// validates, so a rule change that breaks one must fail here first.
 func TestExamplesBuild(t *testing.T) {
 	for _, name := range profiles.Names() {
 		t.Run(name, func(t *testing.T) {

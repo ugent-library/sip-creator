@@ -21,8 +21,8 @@ func testArchive(baseDir string) *Archive {
 	})
 }
 
-// writePackage lays out a minimal package tree under baseDir and returns
-// the package pointing at it.
+// writePackage writes a minimal package directory under baseDir and
+// returns the package that points at it.
 func writePackage(t *testing.T, baseDir string) *sip.Package {
 	t.Helper()
 
@@ -39,7 +39,8 @@ func writePackage(t *testing.T, baseDir string) *sip.Package {
 	return pkg
 }
 
-// A config without a logger zips the package; the messages are discarded.
+// A config without a logger still zips the package. The log messages are
+// discarded.
 func TestZipWithoutLogger(t *testing.T) {
 	baseDir := t.TempDir()
 	pkg := writePackage(t, baseDir)
@@ -103,8 +104,7 @@ func TestZipKeepsTheUsualPermissions(t *testing.T) {
 	}
 }
 
-// A zip that already exists is never replaced: it may be one a transfer
-// has picked up, or another build's.
+// Zip refuses a zip that already exists and leaves it unchanged.
 func TestZipRefusesAnExistingZip(t *testing.T) {
 	baseDir := t.TempDir()
 	pkg := writePackage(t, baseDir)
@@ -143,9 +143,8 @@ func TestZipWritesOverAStaleTemporaryFile(t *testing.T) {
 	requireEntries(t, baseDir, "uuid-test", "uuid-test.zip")
 }
 
-// dataDescriptorFlag is general-purpose flag bit 3: the sizes and CRC
-// follow the entry data in a trailing descriptor. Java's ZipInputStream
-// rejects stored entries carrying it, so no file entry may set it.
+// dataDescriptorFlag is general purpose bit 3. It says the sizes and CRC
+// follow the entry data in a data descriptor. No file entry may set it.
 const dataDescriptorFlag = 0x8
 
 func TestZipFillsLocalFileHeaders(t *testing.T) {
@@ -183,7 +182,7 @@ func TestZipFillsLocalFileHeaders(t *testing.T) {
 
 // Every entry, file or directory, carries the modification time of what it
 // holds in the package directory, never the zero date. A file entry is
-// written raw and a directory entry by Go's CreateHeader; given the same
+// written raw and a directory entry by Go's CreateHeader. Given the same
 // time, both carry the same MS-DOS date fields, so unzip tools that read
 // only those fields put files and directories in the same time zone.
 func TestZipEntriesCarryTheirModificationTime(t *testing.T) {
@@ -257,15 +256,16 @@ func TestZipUnwritableDestinationReturnsError(t *testing.T) {
 	baseDir := t.TempDir()
 	pkg := writePackage(t, baseDir)
 
-	// Point the archive's output at a directory that doesn't exist so
-	// os.Create fails.
+	// Point the archive's output at a directory that doesn't exist, so
+	// creating the zip fails.
 	a := testArchive(filepath.Join(baseDir, "missing"))
 	if err := a.Zip(pkg); err == nil {
 		t.Fatal("Zip() = nil, want error for unwritable destination")
 	}
 }
 
-// requireEntries fails the test unless dir holds exactly the named entries.
+// requireEntries checks that dir holds exactly the named entries, in name
+// order. It fails the test if it does not.
 func requireEntries(t *testing.T, dir string, want ...string) {
 	t.Helper()
 	entries, err := os.ReadDir(dir)

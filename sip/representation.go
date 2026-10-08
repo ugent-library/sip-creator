@@ -5,50 +5,52 @@ import (
 	"uuid"
 )
 
-// Representation is one version of the content, e.g. a master or an
+// Representation is one version of the content, such as a master or an
 // access copy.
 type Representation struct {
 	// Entity is the intellectual entity this representation represents.
 	Entity *Entity
-	// Name is the package-side name: the directory under representations/,
-	// the representation METS's OBJID, and the fileSec/structMap paths.
-	// The assembler sets it from the producer's name.
+	// Name is the representation's name in the package: the directory under
+	// representations/, the representation METS's mets/@OBJID, and the
+	// fileSec/structMap paths. It comes from the name the producer gave the
+	// representation.
 	Name string
-	// Label is the producer's human-readable name for this version,
-	// emitted as the representation METS's mets/@LABEL. The assembler
-	// resolves it (the name when the producer supplies no label).
+	// Label is the producer's human-readable name for this version, written
+	// as mets/@LABEL in the representation METS. It equals Name when the
+	// producer gives no label.
 	Label string
 	// Identifier identifies the representation in METS and PREMIS
 	// (uuid-<uuid>).
 	Identifier string
 	// Files are the essence files, in packaging order.
 	Files []*File
-	// Description optionally describes this version of the content only
-	// (e.g. a license that differs between master and access copy);
-	// the work's identity stays on the Entity.
+	// Description describes this version of the content only, such as a
+	// license that differs between master and access copy. It is nil when
+	// the version has no description of its own. The work's identity stays
+	// on the Entity.
 	Description Description
 	// DescriptionFile is the node for the descriptive document in the
-	// package; nil when Description is nil.
+	// package. It is set only when Description is set.
 	DescriptionFile *File
-	// PremisFile is the generated preservation document; nil when the
-	// profile emits none.
+	// PremisFile is the generated PREMIS document. It is set only when the
+	// profile writes one.
 	PremisFile *File
 	// ReceivedPremisFiles are preservation documents delivered with the
-	// input (vendor/lab PREMIS). They are copied into the package as
-	// received, never parsed or merged.
+	// input, such as PREMIS from a vendor or a digitization lab. They are
+	// copied into the package as received, never parsed or merged.
 	ReceivedPremisFiles []*File
 	// DocumentationFiles document this representation only.
 	DocumentationFiles []*File
 	// MetsFile is the node for the generated representation METS.
 	MetsFile *File
-	// Declaration carries the METS values the representation METS declares;
-	// set by the assembler.
+	// Declaration holds the profile-level values the representation METS
+	// declares.
 	Declaration *MetsDeclaration
 }
 
-// PremisFiles lists every preservation document the representation METS
-// must reference: the generated PREMIS (when emitted) first, then the
-// received ones. Each gets one digiprovMD, all in one amdSec.
+// PremisFiles returns every preservation document the representation METS
+// references: the generated PREMIS document first, if there is one, then
+// the received ones.
 func (r *Representation) PremisFiles() []*File {
 	var files []*File
 	if r.PremisFile != nil {

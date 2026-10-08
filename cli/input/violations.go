@@ -5,11 +5,10 @@ import (
 	"strings"
 )
 
-// Violations is the collected list of input-contract findings: one
-// plain-language line per broken MUST rule, naming the file or folder
-// concerned. All findings are gathered before reporting, deliberately the
-// opposite of the library's fail-fast errors, because the audience is an
-// operator fixing a folder in one pass, not a developer reading a stack.
+// Violations lists the broken MUST rules of the input specification, one
+// plain-language line per finding, naming the file or folder concerned.
+// It holds every finding of one read, unlike the library's fail-fast
+// errors, so an operator can fix the folder in one pass.
 type Violations []string
 
 func (v Violations) Error() string {

@@ -9,7 +9,7 @@ func TestValidateReceived(t *testing.T) {
 	tests := []struct {
 		name string
 		doc  string
-		want string // "" means accepted; else substring of the error
+		want string // empty when accepted, otherwise a substring of the error
 	}{
 		{"valid", `<?xml version="1.0"?><premis:premis xmlns:premis="http://www.loc.gov/premis/v3" version="3.0"><premis:event/></premis:premis>`, ""},
 		{"valid default namespace", `<premis xmlns="http://www.loc.gov/premis/v3" version="3.0"/>`, ""},

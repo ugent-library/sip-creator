@@ -11,16 +11,16 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// dcschema is Meemoo's dc+schema.org metadata model: it accepts Terms,
-// writes them as a dc+schema document with Encode, and swaps the entity
-// identifier in. It does not
-// implement DocumentFormat, so the engine refuses a supplied
-// document: Meemoo's document must carry the entity identifier the build
-// mints, which Swap writes into the terms.
+// dcschema is Meemoo's dc+schema.org metadata model, built from Terms. It
+// accepts no supplied dc+schema document, because Meemoo's document must
+// carry the entity identifier, which Swap writes into the terms
+// (ADR-0021).
 type dcschema struct{}
 
-// IdentifierSwapper is optional to the engine, so a drift in Swap's
-// signature would fail silently; these assertions make it a build error.
+// Builder.Build applies Swap only when the model implements
+// IdentifierSwapper. If Swap's signature changed, Builder.Build would skip
+// Swap without an error, and dc+schema.xml would keep the producer's
+// identifier. These assertions turn that into a compile error.
 var (
 	_ build.MetadataModel     = dcschema{}
 	_ build.IdentifierSwapper = dcschema{}
@@ -33,8 +33,8 @@ func (dcschema) ValidateType(d sip.Description) error {
 	return nil
 }
 
-// Encode writes d as Meemoo's dc+schema document: one element per term,
-// order preserved.
+// Encode writes d as Meemoo's dc+schema document: one element per term, in
+// the order of the terms.
 func (dcschema) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
 	if err := termsTemplate.ExecuteTemplate(&buf, "dcschema", termsDoc{d.(Terms), schemasDir}); err != nil {
@@ -48,39 +48,38 @@ func (dcschema) Encode(w io.Writer, d sip.Description, schemasDir string) error 
 // identifier it replaced. Meemoo SIP 1.2 links dc+schema.xml to the PREMIS
 // object by a shared UUID: the document carries the entity identifier, and
 // the producer's own identifier travels as a MEEMOO-LOCAL-ID object
-// identifier. The terms hold one identifier slot, so the producer's value
-// is read before the swap overwrites it.
+// identifier.
 func (dcschema) Swap(d sip.Description, id string) string {
-	terms := d.(Terms) // ValidateType ran before anything else
+	terms := d.(Terms) // Definition.ValidateSource has checked the type
 	local := terms.localIdentifier()
 	terms.setObjectIdentifier(id)
 	return local
 }
 
-// ModelType types the dc+schema document as DC: Meemoo's model is built
-// on Dublin Core terms.
+// ModelType returns DC, because Meemoo's model is built on Dublin Core
+// terms.
 func (dcschema) ModelType() string {
 	return "DC"
 }
 
-// ModelTypeVersion is empty: the model is Meemoo's own, and no Dublin Core
-// version names it.
+// ModelTypeVersion returns an empty string, because the model is Meemoo's
+// own and no Dublin Core version names it.
 func (dcschema) ModelTypeVersion() string {
 	return ""
 }
 
-// Schemas returns the bundled XSDs the dc+schema document points
-// at, plus what those import by relative path: Meemoo's
-// descriptive_basic.xsd imports dc.xsd, dcterms.xsd, edtf.xsd and
-// schema.xsd, and dcterms.xsd imports dcmitype.xsd. descriptive_basic.xsd
-// imports xml.xsd from the file next to it, so xml.xsd ships too; the
-// others name the W3C URL, which a validator then skips as already
-// imported.
+// Schemas returns the bundled XSDs the dc+schema document points at, plus
+// what those import by relative path: Meemoo's descriptive_basic.xsd
+// imports dc.xsd, dcterms.xsd, edtf.xsd and schema.xsd, and dcterms.xsd
+// imports dcmitype.xsd. descriptive_basic.xsd imports xml.xsd from the file
+// next to it, so xml.xsd ships too. The other XSDs import xml.xsd from its
+// W3C URL, not by relative path.
 func (dcschema) Schemas() []build.Schema {
 	return build.BundledSchemas("descriptive_basic.xsd", "dc.xsd", "dcterms.xsd", "dcmitype.xsd", "edtf.xsd", "schema.xsd", "xml.xsd")
 }
 
-// termsTemplate escapes every value; element names come from elementName.
+// termsTemplate escapes every value. Element names come from elementName,
+// which lets only the names the table lists through.
 var termsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 	"el":      elementName,
 	"esc":     escapeXML,
@@ -108,9 +107,9 @@ type termsDoc struct {
 	SchemasDir string
 }
 
-// elementName is the template's one guard: the element name is the only
-// thing the template interpolates raw, and only a name the table lists may
-// reach the output. Returning an error aborts the render.
+// elementName returns element if the table lists it. It returns an error
+// otherwise, which aborts the render, because the template writes the name
+// unescaped.
 func elementName(element string) (string, error) {
 	if _, ok := elementsByName[element]; !ok {
 		return "", fmt.Errorf("unknown element %q: not an element of Meemoo's basic content profile", element)
@@ -118,14 +117,15 @@ func elementName(element string) (string, error) {
 	return element, nil
 }
 
-// xsiType is the xsi:type the table declares for the element: how the
-// Meemoo document types its EDTF dates ("" for untyped elements).
+// xsiType returns the xsi:type the table declares for the element, which
+// is how the Meemoo document types its EDTF dates. It returns an empty
+// string for an untyped element.
 func xsiType(element string) string {
 	return elementsByName[element].XSIType
 }
 
-// escapeXML makes a data value safe as XML character data or a quoted
-// attribute value; terms carry arbitrary operator input.
+// escapeXML returns s escaped for use as XML character data or as a quoted
+// attribute value.
 func escapeXML(s string) string {
 	var b bytes.Buffer
 	xml.EscapeText(&b, []byte(s)) // never fails on a bytes.Buffer

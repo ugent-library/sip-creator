@@ -19,7 +19,7 @@ func TestWalkReportsFolderRules(t *testing.T) {
 	r := &folderReader{root: root}
 	source, inv := r.walk()
 
-	if len(r.violations) != 1 || !strings.Contains(r.violations[0], "stray.tiff: content must live inside representations/") {
+	if len(r.violations) != 1 || !strings.Contains(r.violations[0], "stray.tiff: content must live in a representation folder") {
 		t.Errorf("violations = %q, want only the content beside representations/", r.violations)
 	}
 	if inv.pkg.rows == "" || inv.reps["access"].rows == "" || inv.reps["master"] != (descriptionFiles{}) {
@@ -33,17 +33,16 @@ func TestWalkReportsFolderRules(t *testing.T) {
 	}
 }
 
-func TestWalkIgnoresRepresentationsCSVInAFlatFolder(t *testing.T) {
+func TestWalkIgnoresRepresentationsCSVWithoutRepresentationsFolder(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv":     minimalCSV,
 		"representations.csv": "folder,label\nmaster,Master\n",
-		"a.tiff":              "a",
 	})
 	r := &folderReader{root: root}
 	_, inv := r.walk()
 
 	if len(r.violations) != 1 || !strings.Contains(r.violations[0], "representations.csv requires a representations/ folder") {
-		t.Errorf("violations = %q, want only the missing representations/ folder", r.violations)
+		t.Errorf("violations = %q, want only the file without its folder", r.violations)
 	}
 	if inv.representationsCSV != "" {
 		t.Errorf("representationsCSV = %q, want it left out of the inventory", inv.representationsCSV)
@@ -52,9 +51,9 @@ func TestWalkIgnoresRepresentationsCSVInAFlatFolder(t *testing.T) {
 
 func TestWalkReportsBothDescriptionsOnce(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"description.csv": minimalDC,
-		"dc.xml":          "<simpledc/>",
-		"a.tiff":          "a",
+		"description.csv":               minimalDC,
+		"dc.xml":                        "<simpledc/>",
+		"representations/master/a.tiff": "a",
 	})
 	r := &folderReader{root: root, documentName: "dc.xml"}
 	_, inv := r.walk()

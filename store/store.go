@@ -1,7 +1,7 @@
 // Package store writes the files of one package under its directory. It
 // creates directories, copies content files and writes generated metadata
-// documents, and measures each file's size, MD5 checksum and modification
-// time as it writes it.
+// documents. It records each file's size, MD5 checksum and the time it was
+// written as it writes it.
 package store
 
 import (
@@ -16,9 +16,8 @@ import (
 	"time"
 )
 
-// Store writes a package's files under one root directory. Callers speak
-// package-relative slash paths; the store never reads or deletes a file
-// in the package.
+// Store writes a package's files under one root directory. Its methods take
+// paths relative to that root, with slash separators.
 type Store struct {
 	root string
 }
@@ -30,17 +29,17 @@ func New(root string) *Store {
 	}
 }
 
-// Info is what the store measured about a written file: the values the
-// METS and PREMIS documents declare as fixity.
+// Info holds what the store measured about a written file, for the METS
+// and PREMIS documents to declare.
 type Info struct {
-	// Size is the byte size, decimal.
+	// Size is the size in bytes, as a decimal number.
 	Size string
-	// Checksum is the MD5, hex-encoded.
+	// Checksum is the MD5 checksum, hex-encoded.
 	Checksum string
-	// Created is the time the file was written into the package, RFC 3339
-	// with nanoseconds: the creation date of the file in the package, which
-	// E-ARK CSIP's CREATED attribute declares. For a copy it differs from
-	// the file's modification time, which keeps the source's.
+	// Created is the time the file was written into the package, in
+	// RFC 3339 with nanoseconds. E-ARK CSIP's CREATED attribute declares
+	// this date. For a copy it differs from the file's modification time,
+	// which keeps the source's.
 	Created string
 }
 
@@ -53,16 +52,16 @@ func (s *Store) MkdirAll(rel string) error {
 	return nil
 }
 
-// CopyFile streams src to rel, so large essence files are never buffered
-// in memory, and reads the size from the written file. An existing file is
-// truncated. knownMD5 is the file's MD5 as the caller already holds it,
-// such as from a characterization report: when set, the copy computes no
-// checksum and Info reports knownMD5 as given, because MD5 on one core is
-// slower than the disk; when empty, the MD5 is computed during the copy.
-// The copy keeps the source's modification time, as cp -p does: it is the
-// one date the producer's file system holds about the file, and it cannot
-// be recovered once lost. Info still reports the time the copy was written
-// as Created.
+// CopyFile streams src to rel, so large essence files are never held in
+// memory. An existing file at rel is truncated. knownMD5 is the file's MD5
+// as the caller already holds it, such as from a characterization report.
+// When knownMD5 is set, CopyFile computes no checksum and reports knownMD5
+// as given (ADR-0032). When it is empty, CopyFile computes the MD5 during
+// the copy. The copy keeps the
+// source's modification time, as cp -p does, because it is the one date
+// the producer's file system holds about the file and it cannot be
+// recovered once lost. CopyFile returns the size read from the written
+// file, the checksum, and the time the copy was written as Created.
 func (s *Store) CopyFile(src, rel, knownMD5 string) (Info, error) {
 	in, err := os.Open(src)
 	if err != nil {
@@ -85,9 +84,8 @@ func (s *Store) CopyFile(src, rel, knownMD5 string) (Info, error) {
 		out.Close()
 		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
 	}
-	// Close is checked, not deferred: a failed close means the bytes may
-	// not all be on disk, and the fixity below must describe the file as
-	// written.
+	// A failed Close means the bytes may not all be on disk. Close is
+	// checked here so the returned Info describes the file as written.
 	if err := out.Close(); err != nil {
 		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
 	}
@@ -96,8 +94,9 @@ func (s *Store) CopyFile(src, rel, knownMD5 string) (Info, error) {
 	if err != nil {
 		return Info{}, fmt.Errorf("copy %s: %w", rel, err)
 	}
-	// Read the copy's own time first: restoring the source's below
-	// replaces it. A zero access time leaves the access time as it is.
+	// The copy's own modification time is read first, because restoring
+	// the source's time below replaces it. A zero access time leaves the
+	// access time unchanged.
 	created := file.ModTime()
 	if err := os.Chtimes(dest, time.Time{}, source.ModTime()); err != nil {
 		return Info{}, fmt.Errorf("copy %s: keeping the modification time: %w", rel, err)
@@ -124,9 +123,10 @@ func copyBytes(out io.Writer, in io.Reader, knownMD5 string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// WriteMetadata renders a document to memory before writing it to rel, so
-// a failed render leaves no partial file on disk. An existing file is
-// truncated.
+// WriteMetadata renders a document with fn into memory, then writes it to
+// rel, so a failed render leaves no partial file on disk. An existing file
+// at rel is truncated. It returns the size, MD5 checksum and modification
+// time of the written file.
 func (s *Store) WriteMetadata(rel string, fn func(io.Writer) error) (Info, error) {
 	var buf bytes.Buffer
 	if err := fn(&buf); err != nil {

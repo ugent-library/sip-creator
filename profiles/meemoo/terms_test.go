@@ -29,11 +29,11 @@ func TestEncode(t *testing.T) {
 		`<metadata xmlns="https://data.hetarchief.be/id/sip/1.2/basic"`,
 		"<dcterms:identifier>example-0001</dcterms:identifier>",
 		`<dcterms:title xml:lang="nl">Fotoalbum 2026</dcterms:title>`,
-		// the Meemoo document types its dates as EDTF, as dc+schema does
+		// dates are typed as EDTF
 		`<dcterms:created xsi:type="edtf:EDTF-level1">1913</dcterms:created>`,
-		// operator values are arbitrary text and must be escaped
+		// producer values are arbitrary text and must be escaped
 		"<dcterms:subject xml:lang=\"nl\">R&amp;D &lt;scans&gt;</dcterms:subject>",
-		// the key maps to the camel-cased schema.org element
+		// schema.org elements keep their camel case
 		`<schema:artMedium xml:lang="nl">zilvergelatinedruk</schema:artMedium>`,
 	} {
 		if !strings.Contains(out, want) {
@@ -79,7 +79,7 @@ func TestValidateTerm(t *testing.T) {
 	tests := []struct {
 		name string
 		term sip.Term
-		want string // "" means valid; else substring of the error
+		want string // empty when valid, otherwise a substring of the error
 	}{
 		{"valid plain", sip.Term{Key: "dcterms:title", Value: "x"}, ""},
 		{"valid schema.org element with lang", sip.Term{Key: "schema:artform", Lang: "nl-BE", Value: "x"}, ""},
@@ -91,7 +91,7 @@ func TestValidateTerm(t *testing.T) {
 		{"schema outside the profile", sip.Term{Key: "schema:duration", Value: "x"}, "unknown element"},
 		// a key of description.csv is not an element name
 		{"csv key as element", sip.Term{Key: "title", Value: "x"}, "unknown element"},
-		// element names are exact; case folding is the rows file's convention
+		// element names are exact: lowercase keys are description.csv's convention
 		{"wrong case", sip.Term{Key: "dcterms:ispartof", Value: "x"}, "unknown element"},
 		{"bad lang", sip.Term{Key: "dcterms:title", Lang: "nl!", Value: "x"}, "not a language tag"},
 		{"empty value", sip.Term{Key: "dcterms:subject", Value: "  "}, "empty value"},
@@ -152,8 +152,8 @@ func TestTermsIdentifierSwap(t *testing.T) {
 }
 
 // Validate applies Meemoo's own rules, not only term validity: the table's
-// cardinality limits and a Dutch entry wherever a key is language-tagged,
-// with every finding reported at once and named by key.
+// cardinality limits and a Dutch entry wherever an element is
+// language-tagged, with every finding reported at once and named by element.
 func TestTermsValidateAppliesMeemooRules(t *testing.T) {
 	terms := append(testTerms(),
 		sip.Term{Key: "dcterms:created", Value: "1914"},

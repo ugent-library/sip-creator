@@ -11,7 +11,8 @@ One folder is one package. In the simplest case:
 ```
 example-0001/
 ├── description.csv       ← describes the content (the only file you write)
-└── ... your files ...
+└── representations/
+    └── archival/         ← one version of the content: your files, any structure you like
 ```
 
 With several versions of the content and extras:
@@ -22,7 +23,7 @@ example-0001/
 ├── representations.csv   ← optional: a label and type per representation
 ├── siegfried.json        ← optional: a format report
 ├── representations/
-│   ├── master/           ← the archival scans, any structure you like
+│   ├── archival/         ← the scanned master copies, any structure you like
 │   └── access/           ← e.g. a PDF version
 │       └── description.csv  ← optional: describes just this version (e.g. its license)
 ├── documentation/        ← optional: scan reports, context material
@@ -31,14 +32,16 @@ example-0001/
 
 Two things do not live in the folder. The submitting organization comes from the tool's configuration (§6). The profile is passed to `check` and `create` with `--profile`, and decides which keys `description.csv` takes and whether a finished `dc.xml` or `mods.xml` may stand in for it (§3).
 
+This document holds the folder rules. The rules on the package itself that differ per profile, such as which representations it may hold, are written per profile: [`ugent/basic`](profiles/ugent-basic.md), [`ugent/bibliographic`](profiles/ugent-bibliographic.md), and for `meemoo/basic` the [Meemoo SIP 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) basic content profile.
+
 ## 1. General rules
 
 - One input folder MUST correspond to one package.
 - These names are reserved at the top level:
   - under every profile: `description.csv` (§3), `representations/`, `representations.csv` and `siegfried.json` (§2), `documentation/` (§4) and `premis/` (§5);
-  - under `eark/dc`: `dc.xml`; under `eark/mods`: `mods.xml` (§3).
+  - under `ugent/basic`: `dc.xml`; under `ugent/bibliographic`: `mods.xml` (§3).
 
-  All other names are free, with any nesting, and are content. That includes `metadata.csv`, `dcschema.csv` and `dc.csv`, and a document name the profile does not take, such as `dc.xml` under `meemoo/basic` or `mods.xml` under `eark/dc`.
+  Any other name at the top level is content, and content lives in a representation folder (§2), so it MUST be an error there. That includes `metadata.csv`, `dcschema.csv` and `dc.csv`, and a document name the profile does not take, such as `dc.xml` under `meemoo/basic` or `mods.xml` under `ugent/basic`. Inside a representation folder, names are free and nesting is free, apart from that level's reserved names (§2).
 - Operating-system files (`.DS_Store`, `Thumbs.db`, `desktop.ini`, `._*`) MUST be ignored: never packaged, never reported.
 - A symbolic link anywhere in the input MUST be an error.
 - A file or folder name MAY hold any character XML can carry, `&`, `%`, `+` and spaces included. A name that is not valid UTF-8, or that holds a control character other than tab, line feed and carriage return, MUST be an error: the package's METS and PREMIS documents cannot carry it, and escaping would change the name.
@@ -48,12 +51,12 @@ Two things do not live in the folder. The submitting organization comes from the
 
 ## 2. Content files and representations
 
-A *representation* is one version of the content: the archival master scans are one, a derived PDF is another. Every package has at least one.
+A *representation* is one version of the content: the archival master scans are one, a derived PDF is another. How many a package needs is the profile's rule: `meemoo/basic` needs exactly one; the UGent profiles take zero or more, so a folder with only a description and no `representations/` builds a package without content, one that carries metadata only (CSIP58).
 
-- **Simple case:** without a `representations/` folder, everything in the package folder apart from the reserved names is the content of one representation, named after the input folder.
-- **Several versions:** with a `representations/` folder, each folder directly inside it is one representation, named after that folder. All content MUST then be inside `representations/`; a content file elsewhere at the top level is an error. Under `meemoo/basic` there MUST be exactly one representation, as Meemoo SIP 1.2's basic profile requires ("The IE MUST be represented by exactly one representation."). The eark profiles set no limit.
+- Content MUST live in a representation folder: each folder directly inside `representations/` is one representation, named after that folder. A content file or folder at the top level, beside the reserved names, MUST be an error: the tool cannot tell which version of the content loose files are. Under `meemoo/basic` there MUST be exactly one representation, as Meemoo SIP 1.2's basic profile requires ("The IE MUST be represented by exactly one representation."). The UGent profiles set no limit.
+- Under the UGent profiles a representation's name MUST be one of `preservation`, `archival` and `access`, and the name is also its type; their meaning is in the profile pages ([`ugent/basic`](profiles/ugent-basic.md#4-representations), [`ugent/bibliographic`](profiles/ugent-bibliographic.md#4-representations)). `meemoo/basic` names none.
 - A representation's name MUST consist of `A–Z a–z 0–9 . _ -` only. It becomes the representation's directory under `representations/` in the package, and, unless `representations.csv` says otherwise, its label and type. Neither E-ARK CSIP nor the Meemoo specification prescribes names; CSIP requires only that they are unique, which folder names are.
-- Inside a representation folder, `description.csv`, `documentation/` and `premis/` are reserved (§3–5), and under the eark profiles the profile's document name (§3). Everything else is content, with free names and nesting.
+- Inside a representation folder, `description.csv`, `documentation/` and `premis/` are reserved (§3–5), and under the UGent profiles the profile's document name (§3). Everything else is content, with free names and nesting.
 - Files are packaged in alphabetical order by path. The order carries no meaning in E-ARK CSIP or the Meemoo specification. If a reading order matters, zero-pad your numbering (`0001.tiff`, `0002.tiff`); explicit ordering is deferred (§8).
 - The tool computes checksums and sizes itself; you never supply them.
 - Every file keeps its modification time in the package and in the zip. Copy files into the input folder in a way that keeps it (`cp -p`, `rsync -t`, or a download that sets it), or the package carries the time of that copy instead.
@@ -63,18 +66,18 @@ A *representation* is one version of the content: the archival master scans are 
 A folder name makes a good machine name but not always a good display name. `representations.csv`, next to `description.csv`, gives each representation a label (its display name in the package) and a type (what an ingest system such as RODA shows as its kind):
 
 ```csv
-folder,label,type
-master,Master scan (TIFF),archival
-access,Access copy (PDF),access
+folder,label
+archival,Scanned master copies (TIFF)
+access,Access copy (PDF)
 ```
 
 - The file MUST be UTF-8 with a header row. The columns are `folder` (required), `label` and `type` (optional), in any order; header names are matched case-insensitively, so a spreadsheet's `Folder` works. An unknown or repeated column MUST be an error. A UTF-8 BOM, CRLF line endings and RFC 4180 quoting are accepted.
-- The file MUST have at least one row, and it requires a `representations/` folder: in the simple case it MUST be an error.
-- `folder` names a folder directly under `representations/` by its name alone (`master`, not a path). Every row MUST match an existing folder, no two rows may name the same folder, and every folder MUST have a row. A folder without a row is an error, never an exclusion, so no content can silently drop out of the package. To leave material out, move it out of the input folder.
-- An empty `label` means the folder name; an empty `type` means the label.
+- The file MUST have at least one row, and it requires a `representations/` folder: without one it MUST be an error.
+- `folder` names a folder directly under `representations/` by its name alone (`archival`, not a path). Every row MUST match an existing folder, no two rows may name the same folder, and every folder MUST have a row. A folder without a row is an error, never an exclusion, so no content can silently drop out of the package. To leave material out, move it out of the input folder.
+- An empty `label` means the folder name. An empty `type` means the label, except under the UGent profiles, where the type is the folder name: there `type` MUST be empty or equal to the folder name.
 - `label` and `type` may hold any text, `&` and quotes included: the tool escapes them when it writes the package's XML. A control character other than tab, line feed and carriage return MUST be an error.
 - The rows' order is the representations' order in the package.
-- The label is used under every profile. The type is used only under the eark profiles; under `meemoo/basic` it has no effect (§7).
+- The label is used under every profile. The type is used only under the UGent profiles; under `meemoo/basic` it has no effect (§7).
 
 ### `siegfried.json`: format report (optional)
 
@@ -94,7 +97,7 @@ cd ./your-input && report="$(sf -hash md5 -json .)" && printf '%s\n' "$report" >
 
 ## 3. Descriptive metadata: `description.csv`, or a supplied document
 
-`description.csv` describes what the package contains. Usually it is the only file you write. Under the eark profiles a finished document may take its place (see [Supplying a finished document](#supplying-a-finished-document-earkdc-and-earkmods)). At the top level, exactly one of `description.csv` and the profile's document MUST be present.
+`description.csv` describes what the package contains. Usually it is the only file you write. Under the UGent profiles a finished document may take its place (see [Supplying a finished document](#supplying-a-finished-document-ugentbasic-and-ugentbibliographic)). At the top level, exactly one of `description.csv` and the profile's document MUST be present.
 
 ### The file
 
@@ -110,10 +113,10 @@ cd ./your-input && report="$(sf -hash md5 -json .)" && printf '%s\n' "$report" >
 | profile | keys | required | document that may stand in |
 |---|---|---|---|
 | `meemoo/basic` | Meemoo's keys, in the table below | `identifier`, `title`, `description`, `created` | none |
-| `eark/dc` | the fifteen Simple Dublin Core elements | `identifier`, `title` | `dc.xml` |
-| `eark/mods` | `identifier`, `title` | `identifier`, `title` | `mods.xml` |
+| `ugent/basic` | the fifteen Simple Dublin Core elements | `identifier`, `title` | `dc.xml` |
+| `ugent/bibliographic` | `identifier`, `title` | `identifier`, `title` | `mods.xml` |
 
-Each profile has its own keys: a Meemoo key under `eark/dc` is an unknown key, and an error.
+Each profile has its own keys: a Meemoo key under `ugent/basic` is an unknown key, and an error.
 
 **`meemoo/basic`** follows the elements of Meemoo's basic content profile that fit in a key and a value. Wherever a language-tagged key is used, a Dutch entry (`[nl]`) MUST be among its rows, as Meemoo requires; other languages may be added.
 
@@ -159,31 +162,31 @@ extent[nl],1 foto
 rights[nl],publiek domein
 ```
 
-**`eark/dc`** takes the fifteen Simple Dublin Core elements: `title`, `creator`, `subject`, `description`, `publisher`, `contributor`, `date`, `type`, `format`, `identifier`, `source`, `language`, `relation`, `coverage`, `rights`. Every key is repeatable. A language tag is accepted but not written into the document.
+**`ugent/basic`** takes the fifteen Simple Dublin Core elements: `title`, `creator`, `subject`, `description`, `publisher`, `contributor`, `date`, `type`, `format`, `identifier`, `source`, `language`, `relation`, `coverage`, `rights`. Every key is repeatable. A language tag is accepted but not written into the document.
 
-**`eark/mods`** takes two keys: `identifier`, once and without a language tag, and `title`, once per language. Anything richer, such as the library's physical copies of the work, needs a supplied `mods.xml`.
+**`ugent/bibliographic`** takes two keys: `identifier`, once and without a language tag, and `title`, once per language. Anything richer, such as the library's physical copies of the work, needs a supplied `mods.xml`.
 
 ### Describing one representation
 
-Under the eark profiles a representation MAY have its own `description.csv`, at `representations/<name>/description.csv`, for what is true of that version only, such as a license that differs between the master and an access copy. The rules are those of the top-level file, with two differences:
+Under the UGent profiles a representation MAY have its own `description.csv`, at `representations/<name>/description.csv`, for what is true of that version only, such as a license that differs between the master and an access copy. The rules are those of the top-level file, with two differences:
 
 - No key is required: the package-level description covers the work's identity. A `title` MAY still name the version (e.g. "PDF-versie").
 - It describes the representation, not the work: `created` or `creator` here refer to the making of this version.
 
-The profile's document MAY take its place (`representations/<name>/dc.xml` or `mods.xml`), never both. In the simple case without `representations/` there is no place for either.
+The profile's document MAY take its place (`representations/<name>/dc.xml` or `mods.xml`), never both.
 
 Under `meemoo/basic` a representation MUST NOT have a description, as Meemoo SIP 1.2's basic profile requires ("There MUST NOT be any descriptive metadata at the representation level.").
 
-### Supplying a finished document (`eark/dc` and `eark/mods`)
+### Supplying a finished document (`ugent/basic` and `ugent/bibliographic`)
 
-A record that already exists as a document, or one richer than the rows can hold (a MODS record with its physical copies, names with roles), can be supplied as a file: `dc.xml` under `eark/dc`, `mods.xml` under `eark/mods`, at the top level or in a representation folder. The tool copies it into the package as it is and references it from the METS like a generated document.
+A record that already exists as a document, or one richer than the rows can hold (a MODS record with its physical copies, names with roles), can be supplied as a file: `dc.xml` under `ugent/basic`, `mods.xml` under `ugent/bibliographic`, at the top level or in a representation folder. The tool copies it into the package as it is and references it from the METS like a generated document.
 
 - At each level the document takes the place of `description.csv`: one or the other, never both.
 - The file MUST be well-formed XML with the profile's root element:
-  - under `eark/dc`: `simpledc` without namespace, the shape the tool itself writes. A Dublin Core export in another wrapper, such as `oai_dc:dc`, must be rewrapped. The elements inside SHOULD carry no namespace either (`<title>`, not `<dc:title>`): that is the form RODA reads, and the only one the schema the package ships (`simpledc.xsd`) accepts.
-  - under `eark/mods`: `mods:mods` in the MODS v3 namespace (`http://www.loc.gov/mods/v3`) with `version="3.7"`, the version the package's METS declares.
+  - under `ugent/basic`: `simpledc` without namespace, the shape the tool itself writes. A Dublin Core export in another wrapper, such as `oai_dc:dc`, must be rewrapped. The elements inside SHOULD carry no namespace either (`<title>`, not `<dc:title>`): that is the form RODA reads, and the only one the schema the package ships (`simpledc.xsd`) accepts.
+  - under `ugent/bibliographic`: `mods:mods` in the MODS v3 namespace (`http://www.loc.gov/mods/v3`) with `version="3.7"`, the version the package's METS declares.
 - Nothing else in the document is checked: not its validity against the schema, and not whether it has an identifier or a title. Schema validity is the producer's responsibility; the validators downstream check it.
-- The file name must be the profile's: a `mods.xml` under `eark/dc` is content, not a document.
+- The file name must be the profile's: a `mods.xml` under `ugent/basic` is content, not a document.
 - `meemoo/basic` takes no document, because Meemoo's document must carry the package identifier the tool mints and the tool does not edit XML. A `dc+schema.xml`, at the top level or in a representation folder, MUST NOT be present under `meemoo/basic`; `check` and `create` report it.
 
 ## 4. Documentation
@@ -194,7 +197,7 @@ Context material that is not itself the preserved content: scan reports, corresp
 - Files under `representations/<name>/documentation/` document that representation.
 - Free naming and nesting inside.
 
-Documentation is optional. E-ARK CSIP recommends it (CSIPSTR16, a SHOULD), and commons-ip warns when a representation has no `documentation/` folder; the package still validates.
+Documentation is optional. E-ARK CSIP recommends it, at package level and/or per representation (CSIPSTR16, a SHOULD). commons-ip 2.11.2 warns (CSIPSTR16) when the package has no top-level `documentation/` folder, and then names every representation as lacking one, including a representation that has its own; with a top-level `documentation/` it passes, whatever the representations hold. The package validates either way.
 
 ## 5. Received preservation files (`premis/`)
 
@@ -225,6 +228,7 @@ These values span many packages or belong to the run, so they do not live in the
 
 - Without `--status` the package carries no record status, which the E-ARK SIP specification reads as new.
 - To submit a package that supplements or replaces an earlier one, pass the kind of update and the original package identifier (e.g. `--status replacement --updates <original-package-id>`). The tool reuses the original identifier as the package identifier, so the archive can match the update to the package it holds.
+- Under the UGent profiles an update may carry metadata only: a folder with the new `description.csv` (or document) and no `representations/`, built with `--status` and `--updates`.
 
 Because the submitting organization comes from configuration, the folder alone does not determine the package. The generated METS records the values used: audit the output, not the input.
 
@@ -232,13 +236,13 @@ Because the submitting organization comes from configuration, the folder alone d
 
 | input | E-ARK SIP location |
 |---|---|
-| representation folders (or the simple case) | `representations/<name>/data/`, METS fileSec and structMap |
-| `representations.csv` `label` / `type` | representation METS `mets/@LABEL`; under the eark profiles the type in `TYPE="Other"` + `csip:OTHERTYPE` and `CONTENTINFORMATIONTYPE="OTHER"` + `csip:OTHERCONTENTINFORMATIONTYPE` ([ADR-0013](decisions/0013-representation-type-from-label.md)); under `meemoo/basic` the content typing is fixed to Meemoo's profile URI |
+| representation folders | `representations/<name>/data/`, METS fileSec and structMap |
+| `representations.csv` `label` / `type` | representation METS `mets/@LABEL`; under the UGent profiles the type in `TYPE="Other"` + `csip:OTHERTYPE` and `CONTENTINFORMATIONTYPE="OTHER"` + `csip:OTHERCONTENTINFORMATIONTYPE` ([ADR-0013](decisions/0013-representation-type-from-label.md)); under `meemoo/basic` the content typing is fixed to Meemoo's profile URI |
 | file order (no meaning) | document order in the representation's structMap; METS `ORDER` attributes, the real sequencing mechanism, are deferred with the manifest (§8) |
 | `documentation/` (package and representation) | `documentation/` directories (CSIPSTR16), METS fileSec `USE="Documentation"` |
 | `description.csv` under `meemoo/basic` | the table's elements, `dcterms:*` and `schema:*` (e.g. `ispartof` → `dcterms:isPartOf`, `artmedium` → `schema:artMedium`), in `metadata/descriptive/dc+schema.xml`, METS dmdSec ([ADR-0011](decisions/0011-closed-descriptive-vocabulary.md)) |
-| `description.csv` under `eark/dc` | the unqualified Simple Dublin Core element of the same name (`title` → `<title>`), in `metadata/descriptive/dc.xml`, METS dmdSec |
-| `description.csv` under `eark/mods` | `identifier` → `mods:identifier type="local"`, `title[lang]` → `mods:titleInfo xml:lang/mods:title`, in `metadata/descriptive/mods.xml`, METS dmdSec `MDTYPE="MODS" MDTYPEVERSION="3.7"` ([ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md)) |
+| `description.csv` under `ugent/basic` | the unqualified Simple Dublin Core element of the same name (`title` → `<title>`), in `metadata/descriptive/dc.xml`, METS dmdSec |
+| `description.csv` under `ugent/bibliographic` | `identifier` → `mods:identifier type="local"`, `title[lang]` → `mods:titleInfo xml:lang/mods:title`, in `metadata/descriptive/mods.xml`, METS dmdSec `MDTYPE="MODS" MDTYPEVERSION="3.7"` ([ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md)) |
 | `dc.xml` / `mods.xml` (supplied) | copied as it is to `metadata/descriptive/` (or the representation's), checksum computed on the copy, METS dmdSec typed as for a generated document ([ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md)) |
 | a representation's description | `representations/<name>/metadata/descriptive/`, dmdSec of that representation's METS (CSIPSTR12, CSIPSTR13) |
 | `[lang]` suffixes | `xml:lang` attributes |

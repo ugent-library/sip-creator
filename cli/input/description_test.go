@@ -8,19 +8,19 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/cli/input/mapping"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
 // readCSV runs Read over a minimal flat tree carrying the given
-// description.csv under the basic profile, so the decoder is exercised
-// through the real entry point.
+// description.csv under meemoo/basic, so the decoder is tested through
+// Read.
 func readCSV(t *testing.T, csv string) (*build.SourcePackage, error) {
 	t.Helper()
 	root := writeTree(t, map[string]string{
-		"description.csv": csv,
-		"scan.tiff":       "x",
+		"description.csv":                  csv,
+		"representations/master/scan.tiff": "x",
 	})
 	return Read(root, mapping.Meemoo{}, meemooDocumentSpec)
 }
@@ -70,8 +70,8 @@ func TestRowsHappy(t *testing.T) {
 	}
 }
 
-// Under the basic profile the rows are Meemoo's: a language-tagged key
-// without a Dutch entry is a violation at check time, not only at build.
+// Under meemoo/basic the rows are Meemoo's: a language-tagged key without
+// a Dutch entry is a violation for check, not only for create.
 func TestRowsCSVRequiresDutch(t *testing.T) {
 	_, err := readCSV(t, minimalCSV+"abstract[en],A photo album\n")
 	assertViolation(t, err, `none in "nl"`)
@@ -133,8 +133,8 @@ func TestRowsRepeatNamesKeyAndLanguage(t *testing.T) {
 	assertViolation(t, err, `abstract appears more than once in language "nl"`)
 }
 
-// Per-language keys repeat freely across languages (title[nl] + title[en]);
-// only a same-language repeat is a violation.
+// Per-language keys repeat freely across languages, as title[nl] and
+// title[en]. Only a repeat in the same language is a violation.
 func TestRowsPerLanguageRepeat(t *testing.T) {
 	if _, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle[nl],Kat\ntitle[en],Cat\ndescription,x\ncreated,2026\n"); err != nil {
 		t.Fatalf("distinct languages must be accepted: %v", err)
@@ -160,7 +160,8 @@ func TestRepresentationDescriptionNeedsNoIdentity(t *testing.T) {
 }
 
 func TestRepresentationDescriptionDuplicateIdentifier(t *testing.T) {
-	// Identity is optional at rep level, but two identifiers stay ambiguous.
+	// Identity is optional at representation level, but two identifiers
+	// stay ambiguous.
 	root := writeTree(t, map[string]string{
 		"description.csv":                        minimalCSV,
 		"representations/master/scan.tiff":       "x",
@@ -202,7 +203,7 @@ func TestParseTermsFindings(t *testing.T) {
 	tests := []struct {
 		name     string
 		data     string
-		wantLine int    // line of the *rowError; 0 for a finding about the file
+		wantLine int    // line of the *rowError, or 0 for a finding about the file
 		want     string // substring of the finding
 	}{
 		{"missing header", "identifier,ID-1\n", 0, `header "key,value"`},
@@ -249,19 +250,19 @@ func TestParseTermsNotUTF8(t *testing.T) {
 	}
 }
 
-// The profile, not the file, says which keys the rows may use: the
-// same description.csv is Simple Dublin Core under eark/dc and refused under
-// basic, where coverage is not a key.
+// The profile, not the file, says which keys the rows may use: the same
+// description.csv is Simple Dublin Core under ugent/basic and refused
+// under meemoo/basic, where coverage is not a key.
 func TestRowsProfileDecidesTheKeys(t *testing.T) {
 	tree := map[string]string{
-		"description.csv": minimalDC + "coverage,Gent\n",
-		"scan.tiff":       "x",
+		"description.csv":                  minimalDC + "coverage,Gent\n",
+		"representations/master/scan.tiff": "x",
 	}
-	pkg, err := Read(writeTree(t, tree), mapping.EarkDC{}, earkDocumentSpec)
+	pkg, err := Read(writeTree(t, tree), mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	if err != nil {
-		t.Fatalf("Read under eark/dc: %v", err)
+		t.Fatalf("Read under ugent/basic: %v", err)
 	}
-	got, ok := pkg.Description.(earkdc.Terms)
+	got, ok := pkg.Description.(ugent.Terms)
 	if !ok || len(got) != 3 || got[0].Key != "identifier" || got[2].Key != "coverage" {
 		t.Errorf("descriptive = %#v, want three Simple DC terms", pkg.Description)
 	}
@@ -270,23 +271,23 @@ func TestRowsProfileDecidesTheKeys(t *testing.T) {
 	assertViolation(t, err, `unknown key "coverage"`)
 }
 
-// Under eark only the fifteen Simple DC elements are keys: Meemoo's keys
-// are unknown there, at both levels.
-func TestRowsEarkRefusesMeemooKeys(t *testing.T) {
+// Under ugent/basic only the fifteen Simple DC elements are keys: Meemoo's
+// keys are unknown there, at both levels.
+func TestRowsUGentBasicRefusesMeemooKeys(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv":                        minimalDC + "abstract,x\n",
 		"representations/master/scan.tiff":       "x",
 		"representations/master/description.csv": "key,value\nlicense,publiek domein\n",
 	})
-	_, err := Read(root, mapping.EarkDC{}, earkDocumentSpec)
+	_, err := Read(root, mapping.SimpleDC{}, ugentBasicDocumentSpec)
 	assertViolation(t, err, `unknown key "abstract"`)
 	assertViolation(t, err, `unknown key "license"`)
 }
 
-// Without a mapper Read cannot say what the rows mean; it is
-// refused before the folder is touched.
+// Without a mapper Read cannot say what the rows mean. It refuses the call
+// before it reads the folder.
 func TestReadRequiresAMapper(t *testing.T) {
-	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "scan.tiff": "x"})
+	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "representations/master/scan.tiff": "x"})
 	_, err := Read(root, nil, DocumentSpec{})
 	if err == nil || !strings.Contains(err.Error(), "no mapper") {
 		t.Fatalf("want the missing mapper refused, got %v", err)
@@ -298,8 +299,8 @@ func TestReadRequiresAMapper(t *testing.T) {
 // description's rules.
 func TestMapperErrorsNameTheLine(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"description.csv": "key,value\nidentifier,ID-1\ntitle,T\n",
-		"scan.tiff":       "x",
+		"description.csv":                  "key,value\nidentifier,ID-1\ntitle,T\n",
+		"representations/master/scan.tiff": "x",
 	})
 	_, err := Read(root, placesNothing{}, DocumentSpec{})
 	assertViolation(t, err, "description.csv line 3: no place for title")
@@ -307,9 +308,9 @@ func TestMapperErrorsNameTheLine(t *testing.T) {
 	assertViolation(t, err, "identifier is required")
 }
 
-// placesNothing is a mapper that refuses every term at its index,
-// adds one error about the file, and returns an empty eark description, so
-// the description's own required-keys rule still runs on the result.
+// placesNothing is a mapper that refuses every term at its index, adds one
+// error about the file, and returns an empty Simple DC description, so the
+// description's rule on required keys still runs on the result.
 type placesNothing struct{}
 
 func (placesNothing) Map(terms []sip.Term) (sip.Description, []error) {
@@ -317,5 +318,5 @@ func (placesNothing) Map(terms []sip.Term) (sip.Description, []error) {
 	for i, t := range terms {
 		errs = append(errs, &sip.TermError{Index: i, Err: fmt.Errorf("no place for %s", t.Key)})
 	}
-	return earkdc.Terms(nil), errs
+	return ugent.Terms(nil), errs
 }

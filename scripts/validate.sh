@@ -14,9 +14,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # The spec version is pinned so a commons-ip upgrade changing its default
 # can't silently move the goalposts (docs/decisions/0003-validation-stays-external.md).
-# -s overrides it per package family: Meemoo 1.2 builds on the E-ARK 2.0.4
-# era (its mandated PROFILE URL is the one 2.0.4 checks for), the eark
-# profiles (eark/dc, eark/mods) target 2.2.0 (docs/archive/meemoo-12.md).
+# -s overrides it per profile: Meemoo 1.2 builds on the E-ARK 2.0.4
+# era (its mandated PROFILE URL is the one 2.0.4 checks for), the UGent
+# profiles (ugent/basic, ugent/bibliographic) target 2.2.0 (docs/archive/meemoo-12.md).
 SPEC_VERSION=2.2.0
 
 report_dir=""

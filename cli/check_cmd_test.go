@@ -12,18 +12,18 @@ import (
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
-// runCLI runs the command line with args, as Run does, and returns what it wrote to stdout and stderr and the error it
-// ended with.
+// runCLI runs the command line with args, as Run does, and returns what
+// it wrote to stdout and stderr and the error it ended with.
 func runCLI(t *testing.T, args ...string) (stdout, stderr string, err error) {
 	t.Helper()
 	_, stdout, stderr, err = runCommand(t, args...)
 	return stdout, stderr, err
 }
 
-// runCommand is runCLI that also returns the command that ran, which Run
-// needs for the exit status. Cobra keeps flag values on the commands,
-// which are package variables, so every flag is set back to its default
-// afterwards: a --no-zip in one run must not carry into the next.
+// runCommand runs the command line like runCLI and also returns the
+// command that ran, which exitStatus needs. Cobra keeps flag values on the
+// commands, which are package variables, so every flag is set back to its
+// default afterwards: a --no-zip in one run must not carry into the next.
 func runCommand(t *testing.T, args ...string) (cmd *cobra.Command, stdout, stderr string, err error) {
 	t.Helper()
 	var out, errOut bytes.Buffer
@@ -47,7 +47,8 @@ func runCommand(t *testing.T, args ...string) (cmd *cobra.Command, stdout, stder
 	return cmd, out.String(), errOut.String(), err
 }
 
-// writeFolder builds an input folder from slash paths and contents.
+// writeFolder writes files, keyed by slash path, into a new temporary
+// folder and returns the folder's path.
 func writeFolder(t *testing.T, files map[string]string) string {
 	t.Helper()
 	root := t.TempDir()
@@ -63,25 +64,25 @@ func writeFolder(t *testing.T, files map[string]string) string {
 	return root
 }
 
-// A folder that breaks no rule gets the OK verdict on stdout, and check
-// needs no configuration to say so (ADR-0010): the submitter settings
-// create requires are empty here.
+// A folder that breaks no rule gets the OK verdict on stdout. check needs
+// no configuration to say so (ADR-0010): the submitter settings that create
+// requires are empty here.
 func TestCheckSummarizesAValidFolder(t *testing.T) {
 	t.Setenv("SIP_SUBMITTER_NAME", "")
 	t.Setenv("SIP_SUBMITTER_OR_ID", "")
 	root := writeFolder(t, map[string]string{
-		"description.csv":                   "key,value\nidentifier,ID-1\ntitle,Test\n",
-		"documentation/manual.pdf":          "m",
-		"representations/master/a.tif":      "a",
-		"representations/master/sub/b.tif":  "b",
-		"representations/access/access.pdf": "c",
+		"description.csv":                    "key,value\nidentifier,ID-1\ntitle,Test\n",
+		"documentation/manual.pdf":           "m",
+		"representations/archival/a.tif":     "a",
+		"representations/archival/sub/b.tif": "b",
+		"representations/access/access.pdf":  "c",
 	})
 
-	stdout, stderr, err := runCLI(t, "check", "--profile", "eark/dc", root)
+	stdout, stderr, err := runCLI(t, "check", "--profile", "ugent/basic", root)
 	if err != nil {
 		t.Fatalf("check: %v\n%s", err, stderr)
 	}
-	if want := "OK: the folder meets the input specification for profile eark/dc.\n"; !strings.HasSuffix(stdout, want) {
+	if want := "OK: the folder meets the input specification for profile ugent/basic.\n"; !strings.HasSuffix(stdout, want) {
 		t.Errorf("stdout = %q, want it to end in %q", stdout, want)
 	}
 	if stderr != "" {
@@ -110,18 +111,16 @@ func TestCheckReportsEveryViolation(t *testing.T) {
 		"representations/master/a.tif": "a",
 	})
 
-	stdout, stderr, err := runCLI(t, "check", "--profile", "eark/dc", root)
+	stdout, stderr, err := runCLI(t, "check", "--profile", "ugent/basic", root)
 	if want := root + ": 2 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
-	// The problems come first, then the summary of what could be read, then
-	// the verdict.
 	want := "2 problems in " + root + "\n\n" +
 		"  descriptive metadata is missing: every package folder needs a description.csv or a dc.xml describing the content (input specification §3)\n" +
-		"  stray.tif: content must live inside representations/ when that folder exists (only the reserved names of the input specification may sit beside it)\n" +
+		"  stray.tif: content must live in a representation folder, representations/<name>/ (only the reserved names of the input specification may sit beside representations/)\n" +
 		"\n" +
 		"Input folder:         " + root + "\n" +
-		"Profile:              eark/dc\n" +
+		"Profile:              ugent/basic\n" +
 		"\n" +
 		"Descriptive metadata: none\n" +
 		"Representations:      1\n" +
@@ -139,9 +138,9 @@ func TestCheckReportsEveryViolation(t *testing.T) {
 	}
 }
 
-// After the input specification, check applies the profile's rules on the
-// package, as a build would: two representations pass the folder rules
-// but not Meemoo's basic profile, which allows one.
+// After the input specification, check applies the profile's rules to the
+// source package, as Builder.Build does. Two representations pass the
+// folder rules but not meemoo/basic, which allows one.
 func TestCheckAppliesTheProfileRules(t *testing.T) {
 	root := writeFolder(t, map[string]string{
 		"description.csv":              "key,value\nidentifier,ID-1\ntitle,Test\ndescription,Beschrijving\ncreated,2026\n",
@@ -158,9 +157,9 @@ func TestCheckAppliesTheProfileRules(t *testing.T) {
 	}
 }
 
-// The profile's rules run only on a folder read without violations: a
+// The profile's rules run only on a folder read without violations. A
 // folder with a broken description.csv and two representations under
-// basic reports the description, not also the representation count.
+// meemoo/basic reports the description, not the representation count.
 func TestCheckSkipsTheProfileRulesOnAPartlyReadFolder(t *testing.T) {
 	root := writeFolder(t, map[string]string{
 		"description.csv":              "key,value\nnot-a-key,x\n",
@@ -181,12 +180,12 @@ func TestCheckSkipsTheProfileRulesOnAPartlyReadFolder(t *testing.T) {
 // fails check, not only create.
 func TestCheckReportsMalformedPremis(t *testing.T) {
 	root := writeFolder(t, map[string]string{
-		"description.csv":   "key,value\nidentifier,ID-1\ntitle,Test\n",
-		"a.tif":             "a",
-		"premis/vendor.xml": "<premis:premis>",
+		"description.csv":              "key,value\nidentifier,ID-1\ntitle,Test\n",
+		"representations/master/a.tif": "a",
+		"premis/vendor.xml":            "<premis:premis>",
 	})
 
-	stdout, _, err := runCLI(t, "check", "--profile", "eark/dc", root)
+	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", root)
 	if want := root + ": 1 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
@@ -199,39 +198,39 @@ func TestCheckReportsMalformedPremis(t *testing.T) {
 // fails create, although check computes no checksum.
 func TestCheckReportsContentMissingFromTheReport(t *testing.T) {
 	root := writeFolder(t, map[string]string{
-		"description.csv": "key,value\nidentifier,ID-1\ntitle,Test\n",
-		"a.tif":           "a",
-		"b.tif":           "b",
-		"siegfried.json":  `{"siegfried":"1.11.0","files":[{"filename":"a.tif","md5":"0","matches":[]}]}`,
+		"description.csv":              "key,value\nidentifier,ID-1\ntitle,Test\n",
+		"representations/master/a.tif": "a",
+		"representations/master/b.tif": "b",
+		"siegfried.json":               `{"siegfried":"1.11.0","files":[{"filename":"representations/master/a.tif","md5":"0","matches":[]}]}`,
 	})
 
-	stdout, _, err := runCLI(t, "check", "--profile", "eark/dc", root)
+	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", root)
 	if want := root + ": 1 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
-	if !strings.Contains(stdout, "siegfried.json has no entry for b.tif") {
+	if !strings.Contains(stdout, "siegfried.json has no entry for representations/master/b.tif") {
 		t.Errorf("stdout = %q, want the file without an entry named", stdout)
 	}
 }
 
 // The summary counts what the folder holds, across the package and its
-// representations. The eark example describes its representation too.
+// representations. The ugent/basic example describes its representation too.
 func TestCheckSummarizesTheExample(t *testing.T) {
-	stdout, _, err := runCLI(t, "check", "--profile", "eark/dc", filepath.Join("..", "examples", "eark", "dc"))
+	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", filepath.Join("..", "examples", "ugent", "basic"))
 	if err != nil {
 		t.Fatalf("check: %v", err)
 	}
-	want := "Input folder:         ../examples/eark/dc\n" +
-		"Profile:              eark/dc\n" +
+	want := "Input folder:         ../examples/ugent/basic\n" +
+		"Profile:              ugent/basic\n" +
 		"\n" +
 		"Descriptive metadata: description.csv\n" +
-		"Representations:      1 (1 with its own description)\n" +
-		"Essence files:        1\n" +
+		"Representations:      2 (1 with its own description)\n" +
+		"Essence files:        2\n" +
 		"Documentation files:  2\n" +
 		"PREMIS files:         2\n" +
 		"Format report:        not supplied (files carry no format information)\n" +
 		"\n" +
-		"OK: the folder meets the input specification for profile eark/dc.\n"
+		"OK: the folder meets the input specification for profile ugent/basic.\n"
 	if stdout != want {
 		t.Errorf("stdout = %q, want %q", stdout, want)
 	}
@@ -241,12 +240,12 @@ func TestCheckSummarizesTheExample(t *testing.T) {
 // characterization report as the format report.
 func TestCheckNamesSuppliedDocumentAndReport(t *testing.T) {
 	root := writeFolder(t, map[string]string{
-		"dc.xml":         "<simpledc><identifier>ID-1</identifier><title>Test</title></simpledc>",
-		"a.tif":          "a",
-		"siegfried.json": `{"siegfried":"1.11.0","files":[{"filename":"a.tif","md5":"0","matches":[]}]}`,
+		"dc.xml":                         "<simpledc><identifier>ID-1</identifier><title>Test</title></simpledc>",
+		"representations/archival/a.tif": "a",
+		"siegfried.json":                 `{"siegfried":"1.11.0","files":[{"filename":"representations/archival/a.tif","md5":"0","matches":[]}]}`,
 	})
 
-	stdout, _, err := runCLI(t, "check", "--profile", "eark/dc", root)
+	stdout, _, err := runCLI(t, "check", "--profile", "ugent/basic", root)
 	if err != nil {
 		t.Fatalf("check: %v\n%s", err, stdout)
 	}
@@ -269,27 +268,27 @@ func TestCheckRefusesWhatItCannotRead(t *testing.T) {
 	}
 
 	missing := filepath.Join(t.TempDir(), "missing")
-	_, _, err = runCLI(t, "check", "--profile", "eark/dc", missing)
+	_, _, err = runCLI(t, "check", "--profile", "ugent/basic", missing)
 	if err == nil || !strings.Contains(err.Error(), "input folder: ") || !strings.Contains(err.Error(), "no such file") {
 		t.Errorf("error = %v, want the missing input folder named", err)
 	}
 }
 
 // check exits with 1 when the folder has problems and with 2 when it could
-// not check the folder at all; create exits with 1 on any error.
+// not check the folder at all. create exits with 1 on any error.
 func TestExitStatus(t *testing.T) {
-	broken := writeFolder(t, map[string]string{"a.tif": "a"}) // no description
+	broken := writeFolder(t, map[string]string{"representations/master/a.tif": "a"}) // no description
 	missing := filepath.Join(t.TempDir(), "missing")
 	cases := []struct {
 		name string
 		args []string
 		want int
 	}{
-		{"check, folder with problems", []string{"check", "--profile", "eark/dc", broken}, 1},
-		{"check, missing folder", []string{"check", "--profile", "eark/dc", missing}, 2},
+		{"check, folder with problems", []string{"check", "--profile", "ugent/basic", broken}, 1},
+		{"check, missing folder", []string{"check", "--profile", "ugent/basic", missing}, 2},
 		{"check, unknown profile", []string{"check", "--profile", "nope", broken}, 2},
-		{"check, no folder given", []string{"check", "--profile", "eark/dc"}, 2},
-		{"create, missing folder", []string{"create", "--profile", "eark/dc", missing, t.TempDir()}, 1},
+		{"check, no folder given", []string{"check", "--profile", "ugent/basic"}, 2},
+		{"create, missing folder", []string{"create", "--profile", "ugent/basic", missing, t.TempDir()}, 1},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

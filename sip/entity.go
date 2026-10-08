@@ -6,28 +6,29 @@ import (
 )
 
 // Entity is one intellectual entity: the work the package describes. A
-// package has one; sub-entities are not modeled.
+// package has one.
 type Entity struct {
-	// Identifier identifies the entity (uuid-<uuid>). It appears in the
-	// package PREMIS document and, under a profile that swaps identifiers,
-	// in the descriptive document; under a profile with neither, the
-	// package does not carry it.
+	// Identifier identifies the entity (uuid-<uuid>). The package PREMIS
+	// document carries it when the profile writes one. The descriptive
+	// document carries it when the profile's description puts it in place of
+	// the producer's identifier, as Meemoo's does. The producer's identifier
+	// then becomes MEEMOO-LOCAL-ID. A profile that does neither leaves it out
+	// of the package.
 	Identifier string
 	// AdditionalIdentifiers are extra PREMIS object identifiers, keyed by
-	// type, e.g. MEEMOO-LOCAL-ID.
+	// type, such as MEEMOO-LOCAL-ID.
 	AdditionalIdentifiers map[string]string
 	// Representations are the versions of the content.
 	Representations []*Representation
-	// Description is the entity's descriptive metadata: a model the
-	// profile's encoder renders, or a supplied document copied as it is.
+	// Description is the entity's descriptive metadata.
 	Description Description
 	// DescriptionFile is the node for the descriptive document in the
 	// package.
 	DescriptionFile *File
 }
 
-// EachRepresentation calls fn for every representation in order; the
-// first error stops the walk and is returned.
+// EachRepresentation calls fn for every representation, in order. It stops
+// at the first error fn returns and returns that error.
 func (e *Entity) EachRepresentation(fn func(r *Representation) error) error {
 	for _, r := range e.Representations {
 		err := fn(r)

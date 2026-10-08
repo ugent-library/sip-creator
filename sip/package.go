@@ -6,24 +6,21 @@ import (
 	"uuid"
 )
 
-// Package is one assembled SIP: the graph of entities, representations,
-// and file nodes the writer emits. The graph checks nothing itself: the
-// assembler keeps its invariants (identifiers minted, paths declared, a
-// mime type on every node), and build.SourcePackage is validated before
-// the graph is assembled from it (ADR-0019).
+// Package is one assembled SIP: the graph of its entity, representations
+// and file nodes.
 type Package struct {
-	// Location is the package directory on disk: the destination dir
+	// Location is the package directory on disk: the destination directory
 	// joined with the identifier.
 	Location string
 	// Identifier is the package identifier (uuid-<uuid>): the mets/@OBJID,
 	// the directory name, and the zip name.
 	Identifier string
-	// Declaration carries the profile-level METS values; set by the assembler.
+	// Declaration holds the profile-level values the package METS declares.
 	Declaration *MetsDeclaration
 	// Root is the intellectual entity the package describes.
 	Root *Entity
-	// PremisFile is the generated preservation document; nil when the
-	// profile emits none.
+	// PremisFile is the generated PREMIS document. It is set only when the
+	// profile writes one.
 	PremisFile *File
 	// ReceivedPremisFiles are preservation documents delivered with the
 	// input. They are copied as received, never parsed.
@@ -37,9 +34,9 @@ type Package struct {
 	DocumentationFiles []*File
 }
 
-// PremisFiles lists every preservation document the package METS must
-// reference: the generated PREMIS (when emitted) first, then the
-// received ones. Each gets one digiprovMD, all in one amdSec.
+// PremisFiles returns every preservation document the package METS
+// references: the generated PREMIS document first, if there is one, then
+// the received ones.
 func (p *Package) PremisFiles() []*File {
 	var files []*File
 	if p.PremisFile != nil {
@@ -48,15 +45,17 @@ func (p *Package) PremisFiles() []*File {
 	return append(files, p.ReceivedPremisFiles...)
 }
 
-// DescriptiveFiles lists every descriptive document the package METS must
-// reference: the root entity's alone, since a package has one entity.
+// DescriptiveFiles returns every descriptive document the package METS
+// references. A package has one entity, so that is the root entity's
+// document alone.
 func (p *Package) DescriptiveFiles() []*File {
 	return []*File{p.Root.DescriptionFile}
 }
 
-// NewPackage roots a package under baseDir. A non-empty identifier is
-// reused as the package identifier (how an update keeps the original's
-// mets/@OBJID); empty means mint a fresh one.
+// NewPackage returns a package whose directory is baseDir joined with its
+// identifier. It reuses identifier when one is given, so that an update
+// keeps the original's mets/@OBJID. It mints a fresh one when identifier is
+// empty.
 func NewPackage(baseDir, identifier string) *Package {
 	if identifier == "" {
 		identifier = fmt.Sprintf("uuid-%s", uuid.NewV4().String())

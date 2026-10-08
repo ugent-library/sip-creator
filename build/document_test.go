@@ -9,7 +9,7 @@ import (
 	"github.com/ugent-library/sip-creator/build"
 )
 
-// Sample documents of the shapes the two eark profiles emit themselves,
+// Sample documents of the shapes the two UGent profiles emit themselves,
 // plus the wrong shapes the checks must refuse.
 const (
 	simpleDCDocument = `<?xml version='1.0' encoding='UTF-8'?>
@@ -31,7 +31,8 @@ const (
 	malformedDocument = `<simpledc><title>x</simpledc>`
 )
 
-// writeDocument puts a document on disk and returns it as a build.EncodedDescription.
+// writeDocument writes content to the file name under dir and returns it
+// as a build.EncodedDescription.
 func writeDocument(t *testing.T, dir, name, content string) build.EncodedDescription {
 	t.Helper()
 	src := filepath.Join(dir, name)
@@ -41,15 +42,16 @@ func writeDocument(t *testing.T, dir, name, content string) build.EncodedDescrip
 	return build.EncodedDescription{Source: src}
 }
 
-// A document validates as a document: well-formed XML, whatever its root;
-// the root is the profile's rule. A missing or malformed file is refused,
-// and ValidateRequired trusts every document.
+// EncodedDescription.Validate checks that the document is well-formed XML,
+// whatever its root. Definition.ValidateSource checks the root against the
+// profile. A missing or malformed file is refused. ValidateRequired
+// accepts every document.
 func TestDocumentValidate(t *testing.T) {
 	dir := t.TempDir()
 	tests := []struct {
 		name string
 		doc  build.EncodedDescription
-		want string // "" means valid; else substring of the error
+		want string // empty when valid, otherwise a substring of the error
 	}{
 		{"simpledc", writeDocument(t, dir, "dc.xml", simpleDCDocument), ""},
 		{"mods", writeDocument(t, dir, "mods.xml", modsDocument), ""},
@@ -77,10 +79,10 @@ func TestDocumentValidate(t *testing.T) {
 	}
 }
 
-// The two eark profiles build a package from a supplied document of their
+// The two UGent profiles build a package from a supplied document of their
 // standard: the file lands under metadata/descriptive as it is, with
-// fixity, and the METS types it as the profile declares. No swap, no
-// MEEMOO-LOCAL-ID.
+// fixity, and the METS types it as the profile declares. There is no swap,
+// so no MEEMOO-LOCAL-ID is lifted onto the entity.
 func TestBuildSuppliedDocument(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -89,8 +91,8 @@ func TestBuildSuppliedDocument(t *testing.T) {
 		wantFile string
 		wantMETS string
 	}{
-		{"dc.xml under eark/dc", earkDef(t), simpleDCDocument, "dc.xml", `MDTYPE="DC"`},
-		{"mods.xml under eark/mods", earkmodsDef(t), modsDocument, "mods.xml", `MDTYPE="MODS" MDTYPEVERSION="3.7"`},
+		{"dc.xml under ugent/basic", ugentBasicDef(t), simpleDCDocument, "dc.xml", `MDTYPE="DC"`},
+		{"mods.xml under ugent/bibliographic", bibliographicDef(t), modsDocument, "mods.xml", `MDTYPE="MODS" MDTYPEVERSION="3.7"`},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -121,16 +123,16 @@ func TestBuildSuppliedDocument(t *testing.T) {
 				t.Errorf("package METS lacks %s", c.wantMETS)
 			}
 			if _, ok := pkg.Root.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; ok {
-				t.Error("MEEMOO-LOCAL-ID lifted onto the entity; the eark profiles have no swap")
+				t.Error("MEEMOO-LOCAL-ID lifted onto the entity; the UGent profiles have no swap")
 			}
 		})
 	}
 }
 
 // A document on a representation lands in that representation's
-// descriptive dir and is referenced from its METS.
+// metadata/descriptive directory, and its METS references it.
 func TestBuildSuppliedDocumentOnRepresentation(t *testing.T) {
-	b, in, _ := newTestBuilder(t, earkDef(t))
+	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
 	in.Representations[0].Description = writeDocument(t, t.TempDir(), "dc.xml", simpleDCDocument)
 
@@ -138,7 +140,7 @@ func TestBuildSuppliedDocumentOnRepresentation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	rep := filepath.Join(pkg.Location, "representations", "master")
+	rep := filepath.Join(pkg.Location, "representations", "archival")
 	if _, err := os.Stat(filepath.Join(rep, "metadata", "descriptive", "dc.xml")); err != nil {
 		t.Fatalf("representation dc.xml not written: %v", err)
 	}
@@ -152,10 +154,11 @@ func TestBuildSuppliedDocumentOnRepresentation(t *testing.T) {
 }
 
 // A document the profile cannot take is refused before any write: another
-// standard's root, a MODS version other than the declared one, a version
-// missing, a malformed file, a missing file, and any document at all under
-// basic, whose metadata model does not implement DocumentFormat
-// because its document needs the swap.
+// standard's root, a MODS version other than the declared one, a missing
+// version, a malformed file, a missing file, and any document at all under
+// meemoo/basic. meemoo/basic takes no supplied document, because its
+// dc+schema document must carry the entity identifier in place of the
+// producer's.
 func TestBuildRefusesWrongDocument(t *testing.T) {
 	dir := t.TempDir()
 	cases := []struct {
@@ -164,13 +167,13 @@ func TestBuildRefusesWrongDocument(t *testing.T) {
 		doc  build.EncodedDescription
 		want string
 	}{
-		{"dc document to eark/mods", earkmodsDef(t), writeDocument(t, dir, "dc.xml", simpleDCDocument), "expected a mods:mods document"},
-		{"mods document to eark", earkDef(t), writeDocument(t, dir, "mods.xml", modsDocument), "expected a simpledc document"},
-		{"oai_dc document to eark", earkDef(t), writeDocument(t, dir, "oai.xml", oaiDCDocument), "expected a simpledc document"},
-		{"mods 3.6 to eark/mods", earkmodsDef(t), writeDocument(t, dir, "old.xml", modsOldVersion), `version="3.6"`},
-		{"mods without a version to eark/mods", earkmodsDef(t), writeDocument(t, dir, "nov.xml", modsNoVersion), "declares no version"},
-		{"malformed to eark", earkDef(t), writeDocument(t, dir, "bad.xml", malformedDocument), "not well-formed"},
-		{"missing file to eark", earkDef(t), build.EncodedDescription{Source: filepath.Join(dir, "nope.xml")}, "no such file"},
+		{"dc document to ugent/bibliographic", bibliographicDef(t), writeDocument(t, dir, "dc.xml", simpleDCDocument), "expected a mods:mods document"},
+		{"mods document to ugent/basic", ugentBasicDef(t), writeDocument(t, dir, "mods.xml", modsDocument), "expected a simpledc document"},
+		{"oai_dc document to ugent/basic", ugentBasicDef(t), writeDocument(t, dir, "oai.xml", oaiDCDocument), "expected a simpledc document"},
+		{"mods 3.6 to ugent/bibliographic", bibliographicDef(t), writeDocument(t, dir, "old.xml", modsOldVersion), `version="3.6"`},
+		{"mods without a version to ugent/bibliographic", bibliographicDef(t), writeDocument(t, dir, "nov.xml", modsNoVersion), "declares no version"},
+		{"malformed to ugent/basic", ugentBasicDef(t), writeDocument(t, dir, "bad.xml", malformedDocument), "not well-formed"},
+		{"missing file to ugent/basic", ugentBasicDef(t), build.EncodedDescription{Source: filepath.Join(dir, "nope.xml")}, "no such file"},
 		{"any document to basic", basicDef(t), writeDocument(t, dir, "dcschema.xml", simpleDCDocument), "supplied descriptive document is not accepted"},
 	}
 	for _, c := range cases {

@@ -18,7 +18,7 @@ To run commons-ip on a local Java instead of in Docker, set `CSIP_CMD` to the co
 using the jar version that `docker/validator/Dockerfile` pins:
 
 ```sh
-CSIP_CMD="java -jar commons-ip2-cli-2.11.2.jar" ./build.sh eark/dc
+CSIP_CMD="java -jar commons-ip2-cli-2.11.2.jar" ./build.sh ugent/basic
 ```
 
 ## Building
@@ -29,7 +29,7 @@ go build -o bin/sip-creator .
 ```
 
 `bin/` and the output directories, named after the profile with a hyphen for the slash
-(`meemoo-basic-uuid/`, `eark-dc-uuid/`), are ignored by git.
+(`meemoo-basic-uuid/`, `ugent-basic-uuid/`), are ignored by git.
 
 ## Tests
 
@@ -49,7 +49,7 @@ your own. It:
 
 1. rebuilds the binary;
 2. copies the input to `tmp/build/<profile>`, generates its `siegfried.json` there, and
-   builds the package into `<profile>-uuid/` (`eark-dc-uuid/` for `eark/dc`), so the
+   builds the package into `<profile>-uuid/` (`ugent-basic-uuid/` for `ugent/basic`), so the
    input folder itself is never changed;
 3. validates the zip with [commons-ip](https://github.com/keeps/commons-ip), printing
    every failed check with its messages;
@@ -64,7 +64,13 @@ your own. It:
 It exits non-zero when the package is not `VALID` or a descriptive document is not
 valid against its schema. Each
 profile validates against its E-ARK spec version: `meemoo/basic` (Meemoo 1.2) against 2.0.4,
-`eark/dc` and `eark/mods` against 2.2.0. All three are expected to report `VALID`.
+`ugent/basic` and `ugent/bibliographic` against 2.2.0. All three are expected to report `VALID`.
+
+To validate a package without representations under a UGent profile, pass a folder that
+holds only a `description.csv` as the second argument, for example
+`./build.sh ugent/basic path/to/folder`. It reports `VALID` with two SHOULD-level
+warnings from commons-ip (CSIPSTR11 and CSIPSTR13), explained in
+[docs/TODO.md](docs/TODO.md#validator-status).
 
 Each run's reports are written to `reports/runs/<timestamp>-<profile>/`. To browse them
 as HTML (run history, per-check detail, links into the E-ARK specs):

@@ -29,8 +29,8 @@ func TestSourcePackageEquivalence(t *testing.T) {
 	}
 	discard := slog.New(slog.NewTextHandler(io.Discard, nil))
 
-	// Via the folder convention. The basic profile requires Meemoo's four
-	// elements, so the file carries more than the convention's minimum.
+	// Through an input folder. meemoo/basic requires four Meemoo
+	// elements, so the file carries all four.
 	csv := "key,value\n" +
 		"identifier,ID-1\n" +
 		"title,Test\n" +
@@ -81,7 +81,8 @@ func TestSourcePackageEquivalence(t *testing.T) {
 		t.Fatalf("Build via hand-constructed input: %v", err)
 	}
 
-	// Same graph, modulo minted UUIDs: identity, structure, and fixity.
+	// The same graph apart from the minted UUIDs: identity, structure and
+	// fixity.
 	if a, b := localID(folderPkg), localID(handPkg); a != b || a != "ID-1" {
 		t.Errorf("MEEMOO-LOCAL-ID differs: folder %q, hand %q", a, b)
 	}

@@ -7,14 +7,13 @@ import (
 	"github.com/ugent-library/sip-creator/encoders/xmldoc"
 )
 
-// Namespace is the PREMIS 3 XML namespace: the one the generated
-// documents declare and received documents must declare.
+// Namespace is the PREMIS 3 XML namespace. The generated documents declare
+// it, and received documents must declare it.
 const Namespace = "http://www.loc.gov/premis/v3"
 
-// ValidateReceived reports why r is not acceptable received preservation
-// metadata: it must parse as XML (xmldoc.Root) with premis:premis in the
-// PREMIS 3 namespace as its root element. Like every check built on
-// xmldoc, it is not schema validation.
+// ValidateReceived parses r as XML and checks that the root element is
+// premis:premis in the PREMIS 3 namespace. It returns an error if this
+// check fails. It does not validate against the PREMIS schema (ADR-0003).
 func ValidateReceived(r io.Reader) error {
 	root, err := xmldoc.Root(r)
 	if err != nil {

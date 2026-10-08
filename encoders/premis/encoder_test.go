@@ -9,9 +9,9 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Values from producers reach the documents escaped: a local identifier
-// and an original file name carrying the XML-active characters leave both
-// documents well-formed, and an XML reader gets each value back as it was
+// Values from producers reach the documents escaped. A local identifier
+// and an original file name that carry the XML-active characters leave
+// both documents well-formed. An XML reader gets each value back as it was
 // given.
 func TestEscapesGraphValues(t *testing.T) {
 	const (
@@ -44,8 +44,8 @@ func TestEscapesGraphValues(t *testing.T) {
 	}
 }
 
-// textNodes reads the whole document, failing the test unless it is
-// well-formed, and returns every text node as an XML reader decodes it.
+// textNodes reads the whole document and returns every text node as an XML
+// reader decodes it. It fails the test if the document is not well-formed.
 func textNodes(t *testing.T, doc []byte) map[string]bool {
 	t.Helper()
 	texts := map[string]bool{}

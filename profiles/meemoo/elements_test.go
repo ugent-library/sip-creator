@@ -2,7 +2,7 @@ package meemoo
 
 import "testing"
 
-// The template's guard admits exactly the elements the table lists, spelled
+// elementName admits exactly the elements the table lists, spelled
 // as Meemoo's specification spells them: camel case where it writes one,
 // the prefix always, and nothing outside the profile. A key of
 // description.csv is not an element.
@@ -34,8 +34,8 @@ func TestElementName(t *testing.T) {
 	}
 }
 
-// The table's own invariant: unique elements, or the lookup index would
-// silently drop rows.
+// Every element appears in the table once. A second row for an element
+// would be dropped from the lookup index without an error.
 func TestElementsTable(t *testing.T) {
 	if len(elementsByName) != len(elements) {
 		t.Fatalf("duplicate elements in the table: %d rows, %d elements", len(elements), len(elementsByName))

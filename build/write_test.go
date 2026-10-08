@@ -9,16 +9,17 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/encoders/xmldoc"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Producer and operator values carrying the XML-active characters (an
+// Producer and operator values that contain &, <, > and quotes build a
+// package in which every XML document is well-formed. The values are an
 // essence file name, a local identifier, a label, a type, a content
-// category, the submitter's name) build a package whose every XML document
-// is well-formed, under the profile that writes PREMIS and under one that
-// types its representations. The file name also carries the characters an
-// href must percent-encode, and every href still names its file.
+// category and the submitter's name. The test runs under the profile that
+// writes PREMIS and under one that types its representations. The file
+// name also contains characters an href must percent-encode, and every
+// href still names its file.
 func TestBuildEscapesValues(t *testing.T) {
 	const localID = `R&D <001> "a"`
 	meemooTerms := testDescription()
@@ -30,7 +31,9 @@ func TestBuildEscapesValues(t *testing.T) {
 		description sip.Description
 	}{
 		{"meemoo/basic", basicDef(t), meemooTerms},
-		{"eark/dc", earkDef(t), earkdc.Terms{{Key: "identifier", Value: localID}, {Key: "title", Value: "Catus Testus"}}},
+		// Without its vocabulary, so that the representation's type is free
+		// text and its escaping is exercised.
+		{"ugent/basic", ugentBasicWithoutVocabulary(t), ugent.Terms{{Key: "identifier", Value: localID}, {Key: "title", Value: "Catus Testus"}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -52,13 +55,13 @@ func TestBuildEscapesValues(t *testing.T) {
 			}
 			requireWellFormedXML(t, pkg.Location)
 			requireReferencesMatchDisk(t, filepath.Join(pkg.Location, "METS.xml"))
-			requireReferencesMatchDisk(t, filepath.Join(pkg.Location, "representations", "master", "METS.xml"))
+			requireReferencesMatchDisk(t, filepath.Join(pkg.Location, "representations", "archival", "METS.xml"))
 		})
 	}
 }
 
-// requireWellFormedXML fails the test for every .xml file under dir that
-// does not parse.
+// requireWellFormedXML checks that every .xml file under dir is well-formed
+// XML. It fails the test for each file that is not.
 func requireWellFormedXML(t *testing.T, dir string) {
 	t.Helper()
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {

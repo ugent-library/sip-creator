@@ -1,22 +1,19 @@
-// Package Meemoo is the basic profile: everything the tool knows about
-// Meemoo SIP 1.2's basic content profile. Its descriptive standard is the
-// dc+schema document, Dublin Core terms plus schema.org properties in the
-// Meemoo namespace, with the profile's required, cardinality and language
-// rules; its Definition names the rest as data, and the registry in
-// profiles/ hands that out as "meemoo/basic".
+// Package meemoo holds Meemoo SIP 1.2's basic content profile,
+// "meemoo/basic". Its descriptive metadata is the dc+schema document:
+// Dublin Core terms plus schema.org properties in the Meemoo namespace,
+// with the profile's required, cardinality and language rules. Definition
+// holds the profile's other values.
 package meemoo
 
 import "github.com/ugent-library/sip-creator/sip"
 
-// Terms is an ordered list of terms in Meemoo's dc+schema model, each
-// keyed by the element it states, named as Meemoo's specification names
-// it ("dcterms:title", "dcterms:created", "schema:artMedium"); the order
-// the producer gave them in is preserved through to the emitted XML. Any
-// producer constructs it directly (the CLI's mapping of description.csv
-// is one); Validate holds the rules on what a term may say.
+// Terms is the descriptive metadata of meemoo/basic: an ordered list of
+// terms in Meemoo's dc+schema model. Each term is keyed by the element it
+// states, named as Meemoo's specification names it ("dcterms:title",
+// "dcterms:created", "schema:artMedium"). dc+schema.xml keeps the order
+// the producer gave. Validate holds the rules on what a term may say.
 type Terms []sip.Term
 
-// has reports whether any term states the given element.
 func (t Terms) has(element string) bool {
 	for _, term := range t {
 		if term.Key == element {
@@ -27,7 +24,8 @@ func (t Terms) has(element string) bool {
 }
 
 // localIdentifier returns the value of the identifier term: the producer's
-// local catalog/inventory number ("" when absent).
+// local catalogue or inventory number. It returns an empty string when
+// there is no identifier term.
 func (t Terms) localIdentifier() string {
 	for _, term := range t {
 		if term.Key == identifierElement {
@@ -37,10 +35,8 @@ func (t Terms) localIdentifier() string {
 	return ""
 }
 
-// setObjectIdentifier replaces the identifier term's value in place (a
-// no-op when the terms carry none). Terms holds one identifier slot, so
-// the swap overwrites the local identifier: read it with localIdentifier
-// first.
+// setObjectIdentifier replaces the identifier term's value in place. Terms
+// without an identifier stay as they are.
 func (t Terms) setObjectIdentifier(id string) {
 	for i, term := range t {
 		if term.Key == identifierElement {

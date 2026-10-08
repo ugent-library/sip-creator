@@ -12,7 +12,7 @@ func TestValidateCardinality(t *testing.T) {
 	tests := []struct {
 		name  string
 		terms Terms
-		want  string // "" means conformant; else substring of the error
+		want  string // empty when conformant, otherwise a substring of the error
 	}{
 		{"single-valued repeated", Terms{
 			{Key: "dcterms:identifier", Value: "A"},
@@ -52,7 +52,7 @@ func TestValidateCardinality(t *testing.T) {
 }
 
 // Every violation surfaces at once, not just the first, each naming its
-// key.
+// element.
 func TestValidateCardinalityJoinsFindings(t *testing.T) {
 	terms := Terms{
 		{Key: "dcterms:created", Value: "1913"},
@@ -102,8 +102,8 @@ func TestTermsValidateReportsEveryTerm(t *testing.T) {
 	}
 }
 
-// A package-level description states Meemoo's four required keys; each
-// missing one is a finding naming the key.
+// A package-level description states Meemoo's four required elements.
+// Each missing one is a finding naming the element.
 func TestValidateRequired(t *testing.T) {
 	err := (Terms{
 		{Key: "dcterms:identifier", Value: "A"},
@@ -142,7 +142,7 @@ func TestValidateRequiredLang(t *testing.T) {
 		name  string
 		terms Terms
 		lang  string
-		want  string // "" means conformant; else substring of the error
+		want  string // empty when conformant, otherwise a substring of the error
 	}{
 		{"no rule", Terms{{Key: "dcterms:title", Lang: "fr", Value: "x"}}, "", ""},
 		{"tagged without required language", Terms{

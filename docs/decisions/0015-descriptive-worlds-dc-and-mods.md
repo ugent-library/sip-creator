@@ -26,7 +26,11 @@ the family and, after a slash, the descriptive standard (`eark/dc`, `eark/mods`,
 the code has changed since: `build.DescriptionEncoder` is
 `build.MetadataModel` (2026-10-02, ADR-0024); `sip.Description` no longer
 has `LocalIdentifier` (2026-09-28), it has `Validate` and
-`ValidateRequired`; `ResolveKey` is gone (ADR-0018).
+`ValidateRequired`; `ResolveKey` is gone (ADR-0018). **Note, 2026-10-07:**
+[ADR-0034](0034-a-profile-is-a-content-type.md) takes the descriptive standard out of
+the profile name: a profile is named after its content type, and the Simple DC and MODS
+models live with the UGent profiles that use them (`ugent.Terms`, `ugent.Record` in
+`profiles/ugent`). The worlds stand.
 
 ## Context
 

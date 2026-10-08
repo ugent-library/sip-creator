@@ -18,15 +18,14 @@ import (
 	"github.com/ugent-library/sip-creator/characterization"
 	"github.com/ugent-library/sip-creator/encoders/mets"
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
-	"github.com/ugent-library/sip-creator/profiles/earkmods"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
 func fileMD5(t *testing.T, path string) string {
 	t.Helper()
-	data, err := os.ReadFile(path) // test files are tiny
+	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,9 +33,8 @@ func fileMD5(t *testing.T, path string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// testDescription satisfies the strictest registered profile: Meemoo's
-// four required elements, Dutch entries on the lang-tagged ones. It is the
-// basic profile's input; eark tests swap in identityTerms.
+// testDescription returns terms that meet meemoo/basic: Meemoo's four
+// required elements, with Dutch values for title and description.
 func testDescription() meemoo.Terms {
 	return meemoo.Terms{
 		{Key: "dcterms:identifier", Value: "local-id-001"},
@@ -46,8 +44,8 @@ func testDescription() meemoo.Terms {
 	}
 }
 
-// meemooIdentityTerms is the same identity in Meemoo's standard: short of
-// the four keys the basic profile requires.
+// meemooIdentityTerms returns only an identifier and a title, in Meemoo's
+// standard. It lacks two of the four elements meemoo/basic requires.
 func meemooIdentityTerms() meemoo.Terms {
 	return meemoo.Terms{
 		{Key: "dcterms:identifier", Value: "local-id-001"},
@@ -55,25 +53,27 @@ func meemooIdentityTerms() meemoo.Terms {
 	}
 }
 
-// identityTerms is the input convention's own MUSTs and nothing more, in
-// the eark/dc profile's standard, Simple Dublin Core.
-func identityTerms() earkdc.Terms {
-	return earkdc.Terms{
+// identityTerms returns only an identifier and a title, the two elements
+// every profile requires. The terms are Simple Dublin Core, the
+// ugent/basic profile's standard.
+func identityTerms() ugent.Terms {
+	return ugent.Terms{
 		{Key: "identifier", Value: "local-id-001"},
 		{Key: "title", Value: "Catus Testus"},
 	}
 }
 
-// identityRecord is the same identity in the eark/mods profile's standard,
-// a MODS record without items.
-func identityRecord() earkmods.Record {
-	return earkmods.Record{
+// identityRecord returns the same identifier and title as a MODS record
+// without items, the ugent/bibliographic profile's standard.
+func identityRecord() ugent.Record {
+	return ugent.Record{
 		Identifier: "local-id-001",
-		Titles:     []earkmods.Title{{Value: "Catus Testus"}},
+		Titles:     []ugent.Title{{Value: "Catus Testus"}},
 	}
 }
 
-// writeEssence puts one content file on disk and returns its build.SourceFile.
+// writeEssence writes content to the file name under dir and returns its
+// build.SourceFile, with name as both its key and its path.
 func writeEssence(t *testing.T, dir, name, content string) build.SourceFile {
 	t.Helper()
 	src := filepath.Join(dir, filepath.FromSlash(name))
@@ -86,7 +86,7 @@ func writeEssence(t *testing.T, dir, name, content string) build.SourceFile {
 	return build.SourceFile{Source: src, Key: name, Path: name}
 }
 
-// testFormat returns the canned format assertion the report-based tests use.
+// testFormat returns a format assertion for PRONOM fmt/999.
 func testFormat() *sip.Format {
 	fr := sip.NewFormatRegistry()
 	fr.Name = "pronom"
@@ -94,8 +94,9 @@ func testFormat() *sip.Format {
 	return &sip.Format{FormatRegistry: fr}
 }
 
-// report builds a characterization report with an entry (matching checksum,
-// canned format) for every given source file.
+// report returns a characterization report with an entry for every given
+// source file. Each entry carries the file's MD5 checksum, the canned
+// format from testFormat and the mime type image/test.
 func report(t *testing.T, files ...build.SourceFile) characterization.Report {
 	t.Helper()
 	rep := make(characterization.Report, len(files))
@@ -109,9 +110,10 @@ func report(t *testing.T, files ...build.SourceFile) characterization.Report {
 	return rep
 }
 
-// newTestBuilder returns a builder for def over the minimal valid input
-// data: one representation with one essence file, descriptive terms, no
-// report.
+// newTestBuilder returns a builder for def, a source package and the
+// builder's empty destination directory. The source package holds one
+// representation with one essence file and the terms of testDescription.
+// It has no characterization report.
 func newTestBuilder(t *testing.T, def build.Definition) (b *build.Builder, in *build.SourcePackage, outDir string) {
 	t.Helper()
 	inDir, outDir := t.TempDir(), t.TempDir()
@@ -120,7 +122,7 @@ func newTestBuilder(t *testing.T, def build.Definition) (b *build.Builder, in *b
 	in = &build.SourcePackage{
 		Description: testDescription(),
 		Representations: []build.SourceRepresentation{
-			{Name: "master", Files: []build.SourceFile{cat}},
+			{Name: "archival", Files: []build.SourceFile{cat}},
 		},
 	}
 	b, err := build.New(&build.Config{
@@ -134,7 +136,7 @@ func newTestBuilder(t *testing.T, def build.Definition) (b *build.Builder, in *b
 	return b, in, outDir
 }
 
-// basicDef returns the registered "meemoo/basic" definition the tests build with.
+// basicDef returns the registered "meemoo/basic" definition.
 func basicDef(t *testing.T) build.Definition {
 	t.Helper()
 	def, ok := profiles.Get("meemoo/basic")
@@ -144,23 +146,32 @@ func basicDef(t *testing.T) build.Definition {
 	return def
 }
 
-// earkDef returns the registered "eark/dc" definition the tests build with.
-func earkDef(t *testing.T) build.Definition {
+// ugentBasicDef returns the registered "ugent/basic" definition.
+func ugentBasicDef(t *testing.T) build.Definition {
 	t.Helper()
-	def, ok := profiles.Get("eark/dc")
+	def, ok := profiles.Get("ugent/basic")
 	if !ok {
-		t.Fatal(`no "eark/dc" definition registered`)
+		t.Fatal(`no "ugent/basic" definition registered`)
 	}
 	return def
 }
 
-// earkmodsDef returns the registered "eark/mods" definition the tests
-// build with.
-func earkmodsDef(t *testing.T) build.Definition {
+// ugentBasicWithoutVocabulary returns ugent/basic without its
+// representation types: a profile whose representation names and types are
+// free, for the tests of the label and type cascade (ADR-0014).
+func ugentBasicWithoutVocabulary(t *testing.T) build.Definition {
 	t.Helper()
-	def, ok := profiles.Get("eark/mods")
+	def := ugentBasicDef(t)
+	def.RepresentationTypes = nil
+	return def
+}
+
+// bibliographicDef returns the registered "ugent/bibliographic" definition.
+func bibliographicDef(t *testing.T) build.Definition {
+	t.Helper()
+	def, ok := profiles.Get("ugent/bibliographic")
 	if !ok {
-		t.Fatal(`no "eark/mods" definition registered`)
+		t.Fatal(`no "ugent/bibliographic" definition registered`)
 	}
 	return def
 }
@@ -176,9 +187,8 @@ func requireEmpty(t *testing.T, outDir string) {
 	}
 }
 
-// A definition built outside the registry names no metadata model and is
-// refused when the builder is constructed, as an error rather than
-// a panic, so no build can start from it.
+// build.New refuses a definition without a metadata model with an error,
+// not a panic.
 func TestNewRefusesDefinitionWithoutModel(t *testing.T) {
 	def := basicDef(t)
 	def.Model = nil
@@ -221,9 +231,9 @@ func TestBuildWritesOtherMDType(t *testing.T) {
 	}
 }
 
-// A format name METS cannot record is refused when the builder is
-// constructed: none at all, since METS requires MDTYPE, or text XML cannot
-// carry.
+// build.New refuses a format name that METS cannot record. An empty name
+// is refused, because METS requires MDTYPE. A name with characters XML
+// cannot carry is refused too.
 func TestNewRefusesAFormatNameMETSCannotRecord(t *testing.T) {
 	for name, tc := range map[string]struct {
 		format, want string
@@ -242,7 +252,7 @@ func TestNewRefusesAFormatNameMETSCannotRecord(t *testing.T) {
 	}
 }
 
-// A config without a logger builds a package; the progress messages are
+// A config without a logger builds a package. The progress messages are
 // discarded.
 func TestBuildWithoutLogger(t *testing.T) {
 	_, in, _ := newTestBuilder(t, basicDef(t))
@@ -255,14 +265,14 @@ func TestBuildWithoutLogger(t *testing.T) {
 	}
 }
 
-// Build refuses invalid input data before any side effect: a SourcePackage
-// built directly in Go that breaks a rule leaves nothing on disk.
+// Build refuses a SourcePackage that breaks a rule before writing
+// anything. The rule here is meemoo/basic's minimum of one representation.
 func TestBuildInvalidSourceWritesNothing(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.Representations = nil
 
 	_, err := b.Build(in)
-	if want := "no representations supplied"; err == nil || !strings.Contains(err.Error(), want) {
+	if want := `profile "meemoo/basic" needs at least 1 representation(s), the package has 0`; err == nil || !strings.Contains(err.Error(), want) {
 		t.Fatalf("Build error = %v, want %q", err, want)
 	}
 	requireEmpty(t, outDir)
@@ -290,9 +300,9 @@ func TestBuildReportsAnUnwritableDestination(t *testing.T) {
 }
 
 // An update reuses the earlier package's identifier, and so its directory
-// name. Build refuses a package directory that already exists instead of
-// writing into it, where the earlier package's files would stay beside the
-// new ones, and leaves that directory as it was.
+// name. Build refuses a package directory that already exists and leaves
+// it as it was. Writing into it would leave the earlier package's files
+// beside the new ones.
 func TestBuildRefusesAnExistingPackageDirectory(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.PackageIdentifier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
@@ -316,8 +326,8 @@ func TestBuildRefusesAnExistingPackageDirectory(t *testing.T) {
 }
 
 // A build that fails while writing leaves nothing behind, whatever the
-// cause: here an essence file that is gone by the time it is copied, which
-// assembly does not notice without a characterization report.
+// cause. Here the cause is an essence file that is gone by the time it is
+// copied. Assembly does not read essence files, so it does not notice.
 func TestBuildLeavesNothingWhenWritingFails(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	if err := os.Remove(in.Representations[0].Files[0].Source); err != nil {
@@ -332,12 +342,12 @@ func TestBuildLeavesNothingWhenWritingFails(t *testing.T) {
 }
 
 // A temporary directory left by a build that was killed partway is
-// removed, not written into, so none of its files reach the package; a
+// removed, not written into, so none of its files reach the package. A
 // successful build leaves only the package directory.
 func TestBuildRemovesAStaleTemporaryDirectory(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.PackageIdentifier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
-	stale := filepath.Join(outDir, "."+in.PackageIdentifier+".tmp", "representations", "master", "data")
+	stale := filepath.Join(outDir, "."+in.PackageIdentifier+".tmp", "representations", "archival", "data")
 	if err := os.MkdirAll(stale, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -349,14 +359,14 @@ func TestBuildRemovesAStaleTemporaryDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(pkg.Location, "representations", "master", "data", "left-over.jpg")); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(pkg.Location, "representations", "archival", "data", "left-over.jpg")); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("a file from the stale temporary directory reached the package (%v)", err)
 	}
 	requireDirectoryHolds(t, outDir, in.PackageIdentifier)
 }
 
-// requireDirectoryHolds fails the test unless dir holds exactly the named
-// entries.
+// requireDirectoryHolds checks that dir holds exactly the named entries.
+// It fails the test if dir holds another entry or lacks a named one.
 func requireDirectoryHolds(t *testing.T, dir string, want ...string) {
 	t.Helper()
 	entries, err := os.ReadDir(dir)
@@ -373,14 +383,15 @@ func requireDirectoryHolds(t *testing.T, dir string, want ...string) {
 }
 
 // Build enforces what each standard requires of a package-level
-// description. Identity-only terms build a complete eark package; under
-// basic they are refused, and a missing identity is refused under every
-// profile, all before any side effect.
+// description, before writing anything. Terms with only an identifier and
+// a title build a complete ugent/basic package. meemoo/basic refuses
+// them. Every profile refuses a description without an identifier or a
+// title.
 func TestBuildRequiredPerStandard(t *testing.T) {
-	b, in, _ := newTestBuilder(t, earkDef(t))
+	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
 	if _, err := b.Build(in); err != nil {
-		t.Fatalf("eark Build refused identity-only terms: %v", err)
+		t.Fatalf("ugent/basic Build refused identity-only terms: %v", err)
 	}
 
 	cases := []struct {
@@ -391,8 +402,8 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 	}{
 		{"basic without description and created", basicDef(t), meemooIdentityTerms(), "description is required"},
 		{"basic without a title", basicDef(t), meemoo.Terms{{Key: "dcterms:identifier", Value: "x"}}, "title is required"},
-		{"eark without an identifier", earkDef(t), earkdc.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
-		{"eark/mods without a title", earkmodsDef(t), earkmods.Record{Identifier: "x"}, "title is required"},
+		{"ugent/basic without an identifier", ugentBasicDef(t), ugent.Terms{{Key: "title", Value: "x"}}, "identifier is required"},
+		{"ugent/bibliographic without a title", bibliographicDef(t), ugent.Record{Identifier: "x"}, "title is required"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -407,15 +418,16 @@ func TestBuildRequiredPerStandard(t *testing.T) {
 	}
 }
 
-// The eark/mods profile builds a complete package from a record: mods.xml
-// under metadata/descriptive with the items rendered, the METS set plus the
-// MODS schema and nothing else under schemas/, and a package METS whose
-// dmdSec types the document as MODS 3.7. No swap: the record keeps the
-// producer's identifier and no MEEMOO-LOCAL-ID is lifted (ADR-0012).
-func TestBuildEarkMods(t *testing.T) {
-	b, in, _ := newTestBuilder(t, earkmodsDef(t))
+// The ugent/bibliographic profile builds a complete package from a record:
+// mods.xml under metadata/descriptive with the items rendered, the METS
+// set plus the MODS schema and nothing else under schemas/, and a package
+// METS whose dmdSec types the document as MODS 3.7. There is no swap. The
+// record keeps the producer's identifier and no MEEMOO-LOCAL-ID is lifted
+// (ADR-0012).
+func TestBuildBibliographic(t *testing.T) {
+	b, in, _ := newTestBuilder(t, bibliographicDef(t))
 	rec := identityRecord()
-	rec.Items = []earkmods.Item{{CallNumber: "EX.0001", Barcode: "000000123"}}
+	rec.Items = []ugent.Item{{CallNumber: "EX.0001", Barcode: "000000123"}}
 	in.Description = rec
 
 	pkg, err := b.Build(in)
@@ -440,7 +452,7 @@ func TestBuildEarkMods(t *testing.T) {
 		t.Errorf("description identifier = %q, want the producer's %q", got, "local-id-001")
 	}
 	if _, ok := pkg.Root.AdditionalIdentifiers["MEEMOO-LOCAL-ID"]; ok {
-		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; eark/mods has no swap")
+		t.Error("MEEMOO-LOCAL-ID lifted onto the entity; ugent/bibliographic has no swap")
 	}
 
 	names := make([]string, 0, len(pkg.SchemaFiles))

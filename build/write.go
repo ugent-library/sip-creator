@@ -15,18 +15,16 @@ import (
 // hints: from a package-level document (metadata/descriptive/*.xml) and
 // from a representation-level one
 // (representations/<name>/metadata/descriptive/*.xml).
-// Only the writer knows where a document lands, so the paths live here.
 const (
 	schemasDirFromPackage        = "../../schemas"
 	schemasDirFromRepresentation = "../../../../schemas"
 )
 
-// write emits pkg to disk in dependency order, back-filling fixity on File
-// nodes as each file lands. Every node was created at assembly; the writer
-// creates no graph nodes. The ordering is encoded only here and must not be
-// changed casually: representation METS embeds the fixity of its PREMIS
-// file, and package METS embeds the fixity of everything before it, so it
-// goes strictly last.
+// write writes pkg to st and fills in each File node's fixity as the file
+// is written. It creates no graph nodes. The order of the steps matters: a
+// representation's METS carries the fixity of its PREMIS document, and
+// the package METS carries the fixity of every file before it, so it is
+// written last.
 func (b *Builder) write(st *store.Store, pkg *sip.Package) error {
 	if err := b.writeSkeleton(st); err != nil {
 		return err
@@ -104,13 +102,13 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 		}
 
 		for _, f := range r.Files {
-			// f.Path preserves the producer's nesting under data/; create
-			// the intermediate dirs the flat MkdirAll above doesn't cover.
+			// f.Path keeps the producer's subdirectories under data/, which
+			// the MkdirAll calls above do not create.
 			if err := st.MkdirAll(base + "/" + path.Dir(f.Path)); err != nil {
 				return err
 			}
 			// The checksum is the characterization report's when assembly
-			// took it from there (ADR-0032); otherwise the copy computes
+			// took it from there (ADR-0032). Otherwise the copy computes
 			// it from the bytes it writes.
 			info, err := st.CopyFile(f.Source, base+"/"+f.Path, f.Checksum)
 			if err != nil {
@@ -123,13 +121,14 @@ func (b *Builder) writeEssence(st *store.Store, pkg *sip.Package) error {
 }
 
 // writeDescription writes the description d as the file its node df
-// describes, under base (empty for the package, "representations/<name>/"
-// for a representation), and back-fills the node with the fixity of the
-// bytes written. A supplied document is copied as it is with the store's
-// streamed copy, fixity computed on the way as for essence; any other
-// description is rendered by the profile's metadata model. schemasDir is the path of the package's
-// schemas/ directory relative to the document, which only a rendered
-// document uses; a supplied one keeps its own schema-location hint.
+// describes, under base, and fills in df's fixity from the bytes written.
+// base is empty for the package and "representations/<name>/" for a
+// representation. A supplied document is copied unchanged, and its
+// checksum is computed during the copy. The profile's metadata model
+// writes any other description. schemasDir is the path of the package's
+// schemas/ directory relative to the document. Only a document the model
+// writes uses it, because a supplied one keeps its own schema-location
+// hint.
 func (b *Builder) writeDescription(st *store.Store, base string, df *sip.File, d sip.Description, schemasDir string) error {
 	var info store.Info
 	var err error
@@ -214,10 +213,11 @@ func (b *Builder) writePackageMets(st *store.Store, pkg *sip.Package) error {
 	return nil
 }
 
-// copyFiles copies pre-declared file nodes into the package under prefix
-// (empty for package level, "representations/<name>/" for a representation),
-// back-filling fixity from each streamed copy. Directories are created per
-// file, so a container without such files gains no empty dir.
+// copyFiles copies the source of each file node into the package under
+// prefix and fills in the node's fixity. prefix is empty for the package
+// and "representations/<name>/" for a representation. Directories are
+// created per file, so a container without such files gets no empty
+// directory.
 func copyFiles(st *store.Store, prefix string, files []*sip.File) error {
 	for _, f := range files {
 		if err := st.MkdirAll(path.Dir(prefix + f.Path)); err != nil {
@@ -232,7 +232,8 @@ func copyFiles(st *store.Store, prefix string, files []*sip.File) error {
 	return nil
 }
 
-// backfill records the on-disk facts the store measured onto a graph node.
+// backfill copies the size, checksum and creation time the store recorded
+// for a written file onto its graph node.
 func backfill(f *sip.File, info store.Info) {
 	f.Size = info.Size
 	f.Checksum = info.Checksum

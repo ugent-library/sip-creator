@@ -12,8 +12,7 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/profiles"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
-	"github.com/ugent-library/sip-creator/profiles/earkmods"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 	"github.com/ugent-library/sip-creator/sip"
 )
 
@@ -28,11 +27,11 @@ func ExampleBuilder_Build() {
 	}
 	defer os.RemoveAll(destination)
 
-	def, ok := profiles.Get("eark/dc")
+	def, ok := profiles.Get("ugent/basic")
 	if !ok {
-		log.Fatal("no eark/dc profile")
+		log.Fatal("no ugent/basic profile")
 	}
-	// The second argument is the Meemoo OR-id, used by the basic profile only.
+	// The second argument is the Meemoo OR-id. Only meemoo/basic uses it.
 	def, err = def.WithSubmitter("Example Organization", "")
 	if err != nil {
 		log.Fatal(err)
@@ -48,17 +47,17 @@ func ExampleBuilder_Build() {
 	}
 
 	pkg, err := builder.Build(&build.SourcePackage{
-		Description: earkdc.Terms{
+		Description: ugent.Terms{
 			{Key: "identifier", Value: "example-0001"},
 			{Key: "title", Value: "Example photograph"},
 			{Key: "description", Value: "An example package with one image."},
 			{Key: "date", Value: "2026-01-15"},
 		},
 		Representations: []build.SourceRepresentation{{
-			Name: "master",
+			Name: "archival",
 			Files: []build.SourceFile{{
-				Source: "../examples/eark/dc/representations/master/image-001.jpg",
-				Path:   "image-001.jpg",
+				Source: "../examples/ugent/basic/representations/archival/image-001.tif",
+				Path:   "image-001.tif",
 			}},
 		}},
 	})
@@ -78,9 +77,9 @@ func ExampleBuilder_Build_mods() {
 	}
 	defer os.RemoveAll(destination)
 
-	def, ok := profiles.Get("eark/mods")
+	def, ok := profiles.Get("ugent/bibliographic")
 	if !ok {
-		log.Fatal("no eark/mods profile")
+		log.Fatal("no ugent/bibliographic profile")
 	}
 	def, err = def.WithSubmitter("Example Organization", "")
 	if err != nil {
@@ -96,21 +95,21 @@ func ExampleBuilder_Build_mods() {
 	}
 
 	pkg, err := builder.Build(&build.SourcePackage{
-		Description: earkmods.Record{
+		Description: ugent.Record{
 			Identifier: "example-0001",
-			Titles: []earkmods.Title{
+			Titles: []ugent.Title{
 				{Value: "Example book", Lang: "en"},
 			},
-			Items: []earkmods.Item{
+			Items: []ugent.Item{
 				{CallNumber: "EX.0001", Barcode: "0000000001"},
 				{CallNumber: "EX.0002", Enumeration: "vol. 2"},
 			},
 		},
 		Representations: []build.SourceRepresentation{{
-			Name: "master",
+			Name: "archival",
 			Files: []build.SourceFile{{
-				Source: "../examples/eark/mods/representations/master/image-001.jpg",
-				Path:   "image-001.jpg",
+				Source: "../examples/ugent/bibliographic/representations/archival/image-001.tif",
+				Path:   "image-001.tif",
 			}},
 		}},
 	})
@@ -121,8 +120,9 @@ func ExampleBuilder_Build_mods() {
 	// Output: metadata/descriptive/mods.xml
 }
 
-// Supply a finished descriptive document instead of terms or a record. The
-// build checks its root element and copies it into the package as it is.
+// Supply a finished descriptive document instead of terms or a record.
+// Builder.Build checks its root element and copies it into the package as
+// it is.
 func ExampleEncodedDescription() {
 	destination, err := os.MkdirTemp("", "sip")
 	if err != nil {
@@ -130,9 +130,9 @@ func ExampleEncodedDescription() {
 	}
 	defer os.RemoveAll(destination)
 
-	def, ok := profiles.Get("eark/mods")
+	def, ok := profiles.Get("ugent/bibliographic")
 	if !ok {
-		log.Fatal("no eark/mods profile")
+		log.Fatal("no ugent/bibliographic profile")
 	}
 	def, err = def.WithSubmitter("Example Organization", "")
 	if err != nil {
@@ -148,12 +148,12 @@ func ExampleEncodedDescription() {
 	}
 
 	pkg, err := builder.Build(&build.SourcePackage{
-		Description: build.EncodedDescription{Source: "../examples/eark/mods/mods.xml"},
+		Description: build.EncodedDescription{Source: "../examples/ugent/bibliographic/mods.xml"},
 		Representations: []build.SourceRepresentation{{
-			Name: "master",
+			Name: "archival",
 			Files: []build.SourceFile{{
-				Source: "../examples/eark/mods/representations/master/image-001.jpg",
-				Path:   "image-001.jpg",
+				Source: "../examples/ugent/bibliographic/representations/archival/image-001.tif",
+				Path:   "image-001.tif",
 			}},
 		}},
 	})
@@ -232,8 +232,8 @@ func (catalogueModel) ModelTypeVersion() string { return "" }
 
 // Build a package with a profile of your own: a description type, a
 // metadata model that writes it and supplies its own XSD, and a definition
-// handed to build.New. Nothing in this module's profiles/ is involved, and
-// the package ships the XSD next to the ones its METS documents need.
+// handed to build.New. Nothing in this module's profiles/ is involved. The
+// package ships the XSD next to the ones its METS documents need.
 func Example_ownProfile() {
 	destination, err := os.MkdirTemp("", "sip")
 	if err != nil {
@@ -267,10 +267,10 @@ func Example_ownProfile() {
 	pkg, err := builder.Build(&build.SourcePackage{
 		Description: catalogueRecord{Title: "Example photograph"},
 		Representations: []build.SourceRepresentation{{
-			Name: "master",
+			Name: "archival",
 			Files: []build.SourceFile{{
-				Source: "../examples/eark/dc/representations/master/image-001.jpg",
-				Path:   "image-001.jpg",
+				Source: "../examples/ugent/basic/representations/archival/image-001.tif",
+				Path:   "image-001.tif",
 			}},
 		}},
 	})
@@ -292,10 +292,11 @@ func Example_ownProfile() {
 }
 
 // Build a package that replaces an earlier one. The earlier package's
-// identifier becomes this package's identifier (mets/@OBJID); RecordStatus
+// identifier becomes this package's identifier (mets/@OBJID). RecordStatus
 // is metsHdr/@RECORDSTATUS and ContentCategory is mets/@TYPE. Left empty,
-// all three take the profile's values, and a package without a status is
-// read as new.
+// the identifier is minted, and the status and the category take the
+// profile's values. The E-ARK SIP specification reads a package without a
+// status as NEW.
 func ExampleBuilder_Build_update() {
 	destination, err := os.MkdirTemp("", "sip")
 	if err != nil {
@@ -303,9 +304,9 @@ func ExampleBuilder_Build_update() {
 	}
 	defer os.RemoveAll(destination)
 
-	def, ok := profiles.Get("eark/dc")
+	def, ok := profiles.Get("ugent/basic")
 	if !ok {
-		log.Fatal("no eark/dc profile")
+		log.Fatal("no ugent/basic profile")
 	}
 	def, err = def.WithSubmitter("Example Organization", "")
 	if err != nil {
@@ -324,15 +325,15 @@ func ExampleBuilder_Build_update() {
 		PackageIdentifier: "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e",
 		RecordStatus:      sip.RecordStatusReplacement,
 		ContentCategory:   "Photographs – Digital",
-		Description: earkdc.Terms{
+		Description: ugent.Terms{
 			{Key: "identifier", Value: "example-0001"},
 			{Key: "title", Value: "Example photograph"},
 		},
 		Representations: []build.SourceRepresentation{{
-			Name: "master",
+			Name: "archival",
 			Files: []build.SourceFile{{
-				Source: "../examples/eark/dc/representations/master/image-001.jpg",
-				Path:   "image-001.jpg",
+				Source: "../examples/ugent/basic/representations/archival/image-001.tif",
+				Path:   "image-001.tif",
 			}},
 		}},
 	})

@@ -9,71 +9,62 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// MetadataModel is the profile's metadata model as the engine sees it:
-// Meemoo's dc+schema.org, Simple Dublin Core or MODS 3.7. It names the
-// description type that holds a description in the model, and writes such
-// a description as a document in the model's document format. Which fields
-// the model has and what rules they follow live on the description type
-// (its Validate), not here. Each profile package under profiles/
-// implements it for its own description type, so everything that needs the
-// concrete type stays there and the engine speaks sip.Description only. A
-// profile written outside this module, for another model, implements it
-// the same way (ADR-0022). The model never builds a description: it
-// arrives in the SourcePackage already built, as a value of the model's
-// description type, and the model only checks its type and writes it.
+// MetadataModel is a profile's metadata model as package build sees it.
+// It names the description type that holds a description in the model,
+// and writes such a description as a document in the model's document
+// format. The fields of a description and the rules they follow belong to
+// the description type and its Validate. A profile written outside this
+// module implements MetadataModel for its own model (ADR-0022).
 type MetadataModel interface {
-	// ValidateType returns why d is not a description in this model: a
-	// description of another type. It runs before validation and before
-	// any write, and guarantees the type assertions the model's other
-	// methods make.
+	// ValidateType checks that d is a value of the model's description
+	// type. It returns an error if d has another type. Encode and Swap
+	// receive only a description that passed this check, so they may
+	// assert its type.
 	ValidateType(d sip.Description) error
 	// Encode writes d as a document in the model's document format.
 	// schemasDir is the path of the package's schemas/ directory relative
-	// to the document being written, for the document's schema-location
-	// hint; only the writer knows where a document lands. Which XSD file
-	// the hint names is the model's own, and Schemas lists it. ValidateType
-	// and the description's Validate have run before Encode is called, and
-	// Encode repeats neither. A failed render writes nothing to w.
+	// to the document, for the document's schema-location hint. The XSD the
+	// hint names must be one that Schemas lists. d has passed ValidateType
+	// and its own Validate, so Encode need not check it again.
 	Encode(w io.Writer, d sip.Description, schemasDir string) error
 	// Schemas lists the XSDs the encoded document points at, plus what
 	// those import by relative path, each with its contents. The package
 	// ships them under schemas/ next to the ones the METS documents point
 	// at, also when the description is a supplied document. List nothing
-	// else: an XSD no document references is noise to whoever reads the
-	// package later. A profile outside this module embeds its own XSDs and
-	// returns them here; BundledSchemas returns the ones this module
-	// bundles.
+	// else. A profile outside this module embeds its own XSDs and returns
+	// them here. BundledSchemas returns the XSDs this module bundles.
 	Schemas() []Schema
-	// ModelType names the document's format, such as DC, MODS or EBUCore.
-	// A name the METS MDTYPE vocabulary lists, spelled as the vocabulary
-	// spells it, is recorded as MDTYPE; any other name is recorded as
-	// MDTYPE OTHER with the name in OTHERMDTYPE. With ModelTypeVersion it
-	// describes the document Encode writes and a supplied document must
-	// match, so it belongs to the model, not to the profile's METS values:
-	// a profile cannot pair a model with another model's type.
+	// ModelType returns the name of the document's format, such as DC,
+	// MODS or EBUCore. A name the METS MDTYPE vocabulary lists, spelled as
+	// the vocabulary spells it, is recorded as MDTYPE. Any other name is
+	// recorded as MDTYPE OTHER with the name in OTHERMDTYPE. Together with
+	// ModelTypeVersion it describes both the document Encode writes and the
+	// document a supplied file must be. It belongs to the model rather than
+	// to the profile's METS values, so a profile cannot pair a model with
+	// another model's type.
 	ModelType() string
-	// ModelTypeVersion names the version of the model the document
-	// follows, as METS records it in MDTYPEVERSION, such as 3.7 for MODS;
-	// empty when the model has no version to name.
+	// ModelTypeVersion returns the version of the model the document
+	// follows, such as 3.7 for MODS. METS records it in MDTYPEVERSION. It
+	// returns an empty string when the model has no version to name.
 	ModelTypeVersion() string
 }
 
 // Schema is one XSD file a package ships under schemas/.
 type Schema struct {
-	// Name is the file name under schemas/, such as mods-3-7.xsd: a plain
-	// file name, without folders, because every schema lands directly in
-	// schemas/. The documents' schema-location hints point at it by this
-	// name.
+	// Name is the file name under schemas/, such as mods-3-7.xsd. It is a
+	// plain file name without directories, because every schema lands
+	// directly in schemas/. The documents' schema-location hints point at
+	// it by this name.
 	Name string
 	// Content is the file's bytes, written into the package as they are.
-	// Must not be empty.
+	// It must not be empty.
 	Content []byte
 }
 
 // BundledSchemas returns the XSDs this module bundles under the given file
 // names, such as dc.xsd or xml.xsd, for a metadata model to return from
-// Schemas. A name the bundle does not hold comes back without contents,
-// which the build refuses before anything is written.
+// Schemas. A name the bundle does not hold comes back with empty Content,
+// and Builder.Build refuses such a schema before it writes anything.
 func BundledSchemas(names ...string) []Schema {
 	bundle := schemas.Get()
 	list := make([]Schema, 0, len(names))
@@ -84,34 +75,32 @@ func BundledSchemas(names ...string) []Schema {
 }
 
 // IdentifierSwapper is the optional part of a MetadataModel whose
-// spec links descriptive and preservation metadata by a shared identifier
-// (Meemoo's). Swap replaces the identifier in d with id and returns the
-// producer's identifier it replaced; the assembler records that as the
-// entity's MEEMOO-LOCAL-ID. A model without it keeps the producer's
-// identifier in the document (ADR-0012).
+// standard links descriptive and preservation metadata by a shared
+// identifier, as Meemoo's does. Under a model without it, the document
+// keeps the producer's identifier (ADR-0012).
 type IdentifierSwapper interface {
+	// Swap replaces the identifier in d with id and returns the producer's
+	// identifier it replaced. Builder.Build records the identifier Swap
+	// returns for the package description as the entity's MEEMOO-LOCAL-ID.
 	Swap(d sip.Description, id string) (local string)
 }
 
 // DocumentFormat is the optional part of a MetadataModel that accepts a
 // finished document supplied as a file (EncodedDescription), next to its
-// own description type: it recognizes a supplied file as a document in the
-// model's document format. Every model has a document format; only a model
-// that takes supplied documents implements this.
-// ValidateDocumentRoot returns why root, the document's root element, is
-// not a document in the format: another element or namespace, or a
-// version other than the one the METS declares. A model without it takes
-// no supplied document. Meemoo's model does not implement it, because
-// Meemoo's document must carry the entity identifier the build mints,
-// which Swap writes into the terms (ADR-0021).
+// own description type. A model without it accepts no supplied document
+// (ADR-0021).
 type DocumentFormat interface {
+	// ValidateDocumentRoot checks that root, the root element of a
+	// supplied document, is a document in the model's format: the right
+	// element and namespace, and the version the METS declares. It returns
+	// an error if it is not.
 	ValidateDocumentRoot(root xml.StartElement) error
 }
 
-// checkDescriptions returns why a description in the source package, the
-// package's or a representation's, is not a description in the model. A
-// missing package description is SourcePackage.Validate's finding, not
-// this check's.
+// checkDescriptions checks the package's description and each
+// representation's description with checkDescription. It returns the
+// first error. A missing package description is left to
+// SourcePackage.Validate.
 func checkDescriptions(model MetadataModel, source *SourcePackage) error {
 	if source.Description != nil {
 		if err := checkDescription(model, source.Description); err != nil {
@@ -129,10 +118,12 @@ func checkDescriptions(model MetadataModel, source *SourcePackage) error {
 	return nil
 }
 
-// checkDescription returns why one description is not a description in the
-// model: a value of another type, or a supplied document for a profile that
-// takes none or whose root is another format's. Reading the document is
-// the engine's; the model sees the root element only.
+// checkDescription checks that d is a description in the model. A value
+// of a description type goes to the model's ValidateType. For a supplied
+// document, it reads the root element and passes it to the model's
+// ValidateDocumentRoot. A model without DocumentFormat accepts no supplied
+// document. It returns an error if the document cannot be read or a check
+// fails.
 func checkDescription(model MetadataModel, d sip.Description) error {
 	doc, ok := d.(EncodedDescription)
 	if !ok {

@@ -16,15 +16,14 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "sip-creator",
 	Short: "SIP Creator CLI",
-	// Execute would print a RunE error and then CheckErr prints it
-	// again; silence the first so every error appears exactly once.
+	// Run prints a command's error itself, so cobra must not print it too.
 	SilenceErrors: true,
 }
 
 // reportViolations prints each violation in err on its own line to stderr
-// and returns a one-line summary for the input folder src. An error that
-// is not input.Violations is returned unchanged. create reports with it;
-// check prints its own report (checkReport).
+// and returns an error that names the input folder src and the number of
+// violations. An error that is not input.Violations is returned
+// unchanged.
 func reportViolations(cmd *cobra.Command, src string, err error) error {
 	v, ok := errors.AsType[input.Violations](err)
 	if !ok {
@@ -36,9 +35,8 @@ func reportViolations(cmd *cobra.Command, src string, err error) error {
 	return fmt.Errorf("%s: %d problem(s) found", src, len(v))
 }
 
-// Run executes the CLI. Configuration is read by the commands that need
-// it, so check runs without it (ADR-0010). An error is printed on stderr,
-// and the process exits with the status exitStatus gives it.
+// Run executes the CLI. On an error it prints the error on stderr and
+// exits the process with the status exitStatus returns.
 func Run() {
 	cmd, err := rootCmd.ExecuteC()
 	if err == nil {
@@ -61,9 +59,9 @@ const (
 	exitNotChecked = 2
 )
 
-// exitStatus is the process exit status for err, which cmd ended with.
-// check tells its two failures apart for a script that runs it; every
-// other command has one status for any error.
+// exitStatus returns the process exit status for err, the error cmd ended
+// with. For check it tells a folder with problems apart from a folder it
+// could not check. Every other command has one status for any error.
 func exitStatus(cmd *cobra.Command, err error) int {
 	if cmd != checkCmd {
 		return exitFailed

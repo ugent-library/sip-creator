@@ -13,14 +13,14 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// The templates escape every value they read from the package graph: an
-// essence file's original name and the producer's local identifier are
-// arbitrary text.
+// premis holds the templates of both documents. They escape every value
+// they read from the package graph, because an essence file's original
+// name and the producer's local identifier are arbitrary text.
 //
 // Both documents point xsi:schemaLocation at the remote loc.gov PREMIS
-// schema rather than a copy in the package's schemas/ dir, unlike the METS
-// and descriptive documents: Meemoo SIP 1.2 requires exactly this value on
-// the PREMIS root, at package and representation level ("When used, its
+// schema, not at a copy in the package's schemas/ directory as the METS
+// and descriptive documents do. Meemoo SIP 1.2 requires exactly this value
+// on the PREMIS root, at package and representation level ("When used, its
 // value MUST be set to ...").
 var premis = template.Must(template.New("").Funcs(template.FuncMap{
 	"esc": escapeXML,
@@ -149,7 +149,7 @@ var premis = template.Must(template.New("").Funcs(template.FuncMap{
 {{- end }}
 `))
 
-// escapeXML makes a value safe as XML character data.
+// escapeXML returns s escaped for use as XML character data.
 func escapeXML(s string) string {
 	var b bytes.Buffer
 	xml.EscapeText(&b, []byte(s)) // never fails on a bytes.Buffer

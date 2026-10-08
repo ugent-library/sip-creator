@@ -15,11 +15,12 @@ type otherDescription struct{}
 func (otherDescription) Validate() error         { return nil }
 func (otherDescription) ValidateRequired() error { return nil }
 
-// A description of another standard is refused by the profile's
-// descriptive-standard check before validation and before any side effect,
-// at package and representation level alike: a type no profile writes,
-// Meemoo terms handed to eark, Simple DC terms handed to basic or to
-// eark/mods, a MODS record handed to either DC profile.
+// Definition.ValidateSource refuses a description of another standard,
+// before the description is validated and before anything is written. It
+// does so at package and representation level alike. The cases are a type
+// no profile writes, Meemoo terms handed to ugent/basic, Simple DC terms
+// handed to meemoo/basic or to ugent/bibliographic, and a MODS record
+// handed to either DC profile.
 func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	cases := []struct {
 		name string
@@ -27,12 +28,12 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 		desc sip.Description
 		want string
 	}{
-		{"unknown type to eark", earkDef(t), otherDescription{}, "earkdc.Terms"},
-		{"Meemoo terms to eark", earkDef(t), testDescription(), "meemoo.Terms, not Simple Dublin Core"},
-		{"simple dc terms to basic", basicDef(t), identityTerms(), "earkdc.Terms, not Meemoo dc+schema"},
-		{"simple dc terms to eark/mods", earkmodsDef(t), identityTerms(), "earkdc.Terms, not a MODS record"},
-		{"record to eark", earkDef(t), identityRecord(), "earkmods.Record, not Simple Dublin Core"},
-		{"record to basic", basicDef(t), identityRecord(), "earkmods.Record, not Meemoo dc+schema"},
+		{"unknown type to ugent/basic", ugentBasicDef(t), otherDescription{}, "ugent.Terms"},
+		{"Meemoo terms to ugent/basic", ugentBasicDef(t), testDescription(), "meemoo.Terms, not Simple Dublin Core"},
+		{"simple dc terms to basic", basicDef(t), identityTerms(), "ugent.Terms, not Meemoo dc+schema"},
+		{"simple dc terms to ugent/bibliographic", bibliographicDef(t), identityTerms(), "ugent.Terms, not a MODS record"},
+		{"record to ugent/basic", ugentBasicDef(t), identityRecord(), "ugent.Record, not Simple Dublin Core"},
+		{"record to basic", basicDef(t), identityRecord(), "ugent.Record, not Meemoo dc+schema"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -46,11 +47,11 @@ func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 		})
 	}
 
-	b, in, outDir := newTestBuilder(t, earkDef(t))
+	b, in, outDir := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
 	in.Representations[0].Description = otherDescription{}
 	_, err := b.Build(in)
-	if err == nil || !strings.Contains(err.Error(), `representation "master"`) {
+	if err == nil || !strings.Contains(err.Error(), `representation "archival"`) {
 		t.Fatalf("Build error = %v, want the mismatch naming the representation", err)
 	}
 	requireEmpty(t, outDir)

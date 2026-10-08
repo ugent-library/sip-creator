@@ -1,6 +1,8 @@
-# Runbook: ingesting an eark SIP into RODA
+# Runbook: ingesting a UGent SIP into RODA
 
-*The field-acceptance procedure for the [eark/dc profile](plans/eark-writer.md):
+*The field-acceptance procedure for the [ugent/basic](profiles/ugent-basic.md) and
+[ugent/bibliographic](profiles/ugent-bibliographic.md) profiles, first written for
+`eark/dc` in the [eark-writer plan](plans/eark-writer.md):
 produce a package, pre-flight it, ingest it into UGent's RODA instance, and
 verify what arrived. Written 2026-07-17 from a desk-check of RODA's ingest
 code (`EARKSIP2ToAIPPlugin` / `EARKSIP2ToAIPPluginUtils`, commons-ip2 2.11.2,
@@ -10,7 +12,7 @@ and should be checked against the instance's RODA version on first use.*
 ## 1. Produce the package
 
 ```sh
-./bin/sip-creator create --profile eark/dc <source-dir> <dest-dir>
+./bin/sip-creator create --profile ugent/basic <source-dir> <dest-dir>
 ```
 
 The **zip is the deliverable** (`<dest-dir>/uuid-<uuid>.zip`): RODA ingests
@@ -47,19 +49,21 @@ code does with what our package contains:
 
 | our package | RODA mapping | verify in the UI |
 |---|---|---|
-| `csip:CONTENTINFORMATIONTYPE="MIXED"` | becomes the **AIP type** | AIP shows type MIXED |
-| rep METS `OBJID` (the representation's folder name) | becomes the **representation id**, status ORIGINAL | one original representation with that name |
+| package METS `csip:CONTENTINFORMATIONTYPE="OTHER"` with `csip:OTHERCONTENTINFORMATIONTYPE` `ugent/basic` or `ugent/bibliographic` | becomes the **AIP type** | AIP shows type `ugent/basic` or `ugent/bibliographic`, or the label RODA's AIP type vocabulary gives it, which is RODA configuration and outside this tool |
+| rep METS `OBJID` (the representation's folder name: `preservation`, `archival` or `access`) | becomes the **representation id**, status ORIGINAL | one original representation per folder, with that name |
+| rep METS `csip:OTHERCONTENTINFORMATIONTYPE`, the folder name ([ADR-0013](decisions/0013-representation-type-from-label.md)) | becomes the **representation type** (RODA v5.7.0 and later) | each representation shows its type, `preservation`, `archival` or `access`, in the Type column |
 | essence in `data/` with METS checksums | files created; fixity verified at parse | files present, sizes right, no checksum complaints in the job report |
-| `dc+schema.xml`, `MDTYPE="DC"` + `MDTYPEVERSION="SimpleDC20021212"`, simple-DC shape | recognized descriptive metadata (`dc_SimpleDC20021212`) | title/description **rendered and indexed** (searchable), form-editable; if RODA shows raw XML instead, the typing didn't match |
+| `dc.xml` (`ugent/basic`), `MDTYPE="DC"` + `MDTYPEVERSION="SimpleDC20021212"`, simple-DC shape | recognized descriptive metadata (`dc_SimpleDC20021212`) | title/description **rendered and indexed** (searchable), form-editable; if RODA shows raw XML instead, the typing didn't match |
+| `mods.xml` (`ugent/bibliographic`), `MDTYPE="MODS"` + `MDTYPEVERSION="3.7"` | descriptive metadata of type MODS 3.7 | rendered and indexed only if a MODS crosswalk is configured in RODA, which is outside this tool; otherwise shown as XML |
 | `documentation/` files | mapped into AIP documentation | visible under the AIP's documentation |
 | `schemas/` XSDs | mapped into AIP schemas | present (RODA ignores content) |
 | **no PREMIS** (v1 emits none) | nothing to map. Note that package-level PREMIS that isn't an agent/event would be *silently dropped* by RODA anyway | AIP has **no** preservation metadata from the SIP; RODA's own ingest events appear instead. That is expected, not a defect |
 
 ## 5. Record the outcome
 
-Whatever happens, write it down in the [eark plan](plans/eark-writer.md)'s
+Whatever happens, write it down in the [eark-writer plan](plans/eark-writer.md)'s
 execution record: RODA version, job report verdict, any row of the table that
 didn't hold. A failed row is a finding about either our package or this
 desk-check; both are worth exactly this feedback loop. On a clean first
-ingest, the eark plan's field-acceptance tier is done and the plan can retire
+ingest, the eark-writer plan's field-acceptance tier is done and the plan can retire
 per the [docs lifecycle](README.md#lifecycle-what-happens-when-a-plan-ships).

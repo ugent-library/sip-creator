@@ -7,7 +7,7 @@
 # Exits non-zero iff the generated package is not VALID, or a descriptive
 # document in it is not valid against its schema. Each profile validates
 # against the E-ARK spec version of its era: meemoo/basic (Meemoo 1.2) against
-# 2.0.4, eark/dc and eark/mods against 2.2.0 (docs/archive/meemoo-12.md).
+# 2.0.4, ugent/basic and ugent/bibliographic against 2.2.0 (docs/archive/meemoo-12.md).
 # commons-ip does not validate the descriptive documents the METS points
 # at, so every mods.xml, dc.xml and dc+schema.xml in the package is checked
 # with xmllint against the schema the package ships, offline through
@@ -32,10 +32,10 @@ NAME="${PROFILE//\//-}"
 OUT="$NAME-uuid"
 
 case "$PROFILE" in
-    meemoo/basic)        SPEC_VERSION=2.0.4 ;;
-    eark/dc|eark/mods)   SPEC_VERSION=2.2.0 ;;
+    meemoo/basic)                     SPEC_VERSION=2.0.4 ;;
+    ugent/basic|ugent/bibliographic)  SPEC_VERSION=2.2.0 ;;
     *)
-        echo "unknown profile $PROFILE (one of: meemoo/basic, eark/dc, eark/mods)" >&2
+        echo "unknown profile $PROFILE (one of: meemoo/basic, ugent/basic, ugent/bibliographic)" >&2
         exit 2
         ;;
 esac

@@ -10,21 +10,22 @@ import (
 
 	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/cli/input/mapping"
-	"github.com/ugent-library/sip-creator/profiles/earkdc"
 	"github.com/ugent-library/sip-creator/profiles/meemoo"
+	"github.com/ugent-library/sip-creator/profiles/ugent"
 )
 
-// meemooDocumentSpec and earkDocumentSpec describe the two profiles'
-// documents, as the CLI passes them: eark takes a dc.xml, judged by the eark metadata model,
-// so Read's document rules are tested through it; basic takes none.
+// meemooDocumentSpec and ugentBasicDocumentSpec describe the documents of
+// meemoo/basic and ugent/basic, as the CLI passes them. ugent/basic takes
+// a dc.xml, checked by the Simple DC metadata model, so the tests of
+// Read's document rules use it. meemoo/basic takes none.
 var (
-	meemooDocumentSpec = DocumentSpec{Name: meemoo.Definition.DocumentName, Model: meemoo.Definition.Model}
-	earkDocumentSpec   = DocumentSpec{Name: earkdc.Definition.DocumentName, Model: earkdc.Definition.Model}
+	meemooDocumentSpec     = DocumentSpec{Name: meemoo.Definition.DocumentName, Model: meemoo.Definition.Model}
+	ugentBasicDocumentSpec = DocumentSpec{Name: ugent.Basic.DocumentName, Model: ugent.Basic.Model}
 )
 
-// minimalCSV is the smallest description.csv that passes check: Meemoo's
-// basic content profile requires these four keys. minimalDC is its eark
-// counterpart: Simple DC requires identity only.
+// minimalCSV is the smallest description.csv that passes check under
+// meemoo/basic, which requires these four keys. minimalDC is the smallest
+// under ugent/basic, which requires an identifier and a title.
 const (
 	minimalCSV = "key,value\nidentifier,ID-1\ntitle,Test\ndescription,Testbeschrijving\ncreated,2026\n"
 	minimalDC  = "key,value\nidentifier,ID-1\ntitle,Test\n"
@@ -90,13 +91,13 @@ func paths(files []build.SourceFile) []string {
 	return out
 }
 
-func TestReadFlat(t *testing.T) {
+func TestReadOneRepresentation(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"description.csv": minimalCSV,
-		"0002.tiff":       "b",
-		"0010.tiff":       "c",
-		"0001.tiff":       "a",
-		"sub/0003.tiff":   "d",
+		"description.csv":                      minimalCSV,
+		"representations/master/0002.tiff":     "b",
+		"representations/master/0010.tiff":     "c",
+		"representations/master/0001.tiff":     "a",
+		"representations/master/sub/0003.tiff": "d",
 	})
 
 	pkg, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
@@ -107,12 +108,12 @@ func TestReadFlat(t *testing.T) {
 		t.Fatalf("want 1 representation, got %d", len(pkg.Representations))
 	}
 	rep := pkg.Representations[0]
-	if rep.Name != filepath.Base(root) {
-		t.Errorf("flat name = %q, want the folder name %q", rep.Name, filepath.Base(root))
+	if rep.Name != "master" {
+		t.Errorf("name = %q, want the folder name master", rep.Name)
 	}
 
-	// Deterministic traversal order (lexical per folder); the order
-	// carries no semantics, but it must be stable run to run.
+	// The files come in lexical order per folder. The order has no
+	// meaning, but it must be the same from run to run.
 	want := []string{"0001.tiff", "0002.tiff", "0010.tiff", "sub/0003.tiff"}
 	got := paths(rep.Files)
 	if strings.Join(got, ",") != strings.Join(want, ",") {
@@ -120,10 +121,10 @@ func TestReadFlat(t *testing.T) {
 	}
 
 	f := rep.Files[3]
-	if f.Key != "sub/0003.tiff" {
-		t.Errorf("Key = %q, want input-root-relative %q", f.Key, "sub/0003.tiff")
+	if f.Key != "representations/master/sub/0003.tiff" {
+		t.Errorf("Key = %q, want input-root-relative %q", f.Key, "representations/master/sub/0003.tiff")
 	}
-	if f.Source != filepath.Join(root, "sub", "0003.tiff") {
+	if f.Source != filepath.Join(root, "representations", "master", "sub", "0003.tiff") {
 		t.Errorf("Source = %q, want the absolute disk path", f.Source)
 	}
 	if pkg.Description == nil {
@@ -194,7 +195,7 @@ func TestReadCollectsAllViolations(t *testing.T) {
 		// no description.csv
 		"stray.tiff":                         "x", // content beside representations/
 		"representations/loose.txt":          "x", // file directly inside representations/
-		"representations/bad name/scan.tiff": "x", // rep-name character rule
+		"representations/bad name/scan.tiff": "x", // breaks the representation name rule
 		"representations/empty/":             "",  // no content files
 	})
 
@@ -217,10 +218,11 @@ func TestReadCollectsAllViolations(t *testing.T) {
 
 func TestReadSymlink(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"description.csv": minimalCSV,
-		"scan.tiff":       "x",
+		"description.csv":                  minimalCSV,
+		"representations/master/scan.tiff": "x",
 	})
-	if err := os.Symlink(filepath.Join(root, "scan.tiff"), filepath.Join(root, "link.tiff")); err != nil {
+	master := filepath.Join(root, "representations", "master")
+	if err := os.Symlink(filepath.Join(master, "scan.tiff"), filepath.Join(master, "link.tiff")); err != nil {
 		t.Skipf("cannot create symlink: %v", err)
 	}
 
@@ -230,13 +232,13 @@ func TestReadSymlink(t *testing.T) {
 
 func TestReadIgnoresOSArtifacts(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"description.csv": minimalCSV,
-		"scan.tiff":       "x",
-		".DS_Store":       "junk",
-		"._scan.tiff":     "junk",
-		"sub/Thumbs.db":   "junk",
-		"sub/desktop.ini": "junk",
-		"sub/0001.tiff":   "x",
+		"description.csv":                        minimalCSV,
+		".DS_Store":                              "junk",
+		"representations/master/scan.tiff":       "x",
+		"representations/master/._scan.tiff":     "junk",
+		"representations/master/sub/Thumbs.db":   "junk",
+		"representations/master/sub/desktop.ini": "junk",
+		"representations/master/sub/0001.tiff":   "x",
 	})
 
 	pkg, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
@@ -260,30 +262,53 @@ func TestReadArtifactsAreNotContent(t *testing.T) {
 	assertViolation(t, err, "no content files")
 }
 
-func TestReadEmptyRepresentationsDir(t *testing.T) {
-	root := writeTree(t, map[string]string{
-		"description.csv":  minimalCSV,
-		"representations/": "",
-	})
-
-	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
-	assertViolation(t, err, "no representation folders")
+// A folder whose representations/ is empty, or that has none, holds no
+// representations. Definition.ValidateSource decides whether the package
+// may have none, not Read.
+func TestReadNoRepresentations(t *testing.T) {
+	for name, files := range map[string]map[string]string{
+		"empty representations/": {"description.csv": minimalCSV, "representations/": ""},
+		"no representations/":    {"description.csv": minimalCSV},
+		"only a documentation/":  {"description.csv": minimalCSV, "documentation/notes.txt": "n"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			pkg, err := Read(writeTree(t, files), mapping.Meemoo{}, meemooDocumentSpec)
+			if err != nil {
+				t.Fatalf("Read: %v", err)
+			}
+			if len(pkg.Representations) != 0 {
+				t.Errorf("representations = %d, want none", len(pkg.Representations))
+			}
+		})
+	}
 }
 
-func TestReadNoContent(t *testing.T) {
+// Content lives only in a representation folder: the loose content of a
+// folder without representations/ is reported in one violation that names
+// the first entries, however many there are.
+func TestReadLooseContentWithoutRepresentationsFolder(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv": minimalCSV,
+		"a.tiff":          "a",
+		"b.tiff":          "b",
+		"c.tiff":          "c",
+		"d.tiff":          "d",
+		"sub/e.tiff":      "e",
 	})
-
 	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
-	assertViolation(t, err, "no content files")
+	var v Violations
+	errors.As(err, &v)
+	want := "the folder has no representations/ folder: move the content at the top level (a.tiff, b.tiff, c.tiff and 2 more) into a representation folder, representations/<name>/"
+	if len(v) != 1 || v[0] != want {
+		t.Errorf("violations = %q, want only %q", v, want)
+	}
 }
 
 func TestReadReservedNameWrongKind(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"description.csv/oops.txt": "x", // reserved file name used as a folder
-		"documentation":            "x", // reserved folder name used as a file
-		"scan.tiff":                "x",
+		"description.csv/oops.txt":         "x", // reserved file name used as a folder
+		"documentation":                    "x", // reserved folder name used as a file
+		"representations/master/scan.tiff": "x",
 	})
 
 	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
@@ -295,9 +320,9 @@ func TestReadReservedNameWrongKind(t *testing.T) {
 // take that name.
 func TestReadPremisNamingRule(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"description.csv":   minimalCSV,
-		"scan.tiff":         "x",
-		"premis/premis.xml": validPremis,
+		"description.csv":                  minimalCSV,
+		"representations/master/scan.tiff": "x",
+		"premis/premis.xml":                validPremis,
 	})
 
 	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
@@ -310,29 +335,21 @@ func TestReadPremisNamingRule(t *testing.T) {
 	}
 }
 
-// basic takes no supplied document, so its document name is refused at
-// both levels and in a flat folder, never taken as content. A dc.xml, the
-// eark document name, stays content under meemoo/basic.
+// meemoo/basic takes no supplied document, so its document name is refused
+// at both levels, never taken as content. A dc.xml, the ugent/basic document
+// name, stays content under meemoo/basic.
 func TestReadRefusesDocumentUnderBasic(t *testing.T) {
 	refused := "the profile takes no supplied descriptive document"
 	cases := map[string]struct {
 		files map[string]string
 		want  []string
 	}{
-		"flat": {
-			files: map[string]string{
-				"description.csv": minimalCSV,
-				"scan.tiff":       "x",
-				"dc.xml":          "<simpledc/>",
-				"dc+schema.xml":   "<mets:xmlData/>",
-			},
-			want: []string{"dc+schema.xml: " + refused},
-		},
 		"representations": {
 			files: map[string]string{
 				"description.csv":                      minimalCSV,
 				"dc+schema.xml":                        "<mets:xmlData/>",
 				"representations/master/a.tiff":        "a",
+				"representations/master/dc.xml":        "<simpledc/>",
 				"representations/master/dc+schema.xml": "<mets:xmlData/>",
 			},
 			want: []string{
@@ -363,7 +380,7 @@ func TestReadRefusesDocumentUnderBasic(t *testing.T) {
 
 // A received preservation file must be well-formed XML, at package and
 // representation level. Read checks nothing more: a well-formed document
-// with another root passes here and is refused at assembly.
+// with another root passes here and is refused by Builder.Build.
 func TestReadPremisWellFormed(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv":                          minimalCSV,
@@ -395,8 +412,8 @@ func sfReport(keys ...string) string {
 	return `{"siegfried":"1.11.0","files":[` + strings.Join(files, ",") + `]}`
 }
 
-// A supplied report must have an entry for every content file, as the
-// build requires. Documentation needs none.
+// A supplied report must have an entry for every content file, as
+// Builder.Build requires. Documentation needs none.
 func TestReadSidecarCoversContent(t *testing.T) {
 	regenerate := "regenerate it from the input root with: sf -hash md5 -json ."
 	cases := map[string]struct {
@@ -448,9 +465,9 @@ func TestReadSidecarCoversContent(t *testing.T) {
 
 func TestReadBadSidecar(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"description.csv": minimalCSV,
-		"scan.tiff":       "x",
-		"siegfried.json":  `{"not":"a report"}`,
+		"description.csv":                  minimalCSV,
+		"representations/master/scan.tiff": "x",
+		"siegfried.json":                   `{"not":"a report"}`,
 	})
 
 	_, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
@@ -459,16 +476,18 @@ func TestReadBadSidecar(t *testing.T) {
 
 func TestReadNFCCollision(t *testing.T) {
 	root := writeTree(t, map[string]string{
-		"description.csv": minimalCSV,
+		"description.csv":         minimalCSV,
+		"representations/master/": "",
 	})
-	// The same name in NFC and NFD form; they can coexist only on a
-	// filesystem that does not normalize names (e.g. ext4).
+	master := filepath.Join(root, "representations", "master")
+	// The same name in NFC and NFD form. They can coexist only on a
+	// filesystem that does not normalize names, such as ext4.
 	nfc := "caf\u00e9.tiff"  // é precomposed
 	nfd := "cafe\u0301.tiff" // e + combining acute
-	os.WriteFile(filepath.Join(root, nfc), []byte("x"), 0o644)
-	os.WriteFile(filepath.Join(root, nfd), []byte("y"), 0o644)
-	entries, _ := os.ReadDir(root)
-	if len(entries) != 3 {
+	os.WriteFile(filepath.Join(master, nfc), []byte("x"), 0o644)
+	os.WriteFile(filepath.Join(master, nfd), []byte("y"), 0o644)
+	entries, _ := os.ReadDir(master)
+	if len(entries) != 2 {
 		t.Skip("filesystem normalizes names; the collision cannot exist here")
 	}
 

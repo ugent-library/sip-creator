@@ -5,19 +5,19 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Definition is the basic profile: Meemoo SIP 1.2's basic content profile
-// on the E-ARK SIP profile of its era, writing dc+schema.xml from Terms.
-// The registry in profiles/ hands it out under the name "meemoo/basic".
+// Definition is the meemoo/basic profile: Meemoo SIP 1.2's basic content
+// profile, writing dc+schema.xml from Terms.
 var Definition = build.Definition{
 	Name:  "meemoo/basic",
 	Model: dcschema{},
 	// Meemoo identifies the submitting organization by its OR-id
 	// (Meemoo SIP 1.2, metsHdr agent note).
 	RequireSubmitterORID: true,
-	// The basic profile allows exactly one representation: a maximum of 1
-	// here, with the one every package needs (SourcePackage.Validate). It
-	// allows no descriptive metadata at the representation level
-	// (AllowRepresentationDescriptions left false).
+	// The basic profile allows exactly one representation: "The IE MUST be
+	// represented by exactly one representation." It also leaves
+	// AllowRepresentationDescriptions false: "There MUST NOT be any
+	// descriptive metadata at the representation level."
+	MinRepresentations: 1,
 	MaxRepresentations: 1,
 	// The filename Meemoo's basic profile expects for the descriptive
 	// document.
@@ -28,11 +28,13 @@ var Definition = build.Definition{
 		// Meemoo SIP 1.2, the stable spec (docs/archive/meemoo-12.md):
 		// 1.2 requires the unversioned E-ARK SIP profile URL and the
 		// 1.2 profile URI as OTHERCONTENTINFORMATIONTYPE.
-		ProfileURL:                  "https://earksip.dilcis.eu/profile/E-ARK-SIP.xml",
-		Type:                        "Photographs – Digital", // 1.2 content-category vocabulary; --content-category and SIP_CONTENT_CATEGORY override it
+		ProfileURL: "https://earksip.dilcis.eu/profile/E-ARK-SIP.xml",
+		// The default content category, from the 1.2 vocabulary. A
+		// package's SourcePackage.ContentCategory replaces it.
+		Type:                        "Photographs – Digital",
 		ContentInformationType:      "OTHER",
 		OtherContentInformationType: "https://data.hetarchief.be/id/sip/1.2/basic",
-		// No agents: the engine adds the software agent, and
+		// No agents: Builder.Build adds the software agent, and
 		// WithSubmitter the submitting organization.
 	},
 }

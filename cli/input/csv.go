@@ -9,9 +9,10 @@ import (
 )
 
 // newCSVReader returns a CSV reader over data under the rules every CSV in
-// the input folder shares: the content must be UTF-8, and a leading BOM is
-// dropped (spreadsheet tools write one). Rows may have any width, so the
-// parser can name the line and the expected columns of a row that is off.
+// the input folder shares. A leading BOM is dropped, because spreadsheet
+// tools write one. Rows may have any number of columns, so the parser can
+// name the line and the expected columns of a row that has too few or too
+// many. It returns an error if data is not UTF-8.
 func newCSVReader(data []byte) (*csv.Reader, error) {
 	data = bytes.TrimPrefix(data, []byte("\ufeff"))
 	if !utf8.Valid(data) {

@@ -1,5 +1,7 @@
 package sip
 
-// TODO model a Premis event
+// Event is a PREMIS event.
+//
+// TODO: model the event's fields.
 type Event struct {
 }

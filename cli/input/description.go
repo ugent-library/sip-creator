@@ -10,12 +10,12 @@ import (
 )
 
 // parseTerms parses the content of a description.csv: a "key,value"
-// header, then one term per row of two columns, with lines[i] the line
-// terms[i] was read from, counted from one. The errs are findings in the
-// rows: a row that breaks the syntax is reported as a *rowError and left
-// out, and the rows after it are still read; a CSV syntax error ends the
-// parse, because the reader may not find its place again. err means the
-// content cannot be read as CSV at all.
+// header, then one term per row of two columns. lines[i] is the line,
+// counted from one, that terms[i] was read from. errs holds the findings
+// in the rows. A row that breaks the syntax is reported as a *rowError and
+// left out, and the rows after it are still read. A CSV syntax error ends
+// the parse, because the CSV reader may not find its place again. err is
+// set only when the content is not UTF-8.
 func parseTerms(data []byte) (terms []sip.Term, lines []int, errs []error, err error) {
 	cr, err := newCSVReader(data)
 	if err != nil {
@@ -39,8 +39,8 @@ func parseTerms(data []byte) (terms []sip.Term, lines []int, errs []error, err e
 			if isHeaderRow(row) {
 				continue
 			}
-			// The first row may be data that lacks a header above it;
-			// keep it, so its own findings are reported too.
+			// The first row may be data without a header above it. It is
+			// still parsed, so its own findings are reported too.
 			errs = append(errs, errors.New(`the first row must be the header "key,value"`))
 		}
 
@@ -67,8 +67,9 @@ func isHeaderRow(row []string) bool {
 }
 
 // parseKey splits a key cell into the plain key, lowercased, and the
-// language tag in its optional brackets. Whether the tag is a valid
-// language tag is a rule on the term, which Validate checks.
+// language tag in its optional brackets. It returns an error if the
+// brackets are malformed or empty, or if the key has a prefix. Whether the
+// tag is a valid language tag is left to the description's Validate.
 func parseKey(raw string) (key, lang string, err error) {
 	key = raw
 	if i := strings.IndexByte(key, '['); i >= 0 {

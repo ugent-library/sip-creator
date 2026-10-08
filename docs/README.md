@@ -32,6 +32,11 @@ evidence.
   - `input-spec.md`: the operator-facing input specification (design genre): the input
     contract the CLI enforces; the `check` command validates a folder against it.
   - `TODO.md`: the live project backlog.
+- **`profiles/`**: one page per profile UGent Library defines (`ugent-basic.md`,
+  `ugent-bibliographic.md`), design genre: the rules a package under that profile
+  follows, who checks each one, and what RODA makes of each part. A rule field on a
+  profile's definition quotes the page. Meemoo's profiles are specified by Meemoo and
+  have no page here.
 - **`decisions/`**: ADRs. The *why*, permanent and live. `0000-template.md` is the shape;
   `0001`+ are real decisions. **Not** archive material: an ADR stays relevant long after
   the plan that carried it is gone.

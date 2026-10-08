@@ -2,7 +2,7 @@
 
 *Status: **retired** (2026-10-07), kept as history. Steps 1, 6 and 7 landed. Step 5, the
 representation minimum, continues as step 7 of the
-[ugent-profiles plan](../plans/ugent-profiles.md). Steps 2 to 4, a profile without
+[ugent-profiles plan](ugent-profiles.md). Steps 2 to 4, a profile without
 descriptive metadata, are absorbed by the parked
 [entities-and-descriptions plan](../plans/entities-and-descriptions.md), where an empty
 list of models means no descriptive metadata. Step 8, `eark/none`, is dropped:

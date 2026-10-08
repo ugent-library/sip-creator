@@ -9,9 +9,8 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// build.SourcePackage.Validate holds the rules for a source package however
-// it was made: the rules the CLI's input reader reports as violations,
-// checked again for a SourcePackage built directly in Go.
+// SourcePackage.Validate applies the rules for a source package however
+// it was made, including one built directly in Go.
 func TestSourcePackageValidate(t *testing.T) {
 	valid := func(t *testing.T) *build.SourcePackage {
 		_, in, _ := newTestBuilder(t, basicDef(t))
@@ -33,7 +32,6 @@ func TestSourcePackageValidate(t *testing.T) {
 		{"no title", func(c *build.SourcePackage) {
 			c.Description = meemoo.Terms{{Key: "dcterms:identifier", Value: "x"}}
 		}, "title is required"},
-		{"no representations", func(c *build.SourcePackage) { c.Representations = nil }, "at least one version"},
 		{"bad name", func(c *build.SourcePackage) { c.Representations[0].Name = "master copy" }, "may only contain"},
 		{"dot name", func(c *build.SourcePackage) { c.Representations[0].Name = "." }, "outside representations/"},
 		{"dot-dot name", func(c *build.SourcePackage) { c.Representations[0].Name = ".." }, "outside representations/"},
@@ -78,7 +76,7 @@ func TestSourcePackageValidate(t *testing.T) {
 		}, `documentation: two files share the logical path "notes.txt"`},
 		{"rep documentation without a source", func(c *build.SourcePackage) {
 			c.Representations[0].Documentation = []build.SourceFile{{Path: "notes.txt"}}
-		}, `representation "master" documentation: a file needs both a Source and a Path`},
+		}, `representation "archival" documentation: a file needs both a Source and a Path`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -96,9 +94,9 @@ func TestSourcePackageValidate(t *testing.T) {
 	}
 }
 
-// Cardinality and the Dutch-language rule belong to Meemoo's standard, so
-// build.SourcePackage.Validate applies them to Meemoo terms at both levels whatever
-// the profile, and never to Simple Dublin Core terms.
+// Cardinality and the Dutch-language rule belong to Meemoo's standard.
+// SourcePackage.Validate applies them to Meemoo terms at both levels,
+// whatever the profile, and never to Simple Dublin Core terms.
 func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {
 	_, in, _ := newTestBuilder(t, basicDef(t))
 	in.Description = append(testDescription(),
@@ -116,7 +114,7 @@ func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {
 
 	_, in, _ = newTestBuilder(t, basicDef(t))
 	in.Representations[0].Description = meemoo.Terms{{Key: "dcterms:title", Lang: "en", Value: "Cats"}}
-	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `representation "master"`) {
+	if err := in.Validate(); err == nil || !strings.Contains(err.Error(), `representation "archival"`) {
 		t.Errorf("representation title without a Dutch entry accepted: %v", err)
 	}
 
@@ -129,13 +127,13 @@ func TestSourcePackageValidateAppliesStandardRules(t *testing.T) {
 	}
 }
 
-// XML 1.0 carries every character except most control characters,
-// U+FFFE and U+FFFF; a value must also be UTF-8. Escaping cannot carry the
-// rest, so they are refused.
+// XML 1.0 carries every character except most control characters, U+FFFE
+// and U+FFFF. Escaping cannot make XML carry those, so ValidateXMLText
+// refuses them. A value must also be valid UTF-8.
 func TestValidateXMLText(t *testing.T) {
 	tests := []struct {
 		value string
-		want  string // "" means accepted; else substring of the error
+		want  string // empty when accepted, otherwise a substring of the error
 	}{
 		{"", ""},
 		{`R&D <a> "b" 'c'`, ""},

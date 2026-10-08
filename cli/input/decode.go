@@ -12,11 +12,10 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// decode reads the files the walk found, in the order of the input
-// specification: the sidecar and representations.csv (§2), then the
-// description of each level (§3). Only the description decoder needs the
-// profile: the mapper for description.csv, the format for a supplied
-// document.
+// decode reads the files the walk found into source, in the order of the
+// input specification: the sidecar and representations.csv (§2), then the
+// description of each level (§3). mapper decodes a description.csv, and
+// format checks a supplied document.
 func (r *folderReader) decode(source *build.SourcePackage, inv inventory, mapper Mapper, format build.DocumentFormat) {
 	if inv.sidecar != "" {
 		source.Characterization = r.decodeSidecar(inv.sidecar)
@@ -34,10 +33,9 @@ func (r *folderReader) decode(source *build.SourcePackage, inv inventory, mapper
 	}
 }
 
-// decodeSidecar decodes the optional pre-computed characterization report.
-// A present report must parse (ADR-0009);
-// checkCharacterizationCoversContent looks up the content files in it, and
-// the assembler verifies each entry's MD5.
+// decodeSidecar decodes the pre-computed characterization report at src
+// (ADR-0009). It records a violation and returns nil if the file cannot be
+// opened or does not parse.
 func (r *folderReader) decodeSidecar(src string) characterization.Report {
 	f, err := os.Open(src)
 	if err != nil {
@@ -54,14 +52,12 @@ func (r *folderReader) decodeSidecar(src string) characterization.Report {
 	return report
 }
 
-// checkCharacterizationCoversContent reports each content file the report
-// has no entry for. It mirrors the assembler's rule (Builder.essenceRecord in
-// build), which a program building a source package in Go meets there, so
-// that check reports what create would refuse. It looks up paths only: the
-// MD5 comparison, which reads every file, stays with the assembler.
-// Documentation files need no entry. When no content file has an entry,
-// the report was most likely made from another folder, so one line with an
-// example key replaces a line per file.
+// checkCharacterizationCoversContent records a violation for each content
+// file the report has no entry for. It repeats a rule of Builder.Build, so
+// the check command reports what create would refuse. Documentation files
+// need no entry. When two or more content files all lack an entry, the
+// report was most likely made from another folder, so one violation with
+// an example key replaces one per file.
 func (r *folderReader) checkCharacterizationCoversContent(report characterization.Report, reps []build.SourceRepresentation) {
 	const regenerate = "regenerate it from the input root with: sf -hash md5 -json ."
 
@@ -96,12 +92,13 @@ func firstKey(report characterization.Report) string {
 	return slices.Sorted(maps.Keys(report))[0]
 }
 
-// applyRepresentations decodes representations.csv and applies it to the
-// representations read from representations/: each row names a
-// representation folder and supplies its label and type. The file is strict when present
-// (input-spec.md): every row must match a folder, every folder must be
-// covered by a row, and the row order becomes the packaging order. Empty
-// cells stay empty: build.SourceRepresentation resolves the defaults.
+// applyRepresentations decodes the representations.csv at src and applies
+// it to reps, the representations read from representations/. Each row
+// names a representation folder and supplies its label and type. Every row
+// must match a folder, and every folder must have a row (input
+// specification §2). It returns the representations in row order, which
+// becomes the packaging order. An empty cell stays empty, because
+// build.SourceRepresentation resolves the defaults.
 func (r *folderReader) applyRepresentations(src string, reps []build.SourceRepresentation) []build.SourceRepresentation {
 	rel := r.rel(src)
 	rows, decoded := r.decodeRepresentations(src)
@@ -137,8 +134,9 @@ func (r *folderReader) applyRepresentations(src string, reps []build.SourceRepre
 		ordered = append(ordered, rep)
 	}
 
-	// A folder the file does not cover must fail loudly: skipping it
-	// would silently drop content from the package.
+	// A folder without a row is a violation, because leaving it out would
+	// drop its content from the package. It stays in the list, so decode
+	// still reads its description.
 	for _, rep := range reps {
 		if _, ok := covered[rep.Name]; !ok {
 			r.violate("representations/%s is not listed in %s; add a row for it, or remove the folder", rep.Name, rel)
@@ -149,9 +147,9 @@ func (r *folderReader) applyRepresentations(src string, reps []build.SourceRepre
 }
 
 // decodeRepresentations reads the representations.csv at src into rows and
-// records a violation per broken rule. Returns decoded=false when the file
-// cannot be used at all; a usable file with no data rows returns an empty
-// slice.
+// records a violation for each broken rule. It returns decoded false if
+// the file cannot be used at all. A usable file without data rows gives an
+// empty slice.
 func (r *folderReader) decodeRepresentations(src string) (rows []repRow, decoded bool) {
 	rel := r.rel(src)
 
@@ -179,9 +177,9 @@ func (r *folderReader) decodeRepresentations(src string) (rows []repRow, decoded
 }
 
 // description returns the level's description from the one file the walk
-// recorded for it: the rows file, mapped by the profile's mapper, or the
-// profile's supplied document, read as it is and judged by format. It
-// returns nil when the level has neither.
+// recorded for it: the description.csv, mapped by mapper, or the supplied
+// document, read as it is and checked against format. It returns nil when
+// the level has neither.
 func (r *folderReader) description(files descriptionFiles, packageLevel bool, mapper Mapper, format build.DocumentFormat) sip.Description {
 	switch {
 	case files.document != "":
@@ -193,9 +191,10 @@ func (r *folderReader) description(files descriptionFiles, packageLevel bool, ma
 }
 
 // decodeDescription decodes the description.csv at src into the profile's
-// description and records a violation per broken rule: the row syntax,
-// the mapper's placement of each term, and the description's own
-// rules, with ValidateRequired at the package level only.
+// description and records a violation for each broken rule: the row
+// syntax, each term the mapper cannot place, and the description's
+// Validate. At the package level it also runs ValidateRequired. It returns
+// nil when the file holds no terms.
 func (r *folderReader) decodeDescription(src string, packageLevel bool, mapper Mapper) sip.Description {
 	rel := r.rel(src)
 
@@ -212,8 +211,8 @@ func (r *folderReader) decodeDescription(src string, packageLevel bool, mapper M
 	}
 	description, mapErrs := mapper.Map(terms)
 	errs = append(errs, mapErrs...)
-	// A term the mapper refused is reported once: the description's rules
-	// would judge the same term again, as written.
+	// A term the mapper refused is reported once. The mapper keeps it as
+	// written, so the description's rules would judge it again.
 	refused := map[int]bool{}
 	for _, err := range mapErrs {
 		if te, ok := errors.AsType[*sip.TermError](err); ok {
@@ -230,11 +229,11 @@ func (r *folderReader) decodeDescription(src string, packageLevel bool, mapper M
 		errs = append(errs, flatten(description.ValidateRequired())...)
 	}
 
-	// A finding about one row is reported at the row's line: the parser
-	// names the line of a row that did not become a term, and the
-	// mapper and the description's rules name a term by its index,
-	// which lines turns back into a line. A cross-row finding names the
-	// key and language, which locates the rows in a keyed file.
+	// A finding about one row is reported at the row's line. The parser
+	// names the line of a row that did not become a term. The mapper and
+	// the description's rules name a term by its index, and lines maps
+	// the index to its line. A finding about several rows names the key
+	// and language, which locate the rows in the file.
 	for _, err := range errs {
 		if re, ok := errors.AsType[*rowError](err); ok {
 			r.violate("%s line %d: %v", rel, re.line, re.err)
@@ -253,11 +252,13 @@ func (r *folderReader) decodeDescription(src string, packageLevel bool, mapper M
 }
 
 // readDocument reads the supplied descriptive document at src as the
-// level's description: a file the package copies as it is. It must parse
-// as XML (xmldoc.Root) with a root in the model's document format, which
-// the model judges as the engine will. Nothing else in the document is checked (ADR-0003):
-// schema validity is left to the validators downstream. format is never
-// nil here: the walk only finds a document under a profile that takes one.
+// level's description. It checks that the file parses as XML and that
+// format accepts its root element, the same check Definition.ValidateSource
+// makes. It checks nothing else in the document (ADR-0003). It returns a
+// build.EncodedDescription for src, also when format refuses the root
+// element. It records a violation and returns nil if the file cannot be
+// opened or is not XML. format is never nil here, because the walk finds a
+// document only under a profile that takes one.
 func (r *folderReader) readDocument(src string, format build.DocumentFormat) sip.Description {
 	rel := r.rel(src)
 
