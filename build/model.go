@@ -25,8 +25,7 @@ type MetadataModel interface {
 	// schemasDir is the path of the package's schemas/ directory relative
 	// to the document, for the document's schema-location hint. The XSD the
 	// hint names must be one that Schemas lists. d has passed ValidateType
-	// and its own Validate, so Encode need not check it again. When Encode
-	// fails, it writes nothing to w.
+	// and its own Validate, so Encode need not check it again.
 	Encode(w io.Writer, d sip.Description, schemasDir string) error
 	// Schemas lists the XSDs the encoded document points at, plus what
 	// those import by relative path, each with its contents. The package
