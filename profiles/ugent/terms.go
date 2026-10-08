@@ -51,25 +51,14 @@ func validateTerm(t sip.Term) error {
 	return nil
 }
 
-// Validate checks every term plus the one cross-term rule: at most one
-// identifier. Every finding is reported, joined into one error; a finding
-// about one term is a *sip.TermError naming the term's position. The
-// local identifier is an identity, and two of them is an ambiguity no
-// consumer can resolve. Simple Dublin Core itself limits nothing: every
-// element is optional and repeatable.
+// Validate checks every term. The identifier may repeat, like every Simple
+// Dublin Core element, so a producer can state several identifiers.
 func (t Terms) Validate() error {
 	var errs []error
-	identifiers := 0
 	for i, term := range t {
 		if err := validateTerm(term); err != nil {
 			errs = append(errs, &sip.TermError{Index: i, Err: err})
 		}
-		if term.Key == "identifier" {
-			identifiers++
-		}
-	}
-	if identifiers > 1 {
-		errs = append(errs, fmt.Errorf("identifier appears %d times; give exactly one", identifiers))
 	}
 	return errors.Join(errs...)
 }

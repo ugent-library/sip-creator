@@ -110,24 +110,16 @@ func TestValidateTerm(t *testing.T) {
 }
 
 // Simple DC has no cardinality rules of its own, so a repeated element is
-// fine; only the identifier stays single.
+// accepted, the identifier included.
 func TestTermsValidate(t *testing.T) {
 	repeated := Terms{
 		{Key: "identifier", Value: "A"},
+		{Key: "identifier", Value: "B"},
 		{Key: "description", Value: "een"},
 		{Key: "description", Value: "twee"},
 	}
 	if err := repeated.Validate(); err != nil {
-		t.Fatalf("repeated description refused: %v", err)
-	}
-
-	twoIDs := Terms{
-		{Key: "identifier", Value: "A"},
-		{Key: "identifier", Value: "B"},
-	}
-	err := twoIDs.Validate()
-	if want := "identifier appears 2 times; give exactly one"; err == nil || !strings.Contains(err.Error(), want) {
-		t.Fatalf("want the identifier rule %q, got %v", want, err)
+		t.Fatalf("repeated elements refused: %v", err)
 	}
 }
 
