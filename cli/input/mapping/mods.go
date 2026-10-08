@@ -31,6 +31,7 @@ type cardinality int
 const (
 	once            cardinality = iota // one row
 	oncePerLanguage                    // one row per language tag
+	repeatable                         // any number of rows
 )
 
 var modsKeys = map[string]placement{
@@ -38,12 +39,24 @@ var modsKeys = map[string]placement{
 		fill:   func(r *ugent.Record, t sip.Term) { r.Identifier = t.Value },
 		occurs: once,
 	},
+	"otheridentifier": {
+		fill: func(r *ugent.Record, t sip.Term) {
+			r.OtherIdentifiers = append(r.OtherIdentifiers, t.Value)
+		},
+		occurs: repeatable,
+	},
 	"title": {
 		fill: func(r *ugent.Record, t sip.Term) {
 			r.Titles = append(r.Titles, ugent.Title{Value: t.Value, Lang: t.Lang})
 		},
 		takesLang: true,
 		occurs:    oncePerLanguage,
+	},
+	"contributor": {
+		fill: func(r *ugent.Record, t sip.Term) {
+			r.Contributors = append(r.Contributors, t.Value)
+		},
+		occurs: repeatable,
 	},
 }
 
@@ -76,7 +89,7 @@ func (MODS) Map(terms []sip.Term) (sip.Description, []error) {
 		if key.occurs == oncePerLanguage {
 			entry += "\x00" + t.Lang
 		}
-		if placed[entry] {
+		if key.occurs != repeatable && placed[entry] {
 			var err error
 			switch {
 			case key.occurs == once:

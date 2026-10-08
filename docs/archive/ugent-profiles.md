@@ -110,7 +110,7 @@ The owner in the name keeps them apart; the profile pages say so.
   catalogue identifier, titles, and copies with call number, barcode and enumeration.
   Naming it `ugent/bibliographic` makes that honest and settles the vocabulary question
   [ADR-0033](../decisions/0033-ugent-first-profiles-of-your-own.md) reopened: the model
-  keeps the library's catalogue words. The parked [mods-coverage plan](../plans/mods-coverage.md)
+  keeps the library's catalogue words. The parked [mods-coverage plan](../archive/mods-coverage.md)
   gets a note.
 - commons-ip checks `OTHER` plus a value under 2.2.0 as it does for `meemoo/basic` under
   2.0.4 (CSIP5 and CSIP6), so the declaration change should validate; step 5 confirms

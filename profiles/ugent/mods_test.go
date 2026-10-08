@@ -109,6 +109,54 @@ func TestRecordEncodeWithoutItems(t *testing.T) {
 	}
 }
 
+// Other identifiers follow the catalogue identifier, in the record's order,
+// each without a type, and before the titles.
+func TestRecordEncodeOtherIdentifiers(t *testing.T) {
+	r := testRecord()
+	r.OtherIdentifiers = []string{"9789000000000", "(RUG01)000000001 & <x>"}
+	out := encodeRecord(t, r, "../../schemas")
+	want := `  <mods:identifier type="local">example-0001</mods:identifier>
+  <mods:identifier>9789000000000</mods:identifier>
+  <mods:identifier>(RUG01)000000001 &amp; &lt;x&gt;</mods:identifier>
+  <mods:titleInfo xml:lang="nl">`
+	if !strings.Contains(out, want) {
+		t.Errorf("output missing\n%s\n--- got\n%s", want, out)
+	}
+}
+
+// Contributors follow the titles, in the record's order, each as one name
+// with one namePart and no type or role, and before the copies.
+func TestRecordEncodeContributors(t *testing.T) {
+	r := testRecord()
+	r.Contributors = []string{"Doe, Jane 1950-", "Example & Sons"}
+	out := encodeRecord(t, r, "../../schemas")
+	want := `  </mods:titleInfo>
+  <mods:name>
+    <mods:namePart>Doe, Jane 1950-</mods:namePart>
+  </mods:name>
+  <mods:name>
+    <mods:namePart>Example &amp; Sons</mods:namePart>
+  </mods:name>
+  <mods:location>`
+	if !strings.Contains(out, want) {
+		t.Errorf("output missing\n%s\n--- got\n%s", want, out)
+	}
+}
+
+// A copy without a call number has no shelfLocator rather than an empty one.
+func TestRecordEncodeItemWithoutCallNumber(t *testing.T) {
+	r := testRecord()
+	r.Items = []Item{{Barcode: "000000456"}}
+	out := encodeRecord(t, r, "../../schemas")
+	if strings.Contains(out, "<mods:shelfLocator") {
+		t.Errorf("shelfLocator emitted for a copy without a call number\n%s", out)
+	}
+	want := "<mods:copyInformation>\n        <mods:itemIdentifier type=\"barcode\">000000456</mods:itemIdentifier>\n      </mods:copyInformation>"
+	if !strings.Contains(out, want) {
+		t.Errorf("output missing %s\n%s", want, out)
+	}
+}
+
 // A representation's record may state no identifier. The document then
 // carries none rather than an empty element.
 func TestRecordEncodeWithoutIdentifier(t *testing.T) {

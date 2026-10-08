@@ -22,9 +22,22 @@ type Record struct {
 	// A package-level record always states one. A representation's record
 	// may leave it empty.
 	Identifier string
+	// OtherIdentifiers are the record's identifiers besides Identifier, in
+	// the order given: standard numbers such as an ISBN or ISSN, and the
+	// numbers other systems know the record by. Each is written as a
+	// mods:identifier without a type attribute, because the catalogue does
+	// not say which kind of identifier each is.
+	OtherIdentifiers []string
 	// Titles are the record's titles, one titleInfo/title each, in the
 	// order given. A title's language is written as xml:lang.
 	Titles []Title
+	// Contributors are every name the catalogue lists for the record, in
+	// the order given, the main author included: the catalogue calls them
+	// all contributors, which is not Dublin Core's narrower meaning. Each is
+	// one string, written as a mods:name with one mods:namePart and no type
+	// or role, because the catalogue does not say whether a name is a
+	// person or an organization, or what part it played.
+	Contributors []string
 	// Items are the physical copies of the record, one per copy. Items
 	// belong on the package-level record (ADR-0015), because a copy is
 	// never a representation. Nothing refuses items on a representation's
@@ -41,9 +54,11 @@ type Title struct {
 }
 
 // Item is one physical copy of a bibliographic record: where it is shelved,
-// how it is identified, and which part of a multi-part work it is.
+// how it is identified, and which part of a multi-part work it is. An item
+// states a call number, a barcode, or both.
 type Item struct {
-	// CallNumber is the copy's call number, the one value every item states.
+	// CallNumber is the copy's call number, or empty when the catalogue has
+	// none for it.
 	CallNumber string
 	// Barcode is the copy's item barcode, or empty when the copy has none.
 	// No two items of a record share a barcode.
@@ -69,15 +84,19 @@ func validateTitle(t Title) error {
 	return nil
 }
 
-// validateItem checks that the item states a call number, that its barcode
-// and enumeration are not blank when set, and that every value holds only
-// text XML can carry. It returns an error naming the first rule the item
-// breaks. A blank value would be written as an empty element, so an item
-// without a barcode or an enumeration leaves that field empty. Validate
-// checks that barcodes are unique, because that rule spans items.
+// validateItem checks that the item states a call number or a barcode, that
+// none of its values is blank when set, and that every value holds only text
+// XML can carry. It returns an error naming the first rule the item breaks.
+// An item with neither a call number nor a barcode would be written as a
+// copyInformation that names no copy. A blank value would be written as an
+// empty element, so an item without a value leaves that field empty.
+// Validate checks that barcodes are unique, because that rule spans items.
 func validateItem(it Item) error {
-	if strings.TrimSpace(it.CallNumber) == "" {
-		return errors.New("has no call number; every item states one")
+	if it.CallNumber == "" && it.Barcode == "" {
+		return errors.New("has neither a call number nor a barcode; an item states at least one")
+	}
+	if it.CallNumber != "" && strings.TrimSpace(it.CallNumber) == "" {
+		return errors.New("has a blank call number; leave it empty instead")
 	}
 	if it.Barcode != "" && strings.TrimSpace(it.Barcode) == "" {
 		return errors.New("has a blank barcode; leave it empty instead")
@@ -93,10 +112,23 @@ func validateItem(it Item) error {
 	return nil
 }
 
-// Validate checks the identifier, every title and every item, and one rule
-// across items: no barcode twice, because two items with one barcode name
-// one physical copy twice. A finding about one title or one item names its
-// position in its text, such as "title 2: ..." or "item 2: ...".
+// validateListEntry checks that one entry of a list of strings, such as an
+// other identifier or a contributor, is not empty and holds only text XML
+// can carry. It returns an error naming the first rule the entry breaks.
+// An empty entry would be written as an empty element, so a record without
+// such entries leaves the list empty instead.
+func validateListEntry(entry string) error {
+	if strings.TrimSpace(entry) == "" {
+		return errors.New("is empty")
+	}
+	return build.ValidateXMLText(entry)
+}
+
+// Validate checks the identifier, every other identifier, every title,
+// every contributor and every item, and one rule across items: no barcode
+// twice, because two items with one barcode name one physical copy twice.
+// A finding about one entry of a list names its position in its text, such
+// as "title 2: ..." or "item 2: ...".
 func (r Record) Validate() error {
 	var errs []error
 	if r.Identifier != "" && strings.TrimSpace(r.Identifier) == "" {
@@ -105,9 +137,19 @@ func (r Record) Validate() error {
 	if err := build.ValidateXMLText(r.Identifier); err != nil {
 		errs = append(errs, fmt.Errorf("identifier: %w", err))
 	}
+	for i, id := range r.OtherIdentifiers {
+		if err := validateListEntry(id); err != nil {
+			errs = append(errs, fmt.Errorf("other identifier %d: %w", i+1, err))
+		}
+	}
 	for i, title := range r.Titles {
 		if err := validateTitle(title); err != nil {
 			errs = append(errs, fmt.Errorf("title %d: %w", i+1, err))
+		}
+	}
+	for i, name := range r.Contributors {
+		if err := validateListEntry(name); err != nil {
+			errs = append(errs, fmt.Errorf("contributor %d: %w", i+1, err))
 		}
 	}
 

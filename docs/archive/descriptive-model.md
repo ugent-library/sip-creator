@@ -257,7 +257,7 @@ world brings its own profile. That route exists since ADR-0018 to 0020
 review decided that the eark-mods profile, read that way, is plain E-ARK
 with a MODS 3.7 writer, and that the writer should cover the standard's
 top-level elements in MODS's own words, in tiers. That is a plan of its
-own, [mods-coverage](../plans/mods-coverage.md), which starts after this plan
+own, [mods-coverage](../archive/mods-coverage.md), which starts after this plan
 ships the document route (S6 to S8); this step records the aim and states
 it in the docs. Docs only, no code.
 
@@ -273,7 +273,7 @@ it in the docs. Docs only, no code.
       are RODA's (no PREMIS, the representation type in the content
       typing) are named as the reference's choices for RODA rather than
       E-ARK's rules.
-- [x] **The coverage plan.** [mods-coverage](../plans/mods-coverage.md), drafted as
+- [x] **The coverage plan.** [mods-coverage](../archive/mods-coverage.md), drafted as
       the parked plan: the element set in three tiers, the common
       attributes in and out, `relatedItem` recursive, `extension` out,
       the identifier's type as the first choice a caller makes, and the
@@ -465,7 +465,7 @@ Carried over from the eark-mods plan's S6.
 - **The `type` attribute on `mods:identifier`**: one constant, `local`,
   the value MODS suggests for an identifier local to the describing
   institution's system. It becomes the caller's choice from a closed set
-  in the [mods-coverage plan](../plans/mods-coverage.md)'s first tier (decided
+  in the [mods-coverage plan](../archive/mods-coverage.md)'s first tier (decided
   2026-09-30; it had been "decided by the owner of the repository side").
 - **Further MODS fields.** Names (personal and corporate, with a relator
   code per role) and dates (`encoding="edtf"`) as fields on the record,

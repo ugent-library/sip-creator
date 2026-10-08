@@ -58,8 +58,16 @@ was ingested earlier, the value gains one.
 - The identifier MUST be the record's Alma MMS ID. **Operator.** The tool takes the
   identifier as given and does not check its syntax. The tool writes it as
   `mods:identifier type="local"`. The package's `mets/@OBJID` is a UUID the tool mints.
+- The description MAY state the record's other identifiers: standard numbers such as an
+  ISBN or ISSN, and the numbers other systems know the record by. The tool writes each
+  as a `mods:identifier` without `type`, after the MMS ID. In `description.csv` each is an
+  `otheridentifier` row.
+- The description MAY state the record's contributors: every name the catalogue lists
+  for it, the main author included. The tool writes each as a `mods:name` with one
+  `mods:namePart`, without `type` or `mods:role`, after the titles. In `description.csv`
+  each is a `contributor` row.
 - The description MAY list the library's physical copies of the work, one per copy. A
-  copy MUST state its call number, MAY state its barcode, and MAY state its volume or
+  copy MUST state its call number, its barcode, or both, and MAY state its volume or
   issue for a multi-part work. Two copies MUST NOT share a barcode. **Checked** for a
   description the tool writes. The tool writes the copies as `mods:location/
   mods:holdingSimple/mods:copyInformation`, with the call number in `mods:shelfLocator`,
@@ -73,8 +81,10 @@ was ingested earlier, the value gains one.
   of that representation only, such as a license.
 
 The record is UGent's application profile of MODS: the fields are named in the library's
-catalogue words (call number, barcode, enumeration), not in MODS's element names. The
-keys `description.csv` takes are in the [input specification](../input-spec.md) §3.
+catalogue words (call number, barcode, enumeration), not in MODS's element names. Which
+catalogue field becomes which MODS element is in the
+[mapping from catalogue record to MODS](ugent-bibliographic-mods.md). The keys
+`description.csv` takes are in the [input specification](../input-spec.md) §3.
 
 ## 4. Representations
 
