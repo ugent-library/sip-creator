@@ -62,6 +62,10 @@ was ingested earlier, the value gains one.
   ISBN or ISSN, and the numbers other systems know the record by. The tool writes each
   as a `mods:identifier` without `type`, after the MMS ID. In `description.csv` each is an
   `otheridentifier` row.
+- The description MAY state the record's contributors: every name the catalogue lists
+  for it, the main author included. The tool writes each as a `mods:name` with one
+  `mods:namePart`, without `type` or `mods:role`, after the titles. In `description.csv`
+  each is a `contributor` row.
 - The description MAY list the library's physical copies of the work, one per copy. A
   copy MUST state its call number, its barcode, or both, and MAY state its volume or
   issue for a multi-part work. Two copies MUST NOT share a barcode. **Checked** for a

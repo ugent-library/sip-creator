@@ -60,24 +60,22 @@ per step, proposed in chat first.
       number and refuses one that states neither a call number nor a barcode; the
       template leaves out `mods:shelfLocator` when the call number is empty. The profile
       page §3 changes "A copy MUST state its call number" to the rule in decision 4.
-- [x] **Other identifiers.** `OtherIdentifiers`: a list of identifiers next to the MMS ID, each written as a
-      `mods:identifier` without `type`, and the repeatable `description.csv` key
-      `otheridentifier` that fills it. The 035 $a numbers arrive through the same list
-      once the catalogue delivers them; nothing in the library changes for them.
-- [ ] **Names.** A list of names, each written as `mods:name/mods:namePart`. MODS sets no order
-      for its top-level elements; the template writes names after the titles. The
-      mapping page's paragraph on names becomes a row of its §1 table.
+- [x] **Other identifiers.** `OtherIdentifiers`: a list of identifiers next to the MMS
+      ID, each written as a `mods:identifier` without `type`, and the repeatable
+      `description.csv` key `otheridentifier` that fills it. The 035 $a numbers arrive
+      through the same list once the catalogue delivers them; nothing in the library
+      changes for them.
+- [x] **Contributors.** `Contributors`: a list of names, each written as
+      `mods:name/mods:namePart`, and the repeatable `description.csv` key `contributor`.
+      The name is the catalogue's word for every name on the record, the main author
+      included, not Dublin Core's narrower one. MODS sets no order for its top-level
+      elements; the template writes contributors after the titles.
 - [ ] **Closing.** The design doc's description of `ugent/bibliographic`, the README's
-      library example, and this plan archived. An ADR
-      only if a decision here is not already covered by ADR-0034.
+      library example, and this plan archived. An ADR only if a decision here is not
+      already covered by ADR-0034.
 
 ## Open questions
 
-- **Field names.** What the new `Record` fields are called (for instance `Identifiers`
-  next to `Identifier`, and `Names` or `Contributors`) is decided in chat when each step
-  starts, as `CLAUDE.md` asks for names.
-- **`description.csv` keys.** The other identifiers have one, `otheridentifier`. Whether
-  the names get one too is decided when that step starts.
 - **The 035 prefix.** A 035 $a value starts with its source in parentheses, such as
   `(RUG01)`. Whether that prefix becomes the identifier's `type`, and is stripped from
   the value, is decided when the catalogue delivers 035 and the values can be seen.

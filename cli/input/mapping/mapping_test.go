@@ -103,20 +103,27 @@ func TestMODSTermsFillTheRecord(t *testing.T) {
 	}
 }
 
-// otheridentifier repeats freely, and each row adds one identifier in the
-// order of the rows.
-func TestMODSOtherIdentifiersRepeat(t *testing.T) {
+// otheridentifier and contributor repeat freely, and each row adds one
+// entry in the order of the rows.
+func TestMODSRepeatableKeys(t *testing.T) {
 	rows := slices.Concat(terms, []sip.Term{
 		{Key: "otheridentifier", Value: "9789000000000"},
+		{Key: "contributor", Value: "Doe, Jane"},
 		{Key: "otheridentifier", Value: "(RUG01)000000001"},
+		{Key: "contributor", Value: "Example & Sons"},
 	})
 	description, errs := MODS{}.Map(rows)
 	if len(errs) != 0 {
 		t.Fatalf("errors %v for terms the mapping places", errs)
 	}
-	want := []string{"9789000000000", "(RUG01)000000001"}
-	if got := description.(ugent.Record).OtherIdentifiers; !slices.Equal(got, want) {
-		t.Errorf("OtherIdentifiers = %q, want %q", got, want)
+	record := description.(ugent.Record)
+	wantIDs := []string{"9789000000000", "(RUG01)000000001"}
+	if !slices.Equal(record.OtherIdentifiers, wantIDs) {
+		t.Errorf("OtherIdentifiers = %q, want %q", record.OtherIdentifiers, wantIDs)
+	}
+	wantContributors := []string{"Doe, Jane", "Example & Sons"}
+	if !slices.Equal(record.Contributors, wantContributors) {
+		t.Errorf("Contributors = %q, want %q", record.Contributors, wantContributors)
 	}
 }
 
@@ -137,6 +144,7 @@ func TestMODSErrorsNameTheTerm(t *testing.T) {
 		{"empty value", []sip.Term{{Key: "title", Value: " "}}, "title has an empty value", 0},
 		{"language on another identifier", []sip.Term{{Key: "otheridentifier", Lang: "nl", Value: "x"}}, "otheridentifier takes no language tag", 0},
 		{"empty other identifier", []sip.Term{{Key: "otheridentifier", Value: ""}}, "otheridentifier has an empty value", 0},
+		{"language on a contributor", []sip.Term{{Key: "contributor", Lang: "nl", Value: "x"}}, "contributor takes no language tag", 0},
 		{"second identifier", slices.Concat(terms, []sip.Term{{Key: "identifier", Value: "ID-2"}}), "identifier appears more than once; give exactly one value", 3},
 		{"title repeated in one language", slices.Concat(terms, []sip.Term{{Key: "title", Lang: "nl", Value: "Poes"}}), `title appears more than once in language "nl"`, 3},
 		{"title repeated untagged", []sip.Term{{Key: "title", Value: "a"}, {Key: "title", Value: "b"}}, "distinct language tags", 1},
@@ -157,7 +165,7 @@ func TestMODSErrorsNameTheTerm(t *testing.T) {
 			// The refused term left no trace: the record holds the terms
 			// before it and nothing else.
 			record := description.(ugent.Record)
-			placed := len(record.Titles) + len(record.OtherIdentifiers)
+			placed := len(record.Titles) + len(record.OtherIdentifiers) + len(record.Contributors)
 			if record.Identifier != "" {
 				placed++
 			}

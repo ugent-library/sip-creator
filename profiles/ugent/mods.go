@@ -115,6 +115,11 @@ var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
     <mods:title>{{ esc .Value }}</mods:title>
   </mods:titleInfo>
 {{- end }}
+{{- range .Record.Contributors }}
+  <mods:name>
+    <mods:namePart>{{ esc . }}</mods:namePart>
+  </mods:name>
+{{- end }}
 {{- with .Record.Items }}
   <mods:location>
     <mods:holdingSimple>

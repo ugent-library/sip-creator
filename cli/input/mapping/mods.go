@@ -52,6 +52,12 @@ var modsKeys = map[string]placement{
 		takesLang: true,
 		occurs:    oncePerLanguage,
 	},
+	"contributor": {
+		fill: func(r *ugent.Record, t sip.Term) {
+			r.Contributors = append(r.Contributors, t.Value)
+		},
+		occurs: repeatable,
+	},
 }
 
 // Map fills a record from the terms in order and returns it. It returns a

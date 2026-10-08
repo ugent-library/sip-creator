@@ -124,6 +124,25 @@ func TestRecordEncodeOtherIdentifiers(t *testing.T) {
 	}
 }
 
+// Contributors follow the titles, in the record's order, each as one name
+// with one namePart and no type or role, and before the copies.
+func TestRecordEncodeContributors(t *testing.T) {
+	r := testRecord()
+	r.Contributors = []string{"Doe, Jane 1950-", "Example & Sons"}
+	out := encodeRecord(t, r, "../../schemas")
+	want := `  </mods:titleInfo>
+  <mods:name>
+    <mods:namePart>Doe, Jane 1950-</mods:namePart>
+  </mods:name>
+  <mods:name>
+    <mods:namePart>Example &amp; Sons</mods:namePart>
+  </mods:name>
+  <mods:location>`
+	if !strings.Contains(out, want) {
+		t.Errorf("output missing\n%s\n--- got\n%s", want, out)
+	}
+}
+
 // A copy without a call number has no shelfLocator rather than an empty one.
 func TestRecordEncodeItemWithoutCallNumber(t *testing.T) {
 	r := testRecord()

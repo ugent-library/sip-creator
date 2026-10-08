@@ -101,6 +101,7 @@ func ExampleBuilder_Build_mods() {
 			Titles: []ugent.Title{
 				{Value: "Example book", Lang: "en"},
 			},
+			Contributors: []string{"Doe, Jane"},
 			Items: []ugent.Item{
 				{CallNumber: "EX.0001", Barcode: "0000000001"},
 				{CallNumber: "EX.0002", Enumeration: "vol. 2"},

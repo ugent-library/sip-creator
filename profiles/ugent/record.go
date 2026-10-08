@@ -31,6 +31,13 @@ type Record struct {
 	// Titles are the record's titles, one titleInfo/title each, in the
 	// order given. A title's language is written as xml:lang.
 	Titles []Title
+	// Contributors are every name the catalogue lists for the record, in
+	// the order given, the main author included: the catalogue calls them
+	// all contributors, which is not Dublin Core's narrower meaning. Each is
+	// one string, written as a mods:name with one mods:namePart and no type
+	// or role, because the catalogue does not say whether a name is a
+	// person or an organization, or what part it played.
+	Contributors []string
 	// Items are the physical copies of the record, one per copy. Items
 	// belong on the package-level record (ADR-0015), because a copy is
 	// never a representation. Nothing refuses items on a representation's
@@ -105,23 +112,23 @@ func validateItem(it Item) error {
 	return nil
 }
 
-// validateOtherIdentifier checks that the identifier is not empty and holds
-// only text XML can carry. It returns an error naming the first rule the
-// identifier breaks. An empty entry would be written as an empty
-// mods:identifier, so a record without other identifiers leaves the list
-// empty instead.
-func validateOtherIdentifier(id string) error {
-	if strings.TrimSpace(id) == "" {
+// validateListEntry checks that one entry of a list of strings, such as an
+// other identifier or a contributor, is not empty and holds only text XML
+// can carry. It returns an error naming the first rule the entry breaks.
+// An empty entry would be written as an empty element, so a record without
+// such entries leaves the list empty instead.
+func validateListEntry(entry string) error {
+	if strings.TrimSpace(entry) == "" {
 		return errors.New("is empty")
 	}
-	return build.ValidateXMLText(id)
+	return build.ValidateXMLText(entry)
 }
 
-// Validate checks the identifier, every other identifier, every title and
-// every item, and one rule across items: no barcode twice, because two
-// items with one barcode name one physical copy twice. A finding about one
-// entry of a list names its position in its text, such as "title 2: ..."
-// or "item 2: ...".
+// Validate checks the identifier, every other identifier, every title,
+// every contributor and every item, and one rule across items: no barcode
+// twice, because two items with one barcode name one physical copy twice.
+// A finding about one entry of a list names its position in its text, such
+// as "title 2: ..." or "item 2: ...".
 func (r Record) Validate() error {
 	var errs []error
 	if r.Identifier != "" && strings.TrimSpace(r.Identifier) == "" {
@@ -131,13 +138,18 @@ func (r Record) Validate() error {
 		errs = append(errs, fmt.Errorf("identifier: %w", err))
 	}
 	for i, id := range r.OtherIdentifiers {
-		if err := validateOtherIdentifier(id); err != nil {
+		if err := validateListEntry(id); err != nil {
 			errs = append(errs, fmt.Errorf("other identifier %d: %w", i+1, err))
 		}
 	}
 	for i, title := range r.Titles {
 		if err := validateTitle(title); err != nil {
 			errs = append(errs, fmt.Errorf("title %d: %w", i+1, err))
+		}
+	}
+	for i, name := range r.Contributors {
+		if err := validateListEntry(name); err != nil {
+			errs = append(errs, fmt.Errorf("contributor %d: %w", i+1, err))
 		}
 	}
 

@@ -23,6 +23,7 @@ its parts, the mapping gains them.
 | other identifiers: ISBN, ISSN, other standard numbers, call number from the holdings | 020 $a, 022 $a, 024 $a, 852 $j | `OtherIdentifiers` | `mods:identifier`, without `type` |
 | legacy and external system numbers: the Aleph `RUG01` number, Ufora, Plato, Antilope | 035 $a | `OtherIdentifiers` | `mods:identifier`, without `type` |
 | title, with its statement of responsibility | 245, all subfields, joined with spaces | `Titles` | `mods:titleInfo/mods:title` |
+| contributors: the main author and every other name, persons and organizations alike | 100, 110, 700, 710, 711, 720, all subfields of each, joined with spaces | `Contributors` | `mods:name/mods:namePart`, without `type` and without `mods:role` |
 | a physical copy's call number | item field Z30 $3 | `Items[].CallNumber` | `mods:location/mods:holdingSimple/mods:copyInformation/mods:shelfLocator` |
 | a physical copy's barcode | item field Z30 $4 | `Items[].Barcode` | `mods:copyInformation/mods:itemIdentifier type="barcode"` |
 | a copy's volume or issue | none | `Items[].Enumeration` | `mods:copyInformation/mods:enumerationAndChronology` |
@@ -36,16 +37,16 @@ Notes on the rows:
 - The other identifiers carry no `type`, because the catalogue joins them into one list
   and does not say which MARC field each came from. MODS allows an identifier without a
   type. The catalogue does not deliver 035 yet, but will.
+- "Contributor" is the catalogue's word for every name on the record, the main author
+  included. It is not Dublin Core's narrower `contributor`, and not `ugent/basic`'s key of
+  that name. MODS would tell an author from another contributor by `mods:role`, but the
+  catalogue joins a name's relator term into the name, so each is written as one
+  `mods:namePart`. The catalogue does not say whether a name is a person or an
+  organization either, so `mods:name` carries no `type`.
 - A copy states a call number, a barcode, or both. A copy that states neither is
   refused.
 - The catalogue delivers no volume or issue for a copy. A program that knows it can
   still set it.
-
-Names are planned in the [mods-coverage plan](../plans/mods-coverage.md): authors and
-other contributors, persons and organizations alike, from 100, 110, 700, 710, 711 and
-720, all subfields of each joined with spaces, written as `mods:name/mods:namePart`
-without `type` and without `mods:role`.
-
 ## 2. Fields left out for now
 
 The catalogue delivers these fields too. They are out of scope until a decision brings
