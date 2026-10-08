@@ -58,6 +58,10 @@ was ingested earlier, the value gains one.
 - The identifier MUST be the record's Alma MMS ID. **Operator.** The tool takes the
   identifier as given and does not check its syntax. The tool writes it as
   `mods:identifier type="local"`. The package's `mets/@OBJID` is a UUID the tool mints.
+- The description MAY state the record's other identifiers: standard numbers such as an
+  ISBN or ISSN, and the numbers other systems know the record by. The tool writes each
+  as a `mods:identifier` without `type`, after the MMS ID. In `description.csv` each is an
+  `otheridentifier` row.
 - The description MAY list the library's physical copies of the work, one per copy. A
   copy MUST state its call number, its barcode, or both, and MAY state its volume or
   issue for a multi-part work. Two copies MUST NOT share a barcode. **Checked** for a

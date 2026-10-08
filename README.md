@@ -75,10 +75,10 @@ package as `ugent/basic`, with a [MODS 3.7](https://www.loc.gov/standards/mods/)
 (`mods.xml`) written from the catalogue record. Everything except the descriptive
 metadata works as under `ugent/basic`.
 
-MODS is a tree, so `description.csv` holds only `identifier` and `title`. A richer
-record, such as one listing the library's physical copies of the work (call number,
-barcode, volume), comes as a finished `mods.xml`, or in Go as a `ugent.Record` with
-`Items`. Physical copies belong on the package-level record, because a representation is
+MODS is a tree, so `description.csv` holds only `identifier`, `otheridentifier` and
+`title`. A richer record, such as one listing the library's physical copies of the work
+(call number, barcode, volume), comes as a finished `mods.xml`, or in Go as a
+`ugent.Record` with `Items`. Physical copies belong on the package-level record, because a representation is
 a version of the content, never a copy. Items on a representation's record are still
 written, to that representation's `mods.xml`.
 
@@ -432,7 +432,7 @@ input folder's `documentation/` and `premis/`.
 ### Descriptive metadata
 
 The `ugent/bibliographic` profile takes a `ugent.Record` instead of a list of terms: an
-identifier, titles, and physical copies as items, each with a call number, a barcode or
+identifier, other identifiers, titles, and physical copies as items, each with a call number, a barcode or
 both, and an optional volume or issue designation (example: `ExampleBuilder_Build_mods`).
 
 A record that already exists as a document travels as a file: profiles that accept a

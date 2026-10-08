@@ -114,7 +114,7 @@ cd ./your-input && report="$(sf -hash md5 -json .)" && printf '%s\n' "$report" >
 |---|---|---|---|
 | `meemoo/basic` | Meemoo's keys, in the table below | `identifier`, `title`, `description`, `created` | none |
 | `ugent/basic` | the fifteen Simple Dublin Core elements | `identifier`, `title` | `dc.xml` |
-| `ugent/bibliographic` | `identifier`, `title` | `identifier`, `title` | `mods.xml` |
+| `ugent/bibliographic` | `identifier`, `otheridentifier`, `title` | `identifier`, `title` | `mods.xml` |
 
 Each profile has its own keys: a Meemoo key under `ugent/basic` is an unknown key, and an error.
 
@@ -164,7 +164,7 @@ rights[nl],publiek domein
 
 **`ugent/basic`** takes the fifteen Simple Dublin Core elements: `title`, `creator`, `subject`, `description`, `publisher`, `contributor`, `date`, `type`, `format`, `identifier`, `source`, `language`, `relation`, `coverage`, `rights`. Every key is repeatable. A language tag is accepted but not written into the document.
 
-**`ugent/bibliographic`** takes two keys: `identifier`, once and without a language tag, and `title`, once per language. Anything richer, such as the library's physical copies of the work, needs a supplied `mods.xml`.
+**`ugent/bibliographic`** takes three keys: `identifier`, the record's MMS ID, once and without a language tag; `otheridentifier`, any other identifier of the record such as an ISBN or a number another system knows it by, repeatable and without a language tag; and `title`, once per language. Anything richer, such as the library's physical copies of the work, needs a supplied `mods.xml`.
 
 ### Describing one representation
 
@@ -242,7 +242,7 @@ Because the submitting organization comes from configuration, the folder alone d
 | `documentation/` (package and representation) | `documentation/` directories (CSIPSTR16), METS fileSec `USE="Documentation"` |
 | `description.csv` under `meemoo/basic` | the table's elements, `dcterms:*` and `schema:*` (e.g. `ispartof` → `dcterms:isPartOf`, `artmedium` → `schema:artMedium`), in `metadata/descriptive/dc+schema.xml`, METS dmdSec ([ADR-0011](decisions/0011-closed-descriptive-vocabulary.md)) |
 | `description.csv` under `ugent/basic` | the unqualified Simple Dublin Core element of the same name (`title` → `<title>`), in `metadata/descriptive/dc.xml`, METS dmdSec |
-| `description.csv` under `ugent/bibliographic` | `identifier` → `mods:identifier type="local"`, `title[lang]` → `mods:titleInfo xml:lang/mods:title`, in `metadata/descriptive/mods.xml`, METS dmdSec `MDTYPE="MODS" MDTYPEVERSION="3.7"` ([ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md)) |
+| `description.csv` under `ugent/bibliographic` | `identifier` → `mods:identifier type="local"`, `otheridentifier` → `mods:identifier` without `type`, `title[lang]` → `mods:titleInfo xml:lang/mods:title`, in `metadata/descriptive/mods.xml`, METS dmdSec `MDTYPE="MODS" MDTYPEVERSION="3.7"` ([ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md)) |
 | `dc.xml` / `mods.xml` (supplied) | copied as it is to `metadata/descriptive/` (or the representation's), checksum computed on the copy, METS dmdSec typed as for a generated document ([ADR-0021](decisions/0021-descriptive-model-follows-its-standard.md)) |
 | a representation's description | `representations/<name>/metadata/descriptive/`, dmdSec of that representation's METS (CSIPSTR12, CSIPSTR13) |
 | `[lang]` suffixes | `xml:lang` attributes |

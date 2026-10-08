@@ -96,7 +96,8 @@ func ExampleBuilder_Build_mods() {
 
 	pkg, err := builder.Build(&build.SourcePackage{
 		Description: ugent.Record{
-			Identifier: "example-0001",
+			Identifier:       "example-0001",
+			OtherIdentifiers: []string{"9789000000000"},
 			Titles: []ugent.Title{
 				{Value: "Example book", Lang: "en"},
 			},

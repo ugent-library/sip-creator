@@ -22,6 +22,12 @@ type Record struct {
 	// A package-level record always states one. A representation's record
 	// may leave it empty.
 	Identifier string
+	// OtherIdentifiers are the record's identifiers besides Identifier, in
+	// the order given: standard numbers such as an ISBN or ISSN, and the
+	// numbers other systems know the record by. Each is written as a
+	// mods:identifier without a type attribute, because the catalogue does
+	// not say which kind of identifier each is.
+	OtherIdentifiers []string
 	// Titles are the record's titles, one titleInfo/title each, in the
 	// order given. A title's language is written as xml:lang.
 	Titles []Title
@@ -99,10 +105,23 @@ func validateItem(it Item) error {
 	return nil
 }
 
-// Validate checks the identifier, every title and every item, and one rule
-// across items: no barcode twice, because two items with one barcode name
-// one physical copy twice. A finding about one title or one item names its
-// position in its text, such as "title 2: ..." or "item 2: ...".
+// validateOtherIdentifier checks that the identifier is not empty and holds
+// only text XML can carry. It returns an error naming the first rule the
+// identifier breaks. An empty entry would be written as an empty
+// mods:identifier, so a record without other identifiers leaves the list
+// empty instead.
+func validateOtherIdentifier(id string) error {
+	if strings.TrimSpace(id) == "" {
+		return errors.New("is empty")
+	}
+	return build.ValidateXMLText(id)
+}
+
+// Validate checks the identifier, every other identifier, every title and
+// every item, and one rule across items: no barcode twice, because two
+// items with one barcode name one physical copy twice. A finding about one
+// entry of a list names its position in its text, such as "title 2: ..."
+// or "item 2: ...".
 func (r Record) Validate() error {
 	var errs []error
 	if r.Identifier != "" && strings.TrimSpace(r.Identifier) == "" {
@@ -110,6 +129,11 @@ func (r Record) Validate() error {
 	}
 	if err := build.ValidateXMLText(r.Identifier); err != nil {
 		errs = append(errs, fmt.Errorf("identifier: %w", err))
+	}
+	for i, id := range r.OtherIdentifiers {
+		if err := validateOtherIdentifier(id); err != nil {
+			errs = append(errs, fmt.Errorf("other identifier %d: %w", i+1, err))
+		}
 	}
 	for i, title := range r.Titles {
 		if err := validateTitle(title); err != nil {

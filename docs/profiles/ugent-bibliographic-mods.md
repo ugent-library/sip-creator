@@ -1,8 +1,7 @@
 # `ugent/bibliographic`: from catalogue record to MODS
 
 *Mapping for the descriptive metadata of [`ugent/bibliographic`](ugent-bibliographic.md).
-Settled 2026-10-08. The work that implements the planned rows is the
-[mods-coverage plan](../plans/mods-coverage.md).*
+Settled 2026-10-08.*
 
 The description of a `ugent/bibliographic` package comes from the UGent Library
 catalogue. The tool does not read the catalogue itself. A program that builds packages
@@ -18,27 +17,34 @@ its parts, the mapping gains them.
 
 ## 1. Mapped fields
 
-| what the record states | from MARC (Alma) | MODS 3.7 | status |
+| what the record states | from MARC (Alma) | `ugent.Record` field | MODS 3.7 |
 |---|---|---|---|
-| the catalogue record's identifier, the MMS ID | 001 | `mods:identifier type="local"` | written today; required on a package-level record |
-| other identifiers: ISBN, ISSN, other standard numbers, call number from the holdings | 020 $a, 022 $a, 024 $a, 852 $j | `mods:identifier`, without `type` | planned |
-| legacy and external system numbers: the Aleph `RUG01` number, Ufora, Plato, Antilope | 035 $a | `mods:identifier`, without `type` | planned; the catalogue does not deliver 035 yet, but will |
-| title, with its statement of responsibility | 245, all subfields, joined with spaces | `mods:titleInfo/mods:title` | written today; at least one required on a package-level record |
-| names: authors and other contributors, persons and organizations alike | 100, 110, 700, 710, 711, 720, all subfields of each, joined with spaces | `mods:name/mods:namePart`, without `type` and without `mods:role` | planned |
-| a physical copy's call number | item field Z30 $3 | `mods:location/mods:holdingSimple/mods:copyInformation/mods:shelfLocator` | written today; optional |
-| a physical copy's barcode | item field Z30 $4 | `mods:copyInformation/mods:itemIdentifier type="barcode"` | written today |
-| a copy's volume or issue | none | `mods:copyInformation/mods:enumerationAndChronology` | written today; the catalogue delivers no value for it |
+| the catalogue record's identifier, the MMS ID | 001 | `Identifier` | `mods:identifier type="local"` |
+| other identifiers: ISBN, ISSN, other standard numbers, call number from the holdings | 020 $a, 022 $a, 024 $a, 852 $j | `OtherIdentifiers` | `mods:identifier`, without `type` |
+| legacy and external system numbers: the Aleph `RUG01` number, Ufora, Plato, Antilope | 035 $a | `OtherIdentifiers` | `mods:identifier`, without `type` |
+| title, with its statement of responsibility | 245, all subfields, joined with spaces | `Titles` | `mods:titleInfo/mods:title` |
+| a physical copy's call number | item field Z30 $3 | `Items[].CallNumber` | `mods:location/mods:holdingSimple/mods:copyInformation/mods:shelfLocator` |
+| a physical copy's barcode | item field Z30 $4 | `Items[].Barcode` | `mods:copyInformation/mods:itemIdentifier type="barcode"` |
+| a copy's volume or issue | none | `Items[].Enumeration` | `mods:copyInformation/mods:enumerationAndChronology` |
 
 Notes on the rows:
 
 - The MMS ID is the identifier that relates a package to its catalogue record, so it is
-  the one identifier the record must state. The catalogue gives `unknown` for a record
-  without a 001. That is not an MMS ID, and a program must not pass it on as one.
+  the one identifier a package-level record must state, next to at least one title. The
+  catalogue gives `unknown` for a record without a 001. That is not an MMS ID, and a
+  program must not pass it on as one.
 - The other identifiers carry no `type`, because the catalogue joins them into one list
   and does not say which MARC field each came from. MODS allows an identifier without a
-  type.
-- A copy states a call number, a barcode, or both. A copy that states neither is not
-  written.
+  type. The catalogue does not deliver 035 yet, but will.
+- A copy states a call number, a barcode, or both. A copy that states neither is
+  refused.
+- The catalogue delivers no volume or issue for a copy. A program that knows it can
+  still set it.
+
+Names are planned in the [mods-coverage plan](../plans/mods-coverage.md): authors and
+other contributors, persons and organizations alike, from 100, 110, 700, 710, 711 and
+720, all subfields of each joined with spaces, written as `mods:name/mods:namePart`
+without `type` and without `mods:role`.
 
 ## 2. Fields left out for now
 

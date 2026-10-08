@@ -60,13 +60,15 @@ per step, proposed in chat first.
       number and refuses one that states neither a call number nor a barcode; the
       template leaves out `mods:shelfLocator` when the call number is empty. The profile
       page §3 changes "A copy MUST state its call number" to the rule in decision 4.
-- [ ] **Other identifiers.** A list of identifiers next to the MMS ID, each written as a
-      `mods:identifier` without `type`. The 035 $a numbers arrive through the same list
+- [x] **Other identifiers.** `OtherIdentifiers`: a list of identifiers next to the MMS ID, each written as a
+      `mods:identifier` without `type`, and the repeatable `description.csv` key
+      `otheridentifier` that fills it. The 035 $a numbers arrive through the same list
       once the catalogue delivers them; nothing in the library changes for them.
 - [ ] **Names.** A list of names, each written as `mods:name/mods:namePart`. MODS sets no order
-      for its top-level elements; the template writes names after the titles.
+      for its top-level elements; the template writes names after the titles. The
+      mapping page's paragraph on names becomes a row of its §1 table.
 - [ ] **Closing.** The design doc's description of `ugent/bibliographic`, the README's
-      library example, the mapping page's status column, and this plan archived. An ADR
+      library example, and this plan archived. An ADR
       only if a decision here is not already covered by ADR-0034.
 
 ## Open questions
@@ -74,9 +76,8 @@ per step, proposed in chat first.
 - **Field names.** What the new `Record` fields are called (for instance `Identifiers`
   next to `Identifier`, and `Names` or `Contributors`) is decided in chat when each step
   starts, as `CLAUDE.md` asks for names.
-- **`description.csv` keys.** Whether the CSV vocabulary gains keys for the other
-  identifiers and the names, or whether they stay for programs and supplied `mods.xml`
-  documents, as copies do today.
+- **`description.csv` keys.** The other identifiers have one, `otheridentifier`. Whether
+  the names get one too is decided when that step starts.
 - **The 035 prefix.** A 035 $a value starts with its source in parentheses, such as
   `(RUG01)`. Whether that prefix becomes the identifier's `type`, and is stripped from
   the value, is decided when the catalogue delivers 035 and the values can be seen.

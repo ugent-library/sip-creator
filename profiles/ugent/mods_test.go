@@ -109,6 +109,21 @@ func TestRecordEncodeWithoutItems(t *testing.T) {
 	}
 }
 
+// Other identifiers follow the catalogue identifier, in the record's order,
+// each without a type, and before the titles.
+func TestRecordEncodeOtherIdentifiers(t *testing.T) {
+	r := testRecord()
+	r.OtherIdentifiers = []string{"9789000000000", "(RUG01)000000001 & <x>"}
+	out := encodeRecord(t, r, "../../schemas")
+	want := `  <mods:identifier type="local">example-0001</mods:identifier>
+  <mods:identifier>9789000000000</mods:identifier>
+  <mods:identifier>(RUG01)000000001 &amp; &lt;x&gt;</mods:identifier>
+  <mods:titleInfo xml:lang="nl">`
+	if !strings.Contains(out, want) {
+		t.Errorf("output missing\n%s\n--- got\n%s", want, out)
+	}
+}
+
 // A copy without a call number has no shelfLocator rather than an empty one.
 func TestRecordEncodeItemWithoutCallNumber(t *testing.T) {
 	r := testRecord()

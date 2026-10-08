@@ -107,6 +107,9 @@ var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 {{- with .Record.Identifier }}
   <mods:identifier type="{{ $.IdentifierType }}">{{ esc . }}</mods:identifier>
 {{- end }}
+{{- range .Record.OtherIdentifiers }}
+  <mods:identifier>{{ esc . }}</mods:identifier>
+{{- end }}
 {{- range .Record.Titles }}
   <mods:titleInfo{{ with .Lang }} xml:lang="{{ esc . }}"{{ end }}>
     <mods:title>{{ esc .Value }}</mods:title>

@@ -57,6 +57,24 @@ func TestValidateTitle(t *testing.T) {
 	}
 }
 
+func TestValidateOtherIdentifier(t *testing.T) {
+	tests := []struct {
+		name string
+		id   string
+		want string
+	}{
+		{"valid", "9789000000000", ""},
+		{"empty", "", "is empty"},
+		{"blank", " ", "is empty"},
+		{"control character", "97890\x01", "U+0001"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requireError(t, validateOtherIdentifier(tt.id), tt.want)
+		})
+	}
+}
+
 func TestValidateItem(t *testing.T) {
 	tests := []struct {
 		name string
@@ -124,7 +142,8 @@ func TestRecordValidateRequired(t *testing.T) {
 // position in its text.
 func TestRecordValidateReportsEveryFinding(t *testing.T) {
 	r := Record{
-		Identifier: "A",
+		Identifier:       "A",
+		OtherIdentifiers: []string{"B", " "},
 		Titles: []Title{
 			{Value: "x"},
 			{Value: " "},
@@ -139,14 +158,14 @@ func TestRecordValidateReportsEveryFinding(t *testing.T) {
 	}
 	err := r.Validate()
 	if err == nil {
-		t.Fatal("want four findings, got none")
+		t.Fatal("want five findings, got none")
 	}
-	for _, want := range []string{"title 2: has an empty value", `title 3: "nl!" is not a language tag`, "item 2: has neither a call number nor a barcode", "item 4: barcode"} {
+	for _, want := range []string{"other identifier 2: is empty", "title 2: has an empty value", `title 3: "nl!" is not a language tag`, "item 2: has neither a call number nor a barcode", "item 4: barcode"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("findings do not include %q: %v", want, err)
 		}
 	}
-	if got := len(err.(interface{ Unwrap() []error }).Unwrap()); got != 4 {
-		t.Errorf("got %d findings, want 4: %v", got, err)
+	if got := len(err.(interface{ Unwrap() []error }).Unwrap()); got != 5 {
+		t.Errorf("got %d findings, want 5: %v", got, err)
 	}
 }

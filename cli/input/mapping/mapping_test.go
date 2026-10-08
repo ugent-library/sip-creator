@@ -103,6 +103,23 @@ func TestMODSTermsFillTheRecord(t *testing.T) {
 	}
 }
 
+// otheridentifier repeats freely, and each row adds one identifier in the
+// order of the rows.
+func TestMODSOtherIdentifiersRepeat(t *testing.T) {
+	rows := slices.Concat(terms, []sip.Term{
+		{Key: "otheridentifier", Value: "9789000000000"},
+		{Key: "otheridentifier", Value: "(RUG01)000000001"},
+	})
+	description, errs := MODS{}.Map(rows)
+	if len(errs) != 0 {
+		t.Fatalf("errors %v for terms the mapping places", errs)
+	}
+	want := []string{"9789000000000", "(RUG01)000000001"}
+	if got := description.(ugent.Record).OtherIdentifiers; !slices.Equal(got, want) {
+		t.Errorf("OtherIdentifiers = %q, want %q", got, want)
+	}
+}
+
 // A term the MODS mapping cannot place is a TermError at its index, and
 // the term is not placed. The other terms still are. A repeat is reported
 // at the later term.
@@ -118,6 +135,8 @@ func TestMODSErrorsNameTheTerm(t *testing.T) {
 		{"mods element as key", []sip.Term{{Key: "titleinfo", Value: "x"}}, "unknown key", 0},
 		{"language on the identifier", []sip.Term{{Key: "identifier", Lang: "nl", Value: "x"}}, "identifier takes no language tag", 0},
 		{"empty value", []sip.Term{{Key: "title", Value: " "}}, "title has an empty value", 0},
+		{"language on another identifier", []sip.Term{{Key: "otheridentifier", Lang: "nl", Value: "x"}}, "otheridentifier takes no language tag", 0},
+		{"empty other identifier", []sip.Term{{Key: "otheridentifier", Value: ""}}, "otheridentifier has an empty value", 0},
 		{"second identifier", slices.Concat(terms, []sip.Term{{Key: "identifier", Value: "ID-2"}}), "identifier appears more than once; give exactly one value", 3},
 		{"title repeated in one language", slices.Concat(terms, []sip.Term{{Key: "title", Lang: "nl", Value: "Poes"}}), `title appears more than once in language "nl"`, 3},
 		{"title repeated untagged", []sip.Term{{Key: "title", Value: "a"}, {Key: "title", Value: "b"}}, "distinct language tags", 1},
@@ -138,7 +157,7 @@ func TestMODSErrorsNameTheTerm(t *testing.T) {
 			// The refused term left no trace: the record holds the terms
 			// before it and nothing else.
 			record := description.(ugent.Record)
-			placed := len(record.Titles)
+			placed := len(record.Titles) + len(record.OtherIdentifiers)
 			if record.Identifier != "" {
 				placed++
 			}
