@@ -73,8 +73,10 @@ was ingested earlier, the value gains one.
   of that representation only, such as a license.
 
 The record is UGent's application profile of MODS: the fields are named in the library's
-catalogue words (call number, barcode, enumeration), not in MODS's element names. The
-keys `description.csv` takes are in the [input specification](../input-spec.md) §3.
+catalogue words (call number, barcode, enumeration), not in MODS's element names. Which
+catalogue field becomes which MODS element is in the
+[mapping from catalogue record to MODS](ugent-bibliographic-mods.md). The keys
+`description.csv` takes are in the [input specification](../input-spec.md) §3.
 
 ## 4. Representations
 
