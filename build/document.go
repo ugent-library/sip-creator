@@ -9,16 +9,14 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// EncodedDescription is a description that arrives already encoded: a
-// finished document in the model's document format, supplied as a file,
-// such as a dc.xml or mods.xml prepared elsewhere. Where the model's
-// Encode writes a document from a description, this one is copied: the
-// package carries an unchanged copy of it (ADR-0021). The two UGent profiles accept
-// one; the basic profile does not, because Meemoo's document must carry
-// the entity identifier the build mints, and the tool does not edit XML.
-// The tool checks only that the file parses as XML and that its root
-// element is the profile's standard. Schema validity and content are left
-// to the producer and to the validators downstream (ADR-0003).
+// EncodedDescription is a description supplied as a finished document in
+// the model's document format, such as a dc.xml or mods.xml prepared
+// elsewhere. The package carries an unchanged copy of the file
+// (ADR-0021). A profile accepts one only when its metadata model
+// implements DocumentFormat. Package build checks only that the file
+// parses as XML and that its root element is in the profile's format. It
+// does not validate the file against its schema or check its content
+// (ADR-0003).
 type EncodedDescription struct {
 	// Source is the absolute path of the file on disk.
 	Source string
@@ -26,23 +24,21 @@ type EncodedDescription struct {
 
 var _ sip.Description = EncodedDescription{}
 
-// Validate reports why the file is not a document at all: unreadable, or
-// not parsable as XML (xmldoc.Root). Which root element it must have is
-// the profile's rule, checked through its DocumentFormat.
+// Validate reads the file and checks that it parses as XML. It returns an
+// error if the file cannot be read or is not XML. The metadata model's
+// ValidateDocumentRoot checks the root element.
 func (d EncodedDescription) Validate() error {
 	_, err := d.Root()
 	return err
 }
 
-// ValidateRequired reports nothing: no profile that accepts a document
-// reads an identifier or a title from it, and the document's schema says
-// what it must state.
+// ValidateRequired accepts every supplied document and returns nil.
+// Package build does not read a document's content (ADR-0003), so it
+// cannot tell whether the document states an identifier and a title.
 func (EncodedDescription) ValidateRequired() error { return nil }
 
-// Root reads the whole file with xmldoc.Root and returns its root
-// element for the profile's check of the standard. A build reads the
-// file once per check and once more to copy it: descriptive documents are
-// small, and rereading keeps the type a plain value with nothing cached.
+// Root reads the whole file with xmldoc.Root and returns its root element.
+// It returns an error if the file cannot be opened or is not XML.
 func (d EncodedDescription) Root() (xml.StartElement, error) {
 	f, err := os.Open(d.Source)
 	if err != nil {

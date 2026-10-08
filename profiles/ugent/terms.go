@@ -12,13 +12,12 @@ import (
 
 // Terms is the descriptive metadata of ugent/basic: an ordered list of
 // terms in Simple Dublin Core, each keyed by one of the fifteen element
-// names ("title", "coverage"); the order the producer gave them in is
-// preserved through to the emitted XML. A term's language tag is accepted
-// so producers can state it, but not emitted: the simpledc document
-// carries no xml:lang. Validate holds the rules on what a term may say.
+// names ("title", "coverage"). dc.xml keeps the order the producer gave. A
+// term's language tag is accepted so producers can state it, but dc.xml
+// leaves it out, because the simpledc document carries no xml:lang.
+// Validate holds the rules on what a term may say.
 type Terms []sip.Term
 
-// has reports whether any term states the given key.
 func (t Terms) has(key string) bool {
 	for _, term := range t {
 		if term.Key == key {
@@ -28,13 +27,15 @@ func (t Terms) has(key string) bool {
 	return false
 }
 
-// langRx is a pragmatic language-tag shape (primary subtag plus optional
-// subtags), not full BCP 47 validation.
+// langRx matches the shape of a language tag: a primary subtag of two or
+// three letters, then optional subtags. It does not check the full BCP 47
+// grammar.
 var langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
 
-// validateTerm reports why the term cannot be emitted: a key outside the
-// fifteen, a malformed language tag, an empty value, or a value XML cannot
-// carry.
+// validateTerm checks that the term's key is one of the fifteen elements,
+// that its language tag is well-formed when it has one, and that its value
+// is not empty and holds only text XML can carry. It returns an error
+// naming the first rule the term breaks.
 func validateTerm(t sip.Term) error {
 	if !dcElementSet[t.Key] {
 		return fmt.Errorf("unknown key %q: not a Simple Dublin Core element; see the supported keys in the input specification", t.Key)
@@ -63,8 +64,8 @@ func (t Terms) Validate() error {
 	return errors.Join(errs...)
 }
 
-// ValidateRequired reports each key a package-level description must
-// state (required) that the terms do not.
+// ValidateRequired checks that the terms state every key in dcRequired. It
+// returns an error naming each missing key.
 func (t Terms) ValidateRequired() error {
 	var errs []error
 	for _, key := range dcRequired {

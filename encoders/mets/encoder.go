@@ -20,12 +20,11 @@ import (
 
 // Schemas are the bundled XSD file names the METS documents point at with
 // xsi:schemaLocation: METS 1.12, xlink and the two E-ARK extension schemas.
-// A profile that writes METS ships them in its package's schemas/ dir.
+// Every package holds them in its schemas/ directory.
 var Schemas = []string{"mets1_12.xsd", "xlink.xsd", "DILCISExtensionMETS.xsd", "DILCISExtensionSIPMETS.xsd"}
 
 // mdTypes is the METS 1.12 MDTYPE vocabulary, the closed list of values
-// mets1_12.xsd allows for mdRef/@MDTYPE. E-ARK CSIP fixes the METS
-// version, so the list changes only with a new CSIP version.
+// mets1_12.xsd allows for mdRef/@MDTYPE.
 var mdTypes = []string{
 	"MARC", "MODS", "EAD", "DC", "NISOIMG", "LC-AV", "VRA", "TEIHDR", "DDI",
 	"FGDC", "LOM", "PREMIS", "PREMIS:OBJECT", "PREMIS:AGENT", "PREMIS:RIGHTS",
@@ -33,9 +32,10 @@ var mdTypes = []string{
 	"LIDO", "OTHER",
 }
 
-// MDType returns how METS records a metadata format named format: a name
-// the MDTYPE vocabulary lists, spelled as it spells it, is the MDTYPE
-// itself, and any other name is MDTYPE OTHER with the name as OTHERMDTYPE.
+// MDType returns the MDTYPE and OTHERMDTYPE values that METS records for a
+// metadata format. A format the MDTYPE vocabulary lists, with the same
+// spelling, is its own MDTYPE and has no OTHERMDTYPE. Any other format is
+// MDTYPE OTHER, with the format as OTHERMDTYPE.
 func MDType(format string) (mdType, otherMDType string) {
 	if slices.Contains(mdTypes, format) {
 		return format, ""
@@ -43,9 +43,7 @@ func MDType(format string) (mdType, otherMDType string) {
 	return "OTHER", format
 }
 
-// identifier mints a fresh uuid-<uuid> METS ID. The templates mint shared
-// IDs ($fileGrpID, $docGrpID, $SCHEMAID, $DOCID) once, up front, so the
-// fileSec and the structMap that points at it carry the same value.
+// identifier mints a fresh uuid-<uuid> METS ID.
 func identifier() string {
 	return fmt.Sprintf("uuid-%s", uuid.NewV4().String())
 }
@@ -66,13 +64,14 @@ var funcs = template.FuncMap{
 	"esc": escapeXML,
 }
 
-// href writes a path relative to the METS document as a URI reference:
-// every byte except the unreserved characters of RFC 3986 and the slashes
-// between segments is percent-encoded, so a file named "R&D 1+2.tif" is
-// written as R%26D%201%2B2.tif. Readers decode an href before they open the
-// file; commons-ip, and RODA through it, decodes with java.net.URLDecoder,
-// which also reads a raw "+" as a space and refuses a "%" that starts no
-// escape. Encoding "+" and "%" keeps both readings on the file's name.
+// href returns a path, relative to the METS document, as a URI reference.
+// It percent-encodes every byte except the unreserved characters of RFC 3986
+// and the slashes between segments, so "R&D 1+2.tif" becomes
+// R%26D%201%2B2.tif. Readers decode an href before they open the file.
+// commons-ip, and RODA through it, decodes with java.net.URLDecoder, which
+// also reads a raw "+" as a space and rejects a "%" that is not followed by
+// two hex digits. Because "+" and "%" are encoded too, both kinds of decoder
+// get the file's name back.
 func href(path string) string {
 	const hex = "0123456789ABCDEF"
 	var b strings.Builder
@@ -95,18 +94,21 @@ func isUnreserved(c byte) bool {
 		c == '-' || c == '.' || c == '_' || c == '~'
 }
 
-// escapeXML makes a value safe as XML character data or a quoted attribute
-// value. File paths, labels and agent names come from producers and
-// operators, and a file named R&D.tif is ordinary.
+// escapeXML returns s escaped for use as XML character data or as a quoted
+// attribute value. Labels, representation names and agent names come from
+// producers and operators, and a label such as "R&D scans" is ordinary.
 func escapeXML(s string) string {
 	var b bytes.Buffer
 	xml.EscapeText(&b, []byte(s)) // never fails on a bytes.Buffer
 	return b.String()
 }
 
-// templates escape every value they read from the package graph and
-// write every path as an href; only the IDs and timestamps the templates
-// mint themselves are written as they are.
+// templates hold the package and representation METS documents. They
+// escape every value they read from the package graph and write every path
+// as an href. Only the IDs and timestamps they mint themselves are written
+// as they are. An ID that two elements share ($fileGrpID, $docGrpID,
+// $SCHEMAID, $DOCID) is minted once, up front, so a fileGrp and the
+// structMap fptr that points at it carry the same value.
 var templates = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ define "representation" -}}
 {{ $fileGrpID := identifier -}}
@@ -283,8 +285,8 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
 {{ end }}
 `))
 
-// EncodeRepresentation writes a representation's METS document; the
-// representation carries its own Declaration, set by the assembler.
+// EncodeRepresentation writes the METS document of r, with the profile
+// values r.Declaration holds.
 func EncodeRepresentation(w io.Writer, r *sip.Representation) error {
 	return templates.ExecuteTemplate(w, "representation", r)
 }

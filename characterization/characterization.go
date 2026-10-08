@@ -1,10 +1,10 @@
-// Package characterization decodes pre-computed file-characterization
-// reports (the siegfried.json sidecar an operator generates with
-// `sf -hash md5 -json`) into per-file records the assembler consumes.
-// Decoding carries the report's facts (format, mime, checksum, per-file
-// tool errors) without judging them: a whole-tree report legitimately
-// contains entries no consumer ever looks up, so strictness policy
-// belongs to the consumer, which knows which entries it needs.
+// Package characterization decodes a pre-computed characterization report,
+// the siegfried.json file an operator generates with `sf -hash md5 -json`,
+// into one record per file (ADR-0009). It keeps the report's facts as they
+// are: format, media type, checksum and the tool's error for each file. It
+// does not judge them, because a report on a whole folder can hold entries
+// that no package uses. Package build judges a record when it looks up a
+// file for the package.
 package characterization
 
 import (
@@ -20,19 +20,21 @@ import (
 
 // Record is one file's characterization facts as the report asserts them.
 type Record struct {
-	// Format is the asserted format; nil when the tool ran and found no
-	// match.
+	// Format is the format the report asserts, or nil when the tool found
+	// no match.
 	Format *sip.Format
-	// Mime is the IANA media type the report asserts; empty when it
+	// Mime is the IANA media type the report asserts, or empty when it
 	// asserts none.
 	Mime string
 	// MD5 is the hex digest that ties the record to the bytes it describes.
 	MD5 string
-	// Errors is the tool's per-file error, verbatim; empty means none.
+	// Errors is the tool's error for this file, verbatim, or empty when
+	// there is none.
 	Errors string
 }
 
-// Report maps input-relative slash paths to their characterization records.
+// Report maps each file's path, relative to the input folder and with
+// slash separators, to its characterization record.
 type Report map[string]Record
 
 // sfOutput mirrors the report `sf -hash md5 -json` emits.
@@ -60,14 +62,15 @@ type sfMatch struct {
 	Warning string `json:"warning"`
 }
 
-// DecodeSiegfried decodes a siegfried JSON report into a Report.
+// DecodeSiegfried decodes a siegfried JSON report into a Report. It returns
+// an error if r is not JSON or has no top-level siegfried version.
 func DecodeSiegfried(r io.Reader) (Report, error) {
 	var out sfOutput
 	if err := json.NewDecoder(r).Decode(&out); err != nil {
 		return nil, fmt.Errorf("parse siegfried report: %w", err)
 	}
-	// Any JSON object decodes into sfOutput without error; the version
-	// string is the discriminator proving this is a siegfried report.
+	// Any JSON object decodes into sfOutput without error. The version
+	// string shows that the input is a siegfried report.
 	if out.Siegfried == "" {
 		return nil, errors.New(`not a siegfried report: missing top-level "siegfried" version`)
 	}
@@ -75,9 +78,9 @@ func DecodeSiegfried(r io.Reader) (Report, error) {
 	report := make(Report, len(out.Files))
 	for _, f := range out.Files {
 		rec := Record{MD5: f.MD5, Errors: f.Errors}
-		// First match wins; the tool takes no view on ambiguous reports.
-		// The registry is always set inside a non-nil Format: the premis
-		// template dereferences FormatRegistry unguarded.
+		// Only the first match is used. A non-nil Format always carries a
+		// registry, because the PREMIS template reads FormatRegistry
+		// without a nil check.
 		if len(f.Matches) > 0 {
 			m := f.Matches[0]
 			fr := sip.NewFormatRegistry()
@@ -86,12 +89,12 @@ func DecodeSiegfried(r io.Reader) (Report, error) {
 			rec.Format = &sip.Format{FormatRegistry: fr}
 			rec.Mime = m.Mime
 		}
-		// sf records paths as invoked (possibly ./-prefixed, with
-		// backslashes when sf ran on Windows); consumers look up
-		// input-relative slash paths. Backslashes become slashes whatever
-		// the platform the tool runs on, so a report generated on Windows
-		// matches the files on macOS or Linux; a file name that itself
-		// contains a backslash then matches no entry.
+		// sf records each path as it was given, which may start with ./
+		// and has backslashes when sf ran on Windows. Report keys are
+		// relative paths with slashes. Backslashes become slashes on every
+		// platform, so a report generated on Windows matches the files on
+		// macOS or Linux. A file name that itself contains a backslash then
+		// matches no entry.
 		report[path.Clean(strings.ReplaceAll(f.Filename, `\`, "/"))] = rec
 	}
 	return report, nil

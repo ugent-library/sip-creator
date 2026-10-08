@@ -3,7 +3,7 @@
 // representations and files, the agents and other METS values a profile
 // declares, and the identifier scheme (uuid-<uuid>). The graph types
 // (Package, Entity, Representation, File) describe a package as it is
-// written to disk. Package build assembles them from a build.SourcePackage,
-// which it validates first, so the graph types carry no checks of their
-// own.
+// written to disk. In an assembled package, every node has an identifier,
+// a path and a media type. The graph types carry no checks of their own.
+// Package build assembles them and keeps these conditions.
 package sip

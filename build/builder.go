@@ -12,14 +12,13 @@ import (
 	"github.com/ugent-library/sip-creator/store"
 )
 
-// Config is the builder's wiring: which profile it builds to, where
-// packages land and where the build logs. What a package is built from
-// is not configuration; it arrives per build as a SourcePackage.
+// Config holds what a Builder needs besides the packages it builds: the
+// profile, the directory packages are written to and the logger.
 type Config struct {
-	// Profile is the definition every package this builder makes is built
-	// to: one of this module's profiles (see profiles.Get) or one written
-	// for another descriptive standard (ADR-0022), with the submitting
-	// organization added by WithSubmitter. It must name a metadata model.
+	// Profile is the definition every package this builder makes follows.
+	// It comes from profiles.Get, or is written for another descriptive
+	// standard (ADR-0022). WithSubmitter adds the submitting organization to
+	// it. Its Model must be set.
 	Profile Definition
 	// Destination is the directory packages are created under.
 	Destination string
@@ -27,18 +26,16 @@ type Config struct {
 	Logger *slog.Logger
 }
 
-// Builder builds SIP packages to one profile. It reads no input folder and
-// no environment: everything one package is built from arrives in the
-// SourcePackage handed to Build.
+// Builder builds SIP packages to one profile.
 type Builder struct {
 	profile     Definition
 	destination string
 	logger      *slog.Logger
 }
 
-// New returns a builder for the config's profile. A profile without a
-// metadata model, or whose model names no format or one METS cannot
-// record, is refused here, before any build.
+// New checks that the config's profile has a metadata model and that the
+// model's format name can be recorded in METS. It returns a Builder for
+// the profile, or an error if a check fails.
 func New(config *Config) (*Builder, error) {
 	if config.Profile.Model == nil {
 		return nil, fmt.Errorf("profile %q names no metadata model; set the definition's Model", config.Profile.Name)
@@ -57,9 +54,9 @@ func New(config *Config) (*Builder, error) {
 	}, nil
 }
 
-// validateModelType returns why a metadata model's format name cannot be
-// recorded in METS: METS requires MDTYPE, so the name must not be empty,
-// and it must be text the METS document can carry.
+// validateModelType checks that name, a metadata model's format name, is
+// not empty, because METS requires MDTYPE, and that it is text XML can
+// carry. It returns an error if a check fails.
 func validateModelType(name string) error {
 	if name == "" {
 		return errors.New("the metadata model names no format; ModelType must return one, such as DC or MODS")
@@ -70,11 +67,12 @@ func validateModelType(name string) error {
 	return nil
 }
 
-// Build validates the source package, assembles the complete package graph
-// (no disk writes), then emits it in the canonical order. The package
-// directory, dest/<identifier>, only ever holds a complete package: Build
-// refuses one that already exists, and a failed Build leaves nothing
-// behind.
+// Build validates the source package, assembles the package graph without
+// writing anything, and then writes the package to the directory
+// <Destination>/<identifier>. It returns the graph, with each file's size
+// and checksum filled in. It returns an error if validation, assembly or
+// writing fails, or if the package directory already exists. A failed
+// Build leaves no package directory behind.
 func (b *Builder) Build(source *SourcePackage) (*sip.Package, error) {
 	if err := b.profile.ValidateSource(source); err != nil {
 		return nil, err
@@ -100,12 +98,12 @@ func (b *Builder) Build(source *SourcePackage) (*sip.Package, error) {
 
 // writePackage writes pkg into a temporary directory next to its final
 // one and renames it to pkg.Location once every file is written, so the
-// final name never holds part of a package. A directory that already has
-// the final name is refused, never written into: an update reuses the
-// earlier package's identifier, and writing into that package's directory
-// would leave its files beside the new ones. A failed write removes the
-// temporary directory; a process killed partway leaves only that
-// directory, whose name starts with a dot and ends in .tmp.
+// final name never holds part of a package. It returns an error if a
+// directory with the final name already exists, and never writes into it.
+// An update reuses the earlier package's identifier, and writing into that
+// package's directory would leave its files beside the new ones. A failed
+// write removes the temporary directory. A process killed partway leaves
+// only that directory, whose name starts with a dot and ends in .tmp.
 func (b *Builder) writePackage(pkg *sip.Package) (err error) {
 	if _, err := os.Lstat(pkg.Location); err == nil {
 		return fmt.Errorf("package directory %s already exists; move it away first", pkg.Location)

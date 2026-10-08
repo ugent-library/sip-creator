@@ -17,8 +17,8 @@ var terms = []sip.Term{
 	{Key: "title", Lang: "en", Value: "Cat"},
 }
 
-// Under ugent/basic the terms become Simple Dublin Core terms unchanged, in order:
-// the keys are the elements' own names.
+// Under ugent/basic the terms become Simple Dublin Core terms unchanged,
+// in order: the keys are the elements' own names.
 func TestSimpleDCKeepsTheTerms(t *testing.T) {
 	description, errs := SimpleDC{}.Map(terms)
 	if len(errs) != 0 {
@@ -33,10 +33,10 @@ func TestSimpleDCKeepsTheTerms(t *testing.T) {
 	}
 }
 
-// Under basic each key becomes the element Meemoo's specification names, in
-// order, with the language and value unchanged. An unknown key is a
-// TermError at its index, and the term stays as written, so the terms keep
-// their indexes.
+// Under meemoo/basic each key becomes the element Meemoo's specification
+// names, in order, with the language and value unchanged. An unknown key
+// is a TermError at its index, and the term stays as written, so the terms
+// keep their indexes.
 func TestMeemooMapsKeysToElements(t *testing.T) {
 	in := []sip.Term{
 		{Key: "identifier", Value: "ID-1"},
@@ -67,8 +67,7 @@ func TestMeemooMapsKeysToElements(t *testing.T) {
 	}
 }
 
-// Every element the Meemoo mapping names is one the library's terms
-// accept, so the key table cannot point at an element Meemoo's profile
+// Every element the Meemoo mapping names is one meemoo.Terms accepts, so the key table cannot point at an element Meemoo's profile
 // does not have.
 func TestMeemooElementsAreAccepted(t *testing.T) {
 	for key, element := range meemooElements {
@@ -79,9 +78,10 @@ func TestMeemooElementsAreAccepted(t *testing.T) {
 	}
 }
 
-// Under ugent/bibliographic the terms fill the record's fields: the identifier once
-// and the titles in order with their language. The rows carry no items;
-// those reach a record through the library or a supplied document.
+// Under ugent/bibliographic the terms fill the record's fields: the
+// identifier once and the titles in order with their language. The rows
+// carry no items. Items reach a record through the library or a supplied
+// document.
 func TestMODSTermsFillTheRecord(t *testing.T) {
 	description, errs := MODS{}.Map(terms)
 	if len(errs) != 0 {
@@ -104,8 +104,8 @@ func TestMODSTermsFillTheRecord(t *testing.T) {
 }
 
 // A term the MODS mapping cannot place is a TermError at its index, and
-// the term is not placed; the terms around it still are. A repeat is
-// reported at the repeated term.
+// the term is not placed. The other terms still are. A repeat is reported
+// at the later term.
 func TestMODSErrorsNameTheTerm(t *testing.T) {
 	tests := []struct {
 		name  string

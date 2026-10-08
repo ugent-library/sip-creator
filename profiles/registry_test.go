@@ -18,7 +18,8 @@ import (
 
 // shipped is the sorted, deduplicated set of XSDs a profile's packages ship:
 // what the METS documents point at plus what its descriptive document
-// points at, the same sum the assembler makes.
+// points at, the same sum the assembler makes. It fails the test if no
+// definition is registered under name.
 func shipped(t *testing.T, name string) []string {
 	t.Helper()
 	def, ok := Get(name)
@@ -43,13 +44,9 @@ func withMETS(names ...string) []string {
 	return slices.Sorted(slices.Values(append(slices.Clone(mets.Schemas), names...)))
 }
 
-// Every XSD a profile ships is bundled, so a typo in a metadata model's list fails
-// here rather than at the first build, and each profile ships exactly what
-// its documents point at: meemoo/basic the METS set plus Meemoo's
-// descriptive schema and what it imports (the Dublin Core family, EDTF,
-// schema.org, xml.xsd), ugent/basic the METS set plus simpledc.xsd and
-// xml.xsd, ugent/bibliographic the METS set plus mods-3-7.xsd. The bundle is the
-// union of what the profiles ship, so no profile ships all of it.
+// Every XSD a profile ships is bundled, so a typo in a metadata model's
+// list fails here rather than at the first build. Each profile ships the
+// METS set plus what its descriptive document points at.
 func TestRegistrySchemas(t *testing.T) {
 	bundle := schemas.Get()
 	for _, name := range Names() {
@@ -74,10 +71,9 @@ func TestRegistrySchemas(t *testing.T) {
 	}
 }
 
-// sampleDescriptions holds one description per profile that its metadata
-// model renders; Encode does not run Validate, and an empty description has no
-// key for the template to refuse, so it is enough to render the
-// document's root.
+// sampleDescriptions holds one empty description per profile. An empty
+// description is enough: it renders the document's root, which carries the
+// schema-location hint, and has no key for the template to refuse.
 var sampleDescriptions = map[string]sip.Description{
 	"meemoo/basic":        meemoo.Terms{},
 	"ugent/basic":         ugent.Terms{},
@@ -85,10 +81,10 @@ var sampleDescriptions = map[string]sip.Description{
 }
 
 // The schema-location hint of each profile's descriptive document points
-// into the package's schemas/ directory, at files the profile ships: the
-// template names the file and Schemas() lists it, and if the two drift the
-// document points at a file the package does not carry. TestRegistrySchemas
-// pins the other half, that every listed file is bundled.
+// into the package's schemas/ directory, at a file the model's Schemas
+// lists. The template names the file and Schemas lists it separately. If
+// the two differ, the document points at a file the package does not
+// carry. TestRegistrySchemas checks that every listed file is bundled.
 func TestRegistryDescriptiveDocumentsPointAtShippedSchemas(t *testing.T) {
 	const schemasDir = "../../schemas"
 	for _, name := range Names() {
@@ -121,7 +117,8 @@ const xsiNamespace = "http://www.w3.org/2001/XMLSchema-instance"
 
 // schemaLocations returns the locations the document's root hints at: the
 // second of each namespace–location pair in xsi:schemaLocation, and every
-// entry of xsi:noNamespaceSchemaLocation.
+// entry of xsi:noNamespaceSchemaLocation. It fails the test if doc is not
+// XML.
 func schemaLocations(t *testing.T, doc []byte) []string {
 	t.Helper()
 	root, err := xmldoc.Root(bytes.NewReader(doc))
@@ -146,8 +143,8 @@ func schemaLocations(t *testing.T, doc []byte) []string {
 	return locations
 }
 
-// Every registry entry names a metadata model; the engine refuses a
-// definition without one before any write.
+// Every registry entry names a metadata model and is registered under its
+// own Name. build.New refuses a definition without a model.
 func TestRegistryEntriesNameAModel(t *testing.T) {
 	for _, name := range Names() {
 		def, _ := Get(name)
@@ -160,8 +157,8 @@ func TestRegistryEntriesNameAModel(t *testing.T) {
 	}
 }
 
-// The UGent profiles name their representations from one vocabulary;
-// meemoo/basic, whose specification names none, has no vocabulary.
+// The UGent profiles name their representations from one vocabulary.
+// meemoo/basic has no vocabulary, because its specification names none.
 func TestRepresentationTypes(t *testing.T) {
 	want := map[string][]string{
 		"meemoo/basic":        nil,

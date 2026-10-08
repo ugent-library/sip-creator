@@ -36,7 +36,7 @@ func TestMDTypesMatchTheMETSSchema(t *testing.T) {
 	}
 }
 
-// A listed name is the MDTYPE itself; any other name is OTHER with the
+// A listed name is the MDTYPE itself. Any other name is OTHER, with the
 // name as OTHERMDTYPE. The vocabulary's spelling decides: dc is not DC.
 func TestMDType(t *testing.T) {
 	for _, tc := range []struct {

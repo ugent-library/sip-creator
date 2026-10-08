@@ -1,8 +1,8 @@
 // Package ugent holds the profiles UGent Library defines for its own RODA
 // instance, with the metadata models they use. A profile is a content
-// type, named after its owner and the type (ADR-0034): ugent/basic for
+// type, named after its owner and the type (ADR-0034). ugent/basic is for
 // resources the library has not necessarily catalogued, described as
-// Simple Dublin Core Terms; ugent/bibliographic for its catalogued
+// Simple Dublin Core Terms. ugent/bibliographic is for its catalogued
 // holdings, described as a MODS Record. Each profile's rules are written in
 // docs/profiles/.
 package ugent
@@ -14,12 +14,10 @@ import (
 
 // Basic is the ugent/basic profile (docs/profiles/ugent-basic.md): a plain
 // E-ARK SIP (spec 2.2.0), writing dc.xml from Terms and no PREMIS.
-// The registry in profiles/ hands it out under the name "ugent/basic".
 var Basic = build.Definition{
 	Name:  "ugent/basic",
 	Model: simpledc{},
-	// Named after the Simple DC document it holds; Meemoo's naming
-	// convention doesn't apply here.
+	// Named after the Simple DC document it holds.
 	DocumentName: "dc.xml",
 	// docs/profiles/ugent-basic.md §4: "A representation's name MUST be
 	// one of preservation, archival and access, exactly, in lowercase."
@@ -30,23 +28,27 @@ var Basic = build.Definition{
 	// content is not, or not yet, in the archive." CSIP58 allows a package
 	// without file references to content.
 	MinRepresentations: 0,
-	// A representation may carry its own description, such as a license
-	// that holds for one version only; CSIP has no rule against it.
+	// docs/profiles/ugent-basic.md §3: "A representation MAY carry its own
+	// description, in the same standard, for what is true of that
+	// representation only, such as a license."
 	AllowRepresentationDescriptions: true,
-	// No PREMIS: E-ARK SIP makes it optional, and without agents or events
-	// a PREMIS document only repeats the fixity the METS already declares
-	// (ADR-0022). Supplied PREMIS documents are still carried.
+	// docs/profiles/ugent-basic.md §6: "The tool generates no PREMIS for
+	// this profile. Without agents or events a generated PREMIS document
+	// would only repeat the fixity the METS already declares." Supplied
+	// PREMIS documents are still carried.
 	EmitPackagePremis:        false,
 	EmitRepresentationPremis: false,
-	// Each representation's type goes into its METS content typing, where
-	// an ingest system reads it as the representation's type (ADR-0013).
+	// Each representation's type goes into its METS content typing
+	// (ADR-0013).
 	EmitRepresentationType: true,
 	Declaration: sip.MetsDeclaration{
-		// The version-pinned profile URL: commons-ip's SIP2 check for
-		// spec 2.2.0 compares against this exact value (its error
-		// message misleadingly prints the unversioned URL).
+		// The profile URL for E-ARK SIP 2.2.0. commons-ip's SIP2 check for
+		// that version compares against this exact value, although its
+		// error message prints the unversioned URL.
 		ProfileURL: "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
-		Type:       "Mixed", // CSIP content-category vocabulary; --content-category and SIP_CONTENT_CATEGORY override it
+		// The default content category, from the CSIP vocabulary. A
+		// package's SourcePackage.ContentCategory replaces it.
+		Type: "Mixed",
 		// The package METS declares the profile as its content type
 		// (docs/profiles/ugent-basic.md §2: "The package METS MUST declare
 		// ugent/basic as its content information type."). CSIP6: "When the
@@ -56,7 +58,7 @@ var Basic = build.Definition{
 		// instead (EmitRepresentationType).
 		ContentInformationType:      "OTHER",
 		OtherContentInformationType: "ugent/basic",
-		// No agents: the engine adds the software agent, and
+		// No agents: Builder.Build adds the software agent, and
 		// WithSubmitter the submitting organization.
 	},
 }
@@ -64,12 +66,10 @@ var Basic = build.Definition{
 // Bibliographic is the ugent/bibliographic profile
 // (docs/profiles/ugent-bibliographic.md): Basic's plain E-ARK SIP, writing
 // mods.xml from a Record where Basic writes dc.xml. Every other value
-// is Basic's. The registry in profiles/ hands it out under the name
-// "ugent/bibliographic".
+// is Basic's.
 var Bibliographic = build.Definition{
-	Name:  "ugent/bibliographic",
-	Model: mods{},
-	// Named after the MODS document it holds.
+	Name:         "ugent/bibliographic",
+	Model:        mods{},
 	DocumentName: "mods.xml",
 	// docs/profiles/ugent-bibliographic.md §4: "A representation's name
 	// MUST be one of preservation, archival and access, exactly, in
@@ -89,7 +89,7 @@ var Bibliographic = build.Definition{
 	Declaration: sip.MetsDeclaration{
 		// As for Basic.
 		ProfileURL: "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
-		Type:       "Mixed", // CSIP content-category vocabulary; --content-category and SIP_CONTENT_CATEGORY override it
+		Type:       "Mixed",
 		// The package METS declares the profile as its content type
 		// (docs/profiles/ugent-bibliographic.md §2: "The package METS MUST
 		// declare ugent/bibliographic as its content information type."),

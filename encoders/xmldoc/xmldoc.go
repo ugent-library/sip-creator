@@ -1,10 +1,8 @@
 // Package xmldoc is the one XML reader the tool has. It reads a whole
-// document and returns its root element, so the checks on documents the
-// tool did not write (received PREMIS files, supplied descriptive
-// documents) share one notion of "parses as XML, with this root".
-// Deliberately not schema validation, which stays external (ADR-0003);
-// the reader only keeps the tool from packaging something that is not an
-// XML document of the expected kind at all.
+// document and returns its root element. Every check on a document the
+// tool did not write, such as a received PREMIS file or a supplied
+// descriptive document, reads it this way, so all of them accept the same
+// XML. It does not validate against a schema (ADR-0003).
 package xmldoc
 
 import (
@@ -14,12 +12,11 @@ import (
 	"io"
 )
 
-// Root reads r to its end and returns the document's first element, the
-// root, with its attributes. It refuses what encoding/xml refuses: bad
-// syntax and unclosed or mismatched tags, reported as "not well-formed
-// XML", and input that holds no element at all, reported as "not an XML
-// document". encoding/xml does not refuse a second top-level element or
-// text after the root, so neither does Root.
+// Root reads r to its end and returns the root element with its
+// attributes. It returns a "not well-formed XML" error for bad syntax and
+// for unclosed or mismatched tags. It returns a "not an XML document" error
+// for input without any element. Like encoding/xml, it accepts a second
+// top-level element and text after the root.
 func Root(r io.Reader) (xml.StartElement, error) {
 	dec := xml.NewDecoder(r)
 
@@ -34,8 +31,8 @@ func Root(r io.Reader) (xml.StartElement, error) {
 		}
 		if start, ok := tok.(xml.StartElement); ok && root == nil {
 			root = &start
-			// Keep reading: well-formedness of the whole document matters,
-			// not just the prologue.
+			// Keep reading: the whole document must be well-formed, not
+			// only the part up to the root's start tag.
 		}
 	}
 	if root == nil {

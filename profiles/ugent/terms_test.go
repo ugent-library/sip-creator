@@ -30,10 +30,10 @@ func TestTermsEncode(t *testing.T) {
 		"<simpledc",
 		`xsi:noNamespaceSchemaLocation="../../schemas/simpledc.xsd"`,
 		"<identifier>uuid-x</identifier>",
-		// language tags are accepted but not emitted
+		// language tags are accepted but not written
 		"<title>Fotoalbum 2026</title>",
 		"<date>1913</date>",
-		// operator values are arbitrary text and must be escaped
+		// producer values are arbitrary text and must be escaped
 		"<format>48 foto&#39;s</format>",
 		"<subject>R&amp;D &lt;scans&gt;</subject>",
 	} {
@@ -77,16 +77,16 @@ func TestValidateTerm(t *testing.T) {
 	tests := []struct {
 		name string
 		term sip.Term
-		want string // "" means valid; else substring of the error
+		want string // empty when valid, otherwise a substring of the error
 	}{
 		{"valid", sip.Term{Key: "title", Value: "x"}, ""},
 		{"valid with lang", sip.Term{Key: "description", Lang: "nl-BE", Value: "x"}, ""},
 		{"valid coverage", sip.Term{Key: "coverage", Value: "x"}, ""},
-		// a qualified term Meemoo's vocabulary has; not Simple DC
+		// a qualified term Meemoo's vocabulary has, not Simple DC
 		{"qualified term", sip.Term{Key: "abstract", Value: "x"}, "unknown key"},
 		{"prefixed", sip.Term{Key: "dcterms:title", Value: "x"}, "unknown key"},
 		{"typo", sip.Term{Key: "titel", Value: "x"}, "unknown key"},
-		// keys are lowercase; case folding is the rows file's convention
+		// keys are exact: only the description.csv reader lowercases them
 		{"capitalized", sip.Term{Key: "Title", Value: "x"}, "unknown key"},
 		{"bad lang", sip.Term{Key: "title", Lang: "nl!", Value: "x"}, "not a language tag"},
 		{"empty value", sip.Term{Key: "subject", Value: "  "}, "empty value"},

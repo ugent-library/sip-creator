@@ -10,14 +10,15 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// langRx is a pragmatic language-tag shape (primary subtag plus optional
-// subtags), not full BCP 47 validation.
+// langRx matches the shape of a language tag: a primary subtag of two or
+// three letters, then optional subtags. It does not check the full BCP 47
+// grammar.
 var langRx = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$`)
 
-// validateTerm reports why the term cannot be emitted: an element outside
-// the profile's elements, a malformed language tag, an empty value, or a
-// value XML cannot carry.
-// These rules apply to every producer, not just the CSV transport.
+// validateTerm checks that the term names an element of the profile, that
+// its language tag is well-formed when it has one, and that its value is
+// not empty and holds only text XML can carry. It returns an error naming
+// the first rule the term breaks.
 func validateTerm(t sip.Term) error {
 	if _, ok := elementsByName[t.Key]; !ok {
 		return fmt.Errorf("unknown element %q: not an element of Meemoo's basic content profile", t.Key)
@@ -39,13 +40,10 @@ func validateTerm(t sip.Term) error {
 // profile).
 const RequiredLang = "nl"
 
-// Validate checks every term and Meemoo's own rules: the elements'
+// Validate checks every term, and Meemoo's own rules: the elements'
 // cardinality limits and a Dutch entry wherever a language-tagged element
-// appears. Every finding is reported, joined into one error, so a producer
-// corrects a document in one round; a finding about one term is a
-// *sip.TermError naming the term's position. The cardinality table lists
-// the identifier as once, so a second identifier is reported there: unlike
-// the ugent/basic profile, this one needs no identifier rule of its own.
+// appears. A second identifier is a cardinality finding, because the table
+// allows the identifier once.
 func (t Terms) Validate() error {
 	var errs []error
 	for i, term := range t {
@@ -57,12 +55,10 @@ func (t Terms) Validate() error {
 	return errors.Join(errs...)
 }
 
-// validateCardinality reports every term that exceeds its element's
-// cardinality (Meemoo's 0..1/1..1 restrictions, counted per language for
-// lang-tagged elements). Findings name the element (and language). An
-// element outside the table has the zero cardinality, many, so an unknown
-// element never adds a false repeat finding to the one validateTerm
-// already gave.
+// validateCardinality checks the terms against Meemoo's 0..1 and 1..1
+// restrictions, counted per language for language-tagged elements. It
+// returns one finding for each element, or element and language, that
+// occurs too often.
 func (t Terms) validateCardinality() error {
 	seen := map[string]int{}
 	var errs []error
@@ -91,8 +87,8 @@ func (t Terms) validateCardinality() error {
 	return errors.Join(errs...)
 }
 
-// ValidateRequired reports each element a package-level description must
-// state (required) that the terms do not.
+// ValidateRequired checks that the terms state every element in required.
+// It returns an error naming each missing element.
 func (t Terms) ValidateRequired() error {
 	var errs []error
 	for _, element := range required {
@@ -103,13 +99,14 @@ func (t Terms) ValidateRequired() error {
 	return errors.Join(errs...)
 }
 
-// validateRequiredLang reports each element that carries language-tagged
-// values without one in lang ("" disables the rule).
+// validateRequiredLang checks that every element with language-tagged
+// values has at least one value in lang. It returns an error naming each
+// element that has none. An empty lang turns the check off.
 func (t Terms) validateRequiredLang(lang string) error {
 	if lang == "" {
 		return nil
 	}
-	var tagged []string // elements with lang-tagged values, in first-appearance order
+	var tagged []string // elements with language-tagged values, in order of first appearance
 	// missing doubles as the seen set: an element enters as true (missing) on
 	// first sight and flips to false once a value in lang appears.
 	missing := map[string]bool{}

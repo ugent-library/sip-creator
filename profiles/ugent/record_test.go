@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// testRecord is a complete record: the identity with the title in two
+// testRecord is a complete record: an identifier, the title in two
 // languages, and two copies, one with a barcode and an enumeration, one
 // with a call number alone.
 func testRecord() Record {
@@ -22,7 +22,9 @@ func testRecord() Record {
 	}
 }
 
-// requireError fails unless err mentions want; want "" means err must be nil.
+// requireError checks err against want. An empty want expects a nil
+// error. Any other want must be a substring of the error. It fails the
+// test if err does not match.
 func requireError(t *testing.T, err error, want string) {
 	t.Helper()
 	if want == "" {
@@ -40,7 +42,7 @@ func TestValidateTitle(t *testing.T) {
 	tests := []struct {
 		name  string
 		title Title
-		want  string // "" means valid; else substring of the error
+		want  string // empty when valid, otherwise a substring of the error
 	}{
 		{"valid", Title{Value: "x"}, ""},
 		{"valid with lang", Title{Value: "x", Lang: "nl-BE"}, ""},
@@ -65,7 +67,7 @@ func TestValidateItem(t *testing.T) {
 		{"complete", Item{CallNumber: "A", Barcode: "1", Enumeration: "vol. 1"}, ""},
 		{"no call number", Item{Barcode: "1"}, "no call number"},
 		{"blank call number", Item{CallNumber: " "}, "no call number"},
-		// empty means none; blank would emit an empty element
+		// empty means none, but blank would be written as an empty element
 		{"blank barcode", Item{CallNumber: "A", Barcode: " "}, "blank barcode"},
 		{"blank enumeration", Item{CallNumber: "A", Enumeration: "\t"}, "blank enumeration"},
 		// XML cannot carry it, in any of the three values
@@ -80,8 +82,9 @@ func TestValidateItem(t *testing.T) {
 	}
 }
 
-// A blank identifier is a finding (an empty one means none); a barcode
-// names one copy. Items without a barcode never collide: empty means none.
+// A blank identifier is a finding, while an empty one means none. A
+// barcode names one copy. Items without a barcode never collide, because
+// empty means none.
 func TestRecordValidate(t *testing.T) {
 	requireError(t, testRecord().Validate(), "")
 
@@ -99,7 +102,7 @@ func TestRecordValidate(t *testing.T) {
 	requireError(t, noBarcodes.Validate(), "")
 }
 
-// A package-level record states an identifier and a title; items alone do
+// A package-level record states an identifier and a title. Items alone do
 // not describe anything.
 func TestRecordValidateRequired(t *testing.T) {
 	requireError(t, Record{Identifier: "A"}.ValidateRequired(), "title is required")
@@ -114,9 +117,9 @@ func TestRecordValidateRequired(t *testing.T) {
 	}
 }
 
-// Validate joins every finding, per-title and per-item ones included, so a
-// producer sees all of them in one round; each names its position in its
-// text.
+// Validate joins every finding, including those about one title or one
+// item, so a producer sees all of them in one round. Each names its
+// position in its text.
 func TestRecordValidateReportsEveryFinding(t *testing.T) {
 	r := Record{
 		Identifier: "A",

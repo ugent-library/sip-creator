@@ -31,7 +31,7 @@ func ExampleBuilder_Build() {
 	if !ok {
 		log.Fatal("no ugent/basic profile")
 	}
-	// The second argument is the Meemoo OR-id, used by the basic profile only.
+	// The second argument is the Meemoo OR-id. Only meemoo/basic uses it.
 	def, err = def.WithSubmitter("Example Organization", "")
 	if err != nil {
 		log.Fatal(err)
@@ -120,8 +120,9 @@ func ExampleBuilder_Build_mods() {
 	// Output: metadata/descriptive/mods.xml
 }
 
-// Supply a finished descriptive document instead of terms or a record. The
-// build checks its root element and copies it into the package as it is.
+// Supply a finished descriptive document instead of terms or a record.
+// Builder.Build checks its root element and copies it into the package as
+// it is.
 func ExampleEncodedDescription() {
 	destination, err := os.MkdirTemp("", "sip")
 	if err != nil {
@@ -231,8 +232,8 @@ func (catalogueModel) ModelTypeVersion() string { return "" }
 
 // Build a package with a profile of your own: a description type, a
 // metadata model that writes it and supplies its own XSD, and a definition
-// handed to build.New. Nothing in this module's profiles/ is involved, and
-// the package ships the XSD next to the ones its METS documents need.
+// handed to build.New. Nothing in this module's profiles/ is involved. The
+// package ships the XSD next to the ones its METS documents need.
 func Example_ownProfile() {
 	destination, err := os.MkdirTemp("", "sip")
 	if err != nil {
@@ -291,10 +292,11 @@ func Example_ownProfile() {
 }
 
 // Build a package that replaces an earlier one. The earlier package's
-// identifier becomes this package's identifier (mets/@OBJID); RecordStatus
+// identifier becomes this package's identifier (mets/@OBJID). RecordStatus
 // is metsHdr/@RECORDSTATUS and ContentCategory is mets/@TYPE. Left empty,
-// all three take the profile's values, and a package without a status is
-// read as new.
+// the identifier is minted, and the status and the category take the
+// profile's values. The E-ARK SIP specification reads a package without a
+// status as NEW.
 func ExampleBuilder_Build_update() {
 	destination, err := os.MkdirTemp("", "sip")
 	if err != nil {

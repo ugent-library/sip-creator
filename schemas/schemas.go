@@ -1,6 +1,5 @@
-// Package schemas bundles the XSDs a SIP can carry in its schemas/ dir: the
-// union of what the profiles ship. Which of them one package ships follows
-// from its documents, so no package carries the whole bundle.
+// Package schemas bundles every XSD that the profiles can ship in a
+// package's schemas/ directory.
 package schemas
 
 import (
@@ -11,7 +10,7 @@ import (
 //go:embed *.xsd
 var fsys embed.FS
 
-// Get returns the bundled XSDs by filename.
+// Get returns the bundled XSDs, keyed by file name.
 func Get() map[string][]byte {
 	files := make(map[string][]byte)
 
@@ -22,8 +21,8 @@ func Get() map[string][]byte {
 
 		buf, err := fsys.ReadFile(name)
 		if err != nil {
-			// Reading a file the embed FS itself listed cannot fail at
-			// runtime; a failure is a programmer error.
+			// Reading a file that the embedded file system itself listed
+			// cannot fail at runtime, so a failure is a programmer error.
 			panic(err)
 		}
 

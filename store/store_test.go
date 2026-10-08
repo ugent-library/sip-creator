@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-// md5 of "hello world", computed independently; the tests must not
-// reimplement the store's own hashing to check it.
+// helloWorldMD5 is the MD5 of "hello world", computed outside the store,
+// so the tests do not check the store's hashing against itself.
 const helloWorldMD5 = "5eb63bbbe01eeed093cb22bb8f5acdc3"
 
 func readFile(t *testing.T, path string) string {
@@ -66,8 +66,7 @@ func TestWriteMetadataTruncatesOnRewrite(t *testing.T) {
 	write("a much longer first run of content")
 	info := write("short")
 
-	// A re-run must replace the file, not append to it: an earlier version
-	// of the writer opened files with O_APPEND.
+	// A second write replaces the file instead of appending to it.
 	if got := readFile(t, filepath.Join(root, "METS.xml")); got != "short" {
 		t.Errorf("file content after rewrite = %q, want %q", got, "short")
 	}
@@ -120,7 +119,7 @@ func TestCopyFile(t *testing.T) {
 }
 
 // A checksum the caller already holds is reported as given, without one
-// being computed; the bytes are copied all the same.
+// being computed. The bytes are copied all the same.
 func TestCopyFileWithAKnownChecksum(t *testing.T) {
 	root := t.TempDir()
 	s := New(root)
@@ -130,7 +129,8 @@ func TestCopyFileWithAKnownChecksum(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Not the MD5 of the bytes: the store must not compute or compare one.
+	// This is not the MD5 of the bytes, so the test fails if the store
+	// computes or compares one.
 	const known = "00112233445566778899aabbccddeeff"
 	info, err := s.CopyFile(src, "scan.tif", known)
 	if err != nil {
@@ -231,7 +231,7 @@ func TestMkdirAll(t *testing.T) {
 	if err := s.MkdirAll("metadata/preservation"); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
 	}
-	// Idempotent: an existing directory is not an error.
+	// An existing directory is not an error.
 	if err := s.MkdirAll("metadata/preservation"); err != nil {
 		t.Fatalf("MkdirAll on existing dir: %v", err)
 	}

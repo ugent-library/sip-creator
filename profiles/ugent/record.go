@@ -13,22 +13,23 @@ import (
 // bibliographic record in MODS 3.7, typed by field where MODS is a tree
 // (ADR-0021). It is UGent's application profile of MODS, named in the
 // library's catalogue words: what the record states about the work, and the
-// physical copies of it. It is what a package describes; a representation
-// describes a version of the same content. Validate holds the rules on what
-// a record may say.
+// physical copies of it. A package-level record describes the intellectual
+// entity. A representation's record describes one version of the same
+// content. Validate holds the rules on what a record may say.
 type Record struct {
-	// Identifier is the record's local identifier, the catalogue number
-	// the describing institution finds it by (in a library, the record
-	// number in its catalogue), emitted as a mods:identifier of type local. Empty when the
-	// record states none, which a representation's record may.
+	// Identifier is the record's local identifier: the catalogue number the
+	// describing institution finds it by, such as the record number in a
+	// library catalogue. It is written as a mods:identifier of type local.
+	// A package-level record always states one. A representation's record
+	// may leave it empty.
 	Identifier string
 	// Titles are the record's titles, one titleInfo/title each, in the
-	// order given. A title's language is emitted as xml:lang.
+	// order given. A title's language is written as xml:lang.
 	Titles []Title
 	// Items are the physical copies of the record, one per copy. Items
-	// belong on the package-level record (ADR-0015): a copy is never a
-	// representation. Nothing refuses items on a representation's record;
-	// they are written to that representation's mods.xml.
+	// belong on the package-level record (ADR-0015), because a copy is
+	// never a representation. Nothing refuses items on a representation's
+	// record. They are written to that representation's mods.xml.
 	Items []Item
 }
 
@@ -36,7 +37,7 @@ type Record struct {
 type Title struct {
 	// Value is the title text.
 	Value string
-	// Lang is the title's language tag; empty when unspecified.
+	// Lang is the title's language tag, or empty when the title has none.
 	Lang string
 }
 
@@ -45,21 +46,22 @@ type Title struct {
 type Item struct {
 	// CallNumber is the copy's call number, the one value every item states.
 	CallNumber string
-	// Barcode is the copy's item barcode; empty when the copy has none.
-	// Unique across a record's items when set.
+	// Barcode is the copy's item barcode, or empty when the copy has none.
+	// No two items of a record share a barcode.
 	Barcode string
 	// Enumeration is the volume or issue designation of a copy of a
-	// journal, periodical or newspaper; empty for a single-part work.
+	// journal, periodical or newspaper, or empty for a single-part work.
 	Enumeration string
 }
 
-// Record is the profile's description; nothing in this package uses it as
-// one, so the assertion makes a drift in the interface a build error here
-// rather than in the profile's definition.
+// No code in this package uses Record as a sip.Description. Without this
+// assertion, a change to that interface would first break the code in
+// other packages that hands a Record to the builder.
 var _ sip.Description = Record{}
 
-// validateTitle reports why the title cannot be emitted: an empty text, a
-// text XML cannot carry, or a malformed language tag.
+// validateTitle checks that the title's text is not empty and holds only
+// text XML can carry, and that its language tag is well-formed when it has
+// one. It returns an error naming the first rule the title breaks.
 func validateTitle(t Title) error {
 	if strings.TrimSpace(t.Value) == "" {
 		return errors.New("has an empty value")
@@ -73,10 +75,12 @@ func validateTitle(t Title) error {
 	return nil
 }
 
-// validateItem reports why the item cannot be emitted: no call number, an
-// optional value that is blank rather than absent, which would emit an
-// empty element, or a value XML cannot carry. Barcode uniqueness is a cross-item rule, checked in
-// Validate.
+// validateItem checks that the item states a call number, that its barcode
+// and enumeration are not blank when set, and that every value holds only
+// text XML can carry. It returns an error naming the first rule the item
+// breaks. A blank value would be written as an empty element, so an item
+// without a barcode or an enumeration leaves that field empty. Validate
+// checks that barcodes are unique, because that rule spans items.
 func validateItem(it Item) error {
 	if strings.TrimSpace(it.CallNumber) == "" {
 		return errors.New("has no call number; every item states one")
@@ -95,13 +99,10 @@ func validateItem(it Item) error {
 	return nil
 }
 
-// Validate checks the identifier, every title and every item plus the one
-// cross rule: no barcode twice, since two items with one barcode name one
-// physical copy twice. Every finding is reported, joined into one error; a
-// finding about one title or one item names its position in its text
-// ("title 2: ...", "item 2: ..."). The identifier is single by type, so
-// the record cannot state two. MODS itself limits nothing here: identifier
-// and titleInfo are optional and repeatable.
+// Validate checks the identifier, every title and every item, and one rule
+// across items: no barcode twice, because two items with one barcode name
+// one physical copy twice. A finding about one title or one item names its
+// position in its text, such as "title 2: ..." or "item 2: ...".
 func (r Record) Validate() error {
 	var errs []error
 	if r.Identifier != "" && strings.TrimSpace(r.Identifier) == "" {
@@ -133,11 +134,10 @@ func (r Record) Validate() error {
 	return errors.Join(errs...)
 }
 
-// ValidateRequired reports what a package-level record must state and
-// this one does not: an identifier and a title, as
-// docs/profiles/ugent-bibliographic.md §3 requires ("The description MUST
-// state the catalogue record's identifier and at least one title."). A
-// representation's record need not state them.
+// ValidateRequired checks that the record states an identifier and at
+// least one title, as docs/profiles/ugent-bibliographic.md §3 requires
+// ("The description MUST state the catalogue record's identifier and at
+// least one title."). It returns an error naming each missing field.
 func (r Record) ValidateRequired() error {
 	var errs []error
 	if r.Identifier == "" {

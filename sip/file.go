@@ -10,66 +10,67 @@ import (
 type File struct {
 	// Identifier identifies the file in METS and PREMIS (uuid-<uuid>).
 	Identifier string
-	// Name is the file's basename; for essence, emitted as
+	// Name is the file's base name. For essence, PREMIS records it as
 	// premis:originalName.
 	Name string
-	// Checksum is the file's MD5, hex-encoded. The assembler sets it from a
-	// characterization report when one supplies it, and the writer then
-	// copies the file without computing one; otherwise the writer computes
-	// it from the bytes it writes.
+	// Checksum is the file's MD5, hex-encoded. When a characterization
+	// report supplies an MD5, Checksum is that value, taken as given.
+	// Otherwise it is computed from the bytes written into the package.
 	Checksum string
-	// Size and Created describe the file as written into the package; the
-	// writer back-fills them as the file lands.
-	Size    string
+	// Size is the file's size in bytes as written into the package.
+	Size string
+	// Created is the file's creation time as written into the package.
 	Created string
-	// Format is the file's characterization result; nil when no report
-	// was supplied or the report found no match.
+	// Format is the file's characterization result. It is set only when a
+	// characterization report was supplied and matched the file to a format.
 	Format *Format
-	// Source is the absolute path the file is copied from; empty for the
-	// METS and PREMIS documents the build writes, for the descriptive
-	// document, whose source, when supplied, the description carries, and
-	// for a schema, which carries its Content.
+	// Source is the absolute path of the producer's file that is copied into
+	// the package. It is set for essence, documentation and received PREMIS
+	// files. A supplied descriptive document is copied from the path its
+	// description carries, not from Source.
 	Source string
-	// Content is the bytes of a schema, which the writer writes as they
-	// are; nil for every other file.
+	// Content is the bytes of a schema, written into the package as they
+	// are. It is set only for schema files.
 	Content []byte
-	// Path is the href relative to the METS document that references the
-	// file: package-relative for package-level files, representation-relative
-	// for files inside a representation.
+	// Path is the file's path relative to the METS document that references
+	// it. For a package-level file, it is relative to the package root. For a
+	// file inside a representation, it is relative to the representation's
+	// directory.
 	Path string
-	// Mime is the IANA media type METS declares for this file (@MIMETYPE is
-	// a MUST: CSIP62/26/40). Never empty by write time, and never a guess:
-	// the characterization report's assertion, the known type of a generated
+	// Mime is the IANA media type METS declares for this file in @MIMETYPE,
+	// which CSIP26, CSIP40 and CSIP62 require. It is the type the
+	// characterization report asserts, the known type of a generated
 	// document, or application/octet-stream when the type is unknown.
 	Mime string
 	// MDType is the mdRef/@MDTYPE the METS dmdSec declares for a
 	// descriptive document, a value of the METS vocabulary such as DC or
-	// MODS; empty for every other file.
+	// MODS. It is set only for descriptive documents.
 	MDType string
-	// MDTypeVersion is the descriptive document's mdRef/@MDTYPEVERSION,
-	// rendered only when set.
+	// MDTypeVersion is the descriptive document's mdRef/@MDTYPEVERSION. It
+	// is set only when the metadata model declares a version.
 	MDTypeVersion string
-	// OtherMDType is the descriptive document's mdRef/@OTHERMDTYPE, the
-	// name of a format the MDTYPE vocabulary does not list; set only when
-	// MDType is OTHER, and rendered only when set.
+	// OtherMDType is the descriptive document's mdRef/@OTHERMDTYPE: the name
+	// of a format the MDTYPE vocabulary does not list. It is set only when
+	// MDType is OTHER.
 	OtherMDType string
-	// Representation is the owning representation; nil for package-level
-	// files.
+	// Representation is the representation the file belongs to. It is set
+	// only for files inside a representation.
 	Representation *Representation
 }
 
 // Format is a file's premis:format assertion, taken from the
 // characterization report.
 type Format struct {
+	// FormatRegistry is the format's entry in a format registry.
 	FormatRegistry *FormatRegistry
 }
 
-// FormatRegistry identifies a format by its entry in a registry,
-// e.g. PRONOM.
+// FormatRegistry identifies a format by its entry in a registry, such
+// as PRONOM.
 type FormatRegistry struct {
-	// Name is the registry name, e.g. PRONOM.
+	// Name is the registry name, such as PRONOM.
 	Name string
-	// Key is the format's key in the registry, e.g. fmt/43.
+	// Key is the format's key in the registry, such as fmt/43.
 	Key string
 	// Role is the formatRegistryRole vocabulary value, normally
 	// "specification".

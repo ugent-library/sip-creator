@@ -15,11 +15,12 @@ type otherDescription struct{}
 func (otherDescription) Validate() error         { return nil }
 func (otherDescription) ValidateRequired() error { return nil }
 
-// A description of another standard is refused by the profile's
-// descriptive-standard check before validation and before any side effect,
-// at package and representation level alike: a type no profile writes,
-// Meemoo terms handed to ugent/basic, Simple DC terms handed to meemoo/basic or to
-// ugent/bibliographic, a MODS record handed to either DC profile.
+// Definition.ValidateSource refuses a description of another standard,
+// before the description is validated and before anything is written. It
+// does so at package and representation level alike. The cases are a type
+// no profile writes, Meemoo terms handed to ugent/basic, Simple DC terms
+// handed to meemoo/basic or to ugent/bibliographic, and a MODS record
+// handed to either DC profile.
 func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	cases := []struct {
 		name string

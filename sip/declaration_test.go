@@ -25,7 +25,7 @@ func TestRecordStatusIsValid(t *testing.T) {
 			t.Errorf("%q.IsValid() = false, want true", ok)
 		}
 	}
-	// Exact: the METS template renders the value as is.
+	// Case matters.
 	for _, bad := range []RecordStatus{"new", "UPDATE", ""} {
 		if bad.IsValid() {
 			t.Errorf("%q.IsValid() = true, want false", bad)

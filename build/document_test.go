@@ -31,7 +31,8 @@ const (
 	malformedDocument = `<simpledc><title>x</simpledc>`
 )
 
-// writeDocument puts a document on disk and returns it as a build.EncodedDescription.
+// writeDocument writes content to the file name under dir and returns it
+// as a build.EncodedDescription.
 func writeDocument(t *testing.T, dir, name, content string) build.EncodedDescription {
 	t.Helper()
 	src := filepath.Join(dir, name)
@@ -41,15 +42,16 @@ func writeDocument(t *testing.T, dir, name, content string) build.EncodedDescrip
 	return build.EncodedDescription{Source: src}
 }
 
-// A document validates as a document: well-formed XML, whatever its root;
-// the root is the profile's rule. A missing or malformed file is refused,
-// and ValidateRequired trusts every document.
+// EncodedDescription.Validate checks that the document is well-formed XML,
+// whatever its root. Definition.ValidateSource checks the root against the
+// profile. A missing or malformed file is refused. ValidateRequired
+// accepts every document.
 func TestDocumentValidate(t *testing.T) {
 	dir := t.TempDir()
 	tests := []struct {
 		name string
 		doc  build.EncodedDescription
-		want string // "" means valid; else substring of the error
+		want string // empty when valid, otherwise a substring of the error
 	}{
 		{"simpledc", writeDocument(t, dir, "dc.xml", simpleDCDocument), ""},
 		{"mods", writeDocument(t, dir, "mods.xml", modsDocument), ""},
@@ -79,8 +81,8 @@ func TestDocumentValidate(t *testing.T) {
 
 // The two UGent profiles build a package from a supplied document of their
 // standard: the file lands under metadata/descriptive as it is, with
-// fixity, and the METS types it as the profile declares. No swap, no
-// MEEMOO-LOCAL-ID.
+// fixity, and the METS types it as the profile declares. There is no swap,
+// so no MEEMOO-LOCAL-ID is lifted onto the entity.
 func TestBuildSuppliedDocument(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -128,7 +130,7 @@ func TestBuildSuppliedDocument(t *testing.T) {
 }
 
 // A document on a representation lands in that representation's
-// descriptive dir and is referenced from its METS.
+// metadata/descriptive directory, and its METS references it.
 func TestBuildSuppliedDocumentOnRepresentation(t *testing.T) {
 	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
@@ -152,10 +154,11 @@ func TestBuildSuppliedDocumentOnRepresentation(t *testing.T) {
 }
 
 // A document the profile cannot take is refused before any write: another
-// standard's root, a MODS version other than the declared one, a version
-// missing, a malformed file, a missing file, and any document at all under
-// basic, whose metadata model does not implement DocumentFormat
-// because its document needs the swap.
+// standard's root, a MODS version other than the declared one, a missing
+// version, a malformed file, a missing file, and any document at all under
+// meemoo/basic. meemoo/basic takes no supplied document, because its
+// dc+schema document must carry the entity identifier in place of the
+// producer's.
 func TestBuildRefusesWrongDocument(t *testing.T) {
 	dir := t.TempDir()
 	cases := []struct {

@@ -16,13 +16,14 @@ type repRow struct {
 }
 
 // parseRepresentationRows parses the content of a representations.csv: a
-// header naming the columns, then one row per representation folder.
-// The errs are findings in the rows: a *rowError for a row that breaks a
-// rule, or a CSV syntax error, which ends the parse because the reader may
-// not find its place again. A row with a label or type XML cannot carry is
-// still returned, so matching rows to folders can report on it too. err
-// means the file cannot be used: not UTF-8, empty, or a wrong header, whose
-// problems are joined into it.
+// header naming the columns, then one row per representation folder. errs
+// holds the findings in the rows. A row that breaks a rule is reported as
+// a *rowError and left out. A row whose label or type XML cannot carry is
+// the exception: it is reported and still returned, so matching rows to
+// folders can report on it too. A CSV syntax error ends the parse, because
+// the CSV reader may not find its place again. err is set only when the
+// file cannot be used: it is not UTF-8, it is empty, or its header is
+// wrong. All the header's problems are joined into err.
 func parseRepresentationRows(data []byte) (rows []repRow, errs []error, err error) {
 	cr, err := newCSVReader(data)
 	if err != nil {
@@ -64,16 +65,16 @@ func parseRepresentationRows(data []byte) (rows []repRow, errs []error, err erro
 			errs = append(errs, &rowError{line, fmt.Errorf("expected %d columns per the header, got %d", len(header), len(row))})
 			continue
 		}
-		// A trailing space in a folder name is invisible in the file and
-		// can never match a portable-charset folder name, so trim it away.
+		// Spaces around a folder name are invisible in the file, and a
+		// representation name may not contain a space, so they are trimmed.
 		folder := strings.TrimSpace(cell(row, cols.folder))
 		if folder == "" {
 			errs = append(errs, &rowError{line, errors.New("the folder cell is empty; every row must name a representation folder")})
 			continue
 		}
 		label, kind := cell(row, cols.label), cell(row, cols.kind)
-		// What the package's XML can carry is the library's rule, so a label
-		// is refused here the same way as in a SourcePackage built in Go.
+		// The label and type are held to the library's rule for XML text,
+		// so they are refused here as in a SourcePackage built in Go.
 		if err := build.ValidateXMLText(label); err != nil {
 			errs = append(errs, &rowError{line, fmt.Errorf("label: %w", err)})
 		}
@@ -86,14 +87,15 @@ func parseRepresentationRows(data []byte) (rows []repRow, errs []error, err erro
 }
 
 // repColumns holds the position of each column in a representations.csv
-// row; -1 for a column the header leaves out.
+// row. A column the header leaves out has position -1.
 type repColumns struct {
 	folder, label, kind int
 }
 
 // parseRepresentationsHeader finds the columns by name, not position. An
 // unknown name is an error, because a typo would silently drop a column.
-// All of the header's problems are joined into the error.
+// It returns the column positions and an error that joins all the
+// header's problems.
 func parseRepresentationsHeader(header []string) (repColumns, error) {
 	cols := repColumns{folder: -1, label: -1, kind: -1}
 	var errs []error

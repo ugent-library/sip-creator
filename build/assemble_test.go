@@ -27,13 +27,13 @@ func TestAssemble(t *testing.T) {
 		t.Fatalf("assemble: %v", err)
 	}
 
-	// The package is rooted under the destination but nothing exists yet.
+	// The package's location is under the destination.
 	if want := filepath.Join(outDir, pkg.Identifier); pkg.Location != want {
 		t.Errorf("Location = %q, want %q", pkg.Location, want)
 	}
 
-	// Root entity wired, with the local identifier lifted onto it and the
-	// entity identifier swapped into the description.
+	// The root entity carries the producer's local identifier. The
+	// description carries the entity identifier in its place.
 	e := pkg.Root
 	if e == nil {
 		t.Fatal("no root entity")
@@ -45,7 +45,8 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("description identifier = %q, want entity identifier %q", got, e.Identifier)
 	}
 
-	// Description file node: the profile's declared name, package-relative path.
+	// The description file node takes the profile's document name and a
+	// path relative to the package METS.
 	df := e.DescriptionFile
 	if df == nil {
 		t.Fatal("no description file node")
@@ -60,9 +61,8 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("description file Mime = %q, want %q", df.Mime, "text/xml")
 	}
 
-	// One schema node per distinct XSD the package's documents point at
-	// (the METS list plus the metadata model's), in sorted
-	// (deterministic) order.
+	// There is one schema node for each distinct XSD that the METS
+	// documents or the metadata model's documents point at, sorted by name.
 	names := make([]string, 0, len(pkg.SchemaFiles))
 	for _, sf := range pkg.SchemaFiles {
 		names = append(names, sf.Name)
@@ -78,8 +78,8 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("schema nodes = %v, want the referenced XSDs sorted and deduplicated: %v", names, want)
 	}
 
-	// One representation: the package-side name is the producer's label,
-	// used verbatim.
+	// There is one representation. Its name in the package is the
+	// producer's label, used as given.
 	if len(e.Representations) != 1 {
 		t.Fatalf("representations = %d, want 1", len(e.Representations))
 	}
@@ -94,8 +94,8 @@ func TestAssemble(t *testing.T) {
 		t.Error("representation not wired back to the entity")
 	}
 
-	// The essence node records its source, a rep-relative path, and the
-	// report's enrichment.
+	// The essence node records its source, a path relative to the
+	// representation METS, and the format and mime type from the report.
 	if len(r.Files) != 1 {
 		t.Fatalf("essence files = %d, want 1", len(r.Files))
 	}
@@ -116,9 +116,9 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("essence Mime = %q, want %q from the report", f.Mime, "image/test")
 	}
 
-	// Assembly leaves the graph complete: the generated PREMIS and METS
-	// nodes are created here too (basic emits both PREMIS files), each with
-	// its Path declared; the writer only emits and back-fills.
+	// Assembly also creates a node, with its Path set, for each generated
+	// PREMIS and METS file. meemoo/basic emits both PREMIS files. The writer
+	// only writes the files and fills in their fixity.
 	if pkg.PremisFile == nil || pkg.MetsFile == nil || r.PremisFile == nil || r.MetsFile == nil {
 		t.Fatal("assemble left generated premis/mets nodes missing; the graph must be complete before write")
 	}
@@ -135,7 +135,7 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("representation PREMIS Path = %q, want %q", got, "metadata/preservation/premis.xml")
 	}
 
-	// The core guarantee: assembly writes nothing.
+	// Assembly writes nothing to disk.
 	requireEmpty(t, outDir)
 }
 
@@ -163,8 +163,9 @@ func TestAssembleRepresentations(t *testing.T) {
 	b, in, _ := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
 
-	// A second representation with a nested file: each package-side name is
-	// the producer's label, nesting is preserved under data/.
+	// A second representation holds a nested file. Each representation's
+	// name in the package is the producer's label. The nesting is kept
+	// under data/.
 	a := writeEssence(t, inDir, "a.jpg", "essence bytes")
 	deep := writeEssence(t, inDir, "sub/deep.tif", "essence bytes")
 	in.Representations = append(in.Representations,
@@ -193,8 +194,8 @@ func TestAssembleRepresentations(t *testing.T) {
 	}
 }
 
-// Characterization is optional in contract (ADR-0009): no report means the
-// build proceeds without format info.
+// Characterization is optional (ADR-0009). Without a report, assembly goes
+// on without format information.
 func TestAssembleWithoutReport(t *testing.T) {
 	b, in, _ := newTestBuilder(t, basicDef(t))
 
@@ -211,8 +212,8 @@ func TestAssembleWithoutReport(t *testing.T) {
 	}
 }
 
-// An entry with no match is a genuine no-match: Format stays nil for that
-// file only, and assembly succeeds.
+// A report entry without a format match leaves Format nil for that file
+// only. Assembly succeeds.
 func TestAssembleReportNoMatch(t *testing.T) {
 	b, in, _ := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
@@ -233,8 +234,8 @@ func TestAssembleReportNoMatch(t *testing.T) {
 	}
 }
 
-// A match that asserts no mime still yields the Format, and the mime falls
-// back to the admitted unknown; the two facts are independent.
+// A match without a mime type still sets Format. The mime type falls back
+// to application/octet-stream.
 func TestAssembleReportMatchWithoutMime(t *testing.T) {
 	b, in, _ := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
@@ -255,16 +256,15 @@ func TestAssembleReportMatchWithoutMime(t *testing.T) {
 	}
 }
 
-// Essence the report doesn't know aborts: the file was added (or the report
-// generated from the wrong directory) after the characterization run.
+// Assembly stops at an essence file the report has no entry for.
 func TestAssembleReportMissingEntry(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.Characterization = characterization.Report{
 		"somewhere/else.jpg": {MD5: "ab"},
 	}
 
-	// The message shows a key the report does hold, so a report generated
-	// from the wrong folder explains itself.
+	// The message shows a key the report does hold, so the operator can
+	// see that the report was made from the wrong folder.
 	_, err := b.Assemble(in)
 	if want := `characterization report has no entry for "cat.jpg" (report keys look like "somewhere/else.jpg")`; err == nil || !strings.Contains(err.Error(), want) {
 		t.Fatalf("assemble error = %v, want %q", err, want)
@@ -278,9 +278,9 @@ func TestAssembleReportMissingEntry(t *testing.T) {
 	}
 }
 
-// With a report, assembly no longer reads the essence, so a file that is
-// gone ends the build when the writer opens it, with the file system's
-// error, and nothing reaches the destination.
+// A characterization report does not make assembly read the essence. A
+// file that is gone ends the build when Builder.Build opens it to copy it,
+// with the file system's error. Nothing reaches the destination.
 func TestBuildReportSourceMissing(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
@@ -296,10 +296,9 @@ func TestBuildReportSourceMissing(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// The report's checksum is the one the package declares, also when the
-// bytes on disk no longer match it: whether a report still describes the
-// files is the operator's judgement, not the build's (ADR-0032). An ingest
-// system that checks fixity rejects such a package.
+// The package declares the report's checksum, also when the bytes on disk
+// no longer match it. Checking that the report still describes the files
+// is left to the operator (ADR-0032).
 func TestAssembleTakesTheReportChecksum(t *testing.T) {
 	b, in, _ := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
@@ -318,8 +317,8 @@ func TestAssembleTakesTheReportChecksum(t *testing.T) {
 	}
 }
 
-// A record without a checksum gives the package nothing to declare, so it
-// aborts: the report was made without -hash md5.
+// An entry without a checksum gives the package nothing to declare, so
+// assembly stops.
 func TestAssembleReportChecksumless(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
@@ -334,8 +333,8 @@ func TestAssembleReportChecksumless(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// A per-file error recorded by the characterizer aborts: the tool is telling
-// us it never characterized these bytes.
+// Assembly stops at an entry that records a characterization error,
+// because the characterization tool did not characterize that file.
 func TestAssembleReportEntryError(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	src := in.Representations[0].Files[0]
@@ -352,17 +351,17 @@ func TestAssembleReportEntryError(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// Documentation needs no characterization entry (ADR-0009): no entry is
-// fine, and a present entry gives the file its mime type and its checksum
-// (ADR-0032).
+// Documentation needs no characterization entry (ADR-0009). When a
+// documentation file has an entry, the file takes its mime type and its
+// checksum from it (ADR-0032).
 func TestAssembleDocumentation(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
 	manual := writeEssence(t, inDir, "manual.txt", "doc")
 	notes := writeEssence(t, inDir, "sub/notes.txt", "doc")
 	in.Documentation = []build.SourceFile{manual, notes}
-	// The report knows the essence and one documentation file; the other
-	// documentation file has no entry, which is allowed.
+	// The report has entries for the essence and for one documentation
+	// file. The other documentation file has none.
 	in.Characterization = report(t, in.Representations[0].Files[0], manual)
 
 	pkg, err := b.Assemble(in)
@@ -392,10 +391,9 @@ func TestAssembleDocumentation(t *testing.T) {
 	requireEmpty(t, outDir)
 }
 
-// A representation may carry its own descriptive terms: they
-// land on the representation with a rep-relative file node, an identifier
-// term is swapped for the representation identifier, and identity is not
-// required.
+// A representation may carry its own descriptive terms. They go on the
+// representation, with a file node whose path is relative to the
+// representation METS. Neither an identifier nor a title is required.
 func TestAssembleRepresentationDescriptive(t *testing.T) {
 	b, in, _ := newTestBuilder(t, basicDef(t))
 	in.Representations[0].Description = meemoo.Terms{
@@ -418,8 +416,8 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 		t.Errorf("Path = %q, want rep-relative %q", df.Path, "metadata/descriptive/dc+schema.xml")
 	}
 
-	// With an identifier term present, the representation identifier is
-	// swapped in, mirroring the package-level behavior.
+	// An identifier term is replaced with the representation identifier,
+	// as at the package level.
 	b2, in2, _ := newTestBuilder(t, basicDef(t))
 	in2.Representations[0].Description = meemoo.Terms{
 		{Key: "dcterms:identifier", Value: "rep-local-1"},
@@ -433,7 +431,7 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 		t.Errorf("rep descriptive identifier = %q, want the representation identifier %q", got, r2.Identifier)
 	}
 
-	// Without rep terms, no node exists.
+	// A representation without terms gets no description file node.
 	b3, in3, _ := newTestBuilder(t, basicDef(t))
 	pkg3, err := b3.Assemble(in3)
 	if err != nil {
@@ -444,10 +442,10 @@ func TestAssembleRepresentationDescriptive(t *testing.T) {
 	}
 }
 
-// identifierTerm returns the identifier any world's description states
-// ("" when absent): what the Meemoo swap wrote, or what the UGent profiles
-// left alone. No profile package exports an accessor for it; the swap is
-// the Meemoo package's own business, and the UGent profiles never swap.
+// identifierTerm returns the identifier a description states, or "" when
+// it states none. For Meemoo terms that is the identifier the swap wrote.
+// For the UGent profiles it is the producer's identifier, which they
+// never swap. No profile package exports a function that reads it.
 func identifierTerm(d sip.Description) string {
 	var terms []sip.Term
 	key := "identifier"
@@ -467,9 +465,9 @@ func identifierTerm(d sip.Description) string {
 	return ""
 }
 
-// A package's record status and content category are its own, supplied on
-// the source package: they land on the package declaration and on each
-// representation's, and the profile's declaration stays as it was.
+// The source package supplies the package's record status and content
+// category. They go on the package declaration and on each
+// representation's declaration. The profile's declaration does not change.
 func TestAssembleDeclaresPackageValues(t *testing.T) {
 	before := basicDef(t).Declaration
 	b, in, _ := newTestBuilder(t, basicDef(t))
@@ -493,9 +491,9 @@ func TestAssembleDeclaresPackageValues(t *testing.T) {
 	}
 }
 
-// Every package names the software that built it, once and first, with the
-// version stamped into the binary, whatever the profile; the profile's own
-// agents stay as they were.
+// Under every profile, the package names the software that built it, once
+// and as the first agent, with the version stamped into the binary. The
+// profile's own agents do not change.
 func TestAssembleAddsTheSoftwareAgent(t *testing.T) {
 	for name, def := range map[string]build.Definition{"meemoo/basic": basicDef(t), "ugent/basic": ugentBasicDef(t)} {
 		t.Run(name, func(t *testing.T) {
@@ -577,10 +575,10 @@ func TestAssembleUGentBasicKeepsProducerIdentifier(t *testing.T) {
 	}
 }
 
-// The ugent/basic profile types each representation METS by its resolved type,
-// in both the TYPE and the CONTENTINFORMATIONTYPE pair; the basic profile
-// keeps the profile declaration unchanged; the package declaration never
-// changes (ADR-0013).
+// The ugent/basic profile types each representation METS by the
+// representation's type, in both the TYPE and the CONTENTINFORMATIONTYPE
+// pair. Under meemoo/basic each representation METS keeps the profile's
+// declaration. The package declaration never changes (ADR-0013).
 func TestAssembleRepresentationDeclaration(t *testing.T) {
 	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	in.Description = identityTerms()
@@ -646,9 +644,9 @@ func TestAssembleUGentContentType(t *testing.T) {
 	}
 }
 
-// Without a vocabulary of representation types, label and type resolve
-// along the name → label → type cascade, and an explicit type reaches the
-// representation declaration (ADR-0014).
+// Without a vocabulary of representation types, the label defaults to the
+// name and the type defaults to the label (ADR-0014). An explicit type
+// reaches the representation declaration.
 func TestAssembleRepresentationCascade(t *testing.T) {
 	b, in, _ := newTestBuilder(t, ugentBasicWithoutVocabulary(t))
 	inDir := t.TempDir()
@@ -713,8 +711,7 @@ func TestAssembleRepresentationTypeIsTheName(t *testing.T) {
 
 const validPremis = `<?xml version="1.0"?><premis:premis xmlns:premis="http://www.loc.gov/premis/v3" version="3.0"><premis:event/></premis:premis>`
 
-// Received preservation files become graph nodes at both levels (copied,
-// never parsed) and must actually be premis:premis documents.
+// Received preservation files become graph nodes at both levels.
 func TestAssembleReceivedPremis(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
@@ -745,8 +742,8 @@ func TestAssembleReceivedPremis(t *testing.T) {
 		t.Errorf("received Mime = %q", got)
 	}
 
-	// PremisFiles feeds the METS amdSec: the generated node first (created
-	// at assembly, basic emits it), the received one after.
+	// PremisFiles lists the files the METS amdSec references. The generated
+	// node comes first and the received one after it.
 	if files := r.PremisFiles(); len(files) != 2 || files[0] != r.PremisFile || files[1] != r.ReceivedPremisFiles[0] {
 		t.Errorf("PremisFiles = %v, want [generated, received]", files)
 	}
@@ -794,7 +791,7 @@ func TestAssembleRepresentationDocumentation(t *testing.T) {
 // A received file that is not a PREMIS document aborts assembly, at both
 // levels: packaging it under metadata/preservation/ would be a false
 // preservation claim. So does one that cannot be read. The error names the
-// level, and the file where assembly got as far as reading it.
+// level. When the file could be read, the error also names the file.
 func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -835,8 +832,9 @@ func TestAssembleReceivedPremisRejectsNonPremis(t *testing.T) {
 	}
 }
 
-// A supplied package identifier is reused verbatim (how an update keeps
-// the original package's mets/@OBJID); empty means mint.
+// A supplied package identifier is used as given. That is how an update
+// keeps the earlier package's mets/@OBJID. Without one, assembly mints an
+// identifier.
 func TestAssemblePackageIdentifier(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
 	in.PackageIdentifier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
@@ -853,8 +851,6 @@ func TestAssemblePackageIdentifier(t *testing.T) {
 	}
 }
 
-// unbundledSchemas wraps a real metadata model and claims an XSD the bundle does
-// not hold.
 // ownSchemas is a profile's metadata model with the schema list replaced,
 // the way a profile outside this module supplies its own XSDs.
 type ownSchemas struct {
@@ -892,9 +888,10 @@ func TestBuildShipsAModelsOwnSchema(t *testing.T) {
 	}
 }
 
-// A schema that would land in the package wrong is refused at assembly,
-// before any write: a name that is not a plain file name, no contents, or
-// a second, different schema under a name already taken, here a METS one.
+// Assembly refuses a schema it cannot place in the package, before any
+// write. Such a schema has a name that is not a plain file name, has no
+// contents, or has the name of a different schema already in the package.
+// The last case uses the name of a METS schema.
 func TestBuildRefusesASchemaThatWouldLandWrong(t *testing.T) {
 	xsd := []byte(`<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>`)
 	for name, tc := range map[string]struct {

@@ -12,11 +12,11 @@ func init() {
 	rootCmd.AddCommand(checkCmd)
 }
 
-// checkCmd validates an input folder without building: the input
-// specification's rules, then the profile's rules on the source package
-// the folder holds, which the build would apply too. Checks that read
-// every file, such as the characterization report's checksums, run only in
-// create. It reads no configuration (ADR-0010).
+// checkCmd checks an input folder without building a package. It applies
+// the input specification's rules, then the profile's rules
+// (Definition.ValidateSource) to the source package the folder holds.
+// Checks that read every file, such as the characterization report's
+// checksums, run only in create. It reads no configuration (ADR-0010).
 var checkCmd = &cobra.Command{
 	Use:          "check [src]",
 	Short:        "Check an input folder against the input specification without building",
@@ -37,8 +37,8 @@ var checkCmd = &cobra.Command{
 			return err // the folder could not be read at all
 		} else {
 			// The profile's rules run only on a folder read without
-			// violations: on a partly read one they would report what is
-			// only missing because the reader could not read it.
+			// violations. On a partly read folder they would report what
+			// is missing only because input.Read could not read it.
 			report.findings = findingLines(def.ValidateSource(source))
 		}
 

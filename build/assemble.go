@@ -16,11 +16,11 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// assemble builds the complete package graph from the source package,
-// which Build has already validated, without writing anything to disk:
-// every File node is created
-// here with its Path declared, and the writer later back-fills fixity as
-// it emits.
+// assemble builds the package graph from a validated source package
+// without writing anything to disk. It creates every File node with its
+// Path. The writer fills in each node's fixity later, as it writes the
+// file. It returns an error if a schema, a received PREMIS document or a
+// characterization record cannot be used.
 func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {
 	pkg := sip.NewPackage(b.destination, source.PackageIdentifier)
 	b.logger.Info("created a new package", slog.String("id", pkg.Identifier))
@@ -77,8 +77,8 @@ func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {
 	mf := sip.NewFile()
 	mf.Name = "METS.xml"
 	mf.Path = "METS.xml"
-	// Set for the no-empty-Mime invariant even though no template reads it:
-	// nothing references the package METS from inside the package.
+	// Every node has a media type, so the package METS gets one too,
+	// although nothing inside the package references it.
 	mf.Mime = "text/xml"
 	pkg.MetsFile = mf
 	b.logger.Info("created a package METS file", slog.String("id", mf.Identifier))
@@ -89,11 +89,6 @@ func (b *Builder) assemble(source *SourcePackage) (*sip.Package, error) {
 
 func (b *Builder) assembleDescriptive(e *sip.Entity, source *SourcePackage) {
 	d := source.Description
-	// A standard that links descriptive and preservation metadata by a
-	// shared identifier (Meemoo's) swaps the entity identifier into the
-	// description, and the producer's identifier it replaces travels as
-	// MEEMOO-LOCAL-ID. Without a swap the document keeps the producer's
-	// identifier as-is (ADR-0012).
 	if s, ok := b.profile.Model.(IdentifierSwapper); ok {
 		e.AdditionalIdentifiers["MEEMOO-LOCAL-ID"] = s.Swap(d, e.Identifier)
 	}
@@ -119,12 +114,11 @@ func (b *Builder) descriptionFile() *sip.File {
 }
 
 // schemaFileNodes declares one graph node per XSD the package ships,
-// sorted by name so METS emission is deterministic whatever order the
-// lists give them in, and each name once: the METS list and the metadata
-// model's list overlap where two documents point at the same schema. It
-// refuses, before any write, a schema that would land in the package
-// wrong: a name that is not a plain file name, no contents, or two
-// different schemas under one name, where one would silently replace the
+// sorted by name so the METS lists them in the same order on every build.
+// Each name gets one node, because the METS list and the metadata model's
+// list overlap where two documents point at the same schema. It returns an
+// error if a name is not a plain file name, if a schema has no contents,
+// or if two different schemas share a name, where one would replace the
 // other.
 func schemaFileNodes(list []Schema) ([]*sip.File, error) {
 	contents := make(map[string][]byte, len(list))
@@ -153,9 +147,10 @@ func schemaFileNodes(list []Schema) ([]*sip.File, error) {
 	return files, nil
 }
 
-// validateSchemaName returns why name cannot be a schema's file name under
-// schemas/: empty, a path rather than a file name, or text XML cannot
-// carry in the documents' schema-location hints.
+// validateSchemaName checks that name is a plain file name under schemas/
+// and is text XML can carry in the documents' schema-location hints. It
+// returns an error if name is empty, is . or .., holds a slash or a
+// backslash, or holds a character XML cannot carry.
 func validateSchemaName(name string) error {
 	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, `/\`) {
 		return fmt.Errorf("the schema name %q is not a plain file name", name)
@@ -166,11 +161,11 @@ func validateSchemaName(name string) error {
 	return nil
 }
 
-// assembleDocumentationNodes declares graph nodes for documentation files
-// (package and representation level alike), each Path relative to its
-// container and under documentation/. Unlike essence, documentation needs
-// no characterization entry (ADR-0009); a present entry gives the file its
-// mime type and its checksum (ADR-0032).
+// assembleDocumentationNodes declares a graph node for each documentation
+// file of the package or of a representation, with its Path under
+// documentation/ relative to its container. Unlike essence, documentation
+// needs no characterization entry (ADR-0009). When a file has one, the
+// entry gives it its media type and its checksum (ADR-0032).
 func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars characterization.Report) []*sip.File {
 	var files []*sip.File
 	for _, src := range sources {
@@ -178,7 +173,7 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 		f.Name = path.Base(src.Path)
 		f.Source = src.Source
 		f.Path = "documentation/" + src.Path
-		f.Mime = "application/octet-stream" // unknown; a report entry may refine it below
+		f.Mime = "application/octet-stream" // unknown until a report entry says otherwise
 
 		if rec, ok := chars[src.Key]; ok {
 			f.Checksum = rec.MD5
@@ -192,14 +187,15 @@ func (b *Builder) assembleDocumentationNodes(sources []SourceFile, chars charact
 	return files
 }
 
-// assembleRepresentations turns each supplied representation into a graph
-// node. The producer's name is used verbatim as the directory under
-// representations/ and as the representation METS OBJID: no spec dictates
-// a naming scheme (CSIP requires only that names be unique; Meemoo 2.x
-// requires the directory name to equal the OBJID, which holds because
-// both come from Name). SourcePackage.Validate has already checked the
-// names. decl is the package's declaration, which each representation's
-// declaration starts from.
+// assembleRepresentations declares a graph node for each source
+// representation, with nodes for its files. decl is the package's
+// declaration, which each representation's declaration starts from. The
+// producer's name is used verbatim as the directory under
+// representations/ and as the representation METS OBJID, because no spec
+// prescribes a naming scheme. CSIP requires only that the names are
+// unique. Meemoo 2.x requires the directory name to equal the OBJID, which
+// holds because both come from Name. It returns an error if a
+// characterization record or a received PREMIS document cannot be used.
 func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaration, source *SourcePackage) error {
 	for _, sr := range source.Representations {
 		r := sip.NewRepresentation(sr.Name)
@@ -208,11 +204,11 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 		b.logger.Info("created a representation", slog.String("id", r.Identifier), slog.String("name", sr.Name))
 
 		if sr.Description != nil {
-			// Mirror the package-level swap: the emitted document carries
-			// the representation identifier instead of the producer's (a
-			// no-op when the terms carry none; rep-level identity is
-			// optional). The replaced value is not lifted: MEEMOO-LOCAL-ID
-			// is an identifier of the entity.
+			// As at the package level, the written document carries the
+			// representation's identifier in place of the producer's. A
+			// representation's description need not carry an identifier.
+			// The replaced identifier is dropped, because MEEMOO-LOCAL-ID
+			// identifies the entity.
 			if s, ok := b.profile.Model.(IdentifierSwapper); ok {
 				s.Swap(sr.Description, r.Identifier)
 			}
@@ -227,12 +223,12 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 			f := sip.NewFile()
 			f.Name = path.Base(src.Path)
 			f.Source = src.Source
-			f.Path = "data/" + src.Path // rep-relative, per File.Path semantics
-			// Characterization is optional (ADR-0009). A report gives each
-			// file its format, its mime type and its checksum; the operator
-			// who supplies the report vouches for that checksum, and the
-			// writer then copies the file without computing one (ADR-0032).
-			f.Mime = "application/octet-stream" // unknown; the report may refine it below
+			f.Path = "data/" + src.Path // relative to the representation, per File.Path
+			// A characterization report is optional (ADR-0009). When
+			// present, it gives each file its format, media type and
+			// checksum. The writer then copies the file without computing a
+			// checksum (ADR-0032).
+			f.Mime = "application/octet-stream" // unknown until the report says otherwise
 			if source.Characterization != nil {
 				rec, err := b.essenceRecord(source.Characterization, src)
 				if err != nil {
@@ -260,7 +256,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 		if b.profile.EmitRepresentationPremis {
 			pf := sip.NewFile()
 			pf.Name = "premis.xml"
-			pf.Path = "metadata/preservation/premis.xml" // rep-relative, per File.Path
+			pf.Path = "metadata/preservation/premis.xml" // relative to the representation, per File.Path
 			pf.Mime = "text/xml"                         // generated XML
 			r.PremisFile = pf
 			b.logger.Info("created a representation PREMIS file", slog.String("id", pf.Identifier))
@@ -268,7 +264,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 
 		mf := sip.NewFile()
 		mf.Name = "METS.xml"
-		mf.Path = "representations/" + r.Name + "/METS.xml" // package-relative: referenced from package METS
+		mf.Path = "representations/" + r.Name + "/METS.xml" // relative to the package METS, which references it
 		mf.Mime = "text/xml"                                // generated XML
 		r.MetsFile = mf
 		b.logger.Info("created a representation METS file", slog.String("id", mf.Identifier))
@@ -279,12 +275,13 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 	return nil
 }
 
-// assembleReceivedPremis declares graph nodes for received preservation
-// documents: copied as received, never parsed or merged,
-// but each must actually be a premis:premis document (parses as XML,
-// PREMIS 3 namespace), because packaging a non-PREMIS file under
-// metadata/preservation/ would be a false preservation claim. The check
-// applies to every producer, so it lives here, not in the CLI walker alone.
+// assembleReceivedPremis declares a graph node for each received
+// preservation document of a container. The package carries each document
+// as received, never merged with the generated one. It checks that each
+// document parses as XML and has a premis:premis root in the PREMIS 3
+// namespace, because a file under metadata/preservation/ that is not
+// PREMIS would be a false preservation claim. It returns an error if a
+// document cannot be opened or fails the check.
 func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile) ([]*sip.File, error) {
 	var files []*sip.File
 	for _, src := range sources {
@@ -301,7 +298,7 @@ func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile)
 		node := sip.NewFile()
 		node.Name = path.Base(src.Path)
 		node.Source = src.Source
-		node.Path = "metadata/preservation/" + src.Path // container-relative, per File.Path
+		node.Path = "metadata/preservation/" + src.Path // relative to the METS of its level, per File.Path
 		node.Mime = "text/xml"                          // verified XML above
 		files = append(files, node)
 		b.logger.Info("placed a received preservation file", slog.String("id", node.Identifier))
@@ -309,10 +306,10 @@ func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile)
 	return files, nil
 }
 
-// essenceRecord looks up the file's record and refuses it unless it is
-// present, error-free and carries a checksum (ADR-0009). Whether that
-// checksum still describes the file is the operator's judgement about the
-// report, not the build's: the build takes it as given (ADR-0032).
+// essenceRecord looks up the characterization record of an essence file
+// and checks that it exists, records no error and carries a checksum
+// (ADR-0009). It returns the record, or an error if a check fails. The
+// record's checksum is taken as given (ADR-0032).
 func (b *Builder) essenceRecord(chars characterization.Report, src SourceFile) (characterization.Record, error) {
 	rec, ok := chars[src.Key]
 	if !ok {
@@ -329,8 +326,9 @@ func (b *Builder) essenceRecord(chars characterization.Report, src SourceFile) (
 	return rec, nil
 }
 
-// sampleKey picks a deterministic example key for error messages, so a
-// report generated from the wrong directory is self-explaining.
+// sampleKey returns the report's first key in sorted order, as an example
+// for an error message, so an operator can see when a report was
+// generated from the wrong folder.
 func sampleKey(chars characterization.Report) string {
 	keys := slices.Sorted(maps.Keys(chars))
 	if len(keys) == 0 {

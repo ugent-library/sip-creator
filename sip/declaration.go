@@ -7,25 +7,23 @@ import (
 
 // MetsDeclaration holds the profile-level values a METS document declares:
 // the profile URL, the content typing, and the agents responsible for the
-// package. Profiles differ in these values, not in build logic:
-// MetsDeclaration is data the templates read, set at assembly on the Package
-// and on each Representation.
+// package. Profiles differ in these values, not in build logic, so a profile
+// difference in the METS reaches the templates as data here.
 type MetsDeclaration struct {
 	// ProfileURL is mets/@PROFILE.
 	ProfileURL string
 	// Type is mets/@TYPE, the content category.
 	Type string
-	// OtherType is mets/@csip:OTHERTYPE, rendered only when set; CSIP
-	// requires it when Type is "Other".
+	// OtherType is mets/@csip:OTHERTYPE, which CSIP requires when Type is
+	// "Other".
 	OtherType string
 	// ContentInformationType is mets/@csip:CONTENTINFORMATIONTYPE.
 	ContentInformationType string
-	// OtherContentInformationType is mets/@csip:OTHERCONTENTINFORMATIONTYPE,
-	// rendered only when set.
+	// OtherContentInformationType is mets/@csip:OTHERCONTENTINFORMATIONTYPE.
 	OtherContentInformationType string
-	// RecordStatus is metsHdr/@RECORDSTATUS (SIP3), rendered in the package
-	// METS only, and only when set: the E-ARK SIP spec defines an absent
-	// status as equal to NEW.
+	// RecordStatus is metsHdr/@RECORDSTATUS (SIP3). Only the package METS
+	// carries it, and only when it is set, because the E-ARK SIP
+	// specification reads an absent status as NEW.
 	RecordStatus RecordStatus
 	// Agents are the metsHdr agent entries.
 	Agents []Agent
@@ -33,10 +31,10 @@ type MetsDeclaration struct {
 
 // RecordStatus is metsHdr/@RECORDSTATUS in the E-ARK SIP vocabulary (SIP3):
 // what the package does to the archive's holdings. The vocabulary is
-// closed, so the type carries its values as constants.
+// closed.
 type RecordStatus string
 
-// The SIP3 vocabulary. An absent status reads as NEW.
+// The SIP3 vocabulary.
 const (
 	RecordStatusNew         RecordStatus = "NEW"
 	RecordStatusSupplement  RecordStatus = "SUPPLEMENT"
@@ -46,9 +44,8 @@ const (
 	RecordStatusDelete      RecordStatus = "DELETE"
 )
 
-// ParseRecordStatus maps text written in any case onto the vocabulary, or
-// returns why it cannot. It is the way from a status written as text, such
-// as the CLI's --status flag, to a RecordStatus.
+// ParseRecordStatus returns the vocabulary value that text names, in any
+// case. It returns an error if text names none.
 func ParseRecordStatus(text string) (RecordStatus, error) {
 	s := RecordStatus(strings.ToUpper(text))
 	if !s.IsValid() {
@@ -57,8 +54,8 @@ func ParseRecordStatus(text string) (RecordStatus, error) {
 	return s, nil
 }
 
-// IsValid reports whether s is one of the vocabulary's constants, exactly:
-// the METS template renders the value as is, so case is not folded here.
+// IsValid reports whether s is one of the vocabulary's values, in the same
+// case. Case matters because the METS template writes the value as it is.
 func (s RecordStatus) IsValid() bool {
 	switch s {
 	case RecordStatusNew, RecordStatusSupplement, RecordStatusReplacement,
@@ -89,10 +86,10 @@ type Agent struct {
 	Type string
 	// OtherType is agent/@OTHERTYPE.
 	OtherType string
-	// Name is the agent's name.
+	// Name is agent/name.
 	Name string
-	// Note is the agent's optional note.
+	// Note is agent/note, or empty when the agent has none.
 	Note string
-	// NoteType is note/@csip:NOTETYPE; required when Note is set.
+	// NoteType is note/@csip:NOTETYPE, required when Note is set.
 	NoteType string
 }

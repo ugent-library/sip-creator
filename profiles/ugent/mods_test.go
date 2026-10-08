@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+// encodeRecord returns r as a MODS document. It fails the test if Encode
+// returns an error.
 func encodeRecord(t *testing.T, r Record, schemasDir string) string {
 	t.Helper()
 	var buf bytes.Buffer
@@ -15,9 +17,9 @@ func encodeRecord(t *testing.T, r Record, schemasDir string) string {
 	return buf.String()
 }
 
-// The document for the test record, byte for byte: the bytes the template
-// emitted before the record was typed by field (2026-09-30), so the model
-// change leaves the output unchanged.
+// goldenDocument is the document for the test record, byte for byte. It
+// holds the bytes the template wrote before Record was typed by field
+// (2026-09-30), so the test shows that change left the output unchanged.
 const goldenDocument = `<?xml version='1.0' encoding='UTF-8'?>
 <mods:mods xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.7" xsi:schemaLocation="http://www.loc.gov/mods/v3 ../../schemas/mods-3-7.xsd">
   <mods:identifier type="local">example-0001</mods:identifier>
@@ -61,7 +63,7 @@ func TestRecordEncode(t *testing.T) {
 		`<mods:identifier type="` + localIdentifierType + `">example-0001</mods:identifier>`,
 		"<mods:titleInfo xml:lang=\"nl\">\n    <mods:title>Fotoalbum 2026</mods:title>\n  </mods:titleInfo>",
 		`<mods:titleInfo xml:lang="en">`,
-		// no language tag, no xml:lang; producer values escaped
+		// no language tag, so no xml:lang, and producer values escaped
 		"<mods:titleInfo>\n    <mods:title>R&amp;D &lt;scans&gt; &#39;quote&#39;</mods:title>",
 		// the items as one location, one copyInformation per item
 		"<mods:location>\n    <mods:holdingSimple>",
@@ -107,7 +109,7 @@ func TestRecordEncodeWithoutItems(t *testing.T) {
 	}
 }
 
-// A representation's record may state no identifier; the document then
+// A representation's record may state no identifier. The document then
 // carries none rather than an empty element.
 func TestRecordEncodeWithoutIdentifier(t *testing.T) {
 	r := Record{Titles: []Title{{Value: "PDF-versie", Lang: "nl"}}}

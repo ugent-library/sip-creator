@@ -14,17 +14,18 @@ import (
 	"github.com/ugent-library/sip-creator/profiles/ugent"
 )
 
-// meemooDocumentSpec and ugentBasicDocumentSpec describe the two profiles'
-// documents, as the CLI passes them: ugent/basic takes a dc.xml, judged by the Simple DC metadata model,
-// so Read's document rules are tested through it; basic takes none.
+// meemooDocumentSpec and ugentBasicDocumentSpec describe the documents of
+// meemoo/basic and ugent/basic, as the CLI passes them. ugent/basic takes
+// a dc.xml, checked by the Simple DC metadata model, so the tests of
+// Read's document rules use it. meemoo/basic takes none.
 var (
 	meemooDocumentSpec     = DocumentSpec{Name: meemoo.Definition.DocumentName, Model: meemoo.Definition.Model}
 	ugentBasicDocumentSpec = DocumentSpec{Name: ugent.Basic.DocumentName, Model: ugent.Basic.Model}
 )
 
-// minimalCSV is the smallest description.csv that passes check: Meemoo's
-// basic content profile requires these four keys. minimalDC is its ugent/basic
-// counterpart: Simple DC requires identity only.
+// minimalCSV is the smallest description.csv that passes check under
+// meemoo/basic, which requires these four keys. minimalDC is the smallest
+// under ugent/basic, which requires an identifier and a title.
 const (
 	minimalCSV = "key,value\nidentifier,ID-1\ntitle,Test\ndescription,Testbeschrijving\ncreated,2026\n"
 	minimalDC  = "key,value\nidentifier,ID-1\ntitle,Test\n"
@@ -111,8 +112,8 @@ func TestReadOneRepresentation(t *testing.T) {
 		t.Errorf("name = %q, want the folder name master", rep.Name)
 	}
 
-	// Deterministic traversal order (lexical per folder); the order
-	// carries no semantics, but it must be stable run to run.
+	// The files come in lexical order per folder. The order has no
+	// meaning, but it must be the same from run to run.
 	want := []string{"0001.tiff", "0002.tiff", "0010.tiff", "sub/0003.tiff"}
 	got := paths(rep.Files)
 	if strings.Join(got, ",") != strings.Join(want, ",") {
@@ -194,7 +195,7 @@ func TestReadCollectsAllViolations(t *testing.T) {
 		// no description.csv
 		"stray.tiff":                         "x", // content beside representations/
 		"representations/loose.txt":          "x", // file directly inside representations/
-		"representations/bad name/scan.tiff": "x", // rep-name character rule
+		"representations/bad name/scan.tiff": "x", // breaks the representation name rule
 		"representations/empty/":             "",  // no content files
 	})
 
@@ -262,8 +263,8 @@ func TestReadArtifactsAreNotContent(t *testing.T) {
 }
 
 // A folder whose representations/ is empty, or that has none, holds no
-// representations; whether the package may have none is the profile's
-// verdict, not the reader's.
+// representations. Definition.ValidateSource decides whether the package
+// may have none, not Read.
 func TestReadNoRepresentations(t *testing.T) {
 	for name, files := range map[string]map[string]string{
 		"empty representations/": {"description.csv": minimalCSV, "representations/": ""},
@@ -334,8 +335,8 @@ func TestReadPremisNamingRule(t *testing.T) {
 	}
 }
 
-// basic takes no supplied document, so its document name is refused at
-// both levels, never taken as content. A dc.xml, the ugent/basic document
+// meemoo/basic takes no supplied document, so its document name is refused
+// at both levels, never taken as content. A dc.xml, the ugent/basic document
 // name, stays content under meemoo/basic.
 func TestReadRefusesDocumentUnderBasic(t *testing.T) {
 	refused := "the profile takes no supplied descriptive document"
@@ -379,7 +380,7 @@ func TestReadRefusesDocumentUnderBasic(t *testing.T) {
 
 // A received preservation file must be well-formed XML, at package and
 // representation level. Read checks nothing more: a well-formed document
-// with another root passes here and is refused at assembly.
+// with another root passes here and is refused by Builder.Build.
 func TestReadPremisWellFormed(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv":                          minimalCSV,
@@ -411,8 +412,8 @@ func sfReport(keys ...string) string {
 	return `{"siegfried":"1.11.0","files":[` + strings.Join(files, ",") + `]}`
 }
 
-// A supplied report must have an entry for every content file, as the
-// build requires. Documentation needs none.
+// A supplied report must have an entry for every content file, as
+// Builder.Build requires. Documentation needs none.
 func TestReadSidecarCoversContent(t *testing.T) {
 	regenerate := "regenerate it from the input root with: sf -hash md5 -json ."
 	cases := map[string]struct {
@@ -479,8 +480,8 @@ func TestReadNFCCollision(t *testing.T) {
 		"representations/master/": "",
 	})
 	master := filepath.Join(root, "representations", "master")
-	// The same name in NFC and NFD form; they can coexist only on a
-	// filesystem that does not normalize names (e.g. ext4).
+	// The same name in NFC and NFD form. They can coexist only on a
+	// filesystem that does not normalize names, such as ext4.
 	nfc := "caf\u00e9.tiff"  // é precomposed
 	nfd := "cafe\u0301.tiff" // e + combining acute
 	os.WriteFile(filepath.Join(master, nfc), []byte("x"), 0o644)

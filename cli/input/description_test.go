@@ -14,8 +14,8 @@ import (
 )
 
 // readCSV runs Read over a minimal flat tree carrying the given
-// description.csv under the basic profile, so the decoder is exercised
-// through the real entry point.
+// description.csv under meemoo/basic, so the decoder is tested through
+// Read.
 func readCSV(t *testing.T, csv string) (*build.SourcePackage, error) {
 	t.Helper()
 	root := writeTree(t, map[string]string{
@@ -70,8 +70,8 @@ func TestRowsHappy(t *testing.T) {
 	}
 }
 
-// Under the basic profile the rows are Meemoo's: a language-tagged key
-// without a Dutch entry is a violation at check time, not only at build.
+// Under meemoo/basic the rows are Meemoo's: a language-tagged key without
+// a Dutch entry is a violation for check, not only for create.
 func TestRowsCSVRequiresDutch(t *testing.T) {
 	_, err := readCSV(t, minimalCSV+"abstract[en],A photo album\n")
 	assertViolation(t, err, `none in "nl"`)
@@ -133,8 +133,8 @@ func TestRowsRepeatNamesKeyAndLanguage(t *testing.T) {
 	assertViolation(t, err, `abstract appears more than once in language "nl"`)
 }
 
-// Per-language keys repeat freely across languages (title[nl] + title[en]);
-// only a same-language repeat is a violation.
+// Per-language keys repeat freely across languages, as title[nl] and
+// title[en]. Only a repeat in the same language is a violation.
 func TestRowsPerLanguageRepeat(t *testing.T) {
 	if _, err := readCSV(t, "key,value\nidentifier,ID-1\ntitle[nl],Kat\ntitle[en],Cat\ndescription,x\ncreated,2026\n"); err != nil {
 		t.Fatalf("distinct languages must be accepted: %v", err)
@@ -160,7 +160,8 @@ func TestRepresentationDescriptionNeedsNoIdentity(t *testing.T) {
 }
 
 func TestRepresentationDescriptionDuplicateIdentifier(t *testing.T) {
-	// Identity is optional at rep level, but two identifiers stay ambiguous.
+	// Identity is optional at representation level, but two identifiers
+	// stay ambiguous.
 	root := writeTree(t, map[string]string{
 		"description.csv":                        minimalCSV,
 		"representations/master/scan.tiff":       "x",
@@ -202,7 +203,7 @@ func TestParseTermsFindings(t *testing.T) {
 	tests := []struct {
 		name     string
 		data     string
-		wantLine int    // line of the *rowError; 0 for a finding about the file
+		wantLine int    // line of the *rowError, or 0 for a finding about the file
 		want     string // substring of the finding
 	}{
 		{"missing header", "identifier,ID-1\n", 0, `header "key,value"`},
@@ -249,9 +250,9 @@ func TestParseTermsNotUTF8(t *testing.T) {
 	}
 }
 
-// The profile, not the file, says which keys the rows may use: the
-// same description.csv is Simple Dublin Core under ugent/basic and refused under
-// basic, where coverage is not a key.
+// The profile, not the file, says which keys the rows may use: the same
+// description.csv is Simple Dublin Core under ugent/basic and refused
+// under meemoo/basic, where coverage is not a key.
 func TestRowsProfileDecidesTheKeys(t *testing.T) {
 	tree := map[string]string{
 		"description.csv":                  minimalDC + "coverage,Gent\n",
@@ -270,8 +271,8 @@ func TestRowsProfileDecidesTheKeys(t *testing.T) {
 	assertViolation(t, err, `unknown key "coverage"`)
 }
 
-// Under ugent/basic only the fifteen Simple DC elements are keys: Meemoo's keys
-// are unknown there, at both levels.
+// Under ugent/basic only the fifteen Simple DC elements are keys: Meemoo's
+// keys are unknown there, at both levels.
 func TestRowsUGentBasicRefusesMeemooKeys(t *testing.T) {
 	root := writeTree(t, map[string]string{
 		"description.csv":                        minimalDC + "abstract,x\n",
@@ -283,8 +284,8 @@ func TestRowsUGentBasicRefusesMeemooKeys(t *testing.T) {
 	assertViolation(t, err, `unknown key "license"`)
 }
 
-// Without a mapper Read cannot say what the rows mean; it is
-// refused before the folder is touched.
+// Without a mapper Read cannot say what the rows mean. It refuses the call
+// before it reads the folder.
 func TestReadRequiresAMapper(t *testing.T) {
 	root := writeTree(t, map[string]string{"description.csv": minimalCSV, "representations/master/scan.tiff": "x"})
 	_, err := Read(root, nil, DocumentSpec{})
@@ -307,9 +308,9 @@ func TestMapperErrorsNameTheLine(t *testing.T) {
 	assertViolation(t, err, "identifier is required")
 }
 
-// placesNothing is a mapper that refuses every term at its index,
-// adds one error about the file, and returns an empty Simple DC description, so
-// the description's own required-keys rule still runs on the result.
+// placesNothing is a mapper that refuses every term at its index, adds one
+// error about the file, and returns an empty Simple DC description, so the
+// description's rule on required keys still runs on the result.
 type placesNothing struct{}
 
 func (placesNothing) Map(terms []sip.Term) (sip.Description, []error) {

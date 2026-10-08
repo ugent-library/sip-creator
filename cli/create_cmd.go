@@ -36,8 +36,8 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		// The submitting organization is deployment config, not profile
-		// data: fill it into the definition before building.
+		// The submitting organization is configuration, not profile
+		// data, so it is filled into the definition before building.
 		def, err = def.WithSubmitter(cfg.Submitter.Name, cfg.Submitter.ORID)
 		if err != nil {
 			return fmt.Errorf("%w (set SIP_SUBMITTER_NAME and SIP_SUBMITTER_OR_ID)", err)
@@ -47,8 +47,6 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		// Content category precedence: flag, then configured default, then
-		// the profile's registry value (an empty value on the source package).
 		contentCategory, _ := cmd.Flags().GetString("content-category")
 		if contentCategory == "" {
 			contentCategory = cfg.ContentCategory
@@ -71,8 +69,9 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		// Values that belong to this package rather than to the folder;
-		// left empty, the profile's values apply.
+		// These values belong to this package, not to the folder. Left
+		// empty, Builder.Build mints an identifier, and the profile's
+		// record status and content category apply.
 		source.PackageIdentifier = updates
 		source.RecordStatus = status
 		source.ContentCategory = contentCategory
@@ -82,10 +81,11 @@ var createCmd = &cobra.Command{
 			Destination: args[1],
 			Logger:      logger,
 		})
-		// An update reuses the earlier package's identifier, so its zip may
-		// still be in dest. Refuse before building, or the refused zip
-		// leaves the new package directory behind. A minted identifier is
-		// new, so there is nothing to check.
+		// An update reuses the earlier package's identifier, so its zip
+		// may still be in dest. The check runs before building: if Zip
+		// refused after the build, the new package directory would stay
+		// behind in dest. A minted identifier is new, so there is
+		// nothing to check.
 		if !noZip && source.PackageIdentifier != "" {
 			if err := zipper.ValidateDestination(source.PackageIdentifier); err != nil {
 				return err
@@ -107,8 +107,10 @@ var createCmd = &cobra.Command{
 // recordStatusFromFlags returns the record status given with --status and
 // the identifier given with --updates. The two come as a pair: an update
 // status names an earlier package, and naming one needs an update status.
-// The pairing is CLI policy: the library also accepts an identifier on a
-// new package, for a program that mints identifiers itself.
+// It returns an error if the status is not in the SIP3 vocabulary or the
+// flags do not come as a pair. The pairing is a rule of the CLI only: the
+// library also accepts an identifier on a new package, for a program that
+// mints identifiers itself.
 func recordStatusFromFlags(cmd *cobra.Command) (sip.RecordStatus, string, error) {
 	statusText, _ := cmd.Flags().GetString("status")
 	updates, _ := cmd.Flags().GetString("updates")

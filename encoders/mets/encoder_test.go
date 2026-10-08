@@ -14,8 +14,8 @@ import (
 
 // descriptiveGraph returns the smallest package and representation whose
 // METS documents carry a dmdSec: a root entity with a descriptive file
-// node, and one representation with its own, both labeled mdType and
-// version. The graph is built by assigning fields, as the assembler does.
+// node, and one representation with its own, both with the given mdType
+// and version.
 func descriptiveGraph(t *testing.T, mdType, version string) (*sip.Package, *sip.Representation) {
 	t.Helper()
 	generated := func(path string) *sip.File {
@@ -45,10 +45,10 @@ func descriptiveGraph(t *testing.T, mdType, version string) (*sip.Package, *sip.
 	return pkg, rep
 }
 
-// The dmdSec mdRef types the descriptive document from its file node, in
-// the package METS and the representation METS alike: MDTYPE always,
-// MDTYPEVERSION only when the node carries one (Meemoo's model declares
-// none; Simple DC and MODS do), never as an empty attribute.
+// The dmdSec mdRef takes the type of the descriptive document from its file
+// node, in the package METS and in the representation METS. MDTYPE is always
+// written. MDTYPEVERSION is written only when the node carries one, as the
+// Simple DC and MODS nodes do, and never as an empty attribute.
 func TestDmdSecTyping(t *testing.T) {
 	cases := []struct {
 		name            string
@@ -86,8 +86,8 @@ func TestDmdSecTyping(t *testing.T) {
 	}
 }
 
-// Every namespace xsi:schemaLocation pairs with a schema is one the
-// document declares, spelled exactly: namespace names compare character by
+// Every namespace that xsi:schemaLocation pairs with a schema is one the
+// document declares, spelled exactly. Namespace names compare character by
 // character, so a hint for https://dilcis.eu/... does not apply to the
 // https://DILCIS.eu/... namespace that CSIP and the SIP specification use.
 func TestSchemaLocationNamesDeclaredNamespaces(t *testing.T) {
@@ -129,10 +129,10 @@ func TestSchemaLocationNamesDeclaredNamespaces(t *testing.T) {
 	}
 }
 
-// Values from producers and operators reach the documents escaped: a file
-// path, a label and an agent name carrying the XML-active characters leave
-// both documents well-formed, an XML reader gets the label and the name
-// back as they were given, and the path as its href.
+// Values from producers and operators reach the documents escaped. A file
+// path, a label and an agent name that carry the XML-active characters
+// leave both documents well-formed. An XML reader gets the label and the
+// name back as they were given, and the path as its href.
 func TestEscapesGraphValues(t *testing.T) {
 	const (
 		path     = `data/R&D "1" <a>.tif`
@@ -167,9 +167,9 @@ func TestEscapesGraphValues(t *testing.T) {
 	}
 }
 
-// decodedValues reads the whole document, failing the test unless it is
-// well-formed, and returns every attribute value and text node as an XML
-// reader decodes them.
+// decodedValues reads the whole document and returns every attribute value
+// and text node as an XML reader decodes them. It fails the test if the
+// document is not well-formed.
 func decodedValues(t *testing.T, doc []byte) map[string]bool {
 	t.Helper()
 	values := map[string]bool{}
@@ -193,10 +193,9 @@ func decodedValues(t *testing.T, doc []byte) map[string]bool {
 	}
 }
 
-// An href names the file whatever reads it: RFC 3986 and a decoder that
-// also reads "+" as a space (java.net.URLDecoder, which commons-ip and RODA
-// use) both get the path back. Unreserved characters and the slashes
-// between segments stay as they are.
+// An href keeps the unreserved characters and the slashes between
+// segments, percent-encodes every other byte, and decodes to the original
+// path.
 func TestHref(t *testing.T) {
 	tests := []struct{ path, want string }{
 		{"data/image-001.jpg", "data/image-001.jpg"},

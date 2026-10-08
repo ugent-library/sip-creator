@@ -13,19 +13,18 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-// folderReader holds what one read of an input folder shares across the
-// walk and the decoders; Read makes one per call.
+// folderReader holds the state of one read of an input folder, shared by
+// the walk and the decoders.
 type folderReader struct {
-	root       string     // all messages and report keys are relative to it
-	violations Violations // the findings so far
-	// documentName is the file name reserved for the profile's supplied
-	// descriptive document at both levels; empty under a profile that
-	// takes rows only.
+	root       string // all messages and report keys are relative to it
+	violations Violations
+	// documentName is the file name of the profile's supplied descriptive
+	// document, reserved at both levels. It is set only when the profile's
+	// model takes a supplied document.
 	documentName string
 	// refusedDocumentName is the profile's document name when its model
-	// takes no supplied document, such as dc+schema.xml under meemoo/basic: a
-	// file with that name at either level is a violation, never content.
-	// Empty under a profile that takes a document.
+	// takes no supplied document, such as dc+schema.xml under meemoo/basic.
+	// A file with that name at either level is a violation, not content.
 	refusedDocumentName string
 }
 
@@ -45,11 +44,12 @@ type descriptionFiles struct {
 	document string // the profile's supplied document
 }
 
-// Reserved top-level names. Reserved names inside a representation are
-// a subset. The profile's document name, when it has one, is reserved at
-// both levels too (isDocumentName). Every reserved name is ASCII, which
-// NFC normalization never alters, so comparing an unnormalized directory
-// entry name to one is exact.
+// Reserved names at the top level of the input folder. A representation
+// folder reserves description.csv, documentation and premis. The
+// profile's document name, when it has one, is reserved at both levels
+// too (isDocumentName). Every reserved name is ASCII, which NFC
+// normalization never alters, so comparing an entry name that is not
+// normalized to a reserved name is exact.
 const (
 	descriptionName        = "description.csv"
 	representationsName    = "representations"
@@ -59,16 +59,16 @@ const (
 	sidecarName            = "siegfried.json"
 )
 
-// walk reads the structure of the folder: the source package as far as
-// names, kinds and places fill it, and the inventory of the files the
-// decoders read. The reserved names each go to their collector or into
-// the inventory. Content lives only in a representation folder under
-// representations/, so any other entry at the top level is a violation.
+// walk reads the structure of the folder from names, kinds and places
+// only. It returns the source package as far as these fill it, and the
+// inventory of the files the decoders read. Content lives only in a
+// representation folder under representations/, so any entry at the top
+// level without a reserved name is a violation (input specification §1).
 func (r *folderReader) walk() (*build.SourcePackage, inventory) {
 	source := &build.SourcePackage{}
 	var inv inventory
 
-	var content []string // names of the entries that are neither reserved nor allowed
+	var content []string // entries without a reserved name
 	var found descriptionFiles
 	var representationsPath, representationsCSVPath string
 
@@ -123,8 +123,8 @@ func (r *folderReader) walk() (*build.SourcePackage, inventory) {
 		if len(content) > 0 {
 			r.violateLooseContent(content)
 		}
-		// No representations: whether the package may have none is the
-		// profile's verdict (Definition.ValidateSource), not the reader's.
+		// Definition.ValidateSource decides whether the package may have
+		// no representations.
 		return source, inv
 	}
 	for _, name := range content {
@@ -135,12 +135,13 @@ func (r *folderReader) walk() (*build.SourcePackage, inventory) {
 	return source, inv
 }
 
-// violateLooseContent records that content sits at the top level of a
-// folder without representations/, in one violation however many entries
-// there are: a folder laid out before content had to live in a
-// representation folder would otherwise get one line per file.
+// violateLooseContent records one violation for the content at the top
+// level of a folder without representations/, however many entries there
+// are. The message names the first three entries and counts the rest. A
+// folder laid out before content had to live in a representation folder
+// would otherwise get one line per file.
 func (r *folderReader) violateLooseContent(content []string) {
-	const named = 3 // entries the message names; the rest it counts
+	const named = 3
 	listed := strings.Join(content[:min(len(content), named)], ", ")
 	if len(content) > named {
 		listed += fmt.Sprintf(" and %d more", len(content)-named)
@@ -157,8 +158,8 @@ func (r *folderReader) readRepresentations(dir string) ([]build.SourceRepresenta
 			continue
 		}
 		name := e.Name()
-		// The folder-name rule is the library's name rule:
-		// one source of truth for what a representation may be called.
+		// The folder name becomes the representation's name, so the
+		// library's rule for that name applies.
 		if err := build.ValidateRepresentationName(name); err != nil {
 			// Still read the folder, so the problems inside it are
 			// reported in the same run.
@@ -168,9 +169,8 @@ func (r *folderReader) readRepresentations(dir string) ([]build.SourceRepresenta
 		reps = append(reps, rep)
 		descriptions[name] = files
 	}
-	// An empty representations/ means no representations; whether the
-	// package may have none is the profile's verdict
-	// (Definition.ValidateSource).
+	// An empty representations/ means no representations.
+	// Definition.ValidateSource decides whether the package may have none.
 	return reps, descriptions
 }
 
@@ -217,10 +217,11 @@ func (r *folderReader) readRepresentation(dir, repName string) (build.SourceRepr
 	return rep, files
 }
 
-// levelDescription applies the rules on which description files one level
-// has, and returns the one the decoder reads, if any. Both at one level is
-// a violation: an entity has one description, and the tool does not pick.
-// The package level needs one; a representation may have neither.
+// levelDescription checks which description files one level has and
+// returns the files the decoder reads. A level with both description.csv
+// and the supplied document is a violation (input specification §3), and
+// levelDescription then returns no files. The package level needs one of
+// the two. A representation may have neither.
 func (r *folderReader) levelDescription(found descriptionFiles, packageLevel bool) descriptionFiles {
 	switch {
 	case found.rows != "" && found.document != "":
@@ -237,9 +238,9 @@ func (r *folderReader) levelDescription(found descriptionFiles, packageLevel boo
 }
 
 // violateMissingDescription records that the package level describes
-// nothing, naming the file or files the profile accepts. It repeats the
-// library's rule (SourcePackage.Validate, ADR-0025), so that check, which
-// never builds, reports it too.
+// nothing, naming the file or files the profile accepts. It repeats a rule
+// of SourcePackage.Validate (ADR-0025), so the check command, which never
+// builds, reports it too.
 func (r *folderReader) violateMissingDescription() {
 	if r.documentName == "" {
 		r.violate("descriptive rows are missing: every package folder needs a description.csv describing the content (input specification §3)")
@@ -248,18 +249,18 @@ func (r *folderReader) violateMissingDescription() {
 	r.violate("descriptive metadata is missing: every package folder needs a description.csv or a %s describing the content (input specification §3)", r.documentName)
 }
 
-// isDocumentName reports whether name is the file name reserved for the
-// profile's supplied descriptive document. Under a profile that takes
-// none, no name is: a dc.xml under meemoo/basic is content like any other file.
+// isDocumentName reports whether name is the file name of the profile's
+// supplied descriptive document. It is always false under a profile that
+// takes no supplied document.
 func (r *folderReader) isDocumentName(name string) bool {
 	return r.documentName != "" && name == r.documentName
 }
 
 // refuseDocument reports whether name is the document name of a profile
 // that takes no supplied document, and records a violation at src when it
-// is. Under basic a dc+schema.xml would otherwise pass as content: the
-// producer meant it as the description, and the package would carry it as
-// essence.
+// is. Under meemoo/basic a dc+schema.xml would otherwise pass as content.
+// The producer meant it as the description, and the package would carry
+// it as essence.
 func (r *folderReader) refuseDocument(name, src string) bool {
 	if r.refusedDocumentName == "" || name != r.refusedDocumentName {
 		return false
@@ -290,21 +291,20 @@ func (r *folderReader) expectFolder(e os.DirEntry, src, holds string) bool {
 	return false
 }
 
-// collectFiles gathers every file under dir recursively with Path relative
-// to dir; documentation/, premis/, and representation content all collect
-// the same way.
+// collectFiles returns every file under dir, recursively, with Path
+// relative to dir.
 func (r *folderReader) collectFiles(dir string) []build.SourceFile {
 	var files []build.SourceFile
 	r.walkContent(dir, dir, &files)
 	return files
 }
 
-// collectPremisFiles collects a premis/ folder (package- or
-// representation-level, same rule both places) and applies the input
-// rules for received preservation files: premis.xml belongs to the
-// generated document, and every file must be well-formed XML. Whether the
-// root is a premis:premis element is left to assembly, which checks it for
-// every source package (build.assembleReceivedPremis).
+// collectPremisFiles collects the files of a premis/ folder at either
+// level and checks the rules for received preservation files (input
+// specification §5). No file may be named premis.xml, because that name
+// belongs to the generated preservation document. Every file must be
+// well-formed XML. Whether the root is a premis:premis element is left to
+// Builder.Build, which checks it for every source package.
 func (r *folderReader) collectPremisFiles(dir string) []build.SourceFile {
 	files := r.collectFiles(dir)
 	for _, f := range files {
@@ -316,7 +316,8 @@ func (r *folderReader) collectPremisFiles(dir string) []build.SourceFile {
 	return files
 }
 
-// checkWellFormed reports f when it is not well-formed XML.
+// checkWellFormed records a violation when f cannot be opened or is not
+// well-formed XML.
 func (r *folderReader) checkWellFormed(f build.SourceFile) {
 	file, err := os.Open(f.Source)
 	if err != nil {
@@ -354,9 +355,9 @@ func (r *folderReader) newFile(base, src string) build.SourceFile {
 		Path: norm.NFC.String(filepath.ToSlash(relBase)),
 	}
 	// The path is written into the METS and PREMIS documents, so it is held
-	// to the library's rule for their text (SourcePackage.Validate). Key
-	// holds the same names from the input root, so the finding names the
-	// file the producer must rename.
+	// to the library's rule for their text (SourcePackage.Validate). Key is
+	// checked, not Path, because Key holds the same names relative to the
+	// input root, so the finding names the file the producer must rename.
 	if err := build.ValidateXMLText(f.Key); err != nil {
 		r.violate("%v; rename the file or folder", err)
 	}
@@ -364,12 +365,12 @@ func (r *folderReader) newFile(base, src string) build.SourceFile {
 }
 
 // readDir lists dir under the rules that hold everywhere in the input
-// folder: a symbolic link is a violation and is never followed, OS
-// artifacts are skipped without a word, and two names that are the same
-// after NFC normalization are a collision, because they can coexist on a
-// filesystem that does not normalize but would collide in the package.
-// os.ReadDir sorts by name, so the order of every file list is the same
-// from run to run; neither CSIP nor Meemoo gives that order a meaning.
+// folder. A symbolic link is a violation and is never followed. OS
+// artifacts are skipped without a violation. Two names that are the same
+// after NFC normalization are a violation: a filesystem that does not
+// normalize names can hold both, but they would collide in the package.
+// os.ReadDir sorts by name, so every file list has the same order from run
+// to run. Neither CSIP nor Meemoo gives that order a meaning.
 func (r *folderReader) readDir(dir string) []os.DirEntry {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -398,7 +399,8 @@ func (r *folderReader) readDir(dir string) []os.DirEntry {
 	return kept
 }
 
-// isOSArtifact reports whether name is an OS artifact to ignore silently.
+// isOSArtifact reports whether name is a file an operating system creates
+// on its own, such as .DS_Store or Thumbs.db.
 func isOSArtifact(name string) bool {
 	if strings.HasPrefix(name, "._") {
 		return true
@@ -410,8 +412,8 @@ func isOSArtifact(name string) bool {
 	return false
 }
 
-// rel makes a path presentable in a violation message: relative to the
-// input root, slash-separated.
+// rel returns p as a violation message shows it: relative to the input
+// root, with slashes. The root itself is "the input folder".
 func (r *folderReader) rel(p string) string {
 	rel, err := filepath.Rel(r.root, p)
 	if err != nil {

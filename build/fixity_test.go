@@ -69,17 +69,17 @@ func TestBuildReferencesMatchDisk(t *testing.T) {
 	}
 }
 
-// reference is one xlink:href in a METS document with the fixity METS
-// declares for it: a file's FLocat with the file's SIZE and CHECKSUM, an
-// mdRef with its own, or an mptr, which declares none (declaresFixity
-// false).
+// reference is one xlink:href in a METS document, with the fixity METS
+// declares for it. A file's FLocat takes the file's SIZE and CHECKSUM. An
+// mdRef carries its own. An mptr declares none, so its declaresFixity is
+// false.
 type reference struct {
 	id, href, size, checksum string
 	declaresFixity           bool
 }
 
-// metsReferences returns every reference in the METS document at path,
-// failing the test unless the document is well-formed.
+// metsReferences returns every reference in the METS document at path. It
+// fails the test if the document cannot be read or is not well-formed.
 func metsReferences(t *testing.T, path string) []reference {
 	t.Helper()
 	doc, err := os.ReadFile(path)
@@ -124,11 +124,11 @@ func metsReferences(t *testing.T, path string) []reference {
 	}
 }
 
-// requireReferencesMatchDisk fails the test for every reference in the
-// METS document at metsPath that, percent-decoded and taken relative to
-// the document, names no file, or whose declared size or checksum is not
-// the file's. A reference without declared fixity (an mptr) must still
-// name a file.
+// requireReferencesMatchDisk checks that every href in the METS document
+// at metsPath, percent-decoded and taken relative to the document, names a
+// file. Where a reference declares fixity, it checks that the size and
+// checksum are the file's. It fails the test for every reference that
+// breaks either rule, and if the document references no file.
 func requireReferencesMatchDisk(t *testing.T, metsPath string) {
 	t.Helper()
 	refs := metsReferences(t, metsPath)
@@ -144,8 +144,9 @@ func requireReferencesMatchDisk(t *testing.T, metsPath string) {
 	}
 }
 
-// resolveHref returns the file href names, relative to the METS document
-// at metsPath, failing the test when it names none.
+// resolveHref returns the path of the file that href names, taken
+// relative to the METS document at metsPath, and true. It fails the test
+// and returns false if href does not percent-decode or names no file.
 func resolveHref(t *testing.T, metsPath, href string) (string, bool) {
 	t.Helper()
 	rel, err := url.PathUnescape(href)
@@ -161,8 +162,9 @@ func resolveHref(t *testing.T, metsPath, href string) (string, bool) {
 	return target, true
 }
 
-// requireFixity fails the test unless the file at path has the declared
-// size and MD5 checksum; where names the declaration in the message.
+// requireFixity checks that the file at path has the declared size and
+// MD5 checksum. It fails the test if it does not, with a message that
+// names the declaration by where.
 func requireFixity(t *testing.T, path, size, checksum, where string) {
 	t.Helper()
 	info, err := os.Stat(path)
@@ -177,8 +179,8 @@ func requireFixity(t *testing.T, path, size, checksum, where string) {
 	}
 }
 
-// premisDocument holds what the fixity check reads from a representation
-// PREMIS document: each object's type, identifiers and fixity.
+// premisDocument holds each object's type, identifiers and fixity from a
+// representation PREMIS document.
 type premisDocument struct {
 	Objects []struct {
 		Type        string   `xml:"http://www.w3.org/2001/XMLSchema-instance type,attr"`
@@ -188,10 +190,11 @@ type premisDocument struct {
 	} `xml:"object"`
 }
 
-// requirePremisFixityMatchesDisk fails the test unless the representation
-// PREMIS document at premisPath describes wantFiles files, each one the
-// file the representation METS at metsPath lists under the same
-// identifier, with that file's size and checksum.
+// requirePremisFixityMatchesDisk checks that the representation PREMIS
+// document at premisPath describes wantFiles files. Each file object must
+// carry an identifier that the representation METS at metsPath lists, and
+// the size and checksum of the file listed under it. It fails the test
+// otherwise.
 func requirePremisFixityMatchesDisk(t *testing.T, premisPath, metsPath string, wantFiles int) {
 	t.Helper()
 	data, err := os.ReadFile(premisPath)

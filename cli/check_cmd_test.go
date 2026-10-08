@@ -12,18 +12,18 @@ import (
 	"github.com/ugent-library/sip-creator/profiles"
 )
 
-// runCLI runs the command line with args, as Run does, and returns what it wrote to stdout and stderr and the error it
-// ended with.
+// runCLI runs the command line with args, as Run does, and returns what
+// it wrote to stdout and stderr and the error it ended with.
 func runCLI(t *testing.T, args ...string) (stdout, stderr string, err error) {
 	t.Helper()
 	_, stdout, stderr, err = runCommand(t, args...)
 	return stdout, stderr, err
 }
 
-// runCommand is runCLI that also returns the command that ran, which Run
-// needs for the exit status. Cobra keeps flag values on the commands,
-// which are package variables, so every flag is set back to its default
-// afterwards: a --no-zip in one run must not carry into the next.
+// runCommand runs the command line like runCLI and also returns the
+// command that ran, which exitStatus needs. Cobra keeps flag values on the
+// commands, which are package variables, so every flag is set back to its
+// default afterwards: a --no-zip in one run must not carry into the next.
 func runCommand(t *testing.T, args ...string) (cmd *cobra.Command, stdout, stderr string, err error) {
 	t.Helper()
 	var out, errOut bytes.Buffer
@@ -47,7 +47,8 @@ func runCommand(t *testing.T, args ...string) (cmd *cobra.Command, stdout, stder
 	return cmd, out.String(), errOut.String(), err
 }
 
-// writeFolder builds an input folder from slash paths and contents.
+// writeFolder writes files, keyed by slash path, into a new temporary
+// folder and returns the folder's path.
 func writeFolder(t *testing.T, files map[string]string) string {
 	t.Helper()
 	root := t.TempDir()
@@ -63,9 +64,9 @@ func writeFolder(t *testing.T, files map[string]string) string {
 	return root
 }
 
-// A folder that breaks no rule gets the OK verdict on stdout, and check
-// needs no configuration to say so (ADR-0010): the submitter settings
-// create requires are empty here.
+// A folder that breaks no rule gets the OK verdict on stdout. check needs
+// no configuration to say so (ADR-0010): the submitter settings that create
+// requires are empty here.
 func TestCheckSummarizesAValidFolder(t *testing.T) {
 	t.Setenv("SIP_SUBMITTER_NAME", "")
 	t.Setenv("SIP_SUBMITTER_OR_ID", "")
@@ -114,8 +115,6 @@ func TestCheckReportsEveryViolation(t *testing.T) {
 	if want := root + ": 2 problem(s) found"; err == nil || err.Error() != want {
 		t.Fatalf("error = %v, want %q", err, want)
 	}
-	// The problems come first, then the summary of what could be read, then
-	// the verdict.
 	want := "2 problems in " + root + "\n\n" +
 		"  descriptive metadata is missing: every package folder needs a description.csv or a dc.xml describing the content (input specification §3)\n" +
 		"  stray.tif: content must live in a representation folder, representations/<name>/ (only the reserved names of the input specification may sit beside representations/)\n" +
@@ -139,9 +138,9 @@ func TestCheckReportsEveryViolation(t *testing.T) {
 	}
 }
 
-// After the input specification, check applies the profile's rules on the
-// package, as a build would: two representations pass the folder rules
-// but not Meemoo's basic profile, which allows one.
+// After the input specification, check applies the profile's rules to the
+// source package, as Builder.Build does. Two representations pass the
+// folder rules but not meemoo/basic, which allows one.
 func TestCheckAppliesTheProfileRules(t *testing.T) {
 	root := writeFolder(t, map[string]string{
 		"description.csv":              "key,value\nidentifier,ID-1\ntitle,Test\ndescription,Beschrijving\ncreated,2026\n",
@@ -158,9 +157,9 @@ func TestCheckAppliesTheProfileRules(t *testing.T) {
 	}
 }
 
-// The profile's rules run only on a folder read without violations: a
+// The profile's rules run only on a folder read without violations. A
 // folder with a broken description.csv and two representations under
-// basic reports the description, not also the representation count.
+// meemoo/basic reports the description, not the representation count.
 func TestCheckSkipsTheProfileRulesOnAPartlyReadFolder(t *testing.T) {
 	root := writeFolder(t, map[string]string{
 		"description.csv":              "key,value\nnot-a-key,x\n",
@@ -276,7 +275,7 @@ func TestCheckRefusesWhatItCannotRead(t *testing.T) {
 }
 
 // check exits with 1 when the folder has problems and with 2 when it could
-// not check the folder at all; create exits with 1 on any error.
+// not check the folder at all. create exits with 1 on any error.
 func TestExitStatus(t *testing.T) {
 	broken := writeFolder(t, map[string]string{"representations/master/a.tif": "a"}) // no description
 	missing := filepath.Join(t.TempDir(), "missing")

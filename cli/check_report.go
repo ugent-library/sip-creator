@@ -9,19 +9,19 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// checkReport is what check prints on stdout for one input folder: the
-// problems it found, a summary of what the folder holds, then the verdict.
-// It is written for the operator who prepares the folder.
+// checkReport is what check prints on stdout for one input folder.
 type checkReport struct {
 	// folder is the input folder as the operator named it on the command line.
 	folder string
 	// profile is the name of the profile the folder was checked against.
 	profile string
-	// findings are the problems, one plain-language line each, in the order
-	// the rules ran: the input specification's, then the profile's.
+	// findings are the problems, one plain-language line each. They are the
+	// input specification's violations, or the findings of the profile's
+	// rules when the folder has no violations.
 	findings []string
-	// source is the source package the reader returned: complete when there
-	// are no findings, as far as the reader got otherwise.
+	// source is the source package input.Read returned. It is complete when
+	// the folder breaks no rule of the input specification. Otherwise it
+	// holds the part of the folder input.Read could read.
 	source *build.SourcePackage
 }
 
@@ -45,10 +45,10 @@ func (r checkReport) print(w io.Writer) {
 	fmt.Fprintf(w, "FAILED: fix the problems listed at the top and run check again.\n")
 }
 
-// printSummary writes what the folder holds in counts, so the operator can
-// see that the tool read what they prepared: where the package description
-// comes from, the representations and the files in them, and whether
-// formats will be recorded.
+// printSummary writes what the folder holds: where the package description
+// comes from, the number of representations and of files, and whether
+// formats will be recorded. The counts let the operator see that the tool
+// read what they prepared.
 func (r checkReport) printSummary(w io.Writer) {
 	src := r.source
 	described, essence := 0, 0
@@ -78,8 +78,9 @@ func (r checkReport) printSummary(w io.Writer) {
 }
 
 // descriptionSource names where the package description comes from: the
-// rows of description.csv, from which the build generates a document, or
-// a supplied document, which the build copies without reading it.
+// rows of description.csv, from which Builder.Build generates a document,
+// or a supplied document, which Builder.Build copies unchanged. It returns
+// "none" when the folder has no description.
 func descriptionSource(description sip.Description) string {
 	switch d := description.(type) {
 	case nil:
@@ -91,8 +92,8 @@ func descriptionSource(description sip.Description) string {
 	}
 }
 
-// formatReport says whether the folder supplies a characterization report,
-// without which the package records no formats.
+// formatReport names the characterization report the folder supplies, or
+// says that there is none.
 func formatReport(src *build.SourcePackage) string {
 	if src.Characterization == nil {
 		return "not supplied (files carry no format information)"
@@ -110,9 +111,9 @@ func countProblems(n int) string {
 
 // problemsFound is the error check ends with when the folder breaks a
 // rule. The report has already listed every problem, so the error only
-// names the folder and the count. Its type sets it apart from the errors
-// that leave the folder unchecked: exitProblemsFound against
-// exitNotChecked.
+// names the folder and the count. It is a type of its own so that
+// exitStatus can tell it apart from an error that left the folder
+// unchecked.
 type problemsFound struct {
 	folder string
 	count  int
@@ -122,9 +123,9 @@ func (e problemsFound) Error() string {
 	return fmt.Sprintf("%s: %d problem(s) found", e.folder, e.count)
 }
 
-// findingLines splits err into one line per finding. The profile's rules
-// arrive as one error joined from several (errors.Join), and each part is
-// a problem of its own.
+// findingLines splits err into one line per finding and returns the
+// lines. Definition.ValidateSource joins the profile's findings into one
+// error with errors.Join, and each part is a problem of its own.
 func findingLines(err error) []string {
 	if err == nil {
 		return nil

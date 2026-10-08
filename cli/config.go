@@ -11,31 +11,35 @@ import (
 
 //go:generate go run github.com/g4s8/envdoc@v0.2.4 --output ../CONFIG.md --all
 
-// Application config: the CLI's operator contract, read from the
-// environment. The library never reads it: embedding systems pass a
-// build.Config and per-build build.SourcePackage instead, and format info
-// arrives via the siegfried.json sidecar (ADR-0009), not configuration.
+// The CLI's configuration, read from the environment and an optional
+// .env file. The library never reads it. A program that embeds the library
+// passes a build.Config, and a build.SourcePackage per build, instead.
+// Format information arrives in siegfried.json (ADR-0009), not in
+// configuration.
 type config struct {
-	// The submitting organization, stamped into every package's METS as a
-	// CREATOR agent. `create` requires NAME for every profile and OR_ID for
-	// Meemoo profiles.
+	// The submitting organization, written into every package's METS as a
+	// CREATOR agent.
 	Submitter struct {
-		// Name of the submitting organization, e.g. "Example Organization".
+		// Name of the submitting organization, for example "Example
+		// Organization". `create` requires it for every profile.
 		Name string `env:"NAME"`
 		// The organization's Meemoo OR-id (its identifier in Meemoo's
-		// organization register), e.g. "OR-a1b2c3d". Required for Meemoo
-		// profiles, where it becomes the agent's IDENTIFICATIONCODE note.
+		// organization register), for example "OR-a1b2c3d". `create`
+		// requires it for Meemoo profiles, where it becomes the agent's
+		// IDENTIFICATIONCODE note.
 		ORID string `env:"OR_ID"`
 	} `envPrefix:"SIP_SUBMITTER_"`
-	// Default content category for created packages (mets/@TYPE, CSIP
-	// content-category vocabulary), e.g. "Photographs – Digital". Empty
-	// means the profile's registry value; --content-category overrides
-	// both per run.
+	// Default content category for created packages (mets/@TYPE, from the
+	// CSIP content-category vocabulary), for example "Photographs – Digital".
+	// When it is empty, the profile's value applies. The --content-category
+	// flag overrides both for one run.
 	ContentCategory string `env:"SIP_CONTENT_CATEGORY"`
 }
 
-// loadConfig reads .env when present and then the environment. A missing
-// .env is fine, a malformed one is an error.
+// loadConfig reads .env when present, then the environment, and returns
+// the configuration. A variable already set in the environment wins over
+// .env. It returns an error if .env is malformed or the environment does
+// not parse.
 func loadConfig() (*config, error) {
 	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("load .env: %w", err)

@@ -8,8 +8,8 @@ import (
 	"github.com/ugent-library/sip-creator/cli/input/mapping"
 )
 
-// twoRepTree returns the file map of a valid two-representation folder;
-// tests add their representations.csv on top.
+// twoRepTree returns the file map of a valid folder with two
+// representations. Tests add their representations.csv to it.
 func twoRepTree() map[string]string {
 	return map[string]string{
 		"description.csv":                  minimalCSV,
@@ -41,8 +41,8 @@ func TestRepresentationsCSV(t *testing.T) {
 	if master.Label != `Master scan, R&D "A"` || master.Type != "archival" {
 		t.Errorf("master label/type = %q/%q, want the CSV values", master.Label, master.Type)
 	}
-	// Empty cells stay empty: the library applies the defaulting cascade,
-	// not the decoder.
+	// Empty cells stay empty: build.SourceRepresentation fills in the
+	// defaults, not Read.
 	if access.Label != "" || access.Type != "" {
 		t.Errorf("access label/type = %q/%q, want empty (defaults resolve in the library)", access.Label, access.Type)
 	}
@@ -105,7 +105,7 @@ func TestParseRepresentationRowsFindings(t *testing.T) {
 	tests := []struct {
 		name     string
 		data     string
-		wantLine int    // line of the *rowError; 0 for a finding about the file
+		wantLine int    // line of the *rowError, or 0 for a finding about the file
 		want     string // substring of the finding
 		wantRows int    // rows still returned
 	}{
@@ -186,7 +186,8 @@ func TestRepresentationsCSVMustBeAFile(t *testing.T) {
 }
 
 // A CSV with only the folder column, listing every folder in lexical
-// order, is a no-op: the read result equals the no-CSV read.
+// order, changes nothing: Read returns the same representations as
+// without the file.
 func TestRepresentationsCSVFolderOnlyIsANoop(t *testing.T) {
 	plain, err := Read(writeTree(t, twoRepTree()), mapping.Meemoo{}, meemooDocumentSpec)
 	if err != nil {

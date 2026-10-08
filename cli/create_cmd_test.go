@@ -12,9 +12,8 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// --status and --updates come as a pair: an update-class status names an
-// earlier package, and naming one needs an update-class status. A status
-// is read in any case; one outside the SIP3 vocabulary is refused. The
+// --status and --updates come as a pair. A status matches in upper or
+// lower case. One outside the SIP3 vocabulary is refused. The
 // identifier's form is the library's rule (SourcePackage.Validate), not
 // checked here.
 func TestRecordStatusFromFlags(t *testing.T) {
@@ -23,7 +22,7 @@ func TestRecordStatusFromFlags(t *testing.T) {
 		name            string
 		status, updates string
 		wantStatus      sip.RecordStatus
-		wantErr         string // "" means accepted; else substring of the error
+		wantErr         string // empty when accepted, otherwise a substring of the error
 	}{
 		{"neither flag", "", "", "", ""},
 		{"a new package", "new", "", sip.RecordStatusNew, ""},
@@ -54,9 +53,10 @@ func TestRecordStatusFromFlags(t *testing.T) {
 	}
 }
 
-// commandWithFlags returns a command with create's --status and --updates
-// flags set to the given values; an empty value leaves the flag unset. A
-// fresh command per case, so no test changes the flags of createCmd.
+// commandWithFlags returns a new command with create's --status and
+// --updates flags, set to status and updates. An empty value leaves its
+// flag unset. Each case gets a new command, so no test changes the flags
+// of createCmd.
 func commandWithFlags(t *testing.T, status, updates string) *cobra.Command {
 	t.Helper()
 	cmd := &cobra.Command{}
@@ -92,8 +92,8 @@ type packageMETS struct {
 // the submitter from the environment, the record status and the earlier
 // package's identifier from --status and --updates, the content category
 // from --content-category before SIP_CONTENT_CATEGORY before the profile's
-// default, and a zip unless --no-zip. A package that loses --status would
-// be ingested as new beside the one it was meant to replace.
+// default, and a zip, or none with --no-zip. A package that loses --status
+// would be ingested as new beside the one it was meant to replace.
 func TestCreateCarriesFlagsAndConfiguration(t *testing.T) {
 	const earlier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
 	basicDefault := profileDefaultType(t, "meemoo/basic")
@@ -102,7 +102,7 @@ func TestCreateCarriesFlagsAndConfiguration(t *testing.T) {
 		profile         string
 		contentCategory string // SIP_CONTENT_CATEGORY
 		flags           []string
-		wantObjID       string // "" means a minted identifier
+		wantObjID       string // empty for a minted identifier
 		wantStatus      string
 		wantType        string
 		wantZip         bool
@@ -153,8 +153,8 @@ func TestCreateCarriesFlagsAndConfiguration(t *testing.T) {
 }
 
 // Without a submitter, create stops before reading the folder and names
-// the settings to set; a folder that breaks the input rules gets its
-// violations on stderr; an update whose earlier zip is still in dest is
+// the settings to set. A folder that breaks the input rules gets its
+// violations on stderr. An update whose earlier zip is still in dest is
 // refused before the build. None of them writes anything.
 func TestCreateRefusesBeforeWriting(t *testing.T) {
 	t.Run("no submitter", func(t *testing.T) {
@@ -205,7 +205,7 @@ func TestCreateRefusesBeforeWriting(t *testing.T) {
 }
 
 // profileDefaultType returns the content category the registered profile
-// declares.
+// declares. It fails the test if no profile of that name is registered.
 func profileDefaultType(t *testing.T, name string) string {
 	t.Helper()
 	def, ok := profiles.Get(name)
@@ -215,7 +215,9 @@ func profileDefaultType(t *testing.T, name string) string {
 	return def.Declaration.Type
 }
 
-// readPackageMETS reads the METS of the one package create built under dest.
+// readPackageMETS reads the METS of the one package create built under
+// dest. It fails the test if dest does not hold exactly one package or its
+// METS cannot be read.
 func readPackageMETS(t *testing.T, dest string) packageMETS {
 	t.Helper()
 	dirs, err := filepath.Glob(filepath.Join(dest, "uuid-*", "METS.xml"))
@@ -244,7 +246,8 @@ func hasSubmitter(mets packageMETS, name string) bool {
 	return false
 }
 
-// requireNothingWritten fails the test unless dir is empty.
+// requireNothingWritten checks that dir is empty and fails the test if it
+// is not.
 func requireNothingWritten(t *testing.T, dir string) {
 	t.Helper()
 	entries, err := os.ReadDir(dir)

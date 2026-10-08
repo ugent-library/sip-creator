@@ -1,10 +1,10 @@
 package meemoo
 
 // cardinality says how often an element may occur in one descriptive
-// document. Meemoo counts lang-tagged elements per language:
+// document. Meemoo counts language-tagged elements per language:
 // oncePerLanguage allows a title in Dutch plus one in English, but not two
-// in Dutch. The zero value is many so an element outside the table never
-// trips a false repeat error.
+// in Dutch. The zero value is many, so an element outside the table never
+// gets a repeat finding.
 type cardinality int
 
 const (
@@ -17,19 +17,16 @@ const (
 // can state: its name, Meemoo's cardinality limit, and the xsi:type it
 // carries.
 type elementRow struct {
-	Element string      // qualified name, as Meemoo's specification writes it
-	Repeat  cardinality // Meemoo basic profile cardinality
-	XSIType string      // xsi:type on the emitted element; "" for none
+	Element string // qualified name, as Meemoo's specification writes it
+	Repeat  cardinality
+	XSIType string // xsi:type on the written element, or empty for none
 }
 
 // elements is the closed set of elements Terms may state: the elements of
 // Meemoo's SIP 1.2 basic content profile that one term can express (one
 // value, an optional language), in the input specification's table order.
-// Validation and the template both read it (ADR-0011): Validate refuses an
-// element outside it, and the template writes only names it lists. The
-// Repeat column is Meemoo's upper cardinality limit, enforced by Validate.
-// Which elements a package-level description must state is the required
-// list below, enforced by ValidateRequired.
+// Validation and the template read the same table, so they cannot disagree
+// on which elements exist (ADR-0011).
 var elements = []elementRow{
 	{"dcterms:identifier", once, ""},
 	{"dcterms:title", oncePerLanguage, ""},
@@ -57,17 +54,12 @@ var elements = []elementRow{
 }
 
 // identifierElement is the element holding the producer's local
-// identifier, which the swap replaces with the entity identifier.
+// identifier, which Swap replaces with the entity identifier.
 const identifierElement = "dcterms:identifier"
 
 // required lists the elements a package-level description must state:
 // Meemoo's basic content profile requires an identifier, a title, a
-// description and a creation date (Meemoo SIP 1.2, basic profile). The
-// first two are also the identity every package states whatever the
-// profile (input specification §3): the identifier is what the swap
-// overwrites and lifts onto the entity as MEEMOO-LOCAL-ID, the title the
-// one name every consumer shows. A representation's description need not
-// state any of them.
+// description and a creation date (Meemoo SIP 1.2, basic profile).
 var required = []string{identifierElement, "dcterms:title", "dcterms:description", "dcterms:created"}
 
 var elementsByName = func() map[string]elementRow {

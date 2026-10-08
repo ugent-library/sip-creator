@@ -2,20 +2,22 @@
 
 ## config
 
-Application config: the CLI's operator contract, read from the
-environment. The library never reads it: embedding systems pass a
-build.Config and per-build build.SourcePackage instead, and format info
-arrives via the siegfried.json sidecar (ADR-0009), not configuration.
+The CLI's configuration, read from the environment and an optional
+.env file. The library never reads it. A program that embeds the library
+passes a build.Config, and a build.SourcePackage per build, instead.
+Format information arrives in siegfried.json (ADR-0009), not in
+configuration.
 
- - The submitting organization, stamped into every package's METS as a
-CREATOR agent. `create` requires NAME for every profile and OR_ID for
-Meemoo profiles.
-   - `SIP_SUBMITTER_NAME` - Name of the submitting organization, e.g. "Example Organization".
+ - The submitting organization, written into every package's METS as a
+CREATOR agent.
+   - `SIP_SUBMITTER_NAME` - Name of the submitting organization, for example "Example
+Organization". `create` requires it for every profile.
    - `SIP_SUBMITTER_OR_ID` - The organization's Meemoo OR-id (its identifier in Meemoo's
-organization register), e.g. "OR-a1b2c3d". Required for Meemoo
-profiles, where it becomes the agent's IDENTIFICATIONCODE note.
- - `SIP_CONTENT_CATEGORY` - Default content category for created packages (mets/@TYPE, CSIP
-content-category vocabulary), e.g. "Photographs – Digital". Empty
-means the profile's registry value; --content-category overrides
-both per run.
+organization register), for example "OR-a1b2c3d". `create`
+requires it for Meemoo profiles, where it becomes the agent's
+IDENTIFICATIONCODE note.
+ - `SIP_CONTENT_CATEGORY` - Default content category for created packages (mets/@TYPE, from the
+CSIP content-category vocabulary), for example "Photographs – Digital".
+When it is empty, the profile's value applies. The --content-category
+flag overrides both for one run.
 

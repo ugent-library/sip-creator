@@ -6,8 +6,9 @@
 //	sip-creator create --profile <profile> <input> <destination>
 //	sip-creator check --profile <profile> <input>
 //
-// The profiles are meemoo/basic, ugent/basic and ugent/bibliographic. The README describes the
-// profiles, the input folder and the environment variables create needs.
+// The profiles are meemoo/basic, ugent/basic and ugent/bibliographic. The
+// README describes the profiles, the input folder and the environment
+// variables create needs.
 package main
 
 import "github.com/ugent-library/sip-creator/cli"

@@ -11,17 +11,15 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// simpledc is the Simple Dublin Core metadata model of ugent/basic: it
-// accepts Terms, writes them as a simpledc document with Encode, and says
-// which supplied document is one of its own. It never swaps: dc.xml keeps the producer's identifier, because
-// CSIP has no rule tying it to the package identifier and the ingesting
-// catalogue indexes dc.xml, so operators find the package by the
-// identifier they know (ADR-0012).
+// simpledc is the Simple Dublin Core metadata model of ugent/basic, for
+// Terms. dc.xml keeps the producer's identifier, because the catalogue
+// indexes dc.xml and operators search by that identifier (ADR-0012).
 type simpledc struct{}
 
-// DocumentFormat is optional to the engine, so a drift in
-// ValidateDocumentRoot's signature would fail silently; the assertion
-// makes it a build error.
+// Definition.ValidateSource accepts a supplied document only from a model
+// that implements DocumentFormat. If ValidateDocumentRoot's signature
+// changed, it would refuse every supplied dc.xml. These assertions turn
+// that into a compile error.
 var (
 	_ build.MetadataModel  = simpledc{}
 	_ build.DocumentFormat = simpledc{}
@@ -34,10 +32,10 @@ func (simpledc) ValidateType(d sip.Description) error {
 	return nil
 }
 
-// ValidateDocumentRoot returns why root is not the simpledc element this
-// template emits, without namespace. A document of another shape (an oai_dc
-// wrapper, a MODS record) would make the METS declare a type the file does
-// not have.
+// ValidateDocumentRoot checks that root is a simpledc element without a
+// namespace, as the template writes it. It returns an error if it is not.
+// A document of another shape, such as an oai_dc wrapper or a MODS record,
+// would make the METS declare a type the file does not have.
 func (simpledc) ValidateDocumentRoot(root xml.StartElement) error {
 	if root.Name.Space != "" || root.Name.Local != "simpledc" {
 		return fmt.Errorf("root element is {%s}%s, expected a simpledc document without namespace", root.Name.Space, root.Name.Local)
@@ -46,7 +44,8 @@ func (simpledc) ValidateDocumentRoot(root xml.StartElement) error {
 }
 
 // Encode writes d as a Simple Dublin Core document: a simpledc root with
-// one unqualified element per term, order preserved, language tags omitted.
+// one unqualified element per term, in the order of the terms, without
+// language tags.
 func (simpledc) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
 	if err := simpledcTemplate.ExecuteTemplate(&buf, "simpledc", termsDoc{d.(Terms), schemasDir}); err != nil {
@@ -56,29 +55,29 @@ func (simpledc) Encode(w io.Writer, d sip.Description, schemasDir string) error 
 	return err
 }
 
-// ModelType types the document as DC.
+// ModelType returns DC.
 func (simpledc) ModelType() string {
 	return "DC"
 }
 
-// ModelTypeVersion names the version of Simple Dublin Core the template
-// writes, as the METS dmdSec declares it in MDTYPEVERSION.
+// ModelTypeVersion returns the version of Simple Dublin Core the template
+// writes.
 func (simpledc) ModelTypeVersion() string {
 	return "SimpleDC20021212"
 }
 
-// Schemas returns the bundled XSDs the simpledc document points
-// at: simpledc.xsd, the Simple DC container with its elements in no
-// namespace as the template writes them, and xml.xsd, which it imports
-// from the file next to it. It is not DCMI's file of that name, which
-// expects the elements in the DCMES namespace and would reject the
-// document; the schema's header records how it is built from DCMI's files.
+// Schemas returns the bundled XSDs the simpledc document points at:
+// simpledc.xsd, the Simple DC container with its elements in no namespace
+// as the template writes them, and xml.xsd, which simpledc.xsd imports
+// from the file next to it. This simpledc.xsd is not DCMI's file of that
+// name, which expects the elements in the DCMES namespace and would reject
+// the document. Its header records how it is built from DCMI's files.
 func (simpledc) Schemas() []build.Schema {
 	return build.BundledSchemas("simpledc.xsd", "xml.xsd")
 }
 
-// simpledcTemplate escapes every value; element names come from
-// elementName.
+// simpledcTemplate escapes every value. Element names come from
+// dcElementName, which lets only the fifteen elements through.
 var simpledcTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 	"el":  dcElementName,
 	"esc": escapeXML,
@@ -100,10 +99,10 @@ type termsDoc struct {
 	SchemasDir string
 }
 
-// dcElementName is the element a key emits (in Simple Dublin Core, the key
-// itself), and the template's one guard: the element name is the only
-// thing the template interpolates raw, and only one of the fifteen may
-// reach the output. Returning an error aborts the render.
+// dcElementName returns the element name for a key, which in Simple Dublin
+// Core is the key itself. It returns an error for a key outside the
+// fifteen elements, which aborts the render, because the template writes
+// the name unescaped.
 func dcElementName(key string) (string, error) {
 	if !dcElementSet[key] {
 		return "", fmt.Errorf("unknown key %q: not a Simple Dublin Core element", key)
@@ -111,9 +110,8 @@ func dcElementName(key string) (string, error) {
 	return key, nil
 }
 
-// escapeXML makes a value safe as XML character data or as a quoted
-// attribute value, in the Simple DC and the MODS template alike:
-// descriptions carry arbitrary producer input.
+// escapeXML returns s escaped for use as XML character data or as a quoted
+// attribute value.
 func escapeXML(s string) string {
 	var b bytes.Buffer
 	xml.EscapeText(&b, []byte(s)) // never fails on a bytes.Buffer

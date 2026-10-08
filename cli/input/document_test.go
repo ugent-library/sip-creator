@@ -78,8 +78,8 @@ func TestDocumentAndRowsTogether(t *testing.T) {
 	assertViolation(t, err, "representations/master/description.csv and representations/master/dc.xml are both present; describe the representation")
 }
 
-// The package level needs one of the two, and the message names both under
-// a profile that takes a document; under one that takes rows only it names
+// The package level needs one of the two. Under a profile that takes a
+// document the message names both. Under one that takes rows only it names
 // the rows file alone.
 func TestDocumentOrRowsRequired(t *testing.T) {
 	_, err := Read(writeTree(t, map[string]string{"representations/master/scan.tiff": "x"}), mapping.SimpleDC{}, ugentBasicDocumentSpec)
@@ -88,8 +88,8 @@ func TestDocumentOrRowsRequired(t *testing.T) {
 	assertViolation(t, err, "needs a description.csv describing")
 }
 
-// A document must be well-formed XML with the profile's root element; the
-// finding names the file, as the rows findings do.
+// A document must be well-formed XML with the profile's root element. The
+// finding names the file, as the findings about rows do.
 func TestDocumentViolations(t *testing.T) {
 	tests := []struct {
 		name string
@@ -152,8 +152,8 @@ func TestDocumentNameIsContentElsewhere(t *testing.T) {
 	}
 }
 
-// The folder's document builds with the real ugent/basic profile: the engine
-// copies the file Read pointed at, byte for byte.
+// The folder's document builds with the real ugent/basic profile:
+// Builder.Build copies the file Read pointed at, byte for byte.
 func TestDocumentBuilds(t *testing.T) {
 	root := writeTree(t, map[string]string{"dc.xml": validDC, "representations/archival/scan.tiff": "x"})
 	source, err := Read(root, mapping.SimpleDC{}, ugentBasicDocumentSpec)

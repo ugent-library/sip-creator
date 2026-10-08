@@ -7,16 +7,16 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// Meemoo is the basic profile's mapping: the keys the input specification
-// lists for Meemoo's basic content profile and the element each one
-// states. The keys are the input folder's convention, lowercase and
-// without prefix; meemoo.Terms is keyed by the elements as Meemoo's
-// specification names them. Which elements exist and what a term may say
-// is decided by the terms' Validate.
+// Meemoo is the meemoo/basic profile's mapping: the keys the input
+// specification lists for Meemoo's basic content profile and the element
+// each one states. The keys are the input folder's convention, lowercase
+// and without prefix. meemoo.Terms is keyed by the elements as Meemoo's
+// specification names them. meemoo.Terms.Validate decides which elements
+// exist and what a term may say.
 type Meemoo struct{}
 
-// meemooElements maps each key of description.csv under meemoo/basic onto the
-// element it states, in the input specification's table order.
+// meemooElements is the key table, in the order of the input
+// specification's table.
 var meemooElements = map[string]string{
 	"identifier":   "dcterms:identifier",
 	"title":        "dcterms:title",
@@ -43,10 +43,11 @@ var meemooElements = map[string]string{
 	"artform":      "schema:artform",
 }
 
-// Map renames each term's key to its element, in order. A term whose key
-// is not in the table is reported as a *sip.TermError and kept as written,
-// so every term keeps its index and a finding of the terms' Validate still
-// names the right row.
+// Map renames each term's key to its element and returns the terms as
+// meemoo.Terms, in the same order. It returns a *sip.TermError for each
+// key that is not in the table. Such a term stays as written, so every
+// term keeps its index and a finding of meemoo.Terms.Validate still names
+// the right row.
 func (Meemoo) Map(terms []sip.Term) (sip.Description, []error) {
 	out := make(meemoo.Terms, len(terms))
 	var errs []error

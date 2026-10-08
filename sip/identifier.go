@@ -6,10 +6,10 @@ import (
 	"uuid"
 )
 
-// ValidateIdentifier returns why id is not a package-local identifier:
-// every identifier in this model takes the form uuid-<uuid>. The prefix
-// makes a UUID valid as a METS @ID (an xsd:ID may not start with a
-// digit; an unprefixed UUID can).
+// ValidateIdentifier checks that id takes the form uuid-<uuid>, the form of
+// every identifier in this model. It returns an error if it does not. The
+// prefix makes a UUID valid as a METS @ID: an xsd:ID may not start with a
+// digit, and an unprefixed UUID can.
 func ValidateIdentifier(id string) error {
 	rest, ok := strings.CutPrefix(id, "uuid-")
 	if !ok {

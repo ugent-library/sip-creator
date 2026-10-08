@@ -11,7 +11,7 @@ func TestRoot(t *testing.T) {
 		doc   string
 		space string // expected root namespace when accepted
 		local string // expected root local name when accepted
-		want  string // "" means accepted; else substring of the error
+		want  string // empty when accepted, otherwise a substring of the error
 	}{
 		{"prefixed root", `<?xml version="1.0"?><mods:mods xmlns:mods="http://www.loc.gov/mods/v3" version="3.7"><mods:titleInfo/></mods:mods>`, "http://www.loc.gov/mods/v3", "mods", ""},
 		{"default namespace", `<premis xmlns="http://www.loc.gov/premis/v3" version="3.0"/>`, "http://www.loc.gov/premis/v3", "premis", ""},

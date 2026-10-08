@@ -477,7 +477,7 @@ the command-line tool does (see [Format characterization](#format-characterizati
 ### Profiles of your own
 
 The three profiles above are written the same way a profile of your own would be, and
-the engine imports none of them. A program that embeds the library can keep a profile
+package build imports none of them. A program that embeds the library can keep a profile
 of its own, for a descriptive standard the three do not cover, in a Go package with
 three parts:
 
@@ -491,7 +491,7 @@ three parts:
   for the METS dmdSec (`MDTYPE`, or `OTHERMDTYPE`, and `MDTYPEVERSION`);
 * an exported `build.Definition` naming the model, the document's file name and the
   METS values (`sip.MetsDeclaration`: profile URL, content typing, any agents your
-  archive asks for). The engine adds the software agent itself, and `WithSubmitter`
+  archive asks for). `Builder.Build` adds the software agent itself, and `WithSubmitter`
   the submitting organization. The model type itself can stay unexported.
 
 Hand that definition to `build.New` as above. Your package supplies its own XSDs: embed

@@ -63,7 +63,7 @@ func TestWithSubmitterEARK(t *testing.T) {
 		t.Fatal(`no "ugent/basic" definition registered`)
 	}
 
-	// The OR-id is a Meemoo concept; a configured value is ignored here.
+	// The OR-id is a Meemoo concept. ugent/basic ignores a configured value.
 	got, err := def.WithSubmitter("Example Organization", "OR-a1b2c3d")
 	if err != nil {
 		t.Fatalf("WithSubmitter() error = %v", err)
@@ -79,10 +79,10 @@ func TestWithSubmitterEARK(t *testing.T) {
 }
 
 // WithSubmitter returns a copy whose agents never share storage with the
-// definition it was called on. The definition here has room to spare after
-// its agents, as one a program builds with append often does: without the
-// copy, two calls would append into the same array, and the second
-// submitter would overwrite the first one's.
+// definition it was called on. The definition here has spare capacity
+// after its agents, as one a program builds with append often has. Without
+// the copy, two calls would append into the same array, and the second
+// submitter would overwrite the first.
 func TestWithSubmitterCopiesTheAgents(t *testing.T) {
 	def := basicDef(t)
 	agents := make([]sip.Agent, len(def.Declaration.Agents), len(def.Declaration.Agents)+4)
@@ -105,8 +105,8 @@ func TestWithSubmitterCopiesTheAgents(t *testing.T) {
 	}
 }
 
-// Meemoo's basic profile allows one representation and no description
-// below the package level; plain E-ARK allows both. Build refuses what
+// meemoo/basic allows one representation and no description below the
+// package level. ugent/basic allows both. Build refuses what
 // ValidateSource refuses, before anything is written.
 func TestValidateSourceAppliesProfileRules(t *testing.T) {
 	b, in, outDir := newTestBuilder(t, basicDef(t))
@@ -170,7 +170,7 @@ func TestValidateSourceAppliesRepresentationTypes(t *testing.T) {
 	}
 }
 
-// meemoo/basic needs one representation; the UGent profiles accept a
+// meemoo/basic needs one representation. The UGent profiles accept a
 // package without any.
 func TestValidateSourceAppliesMinRepresentations(t *testing.T) {
 	_, in, _ := newTestBuilder(t, basicDef(t))

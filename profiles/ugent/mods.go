@@ -12,16 +12,15 @@ import (
 	"github.com/ugent-library/sip-creator/sip"
 )
 
-// mods is the MODS 3.7 metadata model of ugent/bibliographic: it accepts
-// Record, writes it as a MODS document with Encode, and says which
-// supplied document is one of its own. It never swaps: mods.xml keeps the
-// producer's identifier, the catalogue number the ingesting repository
-// indexes and operators search by (ADR-0012).
+// mods is the MODS 3.7 metadata model of ugent/bibliographic, for a Record.
+// mods.xml keeps the producer's identifier, because it is the catalogue
+// number operators search by (ADR-0012).
 type mods struct{}
 
-// DocumentFormat is optional to the engine, so a drift in
-// ValidateDocumentRoot's signature would fail silently; the assertion
-// makes it a build error.
+// Definition.ValidateSource accepts a supplied document only from a model
+// that implements DocumentFormat. If ValidateDocumentRoot's signature
+// changed, it would refuse every supplied mods.xml. These assertions turn
+// that into a compile error.
 var (
 	_ build.MetadataModel  = mods{}
 	_ build.DocumentFormat = mods{}
@@ -42,8 +41,9 @@ func (mods) ValidateType(d sip.Description) error {
 	return nil
 }
 
-// ValidateDocumentRoot returns why root is not a mods:mods element in the
-// MODS v3 namespace declaring the version the package's METS declares.
+// ValidateDocumentRoot checks that root is a mods:mods element in the MODS
+// v3 namespace, and that it declares the MODS version the package's METS
+// declares. It returns an error if either check fails.
 func (mods) ValidateDocumentRoot(root xml.StartElement) error {
 	if root.Name.Space != modsNamespace || root.Name.Local != "mods" {
 		return fmt.Errorf("root element is {%s}%s, expected a mods:mods document in the MODS v3 namespace (%s)", root.Name.Space, root.Name.Local, modsNamespace)
@@ -58,10 +58,9 @@ func (mods) ValidateDocumentRoot(root xml.StartElement) error {
 	return nil
 }
 
-// Encode writes d as a MODS 3.7 document: the identifier when the record
-// states one, one titleInfo per title in the order given, then the items
-// as one location/holdingSimple with one copyInformation each, omitted
-// when there are none.
+// Encode writes d as a MODS 3.7 document. A record without items gets no
+// mods:location at all: an empty holdingSimple would claim the library
+// holds no copy.
 func (mods) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
 	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemasDir, localIdentifierType, modsNamespace, modsVersion}); err != nil {
@@ -71,13 +70,13 @@ func (mods) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	return err
 }
 
-// ModelType types the document as MODS.
+// ModelType returns MODS.
 func (mods) ModelType() string {
 	return "MODS"
 }
 
-// ModelTypeVersion is the MODS version the template writes and a supplied
-// document must declare.
+// ModelTypeVersion returns the MODS version the template writes and a
+// supplied document must declare.
 func (mods) ModelTypeVersion() string {
 	return modsVersion
 }
@@ -89,18 +88,17 @@ func (mods) Schemas() []build.Schema {
 	return build.BundledSchemas("mods-3-7.xsd")
 }
 
-// localIdentifierType is the type attribute on the mods:identifier the
-// record's identifier emits. MODS leaves the type vocabulary open; "local"
-// is the value its own list suggests for an identifier local to the
-// describing institution's system, such as a record number in a
-// library catalogue. With the mods-coverage plan the type becomes a choice
-// per record from a closed set; until then this constant is the one place
-// it lives.
+// localIdentifierType is the type attribute on the mods:identifier written
+// for the record's identifier. MODS leaves the type vocabulary open.
+// "local" is the value its own list suggests for an identifier local to
+// the describing institution's system, such as a record number in a
+// library catalogue. The constant stands in until the mods-coverage plan
+// makes the type a choice per record from a closed set.
 const localIdentifierType = "local"
 
-// modsTemplate renders a record field by field. Every value is escaped;
-// the only raw interpolations are the identifier's type, the namespace
-// and version, all constants, and the schemas path the writer supplies.
+// modsTemplate escapes every value from the record. The only values it
+// writes unescaped are constants (the identifier's type, the namespace and
+// the version) and the schemas path the writer supplies.
 var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 	"esc": escapeXML,
 }).Parse(`

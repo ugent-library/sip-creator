@@ -66,8 +66,8 @@ func TestDecodeSiegfriedNoMatch(t *testing.T) {
 	}
 }
 
-// Per-file tool errors are carried on the record, not judged at decode
-// time: policy belongs to the consumer.
+// The tool's error for a file is kept on its record. DecodeSiegfried does
+// not reject the report for it.
 func TestDecodeSiegfriedErrorsCarried(t *testing.T) {
 	report := decodeFixture(t, "error.json")
 
@@ -86,8 +86,8 @@ func TestDecodeSiegfriedMalformed(t *testing.T) {
 	}
 }
 
-// Without the shape guard, any JSON object decodes into the sf structs
-// without error, leaving a silently empty report.
+// DecodeSiegfried rejects a JSON object without a top-level siegfried
+// version, instead of returning an empty report.
 func TestDecodeSiegfriedWrongShape(t *testing.T) {
 	f, err := os.Open(filepath.Join("testdata", "wrongshape.json"))
 	if err != nil {
@@ -100,9 +100,8 @@ func TestDecodeSiegfriedWrongShape(t *testing.T) {
 	}
 }
 
-// sf records paths as invoked; keys must come out input-relative and clean.
-// A report generated on Windows carries backslashes, and must match the
-// same files when the tool runs on macOS or Linux.
+// Report keys are relative and cleaned, with slash separators, also for a
+// path that sf recorded with backslashes on Windows.
 func TestDecodeSiegfriedKeyNormalization(t *testing.T) {
 	report, err := DecodeSiegfried(strings.NewReader(`{
 		"siegfried": "1.11.0",
