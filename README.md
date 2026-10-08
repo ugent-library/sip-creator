@@ -391,7 +391,7 @@ def, ok := profiles.Get("ugent/basic")
 if !ok {
 	// ...
 }
-// The second argument is the Meemoo OR-id, used by basic only.
+// The second argument is the Meemoo OR-id. Only meemoo/basic requires it.
 def, err := def.WithSubmitter("Example Organization", "")
 if err != nil {
 	// ...
