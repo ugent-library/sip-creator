@@ -69,7 +69,7 @@ your own. It:
 It exits non-zero when the package is not `VALID` or a descriptive document is not
 valid against its schema. Each
 profile validates against its E-ARK spec version: `meemoo/basic` (Meemoo 1.2) against 2.0.4,
-`ugent/basic` and `ugent/bibliographic` against 2.2.0. All three are expected to report `VALID`.
+`ugent/basic` and `ugent/bibliographic` against 2.2.0. Every registered profile is expected to report `VALID`.
 
 To validate a package without representations under a UGent profile, pass a folder that
 holds only a `description.csv` as the second argument, for example
