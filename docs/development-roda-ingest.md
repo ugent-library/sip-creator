@@ -2,7 +2,7 @@
 
 *The field-acceptance procedure for the [ugent/basic](profiles/ugent-basic.md) and
 [ugent/bibliographic](profiles/ugent-bibliographic.md) profiles, first written for
-`eark/dc` in the [eark-writer plan](plans/eark-writer.md):
+`eark/dc` in the [eark-writer plan](archive/eark-writer.md):
 produce a package, pre-flight it, ingest it into UGent's RODA instance, and
 verify what arrived. Written 2026-07-17 from a desk-check of RODA's ingest
 code (`EARKSIP2ToAIPPlugin` / `EARKSIP2ToAIPPluginUtils`, commons-ip2 2.11.2,
@@ -61,9 +61,14 @@ code does with what our package contains:
 
 ## 5. Record the outcome
 
-Whatever happens, write it down in the [eark-writer plan](plans/eark-writer.md)'s
-execution record: RODA version, job report verdict, any row of the table that
-didn't hold. A failed row is a finding about either our package or this
-desk-check; both are worth exactly this feedback loop. On a clean first
-ingest, the eark-writer plan's field-acceptance tier is done and the plan can retire
-per the [docs lifecycle](README.md#lifecycle-what-happens-when-a-plan-ships).
+Whatever happens, write it down under section 6: the date, the profile, the RODA
+version, the job report's verdict, and any row of the table in section 4 that did
+not hold. A failed row is a finding about either our package or this desk-check,
+and both are what this runbook is for. The first clean ingest is the field
+acceptance of the [eark-writer plan](archive/eark-writer.md), which shipped on
+2026-07-17 without it.
+
+## 6. Outcomes
+
+No ingest has been run yet (2026-10-08). The table in section 4 is a desk-check of
+RODA's code, not an observation.

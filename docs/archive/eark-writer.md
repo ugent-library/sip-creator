@@ -6,7 +6,7 @@
 *Note, 2026-10-07: `eark/dc` is `ugent/basic` since
 [ADR-0034](../decisions/0034-a-profile-is-a-content-type.md); the runbook follows.*
 
-*Status: **implemented through E5** (2026-07-17); awaiting field acceptance: the first real ingest into UGent's RODA instance, per the [RODA ingest runbook](../development-roda-ingest.md). Drafted 2026-07-16, reworked 2026-07-17 after design review (see "Duplication lessons").
+*Status: **shipped** 2026-07-17, archived 2026-10-08. Steps E2 to E6 landed; the first real ingest into UGent's RODA instance, the plan's field acceptance, has not been run yet. The [RODA ingest runbook](../development-roda-ingest.md) is the procedure and records each ingest's outcome; [docs/TODO.md](../TODO.md) lists the ingest as waiting on the operator. Drafted 2026-07-16, reworked 2026-07-17 after design review (see "Duplication lessons").
 
 ## Execution record (2026-07-17)
 

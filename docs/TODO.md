@@ -57,6 +57,10 @@ These need a decision before they become plan work.
 
 - **Exit statuses for create: decided to wait for a caller.** `check` exits with 1 when the input folder has problems and with 2 when it could not check the folder (`exitProblemsFound`, `exitNotChecked` in `cli/cli.go`), for a script that checks a batch of folders. `create` exits with 1 on every failure. Decided on 2026-10-06 not to tell create's failures apart until a caller needs it: operators read the message, and programs embed the library instead of running the CLI. When one does, the sketch is: 1 for input problems, 2 when the command could not start, 3 when building or zipping failed; and, for the library, one exported sentinel `build.ErrInvalidSource` that every error `Build` returns because of the source package matches with `errors.Is`, without changing the messages (profile rules, `SourcePackage.Validate`, characterization coverage and checksums, received PREMIS roots). Only the sentinel is needed if the caller is a program; only the statuses if it is a script.
 
+## Waiting on the operator
+
+- **The first real ingest into UGent's RODA has not been run.** The [RODA ingest runbook](development-roda-ingest.md) is the procedure: build a ugent/basic or ugent/bibliographic package, validate it, ingest it, verify what arrived, and record the outcome in the runbook. Until it has run, the runbook's table of what RODA makes of the package (AIP type, representation type, Simple DC rendered and indexed, MODS shown as XML) is a desk-check of RODA's code, not an observation. The ingest was the field acceptance of the [eark-writer plan](archive/eark-writer.md), archived 2026-10-08 with everything else in it shipped.
+
 ## Validator status
 
 **Current, 2026-10-07:** the example of every profile reports **VALID with zero
