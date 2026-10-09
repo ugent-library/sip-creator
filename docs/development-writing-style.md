@@ -26,7 +26,7 @@ Some comments stay whatever the rules below say:
 - **Delete a comment that adds nothing.** Don't shorten it instead. A reader still has to read a shorter one and find nothing in it. Don't replace a deleted comment with a link to `docs/`.
 - **Comment the thing, not its callers.** A comment on a type or field states the data and its constraints ("must be a well-formed premis:premis document"), never where they are checked ("checked at assembly"). The exception: code that deliberately leaves a rule to someone else names that owner, so the next reader doesn't add the check twice. A comment on an interface states what it promises, not which types implement it.
 - **Say a rule once, at the level where it holds.** A rule for every type in a package goes in the package doc. A reason given on a type is not repeated on its methods.
-- **State the domain fact and its reason in the terms of the specs, not of Go.** Write "dc.xml keeps the producer's identifier, because the catalogue indexes it", not "simpledc does not implement IdentifierSwapper". Delete a reason that would still be true for any other type or function.
+- **State the domain fact and its reason in the terms of the specs, not of Go.** Write "dc.xml keeps the producer's identifier, because the catalogue indexes it", not "simpledc does not implement IdentifierSwapper". The same goes for what a function returns: name the value by what it is in the package ("the declaration a representation's METS document carries"), not by how the code makes it ("a copy of base"). Delete a reason that would still be true for any other type or function.
 - **Describe what the code does and why it must be so.** Don't argue trade-offs or alternatives not taken. An open design question goes in [TODO.md](TODO.md).
 - **Mention something left out only when all three hold:** a reader would expect it, it is left out on purpose, and adding it would break something. Otherwise say nothing. Something left out can be an element not written, a check not made, or a design choice such as no caching.
 - **A function's doc comment says what the function does before what it returns or how it fails.** Follow the order in which a caller sees it happen. Write "checks that …. It returns an error if …", not "returns an error unless …". Leave out what the signature already says. A method that deliberately does nothing still says what that means for the caller.
@@ -76,6 +76,25 @@ After: what that means for the caller, then a reason that is specific to this me
 // ValidateRequired accepts every supplied document and returns nil.
 // Package build does not read a document's content (ADR-0003), so it
 // cannot tell whether the document states an identifier and a title.
+```
+
+Before: the comment says how the code makes the value: a copy, a parameter name, a comparison with that parameter.
+
+```go
+// representationDeclaration returns a copy of base for a representation's
+// METS document. When EmitRepresentationType is set, the copy's content
+// typing names typ, as EmitRepresentationType describes. Otherwise the copy
+// equals base.
+```
+
+After: what the value is in the package, then the one case where it differs.
+
+```go
+// representationDeclaration returns the declaration a representation's METS
+// document carries. When the profile emits representation types, the
+// declaration names typ as the representation's type, as
+// EmitRepresentationType describes. Otherwise it is the package's
+// declaration.
 ```
 
 Before: the last two sentences muse about caching, which the code doesn't do and nobody asked about.
