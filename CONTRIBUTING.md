@@ -120,6 +120,8 @@ Update the docs in the same change as the code:
 * a renamed or removed exported symbol: a dated note under the Status line of every ADR
   whose decision text names it, giving the current name. ADRs are frozen, so the note is
   how a reader who greps for the old name finds the new one;
+* a new profile: every file
+  [docs/development-adding-a-profile.md](docs/development-adding-a-profile.md) lists;
 * a resolved item: remove it from [docs/TODO.md](docs/TODO.md).
 
 [docs/README.md](docs/README.md) explains which document answers which question.
