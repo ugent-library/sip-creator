@@ -7,104 +7,38 @@ SIP Creator packages your content files and their descriptive metadata into an
 [E-ARK](https://earksip.dilcis.eu/) Submission Information Package (SIP), ready to hand
 to a digital archive. It is a Go library, and a command-line tool built on it.
 
-Archives differ in what they expect inside a SIP. A profile is a content type, defined
-by the archive or institution that owns its rules: the specification version, the
-descriptive metadata standard, and the rules your input must meet. Every profile builds
-an E-ARK SIP. Three are included:
-
-* `ugent/basic`, for UGent Library's RODA: resources the library has not necessarily
-  catalogued, such as a database dump or a deposited set of files, described in Simple
-  Dublin Core;
-* `ugent/bibliographic`, for UGent Library's RODA: the library's catalogued holdings,
-  described in MODS from the catalogue record;
-* `meemoo/basic` follows Meemoo's SIP specification, with Meemoo's own mix of Dublin
-  Core terms and schema.org, for ingest into Meemoo, the Flemish heritage archive.
-
-See [Profiles](#profiles) for what each one requires.
-
 :warning: **This is an experimental package** :warning:
 
 ## Features
 
-* Builds a complete package from a plain input folder: your content files plus a simple
-  descriptive rows file (`description.csv`) or, where the profile allows it, a finished
-  descriptive document. Out comes a SIP with generated METS and PREMIS metadata and a
-  checksum for every file.
-* Validates an input folder before building (`check`, with the same `--profile` as
-  `create`), reporting every violation of the input rules at once.
-* Optional PRONOM format identification based on a pre-computed
-  [Siegfried](https://github.com/richardlehane/siegfried) report (see Format characterization).
-* A profile of your own, for a program that embeds the library (see
-  [Profiles of your own](#profiles-of-your-own)).
+* A CLI (command line) tool that:
+  * ... builds a complete E-ARK SIP package from a plain input folder: your content files 
+    plus a CSV or XML file holding descriptive metadata.
+  * ... Validates an input folder before building, reporting every violation of the input rules.
+* A Go library:
+  * ... that allows you to integrate E-ARK SIP creation in your own Go projects.
+  * ... is extensible, so you can define your own profiles for custom E-ARK SIP packages.
+* Supports optional PRONOM format identification based on a pre-computed
+  [Siegfried](https://github.com/richardlehane/siegfried) report.
 
 ## Profiles
 
-Choose a profile with `--profile` on the command line, or with `profiles.Get` in Go.
+The E-ARK SIP specification offers a framework within which archives and institutions
+define a set of rules and constraints to which their own SIPs must adhere. These
+include descriptive metadata standards, the structure of the essence files, 
+representations and what they mean,... which make up a SIP's information type.
 
-| | `ugent/basic` | `ugent/bibliographic` | `meemoo/basic` |
-|---|---|---|---|
-| Use for | uncatalogued resources, into UGent's RODA | catalogued holdings, into UGent's RODA | ingest into Meemoo (hetarchief.be) |
-| Specification | E-ARK SIP 2.2.0 | E-ARK SIP 2.2.0 | Meemoo SIP 1.2, on E-ARK SIP 2.0.4 |
-| Descriptive standard | Simple Dublin Core | MODS 3.7 | Meemoo's Dublin Core and schema.org |
-| [`description.csv` keys](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) | the 15 Dublin Core elements | `identifier`, `title` | Meemoo's key table |
-| Required keys | `identifier`, `title` | `identifier`, `title` | `identifier`, `title`, `description`, `created` |
-| [Finished document](docs/input-spec.md#supplying-a-finished-document-ugentbasic-and-ugentbibliographic) accepted | `dc.xml` | `mods.xml` | none |
-| Go description type | `ugent.Terms` | `ugent.Record` | `meemoo.Terms` |
-| Submitter | name | name | name and Meemoo OR-id |
-| Representation type | written to the METS | written to the METS | ignored |
-| You deliver | the zip | the zip | the package directory, in a BagIt bag |
+This project defines three profiles that are used throughout the Ghent
+University Library's ingest workflows.
 
-### `ugent/basic`: UGent Library, uncatalogued resources
+* `ugent/basic`, for UGent Library's archival repository: digital resources the library
+  has not necessarily catalogues, described in Simple Dublin Core;
+* `ugent/bibliographic`, for UGent Library's archival repository: digital resources the
+  library has catalogued, described in MODS from the catalogue record;
+* `meemoo/basic`, for Meemoo's archief through it's "Digitale Instroom", digitzed or
+  digital cultural heritage resources, as catalogued by the UGent Library.
 
-The rules are written in [docs/profiles/ugent-basic.md](docs/profiles/ugent-basic.md).
-Builds a plain [E-ARK SIP](https://earksip.dilcis.eu/) 2.2.0 with a Simple Dublin Core
-document (`dc.xml`) as its descriptive metadata. `description.csv` takes the fifteen
-Dublin Core elements (`title`, `creator`, `date`, `coverage`, ...) as keys. A language
-tag on a key is accepted but not written into the document.
-
-Each representation's type goes into that representation's METS content typing
-(`csip:OTHERTYPE` and `csip:OTHERCONTENTINFORMATIONTYPE`); RODA v5.7.0 and later shows it
-in the Type column of the AIP's representations. The zip the tool writes is the
-deliverable: ingest it as it is.
-
-### `ugent/bibliographic`: UGent Library, catalogued holdings
-
-The rules are written in
-[docs/profiles/ugent-bibliographic.md](docs/profiles/ugent-bibliographic.md). The same
-package as `ugent/basic`, with a [MODS 3.7](https://www.loc.gov/standards/mods/) document
-(`mods.xml`) written from the catalogue record. Everything except the descriptive
-metadata works as under `ugent/basic`.
-
-MODS is a tree, so `description.csv` holds only `identifier`, `otheridentifier`, `title`
-and `contributor`. A richer record, such as one listing the library's physical copies of the work
-(call number, barcode, volume), comes as a finished `mods.xml`, or in Go as a
-`ugent.Record` with `Items`. Physical copies belong on the package-level record, because a representation is
-a version of the content, never a copy. Items on a representation's record are still
-written, to that representation's `mods.xml`.
-
-### `meemoo/basic`: Meemoo SIP 1.2
-
-Builds an E-ARK SIP (2.0.4) that also conforms to the basic content profile of the
-[Meemoo SIP Specification v1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/),
-for ingest into the Flemish heritage archive. `description.csv` takes Meemoo's closed
-key table: Dublin Core terms (`created`, `spatial`, `extent`, ...) plus two schema.org
-properties. On top of the four required keys, Meemoo requires a Dutch value (`[nl]`)
-wherever a language-tagged key is used.
-
-There is no finished-document route: Meemoo's document must carry the package identifier
-the tool mints, and the tool does not edit XML. The submitter needs Meemoo's OR-id as
-well as a name (see [Configuration](#configuration)). A representation's type is
-ignored, because Meemoo SIP 1.2 fixes every METS content typing to `OTHER` plus the
-profile URI; its label still becomes `mets/@LABEL`.
-
-Meemoo's transfer format wraps the SIP in a BagIt bag, which this tool does not produce.
-Build a package directory with `--no-zip`, bag that directory with a reference BagIt
-implementation, and follow Meemoo's transfer instructions:
-
-```
-./bin/sip-creator create --profile meemoo/basic --no-zip ./your-input sip-out
-bagit.py --md5 sip-out/uuid-<uuid>/
-```
+See [Profiles](#profiles) for what each one requires.
 
 ## Installation
 
@@ -135,8 +69,7 @@ go get github.com/ugent-library/sip-creator
 
 ## Command-line tool
 
-The `sip-creator` command builds a package from an input folder you prepare, using the
-library underneath. It reads the submitting organization from the environment.
+The `sip-creator` command builds a package from an input folder you prepare.
 
 ### Creating a package
 
@@ -166,12 +99,10 @@ Further flags:
   directory or zip with that identifier.
 * `--no-zip` skips the zip, for when the package directory itself is what you need.
 
-What you deliver depends on the profile: the zip for `ugent/basic` and `ugent/bibliographic`, a bagged
-package directory for `meemoo/basic` (see [Profiles](#profiles)).
-
 ### Checking an input folder
 
-`check` tests a folder without building anything. Pass the same profile as for `create`:
+The input folder has to adhere to a set of input rules. `check` tests a folder without 
+building anything. Pass the same profile as for `create`:
 
 ```
 ./bin/sip-creator check --profile ugent/basic ./your-input
@@ -179,10 +110,9 @@ package directory for `meemoo/basic` (see [Profiles](#profiles)).
 
 `check` reports every violation of the input rules at once, in plain language. When the
 folder passes, it then checks the profile's own rules, such as `meemoo/basic`'s single
-representation. It reads no `.env` file and no environment variables.
+representation.
 
-The report goes to stdout, so it can be saved to a file. It lists every problem first,
-then a summary of what the tool read, then the verdict:
+The report lists every problem first, then a summary of what the tool read, then the result:
 
 ```
 1 problem in ./your-input
@@ -202,7 +132,7 @@ Format report:        not supplied (files carry no format information)
 FAILED: fix the problems listed at the top and run check again.
 ```
 
-The summary says where the package description comes from: the rows of
+The summary says where the package description originates from: the rows of
 `description.csv`, from which the tool generates a document, or a supplied `dc.xml` or
 `mods.xml`, which it copies as it is.
 
@@ -216,9 +146,8 @@ The exit status tells a script what happened:
 
 ### Configuration
 
-Configuration is read from the environment. A `.env` file is loaded when present. Start
-from `.env.example`. All environment variables are documented in
-[CONFIG.md](CONFIG.md).
+Configuration is read from the environment. Start from `.env.example`. 
+All environment variables are documented in [CONFIG.md](CONFIG.md).
 
 Every package's METS names the organization submitting it, so `create` requires
 `SIP_SUBMITTER_NAME` for every profile. `meemoo/basic` also requires `SIP_SUBMITTER_OR_ID`, the
@@ -357,12 +286,11 @@ declares for each file it covers. The tool does not check it against the file
 ## Go library
 
 The command-line tool is one program built on this library. In your own program you
-supply as Go values what the tool reads from the input folder and the environment, and
-the library reads no environment variables:
+supply as Go values what the tool reads from the input folder and the environment:
 
 * The submitting organization is added to the profile with `WithSubmitter`.
-* The destination directory and the logger go in `build.Config`. Without a logger, the
-  progress messages are discarded.
+* The destination directory and the logger go in `build.Config`. Add a logger to 
+  capture the progress messages.
 * The descriptive metadata and the content files go in `build.SourcePackage`.
 
 The full API is on [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator).
