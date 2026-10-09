@@ -47,9 +47,9 @@ func New(config *Config) *Archive {
 
 // ValidateDestination checks that the destination does not yet hold the
 // zip for the package with this identifier. It returns an error if the zip
-// exists or if the check fails. Zip never replaces an existing zip
-// (ADR-0031). Calling ValidateDestination before a build keeps a refused
-// zip from leaving a newly built package directory behind.
+// exists or if the destination cannot be read. Zip never replaces an
+// existing zip (ADR-0031). Calling ValidateDestination before a build keeps
+// a refused zip from leaving a newly built package directory behind.
 func (a *Archive) ValidateDestination(identifier string) error {
 	dest := a.zipPath(identifier)
 	if _, err := os.Lstat(dest); err == nil {
@@ -147,11 +147,10 @@ func (a *Archive) writeEntries(out io.Writer, src string) error {
 		}
 		defer in.Close()
 
-		// Method zip.Store keeps the entry uncompressed. The entry is
-		// written with CreateRaw rather than CreateHeader so the size and
-		// CRC go into the local file header. CreateHeader streams the
-		// entry. It leaves both zero and sets general purpose bit 3, which
-		// says they follow the data in a data descriptor. Java's
+		// The entry is written with CreateRaw rather than CreateHeader so
+		// the size and CRC go into the local file header. CreateHeader
+		// streams the entry. It leaves both zero and sets general purpose
+		// bit 3, which says they follow the data in a data descriptor. Java's
 		// ZipInputStream throws "only DEFLATED entries can have EXT
 		// descriptor" on a stored entry with that flag. RODA reads the SIP
 		// through ZipInputStream, so it rejects such a zip with "Error
