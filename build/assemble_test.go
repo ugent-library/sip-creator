@@ -27,7 +27,6 @@ func TestAssemble(t *testing.T) {
 		t.Fatalf("assemble: %v", err)
 	}
 
-	// The package's location is under the destination.
 	if want := filepath.Join(outDir, pkg.Identifier); pkg.Location != want {
 		t.Errorf("Location = %q, want %q", pkg.Location, want)
 	}
@@ -45,8 +44,6 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("description identifier = %q, want entity identifier %q", got, e.Identifier)
 	}
 
-	// The description file node takes the profile's document name and a
-	// path relative to the package METS.
 	df := e.DescriptionFile
 	if df == nil {
 		t.Fatal("no description file node")
@@ -78,8 +75,8 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("schema nodes = %v, want the referenced XSDs sorted and deduplicated: %v", names, want)
 	}
 
-	// There is one representation. Its name in the package is the
-	// producer's label, used as given.
+	// The representation's name and label in the package are the
+	// producer's name, used as given.
 	if len(e.Representations) != 1 {
 		t.Fatalf("representations = %d, want 1", len(e.Representations))
 	}
@@ -94,8 +91,6 @@ func TestAssemble(t *testing.T) {
 		t.Error("representation not wired back to the entity")
 	}
 
-	// The essence node records its source, a path relative to the
-	// representation METS, and the format and mime type from the report.
 	if len(r.Files) != 1 {
 		t.Fatalf("essence files = %d, want 1", len(r.Files))
 	}
@@ -135,7 +130,6 @@ func TestAssemble(t *testing.T) {
 		t.Errorf("representation PREMIS Path = %q, want %q", got, "metadata/preservation/premis.xml")
 	}
 
-	// Assembly writes nothing to disk.
 	requireEmpty(t, outDir)
 }
 
@@ -163,8 +157,7 @@ func TestAssembleRepresentations(t *testing.T) {
 	b, in, _ := newTestBuilder(t, basicDef(t))
 	inDir := t.TempDir()
 
-	// A second representation holds a nested file. Each representation's
-	// name in the package is the producer's label. The nesting is kept
+	// A second representation holds a nested file, which keeps its nesting
 	// under data/.
 	a := writeEssence(t, inDir, "a.jpg", "essence bytes")
 	deep := writeEssence(t, inDir, "sub/deep.tif", "essence bytes")

@@ -17,10 +17,7 @@ func (otherDescription) ValidateRequired() error { return nil }
 
 // Definition.ValidateSource refuses a description of another standard,
 // before the description is validated and before anything is written. It
-// does so at package and representation level alike. The cases are a type
-// no profile writes, Meemoo terms handed to ugent/basic, Simple DC terms
-// handed to meemoo/basic or to ugent/bibliographic, and a MODS record
-// handed to either DC profile.
+// does so at package and representation level alike.
 func TestBuildRejectsDescriptionOfAnotherStandard(t *testing.T) {
 	cases := []struct {
 		name string

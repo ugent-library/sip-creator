@@ -82,9 +82,10 @@ func (d Definition) representationType(sr SourceRepresentation) string {
 }
 
 // representationDeclaration returns the declaration a representation's METS
-// document carries: the package's declaration as-is, or, when the profile
-// emits representation types, a copy whose content typing names typ as
-// EmitRepresentationType describes.
+// document carries. When the profile emits representation types, the
+// declaration names typ as the representation's type, as
+// EmitRepresentationType describes. Otherwise it is the package's
+// declaration.
 func (d Definition) representationDeclaration(base sip.MetsDeclaration, typ string) *sip.MetsDeclaration {
 	decl := base
 	if d.EmitRepresentationType {

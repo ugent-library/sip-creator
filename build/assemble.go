@@ -106,8 +106,8 @@ func (b *Builder) assembleDescriptive(e *sip.Entity, source *SourcePackage) {
 func (b *Builder) descriptionFile() *sip.File {
 	df := sip.NewFile()
 	df.Name = b.profile.DocumentName
-	df.Path = "metadata/descriptive/" + df.Name // relative to the METS of its level, per File.Path
-	df.Mime = "text/xml"                        // rendered, or supplied and read as XML
+	df.Path = "metadata/descriptive/" + df.Name
+	df.Mime = "text/xml" // rendered, or supplied and read as XML
 	df.MDType, df.OtherMDType = mets.MDType(b.profile.Model.ModelType())
 	df.MDTypeVersion = b.profile.Model.ModelTypeVersion()
 	return df
@@ -223,11 +223,7 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 			f := sip.NewFile()
 			f.Name = path.Base(src.Path)
 			f.Source = src.Source
-			f.Path = "data/" + src.Path // relative to the representation, per File.Path
-			// A characterization report is optional (ADR-0009). When
-			// present, it gives each file its format, media type and
-			// checksum. The writer then copies the file without computing a
-			// checksum (ADR-0032).
+			f.Path = "data/" + src.Path
 			f.Mime = "application/octet-stream" // unknown until the report says otherwise
 			if source.Characterization != nil {
 				rec, err := b.essenceRecord(source.Characterization, src)
@@ -256,8 +252,8 @@ func (b *Builder) assembleRepresentations(e *sip.Entity, decl sip.MetsDeclaratio
 		if b.profile.EmitRepresentationPremis {
 			pf := sip.NewFile()
 			pf.Name = "premis.xml"
-			pf.Path = "metadata/preservation/premis.xml" // relative to the representation, per File.Path
-			pf.Mime = "text/xml"                         // generated XML
+			pf.Path = "metadata/preservation/premis.xml"
+			pf.Mime = "text/xml" // generated XML
 			r.PremisFile = pf
 			b.logger.Info("created a representation PREMIS file", slog.String("id", pf.Identifier))
 		}
@@ -298,8 +294,8 @@ func (b *Builder) assembleReceivedPremis(container string, sources []SourceFile)
 		node := sip.NewFile()
 		node.Name = path.Base(src.Path)
 		node.Source = src.Source
-		node.Path = "metadata/preservation/" + src.Path // relative to the METS of its level, per File.Path
-		node.Mime = "text/xml"                          // verified XML above
+		node.Path = "metadata/preservation/" + src.Path
+		node.Mime = "text/xml" // verified XML above
 		files = append(files, node)
 		b.logger.Info("placed a received preservation file", slog.String("id", node.Identifier))
 	}

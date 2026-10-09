@@ -7,8 +7,8 @@ import (
 )
 
 // softwareAgent returns the metsHdr agent naming the software that built
-// the package. E-ARK CSIP requires it in every package, so Builder.Build
-// adds it rather than leaving it to each profile.
+// the package. E-ARK CSIP requires it in every package, whatever the
+// profile.
 func softwareAgent() sip.Agent {
 	return sip.Agent{
 		Role:      "CREATOR",

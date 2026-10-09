@@ -39,9 +39,7 @@ type MetadataModel interface {
 	// the vocabulary spells it, is recorded as MDTYPE. Any other name is
 	// recorded as MDTYPE OTHER with the name in OTHERMDTYPE. Together with
 	// ModelTypeVersion it describes both the document Encode writes and the
-	// document a supplied file must be. It belongs to the model rather than
-	// to the profile's METS values, so a profile cannot pair a model with
-	// another model's type.
+	// document a supplied file must be.
 	ModelType() string
 	// ModelTypeVersion returns the version of the model the document
 	// follows, such as 3.7 for MODS. METS records it in MDTYPEVERSION. It
