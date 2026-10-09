@@ -19,6 +19,9 @@ instruction file: if a tool that expects `AGENTS.md` is ever adopted, rename `CL
 to `AGENTS.md` and point a stub `CLAUDE.md` at it; don't start a second, parallel
 instruction file that would drift from the first.
 
+The rules for code comments and for the markdown in this folder are not in `CLAUDE.md`.
+They are in `development-writing-style.md`, and `CLAUDE.md` links to it.
+
 **Postmortems** (`incident-*`, upstream bug analyses) are a fourth genre: a record of what
 went wrong and what was learned. They live in `archive/`. An incident that produces a
 *standing decision* graduates that decision into an ADR, with the postmortem kept as its
@@ -43,6 +46,8 @@ evidence.
   the plan that carried it is gone.
 - **`development-*.md`**: how-to guides for repeatable procedures that span several
   layers and are easy to get subtly wrong.
+  `development-writing-style.md` is the exception: it holds the rules for code comments
+  and for the markdown in this folder.
 - **`plans/`**: in-flight or parked proposals. A plan dies on completion (see lifecycle).
 - **`archive/`**: shipped plans, postmortems, and superseded notes, kept as history. Not
   authoritative; when it disagrees with the design doc or an ADR, those lead.

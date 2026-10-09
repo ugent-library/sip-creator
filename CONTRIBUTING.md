@@ -123,6 +123,8 @@ Update the docs in the same change as the code:
 * a resolved item: remove it from [docs/TODO.md](docs/TODO.md).
 
 [docs/README.md](docs/README.md) explains which document answers which question.
+[docs/development-writing-style.md](docs/development-writing-style.md) holds the rules for
+code comments and for the markdown in `docs/`.
 
 ## Commits
 
