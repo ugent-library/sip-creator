@@ -17,9 +17,8 @@ func encodeRecord(t *testing.T, r Record, schemasDir string) string {
 	return buf.String()
 }
 
-// goldenDocument is the document for the test record, byte for byte. It
-// holds the bytes the template wrote before Record was typed by field
-// (2026-09-30), so the test shows that change left the output unchanged.
+// goldenDocument is the document for the test record, byte for byte, so
+// any change to what the template writes for that record fails the test.
 const goldenDocument = `<?xml version='1.0' encoding='UTF-8'?>
 <mods:mods xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.7" xsi:schemaLocation="http://www.loc.gov/mods/v3 ../../schemas/mods-3-7.xsd">
   <mods:identifier type="local">example-0001</mods:identifier>

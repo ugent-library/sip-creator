@@ -7,8 +7,7 @@ import (
 
 // MetsDeclaration holds the profile-level values a METS document declares:
 // the profile URL, the content typing, and the agents responsible for the
-// package. Profiles differ in these values, not in build logic, so a profile
-// difference in the METS reaches the templates as data here.
+// package.
 type MetsDeclaration struct {
 	// ProfileURL is mets/@PROFILE.
 	ProfileURL string

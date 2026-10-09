@@ -37,7 +37,7 @@ type Representation struct {
 	PremisFile *File
 	// ReceivedPremisFiles are preservation documents delivered with the
 	// input, such as PREMIS from a vendor or a digitization lab. They are
-	// copied into the package as received, never parsed or merged.
+	// copied into the package as received, never changed or merged.
 	ReceivedPremisFiles []*File
 	// DocumentationFiles document this representation only.
 	DocumentationFiles []*File

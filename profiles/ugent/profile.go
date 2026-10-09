@@ -65,8 +65,8 @@ var Basic = build.Definition{
 
 // Bibliographic is the ugent/bibliographic profile
 // (docs/profiles/ugent-bibliographic.md): Basic's plain E-ARK SIP, writing
-// mods.xml from a Record where Basic writes dc.xml. Every other value
-// is Basic's.
+// mods.xml from a Record where Basic writes dc.xml, and declaring its own
+// name as the content information type. Every other value is Basic's.
 var Bibliographic = build.Definition{
 	Name:         "ugent/bibliographic",
 	Model:        mods{},
@@ -75,19 +75,14 @@ var Bibliographic = build.Definition{
 	// MUST be one of preservation, archival and access, exactly, in
 	// lowercase." The name is also the representation's type.
 	RepresentationTypes: []string{"preservation", "archival", "access"},
-	// As for Basic: a package may hold no representation at all
-	// (docs/profiles/ugent-bibliographic.md §4).
-	MinRepresentations: 0,
-	// As for Basic: a representation may carry its own description.
+	// docs/profiles/ugent-bibliographic.md §4: a package may hold no
+	// representation at all.
+	MinRepresentations:              0,
 	AllowRepresentationDescriptions: true,
-	// No PREMIS, as for Basic.
-	EmitPackagePremis:        false,
-	EmitRepresentationPremis: false,
-	// As for Basic: each representation's type goes into its METS content
-	// typing (ADR-0013).
-	EmitRepresentationType: true,
+	EmitPackagePremis:               false,
+	EmitRepresentationPremis:        false,
+	EmitRepresentationType:          true,
 	Declaration: sip.MetsDeclaration{
-		// As for Basic.
 		ProfileURL: "https://earksip.dilcis.eu/profile/E-ARK-SIP-v2-2-0.xml",
 		Type:       "Mixed",
 		// The package METS declares the profile as its content type

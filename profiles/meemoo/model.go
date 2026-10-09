@@ -50,7 +50,7 @@ func (dcschema) Encode(w io.Writer, d sip.Description, schemasDir string) error 
 // the producer's own identifier travels as a MEEMOO-LOCAL-ID object
 // identifier.
 func (dcschema) Swap(d sip.Description, id string) string {
-	terms := d.(Terms) // Definition.ValidateSource has checked the type
+	terms := d.(Terms)
 	local := terms.localIdentifier()
 	terms.setObjectIdentifier(id)
 	return local

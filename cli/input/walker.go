@@ -137,9 +137,9 @@ func (r *folderReader) walk() (*build.SourcePackage, inventory) {
 
 // violateLooseContent records one violation for the content at the top
 // level of a folder without representations/, however many entries there
-// are. The message names the first three entries and counts the rest. A
-// folder laid out before content had to live in a representation folder
-// would otherwise get one line per file.
+// are. The message names the first three entries and counts the rest, so a
+// folder with all its content at the top level does not get one line per
+// file.
 func (r *folderReader) violateLooseContent(content []string) {
 	const named = 3
 	listed := strings.Join(content[:min(len(content), named)], ", ")

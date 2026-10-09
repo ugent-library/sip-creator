@@ -67,8 +67,8 @@ func TestMeemooMapsKeysToElements(t *testing.T) {
 	}
 }
 
-// Every element the Meemoo mapping names is one meemoo.Terms accepts, so the key table cannot point at an element Meemoo's profile
-// does not have.
+// Every element the Meemoo mapping names is one meemoo.Terms accepts, so
+// the key table cannot point at an element Meemoo's profile does not have.
 func TestMeemooElementsAreAccepted(t *testing.T) {
 	for key, element := range meemooElements {
 		term := meemoo.Terms{{Key: element, Lang: "nl", Value: "x"}}

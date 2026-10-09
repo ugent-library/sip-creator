@@ -195,7 +195,7 @@ func TestCheckReportsMalformedPremis(t *testing.T) {
 }
 
 // A siegfried.json without an entry for a content file fails check, as it
-// fails create, although check computes no checksum.
+// fails create.
 func TestCheckReportsContentMissingFromTheReport(t *testing.T) {
 	root := writeFolder(t, map[string]string{
 		"description.csv":              "key,value\nidentifier,ID-1\ntitle,Test\n",

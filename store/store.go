@@ -57,10 +57,9 @@ func (s *Store) MkdirAll(rel string) error {
 // as the caller already holds it, such as from a characterization report.
 // When knownMD5 is set, CopyFile computes no checksum and reports knownMD5
 // as given (ADR-0032). When it is empty, CopyFile computes the MD5 during
-// the copy. The copy keeps the
-// source's modification time, as cp -p does, because it is the one date
-// the producer's file system holds about the file and it cannot be
-// recovered once lost. CopyFile returns the size read from the written
+// the copy. The copy keeps the source's modification time, as cp -p does,
+// because it is the one date the producer's file system holds about the
+// file and it cannot be recovered once lost. CopyFile returns the size read from the written
 // file, the checksum, and the time the copy was written as Created.
 func (s *Store) CopyFile(src, rel, knownMD5 string) (Info, error) {
 	in, err := os.Open(src)

@@ -23,12 +23,11 @@ type Package struct {
 	// profile writes one.
 	PremisFile *File
 	// ReceivedPremisFiles are preservation documents delivered with the
-	// input. They are copied as received, never parsed.
+	// input. They are copied as received, never changed or merged.
 	ReceivedPremisFiles []*File
 	// MetsFile is the node for the generated package METS.
 	MetsFile *File
-	// SchemaFiles are the bundled XSDs this package ships, copied into
-	// schemas/.
+	// SchemaFiles are the XSDs this package ships in schemas/.
 	SchemaFiles []*File
 	// DocumentationFiles document the whole package.
 	DocumentationFiles []*File

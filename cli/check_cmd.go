@@ -15,8 +15,9 @@ func init() {
 // checkCmd checks an input folder without building a package. It applies
 // the input specification's rules, then the profile's rules
 // (Definition.ValidateSource) to the source package the folder holds.
-// Checks that read every file, such as the characterization report's
-// checksums, run only in create. It reads no configuration (ADR-0010).
+// Checks that only Builder.Build makes, such as whether a received
+// preservation file is a PREMIS document, run only in create. It reads no
+// configuration (ADR-0010).
 var checkCmd = &cobra.Command{
 	Use:          "check [src]",
 	Short:        "Check an input folder against the input specification without building",

@@ -1,7 +1,6 @@
 // Package profiles is the registry of the profiles a package can be built
-// to. Each owner of profiles has a package under profiles/ (meemoo,
-// ugent) that holds its profiles' definitions and the metadata models they
-// use. This package hands definitions out by name. The set of profiles is
+// to. Each owner of profiles has a package under profiles/ that holds its
+// profiles' definitions and the metadata models they use. This package hands definitions out by name. The set of profiles is
 // closed: only the profiles registered here exist.
 package profiles
 

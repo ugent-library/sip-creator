@@ -138,8 +138,8 @@ func TestRecordValidateRequired(t *testing.T) {
 }
 
 // Validate joins every finding, including those about one title or one
-// item, so a producer sees all of them in one round. Each names its
-// position in its text.
+// item, so a producer sees all of them in one round. Each names the
+// position of the title or item.
 func TestRecordValidateReportsEveryFinding(t *testing.T) {
 	r := Record{
 		Identifier:       "A",

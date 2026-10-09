@@ -127,8 +127,8 @@ func validateListEntry(entry string) error {
 // Validate checks the identifier, every other identifier, every title,
 // every contributor and every item, and one rule across items: no barcode
 // twice, because two items with one barcode name one physical copy twice.
-// A finding about one entry of a list names its position in its text, such
-// as "title 2: ..." or "item 2: ...".
+// A finding about one entry of a list names the entry's position, such as
+// "title 2: ..." or "item 2: ...".
 func (r Record) Validate() error {
 	var errs []error
 	if r.Identifier != "" && strings.TrimSpace(r.Identifier) == "" {
