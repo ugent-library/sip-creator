@@ -104,7 +104,7 @@ Write idiomatic Go (Effective Go, Go Code Review Comments, Google's Go Style Gui
 
 [CONTRIBUTING.md](CONTRIBUTING.md) lists the required tools and every command: building, tests, `build.sh`, the validation scripts and the reference comparison. What a change must pass:
 
-- `go test ./...`, which needs no docker, `sf` or `.env`. Go tests pin how packages call each other and how they fail; the commons-ip validation in `build.sh` pins spec conformance, so CSIP rules are not reimplemented as Go tests ([ADR-0003](docs/decisions/0003-validation-stays-external.md)).
+- `go test ./...`, which needs no Java, `sf` or `.env`. Go tests pin how packages call each other and how they fail; the commons-ip validation in `build.sh` pins spec conformance, so CSIP rules are not reimplemented as Go tests ([ADR-0003](docs/decisions/0003-validation-stays-external.md)).
 - `./build.sh <profile>` reports `VALID` for all three profiles.
 - A refactor leaves `./scripts/reference-diff.sh` clean against the reference copy in `tmp/reference/`. A deliberate output change updates the reference copy and says so in the commit message and `tmp/reference/README.md`.
 

@@ -7,18 +7,22 @@ the [README](README.md).
 
 * [Go](https://go.dev/dl/) 1.27 or later, for building and for `go test ./...`.
 * For `build.sh` and the validation scripts:
+  * Java 17 or later on your `PATH`, which runs the commons-ip validator;
+  * `curl`, which fetches the commons-ip jar once;
   * `jq`;
-  * [Docker](https://www.docker.com/), for the commons-ip validator and the report server;
   * `sf` ([Siegfried](https://github.com/richardlehane/siegfried)) on your `PATH`,
     because `build.sh` generates a `siegfried.json` for the input before building;
   * `xmllint` (part of libxml2, present on macOS and most Linux systems), which checks
     every descriptive document in the package against the schema the package ships.
 
-To run commons-ip on a local Java instead of in Docker, set `CSIP_CMD` to the command,
-using the jar version that `docker/validator/Dockerfile` pins:
+`scripts/fetch-commons-ip.sh` pins the commons-ip version and the jar's sha256, downloads
+the jar into `tmp/commons-ip/` on the first run and verifies the checksum on every run
+([ADR-0035](docs/decisions/0035-commons-ip-runs-on-host-java.md)). To validate with
+another commons-ip version, for example the one RODA bundles, set `CSIP_CMD` to the
+command to run instead:
 
 ```sh
-CSIP_CMD="java -jar commons-ip2-cli-2.11.2.jar" ./build.sh ugent/basic
+CSIP_CMD="java -jar commons-ip2-cli-2.8.0.jar" ./build.sh ugent/basic
 ```
 
 ## Building
@@ -37,7 +41,7 @@ go build -o bin/sip-creator .
 go test ./...
 ```
 
-The Go tests need none of the tools above: no Docker, no `sf`, no `.env`. They include
+The Go tests need none of the tools above: no Java, no `sf`, no `.env`. They include
 a build of every folder in [examples/](examples/), so a change that makes an example
 invalid fails the tests.
 
@@ -51,8 +55,9 @@ your own. It:
 2. copies the input to `tmp/build/<profile>`, generates its `siegfried.json` there, and
    builds the package into `<profile>-uuid/` (`ugent-basic-uuid/` for `ugent/basic`), so the
    input folder itself is never changed;
-3. validates the zip with [commons-ip](https://github.com/keeps/commons-ip), printing
-   every failed check with its messages;
+3. validates the zip with [commons-ip](https://github.com/keeps/commons-ip), fetched and
+   checksum-verified by `scripts/fetch-commons-ip.sh`, printing every failed check with
+   its messages;
 4. runs `xmllint` over every descriptive document in the package against the schema the
    package ships for it, offline through the XML catalog in `scripts/schema-catalog.xml`,
    because commons-ip does not validate the descriptive documents the METS points at:
@@ -73,10 +78,12 @@ warnings from commons-ip (CSIPSTR11 and CSIPSTR13), explained in
 [docs/TODO.md](docs/TODO.md#validator-status).
 
 Each run's reports are written to `reports/runs/<timestamp>-<profile>/`. To browse them
-as HTML (run history, per-check detail, links into the E-ARK specs):
+as HTML (run history, per-check detail, links into the E-ARK specs), serve `reports/`
+with any static file server; the viewer loads the reports with `fetch`, which browsers
+refuse from a page opened straight from disk:
 
 ```sh
-docker compose up -d reports
+python3 -m http.server --directory reports 8080
 open http://localhost:8080
 ```
 

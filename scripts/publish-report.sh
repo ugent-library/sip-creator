@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Publish a validation run to the reports/ site served by the nginx container.
+# Publish a validation run to the reports/ site, which any static file server
+# can serve (CONTRIBUTING.md).
 #
 # usage: publish-report.sh <run-dir>
 #
 # Summarizes the commons-ip reports in <run-dir> into <run-dir>/run.json,
 # rebuilds the reports/runs.json index over all runs (newest first), and copies
-# the static viewer so http://localhost:8080 always shows the latest state.
+# the static viewer so the site always shows the latest state.
 # Requires: jq
 set -euo pipefail
 shopt -s nullglob

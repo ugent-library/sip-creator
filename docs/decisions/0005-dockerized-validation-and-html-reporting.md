@@ -1,6 +1,6 @@
 # 0005 — Dockerized commons-ip validation with static HTML reporting
 
-Status: Accepted (2026-07-14)
+Status: Accepted (2026-07-14). **Superseded in part by [ADR-0035](0035-commons-ip-runs-on-host-java.md)** (2026-10-09): the validator runs on the host's Java from a jar that `scripts/fetch-commons-ip.sh` pins, and `reports/` is served by any static file server; the Docker image, the compose file and the nginx service are gone. Reading the verdict from the JSON report, the static HTML viewer and the kept run history stand.
 
 ## Context
 

@@ -5,9 +5,11 @@
 # usage: validate.sh [-o report-dir] [-s spec-version] <sip.zip|sip-dir>...
 #
 # Reports land in -o (kept, for the HTML publisher) or a temp dir (cleaned up).
-# Validation runs in the dockerized validator by default; set CSIP_CMD to a host
-# command (e.g. CSIP_CMD="java -jar commons-ip.jar") to bypass docker.
-# Requires: docker (or CSIP_CMD), jq
+# commons-ip runs on the host's java, from the jar fetch-commons-ip.sh pins
+# (docs/decisions/0035-commons-ip-runs-on-host-java.md). Set CSIP_CMD to run
+# another command instead, for example the commons-ip version RODA bundles:
+# CSIP_CMD="java -jar commons-ip2-cli-2.8.0.jar".
+# Requires: java 17 or later (or CSIP_CMD), jq, curl
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -42,24 +44,24 @@ else
 fi
 report_dir="$(cd "$report_dir" && pwd)"
 
-run_csip() {
-    local input="$1"
-    if [ -n "${CSIP_CMD:-}" ]; then
-        # shellcheck disable=SC2086 # CSIP_CMD is a command line, word splitting intended
-        $CSIP_CMD validate --specification-version=$SPEC_VERSION \
-            -i "$input" -o "$report_dir"
-    else
-        local dir base
-        dir="$(cd "$(dirname "$input")" && pwd)"
-        base="$(basename "$input")"
-        # -w /reports: commons-ip drops a log file in its working directory,
-        # which must land in the writable mount, not the container image.
-        docker compose -f "$ROOT/docker-compose.yml" run --rm \
-            --user "$(id -u):$(id -g)" \
-            -v "$dir:/data:ro" -v "$report_dir:/reports" -w /reports \
-            validator validate --specification-version=$SPEC_VERSION \
-            -i "/data/$base" -o /reports
+if [ -n "${CSIP_CMD:-}" ]; then
+    # shellcheck disable=SC2206 # CSIP_CMD is a command line, word splitting intended
+    csip=($CSIP_CMD)
+else
+    if ! command -v java >/dev/null; then
+        echo "java not on PATH; commons-ip needs Java 17 or later (or set CSIP_CMD)" >&2
+        exit 2
     fi
+    csip=(java -jar "$("$ROOT/scripts/fetch-commons-ip.sh")")
+fi
+
+run_csip() {
+    local input
+    # Absolute, because the command runs from the report directory: commons-ip
+    # drops a log file in its working directory, which must not be the caller's.
+    input="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+    (cd "$report_dir" && "${csip[@]}" validate --specification-version="$SPEC_VERSION" \
+        -i "$input" -o "$report_dir")
 }
 
 status=0

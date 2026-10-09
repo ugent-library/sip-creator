@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Local CI loop: rebuild, regenerate the sample SIP for a profile, validate
-# with commons-ip, publish the HTML report (serve it: docker compose up -d reports).
+# with commons-ip, publish the HTML report under reports/ (serve it with any
+# static file server, see CONTRIBUTING.md).
 #
 # usage: build.sh [profile] [input]    (default: meemoo/basic, examples/<profile>)
 #
@@ -16,7 +17,8 @@
 # The input is copied to tmp/build/<profile> and built from there, because
 # the siegfried.json sidecar is written next to the input on every run and
 # examples/ is tracked in git.
-# Requires: go, docker, jq, xmllint. Siegfried (sf) on PATH is recommended:
+# Requires: go, java 17 or later, curl, jq, xmllint. Siegfried (sf) on PATH is
+# recommended:
 # the copy's siegfried.json sidecar is generated each run, because the
 # build takes its MD5s as the package's checksums without checking them
 # (ADR-0032), so a stale sidecar would put wrong checksums in the package.
@@ -102,6 +104,6 @@ mkdir -p "$run_dir"
 ./scripts/validate.sh -o "$run_dir" -s "$SPEC_VERSION" "$OUT"/uuid-*.zip || status=$?
 
 ./scripts/publish-report.sh "$run_dir"
-echo "report: http://localhost:8080/"
+echo "report: $run_dir"
 
 exit "$status"
