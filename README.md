@@ -31,17 +31,11 @@ Optional:
 
 ## Profiles
 
-E-ARK describes a package in two parts. The common part, CSIP, says what every
-package must contain, such as a METS file and a folder per representation. A
-Content Information Type Specification (CITS) then says what a package for one
-kind of content (a database export, geographic data) must contain on top of
-that, for instance the kind of descriptive metadata standard used. In this
-project a profile fixes those choices for one kind of content: the descriptive
-metadata standard, the representations it allows, and the values its METS
-declares. Three profiles, specific to the use cases of the Ghent University
-Library, are included. A program that uses the library can define profiles of
-its own (see
-[Profiles of your own](#profiles-of-your-own)).
+CSIP, the common part of E-ARK, says what every package must contain. A profile
+adds the choices for one kind of content: the descriptive metadata standard, the
+representations it allows, and the values its METS declares. Three profiles for
+UGent Library's use are included. A program that uses the library can define
+profiles of its own (see [Profiles of your own](#profiles-of-your-own)).
 
 * `ugent/basic`, for UGent Library's archival repository: digital resources the
   library has not necessarily catalogued, described in Simple Dublin Core;
@@ -174,32 +168,7 @@ your-input/
 ```
 
 When the content comes in several versions, such as an archival copy and an
-access copy, each version gets its own folder. Each profile defines a set of
-constraints:
-
-* `meemoo/basic` allows only one representation, and no description below the
-  package level.
-* The `ugent` profiles require representation folders named `preservation`,
-  `archival` or `access`.
-
-An input folder with every optional part looks like this:
-
-```text
-your-input/
-├── description.csv
-├── representations.csv
-├── siegfried.json
-├── documentation/
-├── premis/
-└── representations/
-    ├── archival/
-    │   ├── scan-001.tif
-    │   ├── description.csv
-    │   ├── documentation/
-    │   └── premis/
-    └── access/
-        └── scan-001.jpg
-```
+access copy, each version gets its own representation folder.
 
 Every name the tool reads in an input folder:
 
@@ -213,11 +182,12 @@ Every name the tool reads in an input folder:
 | `premis/` | no | received preservation XML, copied as it is | [§5](docs/input-spec.md#5-received-preservation-files-premis) |
 | `siegfried.json` | no | a format characterization report | [below](#format-characterization) |
 
-Essence files only live in the representation folders: anything else at the top
-level is an error. A representation folder can hold its own `documentation/` and
-`premis/`, about that version only. Under the `ugent` profiles it can also hold
-its own `description.csv` or finished document. Representation folder names may
-use letters, digits and `._-`.
+Content files live only in representation folders: anything else at the top
+level is an error. `meemoo/basic` takes exactly one representation, under any
+name. The UGent profiles take `preservation`, `archival` and `access`. A
+representation folder can hold its own `documentation/` and `premis/`, and under
+the UGent profiles its own description. Folder names may use letters, digits and
+`._-`.
 
 [examples/](examples/) has a complete input folder for each profile.
 
@@ -397,19 +367,12 @@ library is written for UGent's use first, and makes no promises to other
 institutions
 ([ADR-0033](docs/decisions/0033-ugent-first-profiles-of-your-own.md)).
 
-## Contributing
-
-Tests, validation scripts and conventions for working on SIP Creator itself are
-in
-[CONTRIBUTING.md](CONTRIBUTING.md).
-
 ## Documentation
 
-[docs/](docs/) holds the project documentation:
-[docs/sip-creator-design.md](docs/sip-creator-design.md) describes the system as
-it is today, [docs/decisions/](docs/decisions/) records why key choices were
-made, and [docs/TODO.md](docs/TODO.md) is the live backlog. Start with
-[docs/README.md](docs/README.md) for how it all fits together.
+[CONTRIBUTING.md](CONTRIBUTING.md) has the tests, validation scripts and
+conventions for working on SIP Creator itself. [docs/README.md](docs/README.md)
+says which document answers which question: the design, the decisions and the
+backlog.
 
 ## License
 
