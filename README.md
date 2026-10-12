@@ -4,49 +4,62 @@
 # SIP Creator
 
 SIP Creator packages your content files and their descriptive metadata into an
-[E-ARK](https://earksip.dilcis.eu/) Submission Information Package (SIP), ready to hand
-to a digital archive. It is a Go library, and a command-line tool built on it.
+[E-ARK](https://earksip.dilcis.eu/) Submission Information Package (SIP), ready
+to hand to a digital archive.
 
 :warning: **This is an experimental package** :warning:
 
 ## Features
 
-* A CLI (command line) tool that:
-  * ... builds a complete E-ARK SIP package from a plain input folder: your content files 
-    plus a CSV or XML file holding descriptive metadata.
-  * ... Validates an input folder before building, reporting every violation of the input rules.
-* A Go library:
-  * ... that allows you to integrate E-ARK SIP creation in your own Go projects.
-  * ... is extensible, so you can define your own profiles for custom E-ARK SIP packages.
-* Supports optional PRONOM format identification based on a pre-computed
+A command-line tool that:
+
+* builds a complete E-ARK SIP from the files in an input folder.
+* takes descriptive metadata as a CSV or an XML file.
+* creates a ZIP from the resulting SIP directory.
+* checks an input folder before building.
+
+A Go library that lets you:
+
+* build E-ARK SIPs from your own Go programs and workflows.
+* define profiles of your own.
+
+Optional:
+
+* PRONOM format identification from a pre-computed
   [Siegfried](https://github.com/richardlehane/siegfried) report.
+* Skip building a zip of the SIP directory.
 
 ## Profiles
 
-The E-ARK SIP specification offers a framework within which archives and institutions
-define a set of rules and constraints to which their own SIPs must adhere. These
-include descriptive metadata standards, the structure of the essence files, 
-representations and what they mean,... which make up a SIP's information type.
+E-ARK describes a package in two parts. The common part, CSIP, says what every
+package must contain, such as a METS file and a folder per representation. A
+Content Information Type Specification (CITS) then says what a package for one
+kind of content (a database export, geographic data) must contain on top of
+that, for instance the kind of descriptive metadata standard used. In this
+project a profile fixes those choices for one kind of content: the descriptive
+metadata standard, the representations it allows, and the values its METS
+declares. Three profiles, specific to the use cases of the Ghent University
+Library, are included. A program that uses the library can define profiles of
+its own (see
+[Profiles of your own](#profiles-of-your-own)).
 
-This project defines three profiles that are used throughout the Ghent
-University Library's ingest workflows.
-
-* `ugent/basic`, for UGent Library's archival repository: digital resources the library
-  has not necessarily catalogues, described in Simple Dublin Core;
-* `ugent/bibliographic`, for UGent Library's archival repository: digital resources the
-  library has catalogued, described in MODS from the catalogue record;
-* `meemoo/basic`, for Meemoo's archief through it's "Digitale Instroom", digitzed or
-  digital cultural heritage resources, as catalogued by the UGent Library.
-
-See [Profiles](#profiles) for what each one requires.
+* `ugent/basic`, for UGent Library's archival repository: digital resources the
+  library has not necessarily catalogued, described in Simple Dublin Core;
+* `ugent/bibliographic`, for UGent Library's archival repository: digital
+  resources the library has catalogued, described in MODS from the catalogue
+  record;
+* `meemoo/basic`, for Meemoo's archive through its "Digitale Instroom",
+  digitized or digital cultural heritage resources, as catalogued by the UGent
+  Library.
 
 ## Installation
 
-This project requires [Go](https://go.dev/dl/) 1.27 or later. There are no prebuilt
-binaries while the tool is experimental.
+This project requires [Go](https://go.dev/dl/) 1.27 or later. There are no
+prebuilt binaries while the tool is experimental.
 
 Install the command-line tool directly from the module. The binary lands in
-`$(go env GOPATH)/bin` as `sip-creator`, so make sure that directory is on your `PATH`:
+`$(go env GOPATH)/bin` as `sip-creator`, so make sure that directory is on your
+`PATH`:
 
 ```sh
 go install github.com/ugent-library/sip-creator@latest
@@ -73,48 +86,48 @@ The `sip-creator` command builds a package from an input folder you prepare.
 
 ### Creating a package
 
-Prepare an input folder as described under [Input folder](#input-folder), and set the
-submitting organization as described under [Configuration](#configuration). To build the
-folder `./your-input` into a package in the `sip-out` directory:
+Prepare an input folder as described under [Input folder](#input-folder), and
+set the submitting organization as described under
+[Configuration](#configuration). To build the folder `./your-input` into a
+package in the `sip-out` directory:
 
-```
+```text
 ./bin/sip-creator create --profile ugent/basic ./your-input sip-out
 ```
 
-This writes the package directory `sip-out/uuid-<uuid>/` and zips it (uncompressed) to
-`sip-out/uuid-<uuid>.zip`. To try it before preparing your own input, build one of the
-[example folders](examples/): `./bin/sip-creator create --profile ugent/basic examples/ugent/basic sip-out`.
+This writes the package directory `sip-out/uuid-<uuid>/` and zips it
+(uncompressed) to `sip-out/uuid-<uuid>.zip`. To try it before preparing your own
+input, build one of the [example folders](examples/):
+`./bin/sip-creator create --profile ugent/basic examples/ugent/basic sip-out`.
 
 Further flags:
 
 * `--content-category` sets the package's content category (`mets/@TYPE`,
   CSIP vocabulary), overriding `SIP_CONTENT_CATEGORY` and the profile default.
 * `--status` sets the record status, one of the SIP3 vocabulary values `new`,
-  `supplement`, `replacement`, `test`, `version` and `delete`. Without it the METS
-  carries no status, which the E-ARK SIP specification reads as `new`.
-* `--updates <identifier>` names the earlier package this one updates. A status that
-  updates an earlier package requires it. The original package's identifier becomes
-  this package's identifier (`mets/@OBJID`). Build the update into a destination that
-  does not hold the original. The tool refuses to write into an existing package
-  directory or zip with that identifier.
-* `--no-zip` skips the zip, for when the package directory itself is what you need.
+  `supplement`, `replacement`, `test`, `version` and `delete`. Without it the
+  METS carries no status, which the E-ARK SIP specification reads as `new`.
+* `--updates <identifier>` names the earlier package this one updates. A status
+  that updates an earlier package requires it. The original package's identifier
+  becomes this package's identifier (`mets/@OBJID`). Build the update into a
+  destination that does not hold the original. The tool refuses to write into an
+  existing package directory or zip with that identifier.
+* `--no-zip` skips the zip, for when the package directory itself is what you
+  need.
 
 ### Checking an input folder
 
-The input folder has to adhere to a set of input rules. `check` tests a folder without 
-building anything. Pass the same profile as for `create`:
+The input folder has to follow the [input specification](docs/input-spec.md).
+`check` tests a folder without building anything.
 
-```
+```text
 ./bin/sip-creator check --profile ugent/basic ./your-input
 ```
 
-`check` reports every violation of the input rules at once, in plain language. When the
-folder passes, it then checks the profile's own rules, such as `meemoo/basic`'s single
-representation.
+`check` reports whether the input folder is valid, and lists every problem it
+found.
 
-The report lists every problem first, then a summary of what the tool read, then the result:
-
-```
+```text
 1 problem in ./your-input
 
   premis/broken.xml: not well-formed XML: XML syntax error on line 2: unexpected EOF
@@ -132,10 +145,6 @@ Format report:        not supplied (files carry no format information)
 FAILED: fix the problems listed at the top and run check again.
 ```
 
-The summary says where the package description originates from: the rows of
-`description.csv`, from which the tool generates a document, or a supplied `dc.xml` or
-`mods.xml`, which it copies as it is.
-
 The exit status tells a script what happened:
 
 | status | meaning |
@@ -146,28 +155,16 @@ The exit status tells a script what happened:
 
 ### Configuration
 
-Configuration is read from the environment. Start from `.env.example`. 
+Configuration is read from the environment. Start from `.env.example`.
 All environment variables are documented in [CONFIG.md](CONFIG.md).
-
-Every package's METS names the organization submitting it, so `create` requires
-`SIP_SUBMITTER_NAME` for every profile. `meemoo/basic` also requires `SIP_SUBMITTER_OR_ID`, the
-organization's identifier in [Meemoo's organization register](https://developer.meemoo.be/),
-emitted as the agent's `IDENTIFICATIONCODE` note. When a value the profile requires is
-missing, `create` stops with an error and builds nothing, because the archive would
-reject the package at ingest. For example:
-
-```
-SIP_SUBMITTER_NAME="Example Organization"
-SIP_SUBMITTER_OR_ID="OR-a1b2c3d"
-```
 
 ### Input folder
 
-One folder is one package. Your content files live in a representation folder under
-`representations/`, one folder per version of the content. The smallest valid input is a
-`description.csv` plus one representation:
+One folder is one package. Your content files live in a representation folder
+under `representations/`, one folder per version of the content. The smallest
+valid input is a `description.csv` plus one representation:
 
-```
+```text
 your-input/
 ├── description.csv
 └── representations/
@@ -176,13 +173,18 @@ your-input/
         └── scan-002.tif
 ```
 
-When the content comes in several versions, such as scanned master copies and an access
-copy, each version gets its own folder. `meemoo/basic` is the exception: it allows one
-representation, and no description below the package level. Under the UGent profiles a
-representation folder is named `preservation`, `archival` or `access`, and the name is
-also its type:
+When the content comes in several versions, such as an archival copy and an
+access copy, each version gets its own folder. Each profile defines a set of
+constraints:
 
-```
+* `meemoo/basic` allows only one representation, and no description below the
+  package level.
+* The `ugent` profiles require representation folders named `preservation`,
+  `archival` or `access`.
+
+An input folder with every optional part looks like this:
+
+```text
 your-input/
 ├── description.csv
 ├── representations.csv
@@ -199,29 +201,33 @@ your-input/
         └── scan-001.jpg
 ```
 
+Every name the tool reads in an input folder:
+
 | Name | Required | What it holds | Rules |
 |---|---|---|---|
 | `description.csv` | yes, or the profile's document | descriptive metadata as `key,value` rows | [§3](docs/input-spec.md#3-descriptive-metadata-descriptioncsv-or-a-supplied-document) |
 | `dc.xml`, `mods.xml` | instead of `description.csv`, where the profile accepts one | a finished descriptive document | [§3](docs/input-spec.md#supplying-a-finished-document-ugentbasic-and-ugentbibliographic) |
 | `representations/<name>/` | under `meemoo/basic`, exactly one | one folder per version of the content | [§2](docs/input-spec.md#2-content-files-and-representations) |
-| `representations.csv` | no | a label and type per representation folder | [§2](docs/input-spec.md#representationscsv-labels-and-types-optional) |
-| `documentation/` | no | context material; commons-ip warns when the package has none at the top level | [§4](docs/input-spec.md#4-documentation) |
+| `representations.csv` | no | a display label per representation folder | [§2](docs/input-spec.md#representationscsv-labels-optional) |
+| `documentation/` | no | context material | [§4](docs/input-spec.md#4-documentation) |
 | `premis/` | no | received preservation XML, copied as it is | [§5](docs/input-spec.md#5-received-preservation-files-premis) |
 | `siegfried.json` | no | a format characterization report | [below](#format-characterization) |
 
-Content lives only in the representation folders: anything else at the top level is an
-error. A representation folder can hold its own `documentation/` and `premis/`, about
-that version only. Under the UGent profiles it can also hold its own `description.csv`
-or finished document. Representation folder names may use letters, digits and `._-`.
+Essence files only live in the representation folders: anything else at the top
+level is an error. A representation folder can hold its own `documentation/` and
+`premis/`, about that version only. Under the `ugent` profiles it can also hold
+its own `description.csv` or finished document. Representation folder names may
+use letters, digits and `._-`.
 
 [examples/](examples/) has a complete input folder for each profile.
 
 #### `description.csv`
 
-A two-column file with a `key,value` header row. Repeat a key for more values, and add a
-language in square brackets where it matters (`title[nl]`). An unknown key is an error, so
-a typo cannot silently drop metadata. Which keys exist and which are required depends on
-the profile (see [Profiles](#profiles)). The smallest valid file per profile:
+A two-column file with a `key,value` header row. Repeat a key for more values,
+and add a language in square brackets where it matters (`title[nl]`). An unknown
+key is an error. Which keys exist and which are required depends on the profile.
+
+The smallest valid file per profile:
 
 `ugent/basic`:
 
@@ -249,14 +255,20 @@ description[nl],Een voorbeeldpakket met één afbeelding.
 created,2026-01-15
 ```
 
-A finished document replaces the file at the same level. The tool checks only that it is
-XML with the root element the profile expects, and copies it as it is.
+Instead of a `description.csv` file, you can also drop in an XML document per
+profile:
+
+* `ugent/basic`: `dc.xml`
+* `ugent/bibliographic`: `mods.xml`
+
+This project only checks that it is XML with the root element the profile
+expects, and copies it as it is.
 
 #### `representations.csv`
 
-Gives each representation folder a display label and a type. `folder` is required. An
-empty `label` means the folder name, and an empty `type` means the label. Under the UGent
-profiles the type is the folder name, so leave `type` out or repeat the name:
+Optional. Gives each representation folder a display label, written into the
+package's METS. An empty `label` means the folder name, and a label may hold any
+text:
 
 ```csv
 folder,label
@@ -264,46 +276,41 @@ archival,Scanned master copies (TIFF)
 access,Access copy (JPEG)
 ```
 
-When the file is present, every folder must have a row and every row must match a
-folder, so no content can silently drop out of the package.
+When the file is present, every folder needs a row and every row must match a
+folder, so no content can drop out of the package unnoticed. The rows set the
+order of the representations in the package.
 
 #### Format characterization
 
 The tool adds format info (PRONOM identifiers) from a Siegfried report in
-`siegfried.json`. It never runs Siegfried itself (ADR-0009). Generate the report from the input
-root, capturing it before writing so `sf` does not scan its own half-written output:
+`siegfried.json`. Generate the report from the input folder, before building a
+SIP.
 
 ```sh
 cd ./your-input && report="$(sf -hash md5 -json .)" && printf '%s\n' "$report" > siegfried.json
 ```
 
 Without the report, the package has no format info, and the tool computes every
-checksum itself. With it, the build stops when the report is malformed, made without
-`-hash md5`, or misses a content file. The report's MD5 is the checksum the package
-declares for each file it covers. The tool does not check it against the file
-(ADR-0032), so keeping the report true to the files is up to you. Generate it right before the build, from the folder as you will build it.
+checksum itself. With it, the build stops when the report is malformed, made
+without `-hash md5`, or misses a content file. The report's MD5 is the checksum
+the package declares for each file it covers. The tool does not re-verify the
+checksum in the supplied `siegfried.json` file.
 
 ## Go library
 
-The command-line tool is one program built on this library. In your own program you
-supply as Go values what the tool reads from the input folder and the environment:
+SIP Creator is also a Go library. Your program gives it a profile, the
+descriptive metadata and the paths of the content files. The library checks them
+against the profile's rules and writes the package directory. Use it when your
+application already manages the metadata and essence files. The command-line
+tool is built on the same library.
 
-* The submitting organization is added to the profile with `WithSubmitter`.
-* The destination directory and the logger go in `build.Config`. Add a logger to 
-  capture the progress messages.
-* The descriptive metadata and the content files go in `build.SourcePackage`.
-
-The full API is on [pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator).
-Runnable examples for each case below are in [build/example_test.go](build/example_test.go).
-`go test` runs them, and pkg.go.dev shows them with the
-[build package](https://pkg.go.dev/github.com/ugent-library/sip-creator/build#pkg-examples).
-[docs/sip-creator-design.md](docs/sip-creator-design.md) describes the domain model and
-how a build validates, assembles and writes a package.
+The API and runnable examples are on
+[pkg.go.dev](https://pkg.go.dev/github.com/ugent-library/sip-creator).
 
 ### Building a package
 
-Resolve a profile, attach the submitter, and hand `Build` your descriptive terms and
-content files:
+Resolve a profile, attach the submitter, and hand `Build` your descriptive terms
+and content files:
 
 ```go
 import (
@@ -350,108 +357,58 @@ pkg, err := builder.Build(&build.SourcePackage{
 })
 ```
 
-`Build` validates the source package against the profile's rules, then writes the complete
-package directory under `Destination` and returns the built package. Zipping is a separate
-step (the `archive` package). A builder is constructed once per profile. The values that
-change per package go in the `SourcePackage`. Besides the description and the
-representations, it takes `Documentation` and `Premis` files, the library's form of the
-input folder's `documentation/` and `premis/`.
+* `Build` checks the source package against the profile's rules, writes the
+  package directory under `Destination`, and returns the built package.
+* Zipping is a separate step, in the `archive` package.
+* One builder serves one profile. Reuse it for every package you build to that
+  profile, and put what differs per package in the `SourcePackage`.
 
-### Descriptive metadata
+### More options
 
-The `ugent/bibliographic` profile takes a `ugent.Record` instead of a list of terms: an
-identifier, other identifiers, titles, contributors, and physical copies as items, each with a call number, a barcode or
-both, and an optional volume or issue designation (example: `ExampleBuilder_Build_mods`).
+Three of these have a runnable example in
+[build/example_test.go](build/example_test.go), named in brackets:
 
-A record that already exists as a document travels as a file: profiles that accept a
-finished document (see [Profiles](#profiles)) take a `build.EncodedDescription` in place
-of terms or a record, naming the file in its `Source` field. The library checks and
-copies it the same way the command-line tool does, as described under
-[Input folder](#input-folder) (example: `ExampleEncodedDescription`).
-
-### Representation labels and types
-
-Besides the required `Name` (the directory under `representations/`), each
-representation takes two optional fields. `Label` is the display name, written
-as `mets/@LABEL` in the representation METS. An empty `Label` means the `Name`.
-`Type` is the representation's type. An empty `Type` means the `Label`. Whether the type reaches the METS
-depends on the profile (see [Profiles](#profiles)). These are the fields the
-command-line tool fills from `representations.csv`.
-
-### Updating an earlier package
-
-The example above builds a new package with the profile's METS values. Three fields
-on the `SourcePackage` override them per package (example: `ExampleBuilder_Build_update`):
-
-* `PackageIdentifier`: the identifier of the package this one updates, reused as this
-  package's `mets/@OBJID`. A status that updates an earlier package requires it.
-* `RecordStatus`: `metsHdr/@RECORDSTATUS`, one of the `sip.RecordStatus` constants.
-  They have the same values and the same default as `--status` (see
-  [Creating a package](#creating-a-package)).
-* `ContentCategory`: `mets/@TYPE`, the CSIP content category.
-
-Under the UGent profiles an update may carry metadata only: leave `Representations`
-empty, and the package carries the description and no content (CSIP58). The
-command-line tool does the same for a folder with a description and no
-`representations/`.
-
-### Format characterization
-
-Set `Characterization` on the `SourcePackage` to add format info. Decode a Siegfried
-report with `characterization.DecodeSiegfried`. The library verifies it as strictly as
-the command-line tool does (see [Format characterization](#format-characterization)).
+* **Documentation and PREMIS.** `Documentation` and `Premis`, on the
+  `SourcePackage` or on a representation, are the library's form of the input
+  folder's `documentation/` and `premis/`.
+* **A bibliographic record.** `ugent/bibliographic` takes a `ugent.Record`
+  instead of terms: identifiers, titles, contributors and physical copies
+  (`ExampleBuilder_Build_mods`).
+* **A finished document.** Where the profile accepts one, a
+  `build.EncodedDescription` names a `dc.xml` or `mods.xml` to copy as it is
+  (`ExampleEncodedDescription`).
+* **Labels.** `SourceRepresentation.Label` is the display name in the
+  representation's METS, and defaults to `Name`. Under the UGent profiles the
+  type follows from the name and cannot be set.
+* **Updates.** `PackageIdentifier`, `RecordStatus` and `ContentCategory` on the
+  `SourcePackage` make it update an earlier package. Under the UGent profiles an
+  update may hold no representations (`ExampleBuilder_Build_update`).
+* **Format information.** Set `Characterization` to a Siegfried report decoded
+  with `characterization.DecodeSiegfried`.
 
 ### Profiles of your own
 
-The three profiles above are written the same way a profile of your own would be, and
-package build imports none of them. A program that embeds the library can keep a profile
-of its own, for a descriptive standard the three do not cover, in a Go package with
-three parts:
-
-* A description type implementing `sip.Description`. Its `Validate` and
-  `ValidateRequired` methods are the rules of your standard.
-* A metadata model implementing `build.MetadataModel`, with five methods:
-  * `ValidateType` refuses a description of another type.
-  * `Encode` writes the document. The profiles here use `text/template`.
-  * `Schemas` returns the XSDs the document points at, with their contents.
-  * `ModelType` and `ModelTypeVersion` name the document's format and its version for
-    the METS dmdSec: `MDTYPE` or `OTHERMDTYPE`, and `MDTYPEVERSION`.
-* An exported `build.Definition` that names the model, the document's file name and the
-  METS values in a `sip.MetsDeclaration`: the profile URL, the content typing and any
-  agents your archive asks for. The model type itself can stay unexported.
-
-Hand that definition to `build.New` as above. `Builder.Build` adds the software agent,
-and `WithSubmitter` adds the submitting organization. Your package supplies its own XSDs:
-embed them with `go:embed` and return each as a `build.Schema`, a file name and its
-contents. The built package carries them in `schemas/`, next to the XSDs its METS
-documents need. Where your
-document uses a schema this repository bundles, such as `xml.xsd`, `build.BundledSchemas`
-returns it. A schema name must be a plain file name, its contents must not be empty, and
-a name the METS schemas already use must come with the same contents. Your package does
-not need to be added to the registry in `profiles/`: the registry only lists the names
-`--profile` accepts on the command line, and `build.New` takes any definition. The
-example `Example_ownProfile` in [build/example_test.go](build/example_test.go) builds a
-package with a profile defined entirely outside `profiles/`.
-
-`ModelType` returns your format's name. A name the METS `MDTYPE` vocabulary lists, such
-as `DC` or `MODS`, is written as `MDTYPE`; any other name, such as `EBUCore`, is written
-as `MDTYPE="OTHER"` with the name in `OTHERMDTYPE`, as the example shows.
-
-When your profile leaves a value to the program that builds the description, such as the
-`type` of a MODS identifier, offer a fixed set of typed constants rather than free text.
-Two programs that make the same choice then write the same value into the document
-(ADR-0022).
+A program that embeds the library can define a profile of its own: a description
+type, a metadata model that writes and types the document, and a
+`build.Definition`. Hand the definition to `build.New`. It needs no entry in the
+registry. `Example_ownProfile` builds a package this way, and the godoc of
+`build.MetadataModel` and `build.Definition` lists what each part must do. The
+library is written for UGent's use first, and makes no promises to other
+institutions
+([ADR-0033](docs/decisions/0033-ugent-first-profiles-of-your-own.md)).
 
 ## Contributing
 
-Tests, validation scripts and conventions for working on SIP Creator itself are in
+Tests, validation scripts and conventions for working on SIP Creator itself are
+in
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentation
 
-[docs/](docs/) holds the project documentation: [docs/sip-creator-design.md](docs/sip-creator-design.md)
-describes the system as it is today, [docs/decisions/](docs/decisions/) records why key
-choices were made, and [docs/TODO.md](docs/TODO.md) is the live backlog. Start with
+[docs/](docs/) holds the project documentation:
+[docs/sip-creator-design.md](docs/sip-creator-design.md) describes the system as
+it is today, [docs/decisions/](docs/decisions/) records why key choices were
+made, and [docs/TODO.md](docs/TODO.md) is the live backlog. Start with
 [docs/README.md](docs/README.md) for how it all fits together.
 
 ## License
