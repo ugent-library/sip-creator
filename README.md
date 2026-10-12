@@ -59,6 +59,9 @@ Install the command-line tool directly from the module. The binary lands in
 go install github.com/ugent-library/sip-creator@latest
 ```
 
+`sip-creator --version` prints the version you installed. Every package the tool
+builds states the same version in its METS.
+
 Or build from a clone. The examples in this README assume a clone and invoke
 `./bin/sip-creator`. After `go install`, invoke `sip-creator` instead:
 

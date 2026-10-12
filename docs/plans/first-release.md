@@ -6,7 +6,8 @@ plan to `archive/` once the tag exists. Step 1 landed 2026-10-12: every check pa
 govulncheck reported nothing the code calls. Its findings are in Go 1.27.1, fixed in
 1.27.2, so a release is built with Go 1.27.2 or later. `.rumdl_cache/` carries its own
 `.gitignore`. The Meemoo spec status follows the TODO. `sip.Event` stays, as the starting
-point of the events design.*
+point of the events design. Step 2 landed 2026-10-12: `build.Version` returns the version.
+The software agent and `sip-creator --version` both use it.*
 
 ## Context
 
@@ -174,10 +175,6 @@ Each command runs on an explicit go.
 - `go list -m -versions github.com/ugent-library/sip-creator` lists `v0.1.0` through
   proxy.golang.org (requesting the pkg.go.dev page once triggers the fetch). The
   pkg.go.dev page for `build` shows the five examples of `build/example_test.go`.
-
-## Open questions
-
-- The exported name of the version function (step 2).
 
 ## Stays in the backlog
 

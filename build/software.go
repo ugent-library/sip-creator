@@ -15,17 +15,18 @@ func softwareAgent() sip.Agent {
 		Type:      "OTHER",
 		OtherType: "SOFTWARE",
 		Name:      "SIP Creator",
-		Note:      softwareVersion(),
+		Note:      Version(),
 		NoteType:  "SOFTWARE VERSION",
 	}
 }
 
-// softwareVersion returns the module version the Go toolchain stamped into
-// the binary: the tag for a tagged go install, otherwise a pseudo-version
-// carrying the commit, with +dirty when the working tree had uncommitted
-// changes. For a binary without that information, such as a test binary,
-// it returns (devel), Go's own word for an unversioned build.
-func softwareVersion() string {
+// Version returns the version of SIP Creator that every package states in
+// its METS software agent: the module version the Go toolchain stamped into
+// the binary. That is the tag for a tagged go install, otherwise a
+// pseudo-version carrying the commit, with +dirty when the working tree had
+// uncommitted changes. For a binary without that information, such as a
+// test binary, it returns (devel), Go's own word for an unversioned build.
+func Version() string {
 	info, ok := debug.ReadBuildInfo()
 	if !ok || info.Main.Version == "" {
 		return "(devel)"

@@ -10,12 +10,15 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/ugent-library/sip-creator/build"
 	"github.com/ugent-library/sip-creator/cli/input"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "sip-creator",
 	Short: "SIP Creator CLI",
+	// --version reports the version the packages state in their METS.
+	Version: build.Version(),
 	// Run prints a command's error itself, so cobra must not print it too.
 	SilenceErrors: true,
 }
