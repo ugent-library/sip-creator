@@ -45,11 +45,15 @@ the job report per SIP.
 ## 4. Verify what arrived
 
 The desk-check of RODA's mapping code, as a checklist. Each row is what the
-code does with what our package contains:
+code does with what our package contains. The rows on identifiers and updates
+were read from RODA's `master` at commit `668f61b2` (2026-10-07):
 
 | our package | RODA mapping | verify in the UI |
 |---|---|---|
 | package METS `csip:CONTENTINFORMATIONTYPE="OTHER"` with `csip:OTHERCONTENTINFORMATIONTYPE` `ugent/basic` or `ugent/bibliographic` | becomes the **AIP type** | AIP shows type `ugent/basic` or `ugent/bibliographic`, or the label RODA's AIP type vocabulary gives it, which is RODA configuration and outside this tool |
+| package METS `OBJID` (`uuid-<uuid>`, minted by the tool or given with `--updates`) | kept on the AIP as one of its **SIP IDs** (`ingestSIPIds`). It does not become the AIP id | the AIP's details list the package's `OBJID` as a SIP ID |
+| (nothing in our package) | RODA gives the AIP a **random id of its own** at ingest (`createAIP` with no AIP id) | the AIP id differs from the package's `OBJID` |
+| `RECORDSTATUS="UPDATE"` with the earlier package's `OBJID` (`--status`, `--updates`) | finds the AIP to update: first the one active or under-appraisal AIP whose SIP IDs hold the `OBJID`, then, if not exactly one matched, the AIP whose own id equals the `OBJID`. If neither search finds exactly one AIP, the update fails | the update changes the AIP the first package created, and its SIP IDs still hold that `OBJID` |
 | rep METS `OBJID` (the representation's folder name: `preservation`, `archival` or `access`) | becomes the **representation id**, status ORIGINAL | one original representation per folder, with that name |
 | rep METS `csip:OTHERCONTENTINFORMATIONTYPE`, the folder name ([ADR-0013](decisions/0013-representation-type-from-label.md)) | becomes the **representation type** (RODA v5.7.0 and later) | each representation shows its type, `preservation`, `archival` or `access`, in the Type column |
 | essence in `data/` with METS checksums | files created; fixity verified at parse | files present, sizes right, no checksum complaints in the job report |
