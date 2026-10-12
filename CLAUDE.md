@@ -59,7 +59,7 @@ Rules of the architecture, each easy to break from a change that looks local:
 - Commit messages start with `Added:`, `Changed:`, `Fixed:` or `Removed:`, followed by a short summary.
 - Keep commits small and focused. Committing directly to `main` is fine while the project is experimental.
 - No rebase or force-push of pushed history unless the user asks for it.
-- Never commit `.env` or anything `.gitignore` lists (`tmp/`, `<profile>-uuid/`, `bin/`, `reports/`).
+- Never commit `.env` or anything `.gitignore` lists (`tmp/`, `bin/`, `reports/`).
 
 ### Code
 

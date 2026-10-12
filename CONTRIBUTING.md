@@ -29,11 +29,10 @@ CSIP_CMD="java -jar commons-ip2-cli-2.8.0.jar" ./build.sh ugent/basic
 
 ```sh
 go build -o bin/sip-creator .
-./bin/sip-creator create --profile meemoo/basic examples/meemoo/basic meemoo-basic-uuid
+./bin/sip-creator create --profile meemoo/basic examples/meemoo/basic tmp/output/meemoo/basic
 ```
 
-`bin/` and the output directories, named after the profile with a hyphen for the slash
-(`meemoo-basic-uuid/`, `ugent-basic-uuid/`), are ignored by git.
+`bin/` and `tmp/` are ignored by git.
 
 ## Tests
 
@@ -53,8 +52,8 @@ your own. It:
 
 1. rebuilds the binary;
 2. copies the input to `tmp/build/<profile>`, generates its `siegfried.json` there, and
-   builds the package into `<profile>-uuid/` (`ugent-basic-uuid/` for `ugent/basic`), so the
-   input folder itself is never changed;
+   builds the package into `tmp/output/<profile>`, so the input folder itself is never
+   changed;
 3. validates the zip with [commons-ip](https://github.com/keeps/commons-ip), fetched and
    checksum-verified by `scripts/fetch-commons-ip.sh`, printing every failed check with
    its messages;
@@ -93,7 +92,7 @@ its own, including an unzipped package directory when debugging structure.
 ## Comparing against the reference copy
 
 ```sh
-./scripts/reference-diff.sh tmp/reference/<profile>/pkg <profile>-uuid/uuid-<uuid>
+./scripts/reference-diff.sh tmp/reference/<profile>/pkg tmp/output/<profile>/uuid-<uuid>
 ```
 
 compares a generated package with a reference copy kept in `tmp/reference/`, after

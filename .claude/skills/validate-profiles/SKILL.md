@@ -40,10 +40,8 @@ user's next request.
    'http://www.w3.org/2001/03/xml.xsd'" come from the schemas the package ships and
    are not a result. Ignore them.
 5. For each profile with a reference copy in `tmp/reference/<profile>/pkg`, run
-   `./scripts/reference-diff.sh tmp/reference/<profile>/pkg <name>-uuid/uuid-*/`,
-   where `<name>` is the profile name with the slash replaced by a dash
-   (`ugent-bibliographic`). A profile without a reference copy gets "no reference
-   copy" in the report. Don't decide whether a difference is intended. Show it, and
+   `./scripts/reference-diff.sh tmp/reference/<profile>/pkg tmp/output/<profile>/uuid-*/`.
+   A profile without a reference copy gets "no reference copy" in the report. Don't decide whether a difference is intended. Show it, and
    let the user decide.
 
 ## Expected results

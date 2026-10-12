@@ -28,10 +28,10 @@ cd "$(dirname "$0")"
 PROFILE="${1:-meemoo/basic}"
 INPUT="${2:-examples/$PROFILE}"
 SRC="tmp/build/$PROFILE"
+OUT="tmp/output/$PROFILE"
 # The profile name carries a slash (meemoo/basic); NAME flattens it for
-# what must be one path component: the output and report directories.
+# what must be one path component: the report directory.
 NAME="${PROFILE//\//-}"
-OUT="$NAME-uuid"
 
 case "$PROFILE" in
     meemoo/basic)                     SPEC_VERSION=2.0.4 ;;
@@ -70,6 +70,7 @@ fi
 go build -o bin/sip-creator .
 
 rm -rf "$OUT"
+mkdir -p "$(dirname "$OUT")"
 ./bin/sip-creator create --profile "$PROFILE" "$SRC" "$OUT"
 pkg="$(ls -d "$OUT"/uuid-*/)"
 pkg="${pkg%/}"
