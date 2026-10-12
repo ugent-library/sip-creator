@@ -4,7 +4,7 @@ SIP Creator is a Go library and CLI that builds a Submission Information Package
 
 | Profile | Package | Descriptive metadata | E-ARK SIP version |
 |---|---|---|---|
-| `meemoo/basic` | [Meemoo SIP 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) basic content profile (the stable version; 2.0 and 2.1 are release candidates) | Meemoo's Dublin Core terms and schema.org (`dc+schema.xml`) | 2.0.4 |
+| `meemoo/basic` | [Meemoo SIP 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) basic content profile. 2.0 is stable and 2.1 a release candidate. The profile moves to 2.1 ([TODO](TODO.md)). | Meemoo's Dublin Core terms and schema.org (`dc+schema.xml`) | 2.0.4 |
 | `ugent/basic` | plain E-ARK SIP, UGent Library's [basic](profiles/ugent-basic.md) content type | Simple Dublin Core (`dc.xml`) | 2.2.0 |
 | `ugent/bibliographic` | plain E-ARK SIP, UGent Library's [bibliographic](profiles/ugent-bibliographic.md) content type | [MODS 3.7](https://www.loc.gov/standards/mods/) (`mods.xml`) | 2.2.0 |
 

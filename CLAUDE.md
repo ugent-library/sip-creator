@@ -1,6 +1,6 @@
 # SIP Creator agent orientation
 
-SIP Creator is a Go library and CLI that builds Submission Information Packages (SIPs): it takes a producer's essence files and descriptive metadata and writes one package that conforms to [E-ARK CSIP](https://earkcsip.dilcis.eu/), optionally with [Meemoo's SIP Specification 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) on top (the stable version; 2.0 and 2.1 are release candidates). The project is experimental.
+SIP Creator is a Go library and CLI that builds Submission Information Packages (SIPs): it takes a producer's essence files and descriptive metadata and writes one package that conforms to [E-ARK CSIP](https://earkcsip.dilcis.eu/), optionally with [Meemoo's SIP Specification 1.2](https://developer.meemoo.be/docs/diginstroom/sip/1.2/) on top. 2.0 is stable and 2.1 a release candidate, and `meemoo/basic` moves to 2.1 ([docs/TODO.md](docs/TODO.md)). The project is experimental.
 
 ## Scope
 

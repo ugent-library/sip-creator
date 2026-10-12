@@ -2,7 +2,11 @@
 
 *Status: **drafted** 2026-10-12. The decisions below were taken in chat on 2026-10-12.
 Each step starts on an explicit go in chat. Update this line as steps land, and move the
-plan to `archive/` once the tag exists.*
+plan to `archive/` once the tag exists. Step 1 landed 2026-10-12: every check passed, and
+govulncheck reported nothing the code calls. Its findings are in Go 1.27.1, fixed in
+1.27.2, so a release is built with Go 1.27.2 or later. `.rumdl_cache/` carries its own
+`.gitignore`. The Meemoo spec status follows the TODO. `sip.Event` stays, as the starting
+point of the events design.*
 
 ## Context
 
@@ -173,7 +177,6 @@ Each command runs on an explicit go.
 
 ## Open questions
 
-- Whether `sip.Event` is removed (step 1).
 - The exported name of the version function (step 2).
 
 ## Stays in the backlog
