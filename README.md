@@ -62,6 +62,12 @@ go install github.com/ugent-library/sip-creator@latest
 `sip-creator --version` prints the version you installed. Every package the tool
 builds states the same version in its METS.
 
+Versions follow [semantic versioning](https://semver.org/). While the major
+version is 0, a minor version may change the command line, the library API or
+the packages a profile builds. To install a given version, replace `@latest`
+with its tag, such as `@v0.1.0`. [CHANGELOG.md](CHANGELOG.md) lists what each
+version changed.
+
 Or build from a clone. The examples in this README assume a clone and invoke
 `./bin/sip-creator`. After `go install`, invoke `sip-creator` instead:
 

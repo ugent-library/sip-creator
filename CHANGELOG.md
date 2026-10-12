@@ -17,8 +17,8 @@ producer's essence files and descriptive metadata.
 ### Added
 
 - **The command-line tool.** `create` builds a package from an input folder
-  that follows the [input specification](docs/input-spec.md), and zips it
-  unless `--no-zip` is given. `check` tests an input folder without building
+  that follows the [input specification][input-spec], and zips it unless
+  `--no-zip` is given. `check` tests an input folder without building
   anything, and its exit status tells a script whether the folder has
   problems. `--version` prints the version.
 - **Updates.** `--status` sets the record status, and `--updates` names the
@@ -52,4 +52,7 @@ producer's essence files and descriptive metadata.
 - The tool has not been run on Windows. There, a virus scanner can make the
   final rename of the package or the zip fail. A rerun works.
 
-[docs/TODO.md](docs/TODO.md) has the details of each gap.
+[docs/TODO.md][todo] has the details of each gap.
+
+[input-spec]: https://github.com/ugent-library/sip-creator/blob/main/docs/input-spec.md
+[todo]: https://github.com/ugent-library/sip-creator/blob/main/docs/TODO.md

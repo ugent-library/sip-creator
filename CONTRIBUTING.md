@@ -133,6 +133,41 @@ Update the docs in the same change as the code:
 [docs/development-writing-style.md](docs/development-writing-style.md) holds the rules for
 code comments and for the markdown in `docs/`.
 
+## Releasing
+
+A version is an annotated tag `vX.Y.Z` on `main`
+([ADR-0036](docs/decisions/0036-versioned-releases.md)). While the major version is 0,
+raise the minor version when the command line, the library API or a profile's
+output changes, and the patch version for a fix that changes none of them.
+
+1. Check `main`: `go test ./...` passes, `./build.sh <profile>` reports `VALID` for
+   every profile, `./scripts/reference-diff.sh` shows no difference, and the GitHub
+   Actions run of the last commit passed. Build with the latest patch release of the Go
+   version `go.mod` names.
+2. In [CHANGELOG.md](CHANGELOG.md), rename `Unreleased` to `X.Y.Z - YYYY-MM-DD` and add
+   an empty `Unreleased` above it. Commit with `Changed: CHANGELOG.md names version
+   X.Y.Z` and push `main`.
+3. Tag the commit and push the tag:
+
+   ```sh
+   git tag -a vX.Y.Z -m "SIP Creator vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+4. Publish the release page with the version's section of the changelog:
+
+   ```sh
+   awk '/^## X\.Y\.Z /{f=1;next} /^## /{f=0} f' CHANGELOG.md > tmp/release-notes.md
+   gh release create vX.Y.Z --title vX.Y.Z --notes-file tmp/release-notes.md
+   ```
+
+5. Check the result from outside the clone. In an empty temporary directory, with
+   `GOPATH` and `GOMODCACHE` set to folders inside it, run
+   `go install github.com/ugent-library/sip-creator@vX.Y.Z`. Its
+   `sip-creator --version` prints `vX.Y.Z`. If pkg.go.dev does not list the version
+   yet, open `https://pkg.go.dev/github.com/ugent-library/sip-creator@vX.Y.Z` and use
+   its button to request it.
+
 ## Commits
 
 Start the message with the kind of change, capitalized and followed by a colon:

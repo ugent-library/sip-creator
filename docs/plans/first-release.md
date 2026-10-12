@@ -10,7 +10,10 @@ point of the events design. Step 2 landed 2026-10-12: `build.Version` returns th
 The software agent and `sip-creator --version` both use it. Step 3 landed 2026-10-12:
 `.github/workflows/test.yml`, with `actions/checkout@v7` and `actions/setup-go@v7`. The
 validation in build.sh is a TODO item. Step 4 landed 2026-10-12: `CHANGELOG.md` holds the
-release notes under `Unreleased` until step 7 names the version.*
+release notes under `Unreleased` until step 7 names the version. Step 5 landed 2026-10-12:
+[ADR-0036](../decisions/0036-versioned-releases.md), the README on versions, the
+Releasing section of CONTRIBUTING.md, which step 7 follows, and the tag rule in
+CLAUDE.md.*
 
 ## Context
 
