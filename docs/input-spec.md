@@ -20,7 +20,7 @@ With several versions of the content and extras:
 ```
 example-0001/
 ├── description.csv
-├── representations.csv   ← optional: a label and type per representation
+├── representations.csv   ← optional: a label per representation
 ├── siegfried.json        ← optional: a format report
 ├── representations/
 │   ├── archival/         ← the scanned master copies, any structure you like
@@ -55,15 +55,15 @@ A *representation* is one version of the content: the archival master scans are 
 
 - Content MUST live in a representation folder: each folder directly inside `representations/` is one representation, named after that folder. A content file or folder at the top level, beside the reserved names, MUST be an error: the tool cannot tell which version of the content loose files are. Under `meemoo/basic` there MUST be exactly one representation, as Meemoo SIP 1.2's basic profile requires ("The IE MUST be represented by exactly one representation."). The UGent profiles set no limit.
 - Under the UGent profiles a representation's name MUST be one of `preservation`, `archival` and `access`, and the name is also its type; their meaning is in the profile pages ([`ugent/basic`](profiles/ugent-basic.md#4-representations), [`ugent/bibliographic`](profiles/ugent-bibliographic.md#4-representations)). `meemoo/basic` names none.
-- A representation's name MUST consist of `A–Z a–z 0–9 . _ -` only. It becomes the representation's directory under `representations/` in the package, and, unless `representations.csv` says otherwise, its label and type. Neither E-ARK CSIP nor the Meemoo specification prescribes names; CSIP requires only that they are unique, which folder names are.
+- A representation's name MUST consist of `A–Z a–z 0–9 . _ -` only. It becomes the representation's directory under `representations/` in the package, and, unless `representations.csv` says otherwise, its label. Neither E-ARK CSIP nor the Meemoo specification prescribes names; CSIP requires only that they are unique, which folder names are.
 - Inside a representation folder, `description.csv`, `documentation/` and `premis/` are reserved (§3–5), and under the UGent profiles the profile's document name (§3). Everything else is content, with free names and nesting.
 - Files are packaged in alphabetical order by path. The order carries no meaning in E-ARK CSIP or the Meemoo specification. If a reading order matters, zero-pad your numbering (`0001.tiff`, `0002.tiff`); explicit ordering is deferred (§8).
 - The tool computes checksums and sizes itself; you never supply them.
 - Every file keeps its modification time in the package and in the zip. Copy files into the input folder in a way that keeps it (`cp -p`, `rsync -t`, or a download that sets it), or the package carries the time of that copy instead.
 
-### `representations.csv`: labels and types (optional)
+### `representations.csv`: labels (optional)
 
-A folder name makes a good machine name but not always a good display name. `representations.csv`, next to `description.csv`, gives each representation a label (its display name in the package) and a type (what an ingest system such as RODA shows as its kind):
+A folder name makes a good machine name but not always a good display name. `representations.csv`, next to `description.csv`, gives each representation a label: its display name, written as `mets/@LABEL` in the representation's METS. For example:
 
 ```csv
 folder,label
@@ -71,13 +71,13 @@ archival,Scanned master copies (TIFF)
 access,Access copy (PDF)
 ```
 
-- The file MUST be UTF-8 with a header row. The columns are `folder` (required), `label` and `type` (optional), in any order; header names are matched case-insensitively, so a spreadsheet's `Folder` works. An unknown or repeated column MUST be an error. A UTF-8 BOM, CRLF line endings and RFC 4180 quoting are accepted.
+- The file MUST be UTF-8 with a header row. The columns are `folder` (required) and `label` (optional), in any order; header names are matched case-insensitively, so a spreadsheet's `Folder` works. An unknown or repeated column MUST be an error. A UTF-8 BOM, CRLF line endings and RFC 4180 quoting are accepted.
 - The file MUST have at least one row, and it requires a `representations/` folder: without one it MUST be an error.
 - `folder` names a folder directly under `representations/` by its name alone (`archival`, not a path). Every row MUST match an existing folder, no two rows may name the same folder, and every folder MUST have a row. A folder without a row is an error, never an exclusion, so no content can silently drop out of the package. To leave material out, move it out of the input folder.
-- An empty `label` means the folder name. An empty `type` means the label, except under the UGent profiles, where the type is the folder name: there `type` MUST be empty or equal to the folder name.
-- `label` and `type` may hold any text, `&` and quotes included: the tool escapes them when it writes the package's XML. A control character other than tab, line feed and carriage return MUST be an error.
+- An empty `label` means the folder name.
+- A `label` may hold any text, `&` and quotes included: the tool escapes it when it writes the package's XML. A control character other than tab, line feed and carriage return MUST be an error.
 - The rows' order is the representations' order in the package.
-- The label is used under every profile. The type is used only under the UGent profiles; under `meemoo/basic` it has no effect (§7).
+- The file has no `type` column, and a `type` column MUST be an error like any other unknown column. Under the UGent profiles a representation's type follows from its folder name. `meemoo/basic` declares no representation type (§7).
 
 ### `siegfried.json`: format report (optional)
 
@@ -237,7 +237,8 @@ Because the submitting organization comes from configuration, the folder alone d
 | input | E-ARK SIP location |
 |---|---|
 | representation folders | `representations/<name>/data/`, METS fileSec and structMap |
-| `representations.csv` `label` / `type` | representation METS `mets/@LABEL`; under the UGent profiles the type in `TYPE="Other"` + `csip:OTHERTYPE` and `CONTENTINFORMATIONTYPE="OTHER"` + `csip:OTHERCONTENTINFORMATIONTYPE` ([ADR-0013](decisions/0013-representation-type-from-label.md)); under `meemoo/basic` the content typing is fixed to Meemoo's profile URI |
+| `representations.csv` `label` | representation METS `mets/@LABEL` |
+| representation folder name | the representation's directory and its METS `OBJID`; under the UGent profiles also its type, capitalized (`archival` → `Archival`), in `TYPE="Other"` + `csip:OTHERTYPE` and `CONTENTINFORMATIONTYPE="OTHER"` + `csip:OTHERCONTENTINFORMATIONTYPE` ([ADR-0013](decisions/0013-representation-type-from-label.md)); under `meemoo/basic` the content typing is fixed to Meemoo's profile URI |
 | file order (no meaning) | document order in the representation's structMap; METS `ORDER` attributes, the real sequencing mechanism, are deferred with the manifest (§8) |
 | `documentation/` (package and representation) | `documentation/` directories (CSIPSTR16), METS fileSec `USE="Documentation"` |
 | `description.csv` under `meemoo/basic` | the table's elements, `dcterms:*` and `schema:*` (e.g. `ispartof` → `dcterms:isPartOf`, `artmedium` → `schema:artMedium`), in `metadata/descriptive/dc+schema.xml`, METS dmdSec ([ADR-0011](decisions/0011-closed-descriptive-vocabulary.md)) |

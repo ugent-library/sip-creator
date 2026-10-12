@@ -105,8 +105,9 @@ Rules:
   exactly, in lowercase. **Checked.**
 - A package MUST NOT hold two representations of the same name. **Checked**, because a
   name is a folder name.
-- A representation's type MUST equal its name. A `representations.csv` row MAY leave
-  `type` empty, and MUST NOT give another value. **Checked.** The label is free.
+- A representation's type is its name, capitalized: `Preservation`, `Archival` or
+  `Access`. **Written.** Neither `representations.csv` nor a program that uses the
+  library can set another type. **Checked.** The label is free.
 - A package MAY hold no representation at all: a description of an intellectual entity
   whose content is not, or not yet, in the archive. This holds for a new package and for
   an update (§8). **Checked**: the tool accepts it.
@@ -114,9 +115,20 @@ Rules:
 - Inside a representation, folders and file names are free. A digitisation of several
   physical copies MAY hold one folder per copy, named by the copy's barcode.
 
-The name becomes the representation's directory under `representations/` in the package,
-its METS `OBJID`, and its type in `csip:OTHERCONTENTINFORMATIONTYPE` on the representation
-METS.
+The name becomes the representation's directory under `representations/` in the package
+and its METS `OBJID`. The type goes into the representation METS twice: as `TYPE="Other"`
+with `csip:OTHERTYPE`, and as `csip:CONTENTINFORMATIONTYPE="OTHER"` with
+`csip:OTHERCONTENTINFORMATIONTYPE`.
+
+CSIP has no attribute for the role a representation plays. `mets/@TYPE` declares the
+category of the content (CSIP2), and `csip:CONTENTINFORMATIONTYPE` the Content
+Information Type Specification the content follows (CSIP4). Both accept `Other` or
+`OTHER` with free text, so the type is valid in either. The profile writes it there
+because RODA shows `csip:OTHERCONTENTINFORMATIONTYPE` as the representation's type. It
+writes the `TYPE` pair as well, because commons-ip reads the two pairs the wrong way
+round ([keeps/commons-ip#372](https://github.com/keeps/commons-ip/issues/372)), and RODA
+would read `csip:OTHERTYPE` once that is fixed
+([ADR-0013](../decisions/0013-representation-type-from-label.md)).
 
 ## 5. Files
 
@@ -164,7 +176,7 @@ each row.
 | part of the package | in RODA |
 |---|---|
 | `csip:OTHERCONTENTINFORMATIONTYPE` `ugent/bibliographic` | the AIP type, `ugent/bibliographic`, or the label RODA's AIP type vocabulary gives it, which is RODA configuration |
-| a representation's name | the representation's id, and its type through the representation METS |
+| a representation's name | the representation's id, and, capitalized, its type through the representation METS |
 | `mods.xml` | descriptive metadata of type MODS 3.7; RODA renders and indexes it only with a MODS crosswalk configured in RODA, which is outside this tool |
 | essence and its checksums | the AIP's files; RODA verifies the checksums when it parses the package |
 | documentation | the AIP's documentation |

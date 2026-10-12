@@ -21,8 +21,12 @@ var Basic = build.Definition{
 	DocumentName: "dc.xml",
 	// docs/profiles/ugent-basic.md §4: "A representation's name MUST be
 	// one of preservation, archival and access, exactly, in lowercase."
-	// The name is also the representation's type.
-	RepresentationTypes: []string{"preservation", "archival", "access"},
+	// The type is the name, capitalized.
+	RepresentationTypes: map[string]string{
+		"preservation": "Preservation",
+		"archival":     "Archival",
+		"access":       "Access",
+	},
 	// docs/profiles/ugent-basic.md §4: "A package MAY hold no
 	// representation at all: a description of an intellectual entity whose
 	// content is not, or not yet, in the archive." CSIP58 allows a package
@@ -73,8 +77,12 @@ var Bibliographic = build.Definition{
 	DocumentName: "mods.xml",
 	// docs/profiles/ugent-bibliographic.md §4: "A representation's name
 	// MUST be one of preservation, archival and access, exactly, in
-	// lowercase." The name is also the representation's type.
-	RepresentationTypes: []string{"preservation", "archival", "access"},
+	// lowercase." The type is the name, capitalized.
+	RepresentationTypes: map[string]string{
+		"preservation": "Preservation",
+		"archival":     "Archival",
+		"access":       "Access",
+	},
 	// docs/profiles/ugent-bibliographic.md §4: a package may hold no
 	// representation at all.
 	MinRepresentations:              0,

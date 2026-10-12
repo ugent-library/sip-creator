@@ -134,17 +134,18 @@ func TestValidateSourceAppliesProfileRules(t *testing.T) {
 }
 
 // Under a vocabulary of representation types a representation's name must
-// be one of the set, and a type, when given, must equal the name. Without
-// a vocabulary, as under meemoo/basic, neither rule applies.
+// be one of the set, and its type cannot be set, not even to the type the
+// name maps to. Without a vocabulary, as under meemoo/basic, neither rule
+// applies.
 func TestValidateSourceAppliesRepresentationTypes(t *testing.T) {
 	cases := []struct {
 		name, repName, repType string
 		want                   string // "" when the source is accepted
 	}{
 		{"name in the set", "archival", "", ""},
-		{"type equal to the name", "access", "access", ""},
-		{"name outside the set", "master", "", `profile "ugent/basic" names its representations preservation, archival, access; "master" is not one of them`},
-		{"type other than the name", "archival", "preservation", `under profile "ugent/basic" a representation's type is its name; "archival" has type "preservation"`},
+		{"name outside the set", "master", "", `profile "ugent/basic" names its representations access, archival, preservation; "master" is not one of them`},
+		{"type the name maps to", "archival", "Archival", `under profile "ugent/basic" a representation's type follows from its name and cannot be set; "archival" has type "Archival"`},
+		{"another type", "archival", "preservation", `under profile "ugent/basic" a representation's type follows from its name and cannot be set; "archival" has type "preservation"`},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {

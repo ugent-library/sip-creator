@@ -2,6 +2,7 @@ package profiles
 
 import (
 	"bytes"
+	"maps"
 	"path"
 	"slices"
 	"strings"
@@ -157,20 +158,22 @@ func TestRegistryEntriesNameAModel(t *testing.T) {
 	}
 }
 
-// The UGent profiles name their representations from one vocabulary.
+// The UGent profiles name their representations from one vocabulary, and
+// each name maps to its type, capitalized.
 // meemoo/basic has no vocabulary, because its specification names none.
 func TestRepresentationTypes(t *testing.T) {
-	want := map[string][]string{
+	ugent := map[string]string{"preservation": "Preservation", "archival": "Archival", "access": "Access"}
+	want := map[string]map[string]string{
 		"meemoo/basic":        nil,
-		"ugent/basic":         {"preservation", "archival", "access"},
-		"ugent/bibliographic": {"preservation", "archival", "access"},
+		"ugent/basic":         ugent,
+		"ugent/bibliographic": ugent,
 	}
 	for name, types := range want {
 		def, ok := Get(name)
 		if !ok {
 			t.Fatalf("no %q definition registered", name)
 		}
-		if !slices.Equal(def.RepresentationTypes, types) {
+		if !maps.Equal(def.RepresentationTypes, types) {
 			t.Errorf("%s representation types = %v, want %v", name, def.RepresentationTypes, types)
 		}
 	}

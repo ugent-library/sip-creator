@@ -94,7 +94,7 @@ func firstKey(report characterization.Report) string {
 
 // applyRepresentations decodes the representations.csv at src and applies
 // it to reps, the representations read from representations/. Each row
-// names a representation folder and supplies its label and type. Every row
+// names a representation folder and supplies its label. Every row
 // must match a folder, and every folder must have a row (input
 // specification §2). It returns the representations in row order, which
 // becomes the packaging order. An empty cell stays empty, because
@@ -130,7 +130,6 @@ func (r *folderReader) applyRepresentations(src string, reps []build.SourceRepre
 		}
 		rep := reps[i]
 		rep.Label = row.label
-		rep.Type = row.kind
 		ordered = append(ordered, rep)
 	}
 

@@ -20,7 +20,7 @@ func twoRepTree() map[string]string {
 
 func TestRepresentationsCSV(t *testing.T) {
 	tree := twoRepTree()
-	tree["representations.csv"] = "folder,label,type\nmaster,\"Master scan, R&D \"\"A\"\"\",archival\naccess,,\n"
+	tree["representations.csv"] = "folder,label\nmaster,\"Master scan, R&D \"\"A\"\"\"\naccess,\n"
 	root := writeTree(t, tree)
 
 	pkg, err := Read(root, mapping.Meemoo{}, meemooDocumentSpec)
@@ -38,13 +38,13 @@ func TestRepresentationsCSV(t *testing.T) {
 		t.Fatalf("order = %q, %q; want the CSV row order master, access", master.Name, access.Name)
 	}
 	// The label is taken as written: the METS encoder escapes it.
-	if master.Label != `Master scan, R&D "A"` || master.Type != "archival" {
-		t.Errorf("master label/type = %q/%q, want the CSV values", master.Label, master.Type)
+	if master.Label != `Master scan, R&D "A"` {
+		t.Errorf("master label = %q, want the CSV value", master.Label)
 	}
-	// Empty cells stay empty: build.SourceRepresentation fills in the
-	// defaults, not Read.
-	if access.Label != "" || access.Type != "" {
-		t.Errorf("access label/type = %q/%q, want empty (defaults resolve in the library)", access.Label, access.Type)
+	// An empty cell stays empty: build.SourceRepresentation fills in the
+	// default, not Read.
+	if access.Label != "" {
+		t.Errorf("access label = %q, want empty (the default resolves in the library)", access.Label)
 	}
 }
 
@@ -52,14 +52,14 @@ func TestRepresentationsCSV(t *testing.T) {
 // capitalize) and left out are all fine. The BOM spreadsheet tools write
 // must not hide the header, and spaces around a folder name are dropped.
 func TestParseRepresentationRows(t *testing.T) {
-	data := "\ufeffType,Folder\narchival, master \naccess-copy,access\n"
+	data := "\ufeffLabel,Folder\nMaster scan, master \nAccess copy,access\n"
 	rows, errs, err := parseRepresentationRows([]byte(data))
 	if err != nil || len(errs) > 0 {
 		t.Fatalf("parseRepresentationRows: err %v, findings %v", err, errs)
 	}
 	want := []repRow{
-		{line: 2, folder: "master", kind: "archival"},
-		{line: 3, folder: "access", kind: "access-copy"},
+		{line: 2, folder: "master", label: "Master scan"},
+		{line: 3, folder: "access", label: "Access copy"},
 	}
 	if len(rows) != len(want) {
 		t.Fatalf("got %d rows, want %d: %+v", len(rows), len(want), rows)
@@ -82,7 +82,10 @@ func TestParseRepresentationRowsUnusableFile(t *testing.T) {
 		{"empty file", "", []string{"the file is empty"}},
 		{"not utf-8", "folder\n\xff\n", []string{"not valid UTF-8"}},
 		{"unknown column", "folder,colour\nmaster,red\n", []string{`unknown column "colour"`}},
-		{"no folder column", "label,type\na,b\n", []string{"no folder column"}},
+		{"no folder column", "label\na\n", []string{"no folder column"}},
+		// A file with a type column is refused, not read without it, so
+		// a producer learns the column has no effect.
+		{"type column", "folder,type\nmaster,archival\n", []string{`unknown column "type"`}},
 		{"duplicate column", "folder,folder\nmaster,master\n", []string{`column "folder" twice`}},
 		{"every header problem", "colour,label,label\na,b,c\n", []string{`unknown column "colour"`, `column "label" twice`}},
 	}
@@ -115,7 +118,6 @@ func TestParseRepresentationRowsFindings(t *testing.T) {
 		// A row with a value XML cannot carry is kept, so matching it to a
 		// folder still reports on it.
 		{"label XML cannot carry", "folder,label\nmaster,Master\x01\n", 2, "label:", 1},
-		{"type XML cannot carry", "folder,type\nmaster,a\x1bb\n", 2, "type:", 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -147,7 +149,7 @@ func TestRepresentationsCSVViolations(t *testing.T) {
 		{"unknown header column", "folder,colour,folder\nmaster,red,x\naccess,blue,y\n", `representations.csv: unknown column "colour"`},
 		{"duplicate header column", "folder,colour,folder\nmaster,red,x\naccess,blue,y\n", `representations.csv: the header names column "folder" twice`},
 		{"row finding at its line", "folder,label\n,Master scan\naccess,\n", "representations.csv line 2: the folder cell is empty"},
-		{"no data rows", "folder,label,type\n", "no rows"},
+		{"no data rows", "folder,label\n", "no rows"},
 		{"unmatched row", "folder\nmaster\naccess\npreservation\n", "no folder representations/preservation"},
 		{"duplicate folder row", "folder\nmaster\naccess\nmaster\n", "already has a row"},
 	}

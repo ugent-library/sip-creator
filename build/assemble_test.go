@@ -580,11 +580,11 @@ func TestAssembleRepresentationDeclaration(t *testing.T) {
 		t.Fatalf("assemble: %v", err)
 	}
 	decl := pkg.Root.Representations[0].Declaration
-	if decl.Type != "Other" || decl.OtherType != "archival" {
-		t.Errorf("rep TYPE = %q/%q, want Other/archival", decl.Type, decl.OtherType)
+	if decl.Type != "Other" || decl.OtherType != "Archival" {
+		t.Errorf("rep TYPE = %q/%q, want Other/Archival", decl.Type, decl.OtherType)
 	}
-	if decl.ContentInformationType != "OTHER" || decl.OtherContentInformationType != "archival" {
-		t.Errorf("rep CONTENTINFORMATIONTYPE = %q/%q, want OTHER/archival",
+	if decl.ContentInformationType != "OTHER" || decl.OtherContentInformationType != "Archival" {
+		t.Errorf("rep CONTENTINFORMATIONTYPE = %q/%q, want OTHER/Archival",
 			decl.ContentInformationType, decl.OtherContentInformationType)
 	}
 	if pkg.Declaration.Type != "Mixed" || pkg.Declaration.OtherType != "" {
@@ -629,8 +629,8 @@ func TestAssembleUGentContentType(t *testing.T) {
 				t.Errorf("package CONTENTINFORMATIONTYPE = %q/%q, want OTHER/%s",
 					got.ContentInformationType, got.OtherContentInformationType, tt.profile)
 			}
-			if got := pkg.Root.Representations[0].Declaration; got.ContentInformationType != "OTHER" || got.OtherContentInformationType != "archival" {
-				t.Errorf("rep CONTENTINFORMATIONTYPE = %q/%q, want OTHER/archival",
+			if got := pkg.Root.Representations[0].Declaration; got.ContentInformationType != "OTHER" || got.OtherContentInformationType != "Archival" {
+				t.Errorf("rep CONTENTINFORMATIONTYPE = %q/%q, want OTHER/Archival",
 					got.ContentInformationType, got.OtherContentInformationType)
 			}
 		})
@@ -677,16 +677,15 @@ func TestAssembleRepresentationCascade(t *testing.T) {
 	}
 }
 
-// Under a vocabulary of representation types the type is the name: a
-// label does not become the type, and an explicit type equal to the name
-// is accepted.
-func TestAssembleRepresentationTypeIsTheName(t *testing.T) {
+// Under a vocabulary of representation types the type is the one the
+// vocabulary maps the name to: a label does not become the type.
+func TestAssembleRepresentationTypeFollowsTheName(t *testing.T) {
 	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
 	inDir := t.TempDir()
 	in.Representations = []build.SourceRepresentation{
 		{Name: "archival", Label: "Scanned master copies (tif)",
 			Files: []build.SourceFile{writeEssence(t, inDir, "a.tif", "a")}},
-		{Name: "access", Label: "Derived access copies (jpg)", Type: "access",
+		{Name: "access", Label: "Derived access copies (jpg)",
 			Files: []build.SourceFile{writeEssence(t, inDir, "b.jpg", "b")}},
 	}
 	in.Description = identityTerms()
@@ -694,10 +693,11 @@ func TestAssembleRepresentationTypeIsTheName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
-	for i, name := range []string{"archival", "access"} {
+	want := []struct{ name, typ string }{{"archival", "Archival"}, {"access", "Access"}}
+	for i, w := range want {
 		decl := pkg.Root.Representations[i].Declaration
-		if decl.OtherType != name || decl.OtherContentInformationType != name {
-			t.Errorf("rep %q type = %q/%q, want its name", name, decl.OtherType, decl.OtherContentInformationType)
+		if decl.OtherType != w.typ || decl.OtherContentInformationType != w.typ {
+			t.Errorf("rep %q type = %q/%q, want %q", w.name, decl.OtherType, decl.OtherContentInformationType, w.typ)
 		}
 	}
 }

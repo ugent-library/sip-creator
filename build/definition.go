@@ -3,6 +3,7 @@ package build
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -33,16 +34,17 @@ type Definition struct {
 	// and maximum of 1 mean exactly one, as Meemoo SIP 1.2's basic profile
 	// requires: "The IE MUST be represented by exactly one representation."
 	MaxRepresentations int
-	// RepresentationTypes is the closed set of names a representation may
-	// have. When it is nil, any name that passes ValidateRepresentationName
-	// is allowed. When it is set, a representation's name is also its type:
-	// an empty SourceRepresentation.Type resolves to the name, and a Type
-	// that differs from the name is refused. Names are unique within a package,
-	// so a package holds at most one representation of each type. The UGent
-	// profiles allow preservation, archival and access
-	// (docs/profiles/ugent-basic.md §4: "A representation's name MUST be one
-	// of preservation, archival and access, exactly, in lowercase.").
-	RepresentationTypes []string
+	// RepresentationTypes maps each name a representation may have to the
+	// type its METS declares. When it is nil, any name that passes
+	// ValidateRepresentationName is allowed. When it is set, a
+	// representation's name must be one of its keys, the type follows from
+	// the name, and SourceRepresentation.Type must be empty. Names are
+	// unique within a package, so a package holds at most one
+	// representation of each type. The UGent profiles allow preservation,
+	// archival and access (docs/profiles/ugent-basic.md §4: "A
+	// representation's name MUST be one of preservation, archival and
+	// access, exactly, in lowercase.").
+	RepresentationTypes map[string]string
 	// AllowRepresentationDescriptions allows a representation to carry its
 	// own description. When it is false, only the package carries a
 	// description. Meemoo SIP 1.2's basic profile leaves it false: "There
@@ -63,20 +65,21 @@ type Definition struct {
 	// typing: TYPE="Other" with the type as csip:OTHERTYPE, and
 	// CONTENTINFORMATIONTYPE="OTHER" with the type as
 	// csip:OTHERCONTENTINFORMATIONTYPE (ADR-0013). Under
-	// RepresentationTypes, the type is the representation's name. Otherwise
-	// it is SourceRepresentation.Type, which defaults to the label and then
-	// to the name. The package METS keeps the profile declaration
-	// unchanged.
+	// RepresentationTypes, the type is the one it maps the name to.
+	// Otherwise it is SourceRepresentation.Type, which defaults to the
+	// label and then to the name. The package METS keeps the profile
+	// declaration unchanged.
 	EmitRepresentationType bool
 	// Declaration carries the METS values the profile's documents declare.
 	Declaration sip.MetsDeclaration
 }
 
-// representationType returns the type sr declares: its name when
-// RepresentationTypes is set, otherwise its resolved type.
+// representationType returns the type sr declares: the type
+// RepresentationTypes maps its name to when it is set, otherwise its
+// resolved type.
 func (d Definition) representationType(sr SourceRepresentation) string {
 	if d.RepresentationTypes != nil {
-		return sr.Name
+		return d.RepresentationTypes[sr.Name]
 	}
 	return sr.resolvedType()
 }
@@ -154,12 +157,13 @@ func (d Definition) ValidateSource(source *SourcePackage) error {
 		errs = append(errs, fmt.Errorf("profile %q allows at most %d representation(s), the package has %d", d.Name, d.MaxRepresentations, len(source.Representations)))
 	}
 	if d.RepresentationTypes != nil {
+		names := slices.Sorted(maps.Keys(d.RepresentationTypes))
 		for _, r := range source.Representations {
-			if !slices.Contains(d.RepresentationTypes, r.Name) {
-				errs = append(errs, fmt.Errorf("profile %q names its representations %s; %q is not one of them", d.Name, strings.Join(d.RepresentationTypes, ", "), r.Name))
+			if _, ok := d.RepresentationTypes[r.Name]; !ok {
+				errs = append(errs, fmt.Errorf("profile %q names its representations %s; %q is not one of them", d.Name, strings.Join(names, ", "), r.Name))
 			}
-			if r.Type != "" && r.Type != r.Name {
-				errs = append(errs, fmt.Errorf("under profile %q a representation's type is its name; %q has type %q", d.Name, r.Name, r.Type))
+			if r.Type != "" {
+				errs = append(errs, fmt.Errorf("under profile %q a representation's type follows from its name and cannot be set; %q has type %q", d.Name, r.Name, r.Type))
 			}
 		}
 	}
