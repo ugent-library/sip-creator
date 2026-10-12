@@ -44,6 +44,9 @@ The Go tests need none of the tools above: no Java, no `sf`, no `.env`. They inc
 a build of every folder in [examples/](examples/), so a change that makes an example
 invalid fails the tests.
 
+The GitHub Actions workflow in `.github/workflows/test.yml` runs `gofmt -l .`,
+`go vet ./...` and `go test ./...` on every push to `main` and every pull request.
+
 ## Validating generated packages
 
 `./build.sh [profile] [input]` is the local CI loop. The profile defaults to `meemoo/basic` and

@@ -7,7 +7,9 @@ govulncheck reported nothing the code calls. Its findings are in Go 1.27.1, fixe
 1.27.2, so a release is built with Go 1.27.2 or later. `.rumdl_cache/` carries its own
 `.gitignore`. The Meemoo spec status follows the TODO. `sip.Event` stays, as the starting
 point of the events design. Step 2 landed 2026-10-12: `build.Version` returns the version.
-The software agent and `sip-creator --version` both use it.*
+The software agent and `sip-creator --version` both use it. Step 3 landed 2026-10-12:
+`.github/workflows/test.yml`, with `actions/checkout@v7` and `actions/setup-go@v7`. The
+validation in build.sh is a TODO item.*
 
 ## Context
 
