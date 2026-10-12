@@ -9,7 +9,8 @@ govulncheck reported nothing the code calls. Its findings are in Go 1.27.1, fixe
 point of the events design. Step 2 landed 2026-10-12: `build.Version` returns the version.
 The software agent and `sip-creator --version` both use it. Step 3 landed 2026-10-12:
 `.github/workflows/test.yml`, with `actions/checkout@v7` and `actions/setup-go@v7`. The
-validation in build.sh is a TODO item.*
+validation in build.sh is a TODO item. Step 4 landed 2026-10-12: `CHANGELOG.md` holds the
+release notes under `Unreleased` until step 7 names the version.*
 
 ## Context
 

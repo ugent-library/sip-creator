@@ -124,7 +124,10 @@ Update the docs in the same change as the code:
   how a reader who greps for the old name finds the new one;
 * a new profile: every file
   [docs/development-adding-a-profile.md](docs/development-adding-a-profile.md) lists;
-* a resolved item: remove it from [docs/TODO.md](docs/TODO.md).
+* a resolved item: remove it from [docs/TODO.md](docs/TODO.md);
+* a change an operator or a program that embeds the library notices: a line under
+  `Unreleased` in [CHANGELOG.md](CHANGELOG.md), under the heading that matches the
+  commit's prefix (`Added`, `Changed`, `Fixed` or `Removed`).
 
 [docs/README.md](docs/README.md) explains which document answers which question.
 [docs/development-writing-style.md](docs/development-writing-style.md) holds the rules for
