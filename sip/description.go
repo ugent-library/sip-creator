@@ -5,7 +5,10 @@ import "fmt"
 // Description is the descriptive metadata of an entity or a
 // representation, in the descriptive standard the profile writes: a
 // metadata model the profile's encoder renders, or a finished document
-// supplied as a file.
+// supplied as a file. When the standard leaves a value to the program that
+// builds the description, such as the type of a MODS identifier, the
+// description type offers typed constants rather than free text, so two
+// programs that make the same choice write the same value (ADR-0022).
 type Description interface {
 	// Validate checks the description against the rules of its standard:
 	// known keys, well-formed language tags, values that are not empty, and

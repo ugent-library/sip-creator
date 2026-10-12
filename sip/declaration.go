@@ -24,7 +24,10 @@ type MetsDeclaration struct {
 	// carries it, and only when it is set, because the E-ARK SIP
 	// specification reads an absent status as NEW.
 	RecordStatus RecordStatus
-	// Agents are the metsHdr agent entries.
+	// Agents are the metsHdr agent entries. Builder.Build adds the
+	// software agent, and Definition.WithSubmitter the submitting
+	// organization. A profile lists only the other agents its archive asks
+	// for.
 	Agents []Agent
 }
 

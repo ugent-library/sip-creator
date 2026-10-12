@@ -1,7 +1,9 @@
 // Package profiles is the registry of the profiles a package can be built
 // to. Each owner of profiles has a package under profiles/ that holds its
-// profiles' definitions and the metadata models they use. This package hands definitions out by name. The set of profiles is
-// closed: only the profiles registered here exist.
+// profiles' definitions and the metadata models they use. This package
+// hands definitions out by name. The registry lists the profiles the
+// command-line tool's --profile accepts. A program can hand build.New a
+// definition of its own without registering it.
 package profiles
 
 import (

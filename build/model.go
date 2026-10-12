@@ -52,7 +52,10 @@ type Schema struct {
 	// Name is the file name under schemas/, such as mods-3-7.xsd. It is a
 	// plain file name without directories, because every schema lands
 	// directly in schemas/. The documents' schema-location hints point at
-	// it by this name.
+	// it by this name. A name another schema in the package also uses,
+	// such as xlink.xsd from the METS schemas, must come with the same
+	// contents: Builder.Build refuses two different schemas under one
+	// name.
 	Name string
 	// Content is the file's bytes, written into the package as they are.
 	// It must not be empty.
