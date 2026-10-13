@@ -4,7 +4,7 @@
 Each step starts on an explicit go in chat. Update this line as steps land, and move the
 plan to `archive/` once the tag exists. Step 1 landed 2026-10-12: every check passed, and
 govulncheck reported nothing the code calls. Its findings are in Go 1.27.1, fixed in
-1.27.2, so a release is built with Go 1.27.2 or later. `.rumdl_cache/` carries its own
+1.27.2, so a release is built with Go 1.27.2 or later. `.rumdl_cache/` holds its own
 `.gitignore`. The Meemoo spec status follows the TODO. `sip.Event` stays, as the starting
 point of the events design. Step 2 landed 2026-10-12: `build.Version` returns the version.
 The software agent and `sip-creator --version` both use it. Step 3 landed 2026-10-12:
@@ -19,7 +19,15 @@ v5.7.1 with every step passed, recorded in the
 as not original. Fixed 2026-10-13 by
 [ADR-0037](../decisions/0037-the-preservation-representation-is-the-original.md): the
 `preservation` representation is the original, and the examples hold their scans
-there. The ingest of 2026-10-13 confirms it: RODA shows `preservation` as original.*
+there. The ingest of 2026-10-13 confirms it: RODA shows `preservation` as original.
+The same day an update test found that no record status the tool wrote updated an AIP in
+RODA, which runs an update only on `UPDATE`, a value outside the E-ARK vocabulary
+([keeps/commons-ip#389](https://github.com/keeps/commons-ip/issues/389)). Fixed by
+[ADR-0038](../decisions/0038-ugent-updates-state-update.md): the UGent profiles allow
+`NEW` and `UPDATE`, and an update built by the tool updated both AIPs. Representation
+documentation is stored at AIP level, a commons-ip parsing defect reported as
+[keeps/commons-ip#388](https://github.com/keeps/commons-ip/issues/388). It does not block
+the tag. Step 7 remains: push `main`, then tag.*
 
 ## Context
 
