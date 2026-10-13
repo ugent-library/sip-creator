@@ -10,6 +10,8 @@ agent of its METS.
 
 ## Unreleased
 
+## 0.1.0 - 2026-10-13
+
 The first version. SIP Creator builds an
 [E-ARK](https://earksip.dilcis.eu/) Submission Information Package from a
 producer's essence files and descriptive metadata.
