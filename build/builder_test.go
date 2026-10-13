@@ -157,12 +157,12 @@ func ugentBasicDef(t *testing.T) build.Definition {
 }
 
 // ugentBasicWithoutVocabulary returns ugent/basic without its
-// representation types: a profile whose representation names and types are
+// representation definitions: a profile whose representation names and types are
 // free, for the tests of the label and type cascade (ADR-0014).
 func ugentBasicWithoutVocabulary(t *testing.T) build.Definition {
 	t.Helper()
 	def := ugentBasicDef(t)
-	def.RepresentationTypes = nil
+	def.Representations = nil
 	return def
 }
 

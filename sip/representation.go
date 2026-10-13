@@ -19,6 +19,10 @@ type Representation struct {
 	// as mets/@LABEL in the representation METS. It equals Name when the
 	// producer gives no label.
 	Label string
+	// Status is the representation's status, written as the TYPE of the
+	// main division of the representation METS's structMap. It is empty
+	// when the profile gives the representation none.
+	Status string
 	// Identifier identifies the representation in METS and PREMIS
 	// (uuid-<uuid>).
 	Identifier string

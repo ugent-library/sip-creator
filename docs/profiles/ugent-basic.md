@@ -84,6 +84,10 @@ Rules:
 - A representation's type is its name, capitalized: `Preservation`, `Archival` or
   `Access`. **Written.** Neither `representations.csv` nor a program that uses the
   library can set another type. **Checked.** The label is free.
+- The `preservation` representation is the original. Its METS states `ORIGINAL` as the
+  `TYPE` of the main division of its structMap, and the other representations state no
+  `TYPE` there. **Written.** Like the type, it follows from the name and cannot be set
+  ([ADR-0037](../decisions/0037-the-preservation-representation-is-the-original.md)).
 - A package MAY hold no representation at all: a description of an intellectual entity
   whose content is not, or not yet, in the archive. This holds for a new package and for
   an update (§8). **Checked**: the tool accepts it.

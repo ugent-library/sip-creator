@@ -158,23 +158,28 @@ func TestRegistryEntriesNameAModel(t *testing.T) {
 	}
 }
 
-// The UGent profiles name their representations from one vocabulary, and
-// each name maps to its type, capitalized.
-// meemoo/basic has no vocabulary, because its specification names none.
-func TestRepresentationTypes(t *testing.T) {
-	ugent := map[string]string{"preservation": "Preservation", "archival": "Archival", "access": "Access"}
-	want := map[string]map[string]string{
+// The UGent profiles name their representations from one vocabulary. Each
+// name maps to its type, capitalized, and preservation, the copy as
+// delivered, is the original. meemoo/basic has no vocabulary, because its
+// specification names none.
+func TestRepresentationDefinitions(t *testing.T) {
+	ugent := map[string]build.RepresentationDefinition{
+		"preservation": {Type: "Preservation", Status: "ORIGINAL"},
+		"archival":     {Type: "Archival"},
+		"access":       {Type: "Access"},
+	}
+	want := map[string]map[string]build.RepresentationDefinition{
 		"meemoo/basic":        nil,
 		"ugent/basic":         ugent,
 		"ugent/bibliographic": ugent,
 	}
-	for name, types := range want {
+	for name, defs := range want {
 		def, ok := Get(name)
 		if !ok {
 			t.Fatalf("no %q definition registered", name)
 		}
-		if !maps.Equal(def.RepresentationTypes, types) {
-			t.Errorf("%s representation types = %v, want %v", name, def.RepresentationTypes, types)
+		if !maps.Equal(def.Representations, defs) {
+			t.Errorf("%s representations = %v, want %v", name, def.Representations, defs)
 		}
 	}
 }

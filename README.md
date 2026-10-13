@@ -125,7 +125,7 @@ sip-out/uuid-<uuid>/
 │   │   ├── data
 │   │   ├── metadata
 │   │   └── METS.xml
-│   └── archival
+│   └── preservation
 │       ├── data
 │       ├── documentation
 │       ├── metadata
@@ -217,13 +217,13 @@ valid input is a `description.csv` plus one representation:
 your-input/
 ├── description.csv
 └── representations/
-    └── archival/
+    └── preservation/
         ├── scan-001.tif
         └── scan-002.tif
 ```
 
-When the content comes in several versions, such as an archival copy and an
-access copy, each version gets its own representation folder.
+When the content comes in several versions, such as the scans as delivered and
+an access copy, each version gets its own representation folder.
 
 Every name the tool reads in an input folder:
 
@@ -297,7 +297,7 @@ text:
 
 ```csv
 folder,label
-archival,Scanned master copies (TIFF)
+preservation,Scanned master copies (TIFF)
 access,Access copy (JPEG)
 ```
 
@@ -374,7 +374,7 @@ pkg, err := builder.Build(&build.SourcePackage{
 		{Key: "date", Value: "2026-01-15"},
 	},
 	Representations: []build.SourceRepresentation{{
-		Name: "archival",
+		Name: "preservation",
 		Files: []build.SourceFile{
 			{Source: "/data/scans/page-001.tif", Path: "page-001.tif"},
 		},

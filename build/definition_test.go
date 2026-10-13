@@ -133,11 +133,11 @@ func TestValidateSourceAppliesProfileRules(t *testing.T) {
 	}
 }
 
-// Under a vocabulary of representation types a representation's name must
+// Under representation definitions a representation's name must
 // be one of the set, and its type cannot be set, not even to the type the
 // name maps to. Without a vocabulary, as under meemoo/basic, neither rule
 // applies.
-func TestValidateSourceAppliesRepresentationTypes(t *testing.T) {
+func TestValidateSourceAppliesRepresentationDefinitions(t *testing.T) {
 	cases := []struct {
 		name, repName, repType string
 		want                   string // "" when the source is accepted

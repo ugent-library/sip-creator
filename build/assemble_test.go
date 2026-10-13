@@ -702,6 +702,30 @@ func TestAssembleRepresentationTypeFollowsTheName(t *testing.T) {
 	}
 }
 
+// Under the UGent profiles a representation's status follows from its
+// name: preservation, the copy as delivered, is ORIGINAL (ADR-0037), and
+// the other representations have no status.
+func TestAssembleRepresentationStatusFollowsTheName(t *testing.T) {
+	b, in, _ := newTestBuilder(t, ugentBasicDef(t))
+	inDir := t.TempDir()
+	in.Representations = []build.SourceRepresentation{
+		{Name: "preservation", Files: []build.SourceFile{writeEssence(t, inDir, "a.tif", "a")}},
+		{Name: "archival", Files: []build.SourceFile{writeEssence(t, inDir, "a.pdf", "b")}},
+		{Name: "access", Files: []build.SourceFile{writeEssence(t, inDir, "a.jpg", "c")}},
+	}
+	in.Description = identityTerms()
+	pkg, err := b.Assemble(in)
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	want := []struct{ name, status string }{{"preservation", "ORIGINAL"}, {"archival", ""}, {"access", ""}}
+	for i, w := range want {
+		if got := pkg.Root.Representations[i].Status; got != w.status {
+			t.Errorf("rep %q status = %q, want %q", w.name, got, w.status)
+		}
+	}
+}
+
 const validPremis = `<?xml version="1.0"?><premis:premis xmlns:premis="http://www.loc.gov/premis/v3" version="3.0"><premis:event/></premis:premis>`
 
 // Received preservation files become graph nodes at both levels.

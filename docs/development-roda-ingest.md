@@ -57,13 +57,13 @@ were read from RODA's `master` at commit `668f61b2` (2026-10-07):
 | (nothing in our package) | RODA gives the AIP a **random id of its own** at ingest (`createAIP` with no AIP id) | the AIP id differs from the package's `OBJID` |
 | `RECORDSTATUS="UPDATE"` with the earlier package's `OBJID` (`--status`, `--updates`) | finds the AIP to update: first the one active or under-appraisal AIP whose SIP IDs hold the `OBJID`, then, if not exactly one matched, the AIP whose own id equals the `OBJID`. If neither search finds exactly one AIP, the update fails | the update changes the AIP the first package created, and its SIP IDs still hold that `OBJID` |
 | rep METS `OBJID` (the representation's folder name: `preservation`, `archival` or `access`) | becomes the **representation id** | one representation per folder, with that name |
-| rep METS main `div` without `TYPE` | commons-ip takes a representation's status from the `TYPE` of the main `div` in its METS, and reads a missing `TYPE` as `OTHER`. RODA sets a representation's original flag only when that status is `ORIGINAL` | every representation is **not original** (`original: false`). Observed 2026-10-12 and 2026-10-13, see section 6 |
+| rep METS main `div` with `TYPE="ORIGINAL"` on `preservation`, and without `TYPE` on `archival` and `access` ([ADR-0037](decisions/0037-the-preservation-representation-is-the-original.md)) | commons-ip takes a representation's status from the `TYPE` of the main `div` in its METS, and reads a missing `TYPE` as `OTHER`. RODA sets a representation's original flag only when that status is `ORIGINAL` | `preservation` is **original** (`original: true`), `archival` and `access` are not. Before 2026-10-13 no representation wrote a `TYPE`, and the ingests of 2026-10-12 and 2026-10-13 stored every representation as not original, see section 6 |
 | rep METS `csip:OTHERCONTENTINFORMATIONTYPE`, the folder name capitalized ([ADR-0013](decisions/0013-representation-type-from-label.md)) | becomes the **representation type** (RODA v5.7.0 and later) | each representation shows its type, `Preservation`, `Archival` or `Access`, in the Type column |
 | essence in `data/` with METS checksums | files created; fixity verified at parse | files present, sizes right, no checksum complaints in the job report |
 | `dc.xml` (`ugent/basic`), `MDTYPE="DC"` + `MDTYPEVERSION="SimpleDC20021212"`, simple-DC shape | recognized descriptive metadata (`dc_SimpleDC20021212`) | title/description **rendered and indexed** (searchable), form-editable; if RODA shows raw XML instead, the typing didn't match |
 | `mods.xml` (`ugent/bibliographic`), `MDTYPE="MODS"` + `MDTYPEVERSION="3.7"` | descriptive metadata of type MODS 3.7 | rendered and indexed only if a MODS crosswalk is configured in RODA, which is outside this tool; otherwise shown as XML. With `mods_3.7.xslt` configured, the search index shows the title and the level `item` |
 | `documentation/` files of the package | mapped into AIP documentation | visible under the AIP's documentation |
-| `documentation/` files of a representation, listed in the Documentation division of the representation's METS | commons-ip 2.8.0 and 2.11.2 attach them to the package, not to the representation, so RODA stores them as **AIP documentation** | visible under the AIP's documentation, not under the representation. A representation file with the same name as a package file would be created twice, which is not tested |
+| `documentation/` files of a representation, listed in the Documentation division of the representation's METS | commons-ip 2.8.0 and 2.11.2 attach them to the package, not to the representation, so RODA stores them as **AIP documentation** ([keeps/commons-ip#388](https://github.com/keeps/commons-ip/issues/388)) | visible under the AIP's documentation, not under the representation. A representation file with the same name as a package file would be created twice, which is not tested |
 | `schemas/` XSDs | mapped into AIP schemas | present (RODA ignores content) |
 | received PREMIS from the input folder's `premis/`, as a `digiprovMD` with `MDTYPE="PREMIS"`. The UGent profiles write no PREMIS of their own | kept as other technical metadata, not parsed into RODA's PREMIS | each file under `metadata/preservation/otherTechMd/` of the AIP or the representation, byte for byte, next to RODA's own ingest events |
 
@@ -133,3 +133,22 @@ The raw API answers, as JSON, are kept locally in `tmp/roda-ingest-2026-10-12/`.
     in the package: section 4 has the row.
 
 The raw API answers are kept locally in `tmp/roda-ingest-2026-10-13/`.
+
+### 2026-10-13, later: the preservation representation as the original
+
+- **RODA:** as in the entry above.
+- **Packages:** the examples after
+  [ADR-0037](decisions/0037-the-preservation-representation-is-the-original.md), with
+  their scans in `preservation`: `ugent/basic` (`uuid-91139f53-…`) and
+  `ugent/bibliographic` (`uuid-a249f62f-…`). Both reported `VALID (errors=0
+  warnings=0)` under commons-ip 2.11.2.
+- **Verdict:** job `ce425946-…`: both packages **SUCCESS**, 8 of 8 steps.
+- **The row on the original flag now holds:** `preservation` is `original: true` with type
+  `Preservation`, and `access` is `original: false` with type `Access`, in both AIPs.
+- **Every file of each zip is in the AIP, byte for byte.** The differences from the
+  package are the ones the entry above records: the METS files kept inside the
+  submitted zip, the representation's documentation as AIP documentation, and received
+  PREMIS as other technical metadata.
+- **Search index:** unchanged from the entry above.
+
+The raw API answers are kept locally in `tmp/roda-ingest-2026-10-13/job-ce425946/`.

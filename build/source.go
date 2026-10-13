@@ -44,7 +44,7 @@ type SourceRepresentation struct {
 	// Type is the representation's type, which the representation METS
 	// declares under a profile with Definition.EmitRepresentationType set.
 	// When it is empty, the type is the label. Under a profile with
-	// Definition.RepresentationTypes, the type follows from Name, and Type
+	// Definition.Representations, the type follows from Name, and Type
 	// must be empty. It must satisfy ValidateXMLText.
 	Type string
 	// Files are the content files, in packaging order.

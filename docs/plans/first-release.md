@@ -15,9 +15,11 @@ release notes under `Unreleased` until step 7 names the version. Step 5 landed 2
 Releasing section of CONTRIBUTING.md, which step 7 follows, and the tag rule in
 CLAUDE.md. Step 6 landed 2026-10-12: both UGent examples ingested into a local RODA
 v5.7.1 with every step passed, recorded in the
-[runbook](../development-roda-ingest.md#6-outcomes). RODA stores their representations
-as not original. TODO holds the question, and the changelog lists it as a known gap
-unless it is fixed before the tag.*
+[runbook](../development-roda-ingest.md#6-outcomes). RODA stored their representations
+as not original. Fixed 2026-10-13 by
+[ADR-0037](../decisions/0037-the-preservation-representation-is-the-original.md): the
+`preservation` representation is the original, and the examples hold their scans
+there. The ingest of 2026-10-13 confirms it: RODA shows `preservation` as original.*
 
 ## Context
 

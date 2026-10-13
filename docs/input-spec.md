@@ -12,7 +12,7 @@ One folder is one package. In the simplest case:
 example-0001/
 ├── description.csv       ← describes the content (the only file you write)
 └── representations/
-    └── archival/         ← one version of the content: your files, any structure you like
+    └── preservation/     ← one version of the content: your files, any structure you like
 ```
 
 With several versions of the content and extras:
@@ -23,7 +23,7 @@ example-0001/
 ├── representations.csv   ← optional: a label per representation
 ├── siegfried.json        ← optional: a format report
 ├── representations/
-│   ├── archival/         ← the scanned master copies, any structure you like
+│   ├── preservation/     ← the scanned master copies, any structure you like
 │   └── access/           ← e.g. a PDF version
 │       └── description.csv  ← optional: describes just this version (e.g. its license)
 ├── documentation/        ← optional: scan reports, context material
@@ -51,7 +51,7 @@ This document holds the folder rules. The rules on the package itself that diffe
 
 ## 2. Content files and representations
 
-A *representation* is one version of the content: the archival master scans are one, a derived PDF is another. How many a package needs is the profile's rule: `meemoo/basic` needs exactly one; the UGent profiles take zero or more, so a folder with only a description and no `representations/` builds a package without content, one that carries metadata only (CSIP58).
+A *representation* is one version of the content: the master scans as delivered are one, a derived PDF is another. How many a package needs is the profile's rule: `meemoo/basic` needs exactly one; the UGent profiles take zero or more, so a folder with only a description and no `representations/` builds a package without content, one that holds metadata only (CSIP58).
 
 - Content MUST live in a representation folder: each folder directly inside `representations/` is one representation, named after that folder. A content file or folder at the top level, beside the reserved names, MUST be an error: the tool cannot tell which version of the content loose files are. Under `meemoo/basic` there MUST be exactly one representation, as Meemoo SIP 1.2's basic profile requires ("The IE MUST be represented by exactly one representation."). The UGent profiles set no limit.
 - Under the UGent profiles a representation's name MUST be one of `preservation`, `archival` and `access`, and the name is also its type; their meaning is in the profile pages ([`ugent/basic`](profiles/ugent-basic.md#4-representations), [`ugent/bibliographic`](profiles/ugent-bibliographic.md#4-representations)). `meemoo/basic` names none.
@@ -67,7 +67,7 @@ A folder name makes a good machine name but not always a good display name. `rep
 
 ```csv
 folder,label
-archival,Scanned master copies (TIFF)
+preservation,Scanned master copies (TIFF)
 access,Access copy (PDF)
 ```
 

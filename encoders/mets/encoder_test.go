@@ -129,6 +129,49 @@ func TestSchemaLocationNamesDeclaredNamespaces(t *testing.T) {
 	}
 }
 
+// A representation's status is the TYPE of the main division of its
+// structMap. A representation without a status has no TYPE there.
+func TestRepresentationStatus(t *testing.T) {
+	cases := []struct {
+		status string
+		want   string
+	}{
+		{"ORIGINAL", `TYPE="ORIGINAL" LABEL="master"`},
+		{"", `<div ID="`},
+	}
+	for _, tt := range cases {
+		_, rep := descriptiveGraph(t, "DC", "")
+		rep.Status = tt.status
+		var doc bytes.Buffer
+		if err := EncodeRepresentation(&doc, rep); err != nil {
+			t.Fatalf("representation METS: %v", err)
+		}
+		main := mainDivision(t, doc.String())
+		if !strings.Contains(main, tt.want) {
+			t.Errorf("status %q: main division = %s, want it to contain %s", tt.status, main, tt.want)
+		}
+		if tt.status == "" && strings.Contains(main, "TYPE=") {
+			t.Errorf("no status: main division = %s, want no TYPE", main)
+		}
+	}
+}
+
+// mainDivision returns the start tag of the first div after the structMap
+// start tag in doc.
+func mainDivision(t *testing.T, doc string) string {
+	t.Helper()
+	_, after, ok := strings.Cut(doc, "<structMap")
+	if !ok {
+		t.Fatalf("no structMap in\n%s", doc)
+	}
+	_, div, ok := strings.Cut(after, "<div ")
+	if !ok {
+		t.Fatalf("no div in the structMap of\n%s", doc)
+	}
+	tag, _, _ := strings.Cut(div, ">")
+	return "<div " + tag + ">"
+}
+
 // Values from producers and operators reach the documents escaped. A file
 // path, a label and an agent name that carry the XML-active characters
 // leave both documents well-formed. An XML reader gets the label and the

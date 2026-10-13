@@ -11,7 +11,7 @@ invented.
 | [`ugent/bibliographic/`](ugent/bibliographic/) | `ugent/bibliographic` | a finished `mods.xml` with two physical copies, plus the same extras as `ugent/basic/` |
 
 The `meemoo/basic` package has one representation, `master`, with one small JPEG and a
-documentation file. The UGent packages have two: `archival`, with one small TIFF, its
+documentation file. The UGent packages have two: `preservation`, with one small TIFF, its
 own description, documentation and received PREMIS, and `access`, with the same image as
 a JPEG.
 

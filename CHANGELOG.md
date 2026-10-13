@@ -30,6 +30,10 @@ producer's essence files and descriptive metadata.
     `dc+schema.xml`. Validated against E-ARK SIP 2.0.4.
   - `ugent/basic`: E-ARK SIP 2.2.0 with Simple Dublin Core (`dc.xml`).
   - `ugent/bibliographic`: E-ARK SIP 2.2.0 with MODS 3.7 (`mods.xml`).
+
+  Under the UGent profiles a representation is `preservation`, `archival` or
+  `access`, and RODA shows the `preservation` representation as the
+  original.
 - **The Go library.** Package `build` takes a profile and a source package and
   writes the package directory. Package `profiles` holds the registry,
   `archive` writes the zip, and `characterization` decodes a Siegfried report.
@@ -47,8 +51,6 @@ producer's essence files and descriptive metadata.
 - The METS names no archival creator (`ARCHIVIST`), no contact persons and no
   submission agreement.
 - PREMIS events are not written.
-- RODA stores the representations of a UGent package as not original, because
-  their METS does not type them as `ORIGINAL`.
 - The library takes essence as files on disk, not as streams, and a program
   cannot supply checksums except through a Siegfried report.
 - The tool has not been run on Windows. There, a virus scanner can make the

@@ -170,7 +170,7 @@ var templates = template.Must(template.New("").Funcs(funcs).Parse(`
   </fileSec>
 
   <structMap ID="{{ identifier }}" TYPE="PHYSICAL" LABEL="CSIP">
-    <div ID="{{ identifier }}" LABEL="{{ esc .Name }}">
+    <div ID="{{ identifier }}"{{ with .Status }} TYPE="{{ esc . }}"{{ end }} LABEL="{{ esc .Name }}">
       <div ID="{{ identifier }}" LABEL="Metadata"{{ with .DescriptionFile }} DMDID="{{ esc .Identifier }}"{{ end }}{{ with .PremisFiles }} ADMID="{{ joinIdentifiers . | esc }}"{{ end }}/>
       <div ID="{{ identifier }}" LABEL="Data">
         <fptr FILEID="{{ $fileGrpID }}" />

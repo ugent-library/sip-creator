@@ -54,9 +54,9 @@ func ExampleBuilder_Build() {
 			{Key: "date", Value: "2026-01-15"},
 		},
 		Representations: []build.SourceRepresentation{{
-			Name: "archival",
+			Name: "preservation",
 			Files: []build.SourceFile{{
-				Source: "../examples/ugent/basic/representations/archival/image-001.tif",
+				Source: "../examples/ugent/basic/representations/preservation/image-001.tif",
 				Path:   "image-001.tif",
 			}},
 		}},
@@ -108,9 +108,9 @@ func ExampleBuilder_Build_mods() {
 			},
 		},
 		Representations: []build.SourceRepresentation{{
-			Name: "archival",
+			Name: "preservation",
 			Files: []build.SourceFile{{
-				Source: "../examples/ugent/bibliographic/representations/archival/image-001.tif",
+				Source: "../examples/ugent/bibliographic/representations/preservation/image-001.tif",
 				Path:   "image-001.tif",
 			}},
 		}},
@@ -152,9 +152,9 @@ func ExampleEncodedDescription() {
 	pkg, err := builder.Build(&build.SourcePackage{
 		Description: build.EncodedDescription{Source: "../examples/ugent/bibliographic/mods.xml"},
 		Representations: []build.SourceRepresentation{{
-			Name: "archival",
+			Name: "preservation",
 			Files: []build.SourceFile{{
-				Source: "../examples/ugent/bibliographic/representations/archival/image-001.tif",
+				Source: "../examples/ugent/bibliographic/representations/preservation/image-001.tif",
 				Path:   "image-001.tif",
 			}},
 		}},
@@ -269,9 +269,9 @@ func Example_ownProfile() {
 	pkg, err := builder.Build(&build.SourcePackage{
 		Description: catalogueRecord{Title: "Example photograph"},
 		Representations: []build.SourceRepresentation{{
-			Name: "archival",
+			Name: "preservation",
 			Files: []build.SourceFile{{
-				Source: "../examples/ugent/basic/representations/archival/image-001.tif",
+				Source: "../examples/ugent/basic/representations/preservation/image-001.tif",
 				Path:   "image-001.tif",
 			}},
 		}},
@@ -332,9 +332,9 @@ func ExampleBuilder_Build_update() {
 			{Key: "title", Value: "Example photograph"},
 		},
 		Representations: []build.SourceRepresentation{{
-			Name: "archival",
+			Name: "preservation",
 			Files: []build.SourceFile{{
-				Source: "../examples/ugent/basic/representations/archival/image-001.tif",
+				Source: "../examples/ugent/basic/representations/preservation/image-001.tif",
 				Path:   "image-001.tif",
 			}},
 		}},

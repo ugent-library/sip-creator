@@ -34,17 +34,17 @@ type Definition struct {
 	// and maximum of 1 mean exactly one, as Meemoo SIP 1.2's basic profile
 	// requires: "The IE MUST be represented by exactly one representation."
 	MaxRepresentations int
-	// RepresentationTypes maps each name a representation may have to the
-	// type its METS declares. When it is nil, any name that passes
-	// ValidateRepresentationName is allowed. When it is set, a
-	// representation's name must be one of its keys, the type follows from
-	// the name, and SourceRepresentation.Type must be empty. Names are
-	// unique within a package, so a package holds at most one
-	// representation of each type. The UGent profiles allow preservation,
+	// Representations maps each name a representation may have to the
+	// profile's definition of a representation of that name. When it is
+	// nil, any name that passes ValidateRepresentationName is allowed. When
+	// it is set, a representation's name must be one of its keys, the type
+	// follows from the name, and SourceRepresentation.Type must be empty.
+	// Names are unique within a package, so a package holds at most one
+	// representation of each name. The UGent profiles allow preservation,
 	// archival and access (docs/profiles/ugent-basic.md §4: "A
 	// representation's name MUST be one of preservation, archival and
 	// access, exactly, in lowercase.").
-	RepresentationTypes map[string]string
+	Representations map[string]RepresentationDefinition
 	// AllowRepresentationDescriptions allows a representation to carry its
 	// own description. When it is false, only the package carries a
 	// description. Meemoo SIP 1.2's basic profile leaves it false: "There
@@ -65,7 +65,8 @@ type Definition struct {
 	// typing: TYPE="Other" with the type as csip:OTHERTYPE, and
 	// CONTENTINFORMATIONTYPE="OTHER" with the type as
 	// csip:OTHERCONTENTINFORMATIONTYPE (ADR-0013). Under
-	// RepresentationTypes, the type is the one it maps the name to.
+	// Representations, the type is the one its definition of the name
+	// states.
 	// Otherwise it is SourceRepresentation.Type, which defaults to the
 	// label and then to the name. The package METS keeps the profile
 	// declaration unchanged.
@@ -74,12 +75,25 @@ type Definition struct {
 	Declaration sip.MetsDeclaration
 }
 
-// representationType returns the type sr declares: the type
-// RepresentationTypes maps its name to when it is set, otherwise its
-// resolved type.
+// RepresentationDefinition is what a profile states about a representation
+// of one name.
+type RepresentationDefinition struct {
+	// Type is the type the representation's METS declares when the profile
+	// sets EmitRepresentationType (ADR-0013).
+	Type string
+	// Status is the status the representation's METS states, as the TYPE of
+	// the main division of its structMap, or empty for none. METS and CSIP
+	// leave that attribute free. commons-ip reads ORIGINAL there as the
+	// original representation, and RODA keeps it as the representation's
+	// original flag (ADR-0037).
+	Status string
+}
+
+// representationType returns the type sr declares: the type its definition
+// in Representations states when that is set, otherwise its resolved type.
 func (d Definition) representationType(sr SourceRepresentation) string {
-	if d.RepresentationTypes != nil {
-		return d.RepresentationTypes[sr.Name]
+	if d.Representations != nil {
+		return d.Representations[sr.Name].Type
 	}
 	return sr.resolvedType()
 }
@@ -138,7 +152,7 @@ func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 // metadata model. A supplied document passes only when the model
 // implements DocumentFormat and accepts its root element. Then it checks
 // the package against MinRepresentations, MaxRepresentations,
-// RepresentationTypes and AllowRepresentationDescriptions. It returns an
+// Representations and AllowRepresentationDescriptions. It returns an
 // error if a description is not in the model. Otherwise it returns an
 // error naming each profile rule the package breaks, or nil. It writes
 // nothing, so a program can check a source package against a profile
@@ -156,10 +170,10 @@ func (d Definition) ValidateSource(source *SourcePackage) error {
 	if d.MaxRepresentations > 0 && len(source.Representations) > d.MaxRepresentations {
 		errs = append(errs, fmt.Errorf("profile %q allows at most %d representation(s), the package has %d", d.Name, d.MaxRepresentations, len(source.Representations)))
 	}
-	if d.RepresentationTypes != nil {
-		names := slices.Sorted(maps.Keys(d.RepresentationTypes))
+	if d.Representations != nil {
+		names := slices.Sorted(maps.Keys(d.Representations))
 		for _, r := range source.Representations {
-			if _, ok := d.RepresentationTypes[r.Name]; !ok {
+			if _, ok := d.Representations[r.Name]; !ok {
 				errs = append(errs, fmt.Errorf("profile %q names its representations %s; %q is not one of them", d.Name, strings.Join(names, ", "), r.Name))
 			}
 			if r.Type != "" {
