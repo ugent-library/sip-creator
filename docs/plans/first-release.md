@@ -13,7 +13,11 @@ validation in build.sh is a TODO item. Step 4 landed 2026-10-12: `CHANGELOG.md` 
 release notes under `Unreleased` until step 7 names the version. Step 5 landed 2026-10-12:
 [ADR-0036](../decisions/0036-versioned-releases.md), the README on versions, the
 Releasing section of CONTRIBUTING.md, which step 7 follows, and the tag rule in
-CLAUDE.md.*
+CLAUDE.md. Step 6 landed 2026-10-12: both UGent examples ingested into a local RODA
+v5.7.1 with every step passed, recorded in the
+[runbook](../development-roda-ingest.md#6-outcomes). RODA stores their representations
+as not original. TODO holds the question, and the changelog lists it as a known gap
+unless it is fixed before the tag.*
 
 ## Context
 

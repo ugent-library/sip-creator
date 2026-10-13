@@ -47,6 +47,8 @@ producer's essence files and descriptive metadata.
 - The METS names no archival creator (`ARCHIVIST`), no contact persons and no
   submission agreement.
 - PREMIS events are not written.
+- RODA stores the representations of a UGent package as not original, because
+  their METS does not type them as `ORIGINAL`.
 - The library takes essence as files on disk, not as streams, and a program
   cannot supply checksums except through a Siegfried report.
 - The tool has not been run on Windows. There, a virus scanner can make the
