@@ -171,4 +171,21 @@ The raw API answers are kept locally in `tmp/roda-ingest-2026-10-13/job-ce425946
 - **Also confirmed in the UI:** the Dublin Core record of `ugent/basic` renders and
   can be edited in RODA's form.
 
-The update packages are kept locally in `tmp/updates/`.
+Jobs: `e5af2a28-…` for the `REPLACEMENT` set, `0c7e5885-…` for the `UPDATE` set. The
+update packages are kept locally in `tmp/updates/`.
+
+### 2026-10-13, last: updates built by the tool
+
+- **RODA:** as in the entries above.
+- **Packages:** the same two metadata-only updates, built by the tool after
+  [ADR-0038](decisions/0038-ugent-updates-state-update.md) with `--status update
+  --updates <id>`, the titles ending in " [updated by SIP Creator]". Both reported VALID
+  under commons-ip 2.11.2 and 2.8.0, with CSIPSTR11 and CSIPSTR13.
+- **Verdict:** job `0ed197e0-…`: both packages **SUCCESS**, 8 of 8 steps, ingest type
+  `UPDATE`.
+- **The row on updates holds:** each package updated the AIP the first package created
+  (`90559010-…` and `1bf916ae-…`), whose SIP IDs still hold the package's `OBJID`. The
+  AIP labels and the UI show the new titles. Both representations are still there, and
+  `preservation` is still original.
+
+The update packages are kept locally in `tmp/updates/for-roda/`.
