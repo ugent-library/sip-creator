@@ -1,6 +1,6 @@
 # Plan: the first release, v0.1.0
 
-*Status: **drafted** 2026-10-12. The decisions below were taken in chat on 2026-10-12.
+*Status: **shipped** 2026-10-13 as v0.1.0 and archived (drafted 2026-10-12). The decisions below were taken in chat on 2026-10-12.
 Each step starts on an explicit go in chat. Update this line as steps land, and move the
 plan to `archive/` once the tag exists. Step 1 landed 2026-10-12: every check passed, and
 govulncheck reported nothing the code calls. Its findings are in Go 1.27.1, fixed in
@@ -27,7 +27,10 @@ RODA, which runs an update only on `UPDATE`, a value outside the E-ARK vocabular
 `NEW` and `UPDATE`, and an update built by the tool updated both AIPs. Representation
 documentation is stored at AIP level, a commons-ip parsing defect reported as
 [keeps/commons-ip#388](https://github.com/keeps/commons-ip/issues/388). It does not block
-the tag. Step 7 remains: push `main`, then tag.*
+the tag. Step 7 landed 2026-10-13: every check passed with Go 1.27.2, and govulncheck
+found nothing. `CHANGELOG.md` names version 0.1.0 in commit `e5ea03c`, which the tag
+`v0.1.0` points at, and the GitHub release holds its changelog section. A `go install`
+of `v0.1.0` prints `v0.1.0`, and a package it builds states `v0.1.0` in its METS.*
 
 ## Context
 
