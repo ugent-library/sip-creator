@@ -115,7 +115,7 @@ Write every text a human reads (chat, markdown, code comments) in plain, direct 
 
 ### Banned words and phrases
 
-- **Structural:** "load-bearing" (and "load-bearing seams"), "gate", "seams", "spine", "substrate", "blast radius", "friction", "birth", "bucket", "headline", "honestly", "land mine", "blessed", "bind", "baseline", "mark", "bare"
+- **Structural:** "load-bearing" (and "load-bearing seams"), "gate", "seams", "spine", "substrate", "blast radius", "friction", "birth", "bucket", "headline", "honestly", "land mine", "blessed", "bind", "baseline", "mark", "bare", "carry", "carrying"
 - **Proverbial:** "footgun", "yak shaving", "belt-and-suspenders", "smoking gun", "classic trap", "carve-out"
 - **Pretentious:** "tapestry", "delve", "testament to", "beacon", "underscore", "honest take", "identity made legible", "worth saying", "standing pass", "mandate", "demands", "honest gap"
 - **Transitions:** "You're absolutely right!", "That's totally on me", "Now I have the full picture", "It's worth noting/flagging/considering", "I'd gently reset the framing"
