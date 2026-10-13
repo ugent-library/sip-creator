@@ -55,7 +55,7 @@ were read from RODA's `master` at commit `668f61b2` (2026-10-07):
 | package METS `csip:CONTENTINFORMATIONTYPE="OTHER"` with `csip:OTHERCONTENTINFORMATIONTYPE` `ugent/basic` or `ugent/bibliographic` | becomes the **AIP type** | AIP shows type `ugent/basic` or `ugent/bibliographic`, or the label RODA's AIP type vocabulary gives it, which is RODA configuration and outside this tool |
 | package METS `OBJID` (`uuid-<uuid>`, minted by the tool or given with `--updates`) | kept on the AIP as one of its **SIP IDs** (`ingestSIPIds`). It does not become the AIP id | the AIP's details list the package's `OBJID` as a SIP ID |
 | (nothing in our package) | RODA gives the AIP a **random id of its own** at ingest (`createAIP` with no AIP id) | the AIP id differs from the package's `OBJID` |
-| `RECORDSTATUS="UPDATE"` with the earlier package's `OBJID` (`--status`, `--updates`) | finds the AIP to update: first the one active or under-appraisal AIP whose SIP IDs hold the `OBJID`, then, if not exactly one matched, the AIP whose own id equals the `OBJID`. If neither search finds exactly one AIP, the update fails | the update changes the AIP the first package created, and its SIP IDs still hold that `OBJID` |
+| `RECORDSTATUS` from the E-ARK SIP vocabulary (SIP3), with the earlier package's `OBJID` (`--status`, `--updates`) | commons-ip reads the status against its own list, `NEW`, `UPDATE`, `REPLACEMENT` and `TEST`, and any other value as `NEW`. RODA runs `NEW`, runs `UPDATE` as an update, and rejects every other status. An update finds the AIP to update: first the one active or under-appraisal AIP whose SIP IDs hold the `OBJID`, then, if not exactly one matched, the AIP whose own id equals the `OBJID`. If neither search finds exactly one AIP, the update fails | **no package the tool writes updates an AIP**: `REPLACEMENT` fails with "Unknown IP Status", and `SUPPLEMENT` or `VERSION` would create a second AIP. A package with `RECORDSTATUS="UPDATE"` updates the AIP, but the tool cannot write that value ([keeps/commons-ip#389](https://github.com/keeps/commons-ip/issues/389)). Observed 2026-10-13, see section 6 |
 | rep METS `OBJID` (the representation's folder name: `preservation`, `archival` or `access`) | becomes the **representation id** | one representation per folder, with that name |
 | rep METS main `div` with `TYPE="ORIGINAL"` on `preservation`, and without `TYPE` on `archival` and `access` ([ADR-0037](decisions/0037-the-preservation-representation-is-the-original.md)) | commons-ip takes a representation's status from the `TYPE` of the main `div` in its METS, and reads a missing `TYPE` as `OTHER`. RODA sets a representation's original flag only when that status is `ORIGINAL` | `preservation` is **original** (`original: true`), `archival` and `access` are not. Before 2026-10-13 no representation wrote a `TYPE`, and the ingests of 2026-10-12 and 2026-10-13 stored every representation as not original, see section 6 |
 | rep METS `csip:OTHERCONTENTINFORMATIONTYPE`, the folder name capitalized ([ADR-0013](decisions/0013-representation-type-from-label.md)) | becomes the **representation type** (RODA v5.7.0 and later) | each representation shows its type, `Preservation`, `Archival` or `Access`, in the Type column |
@@ -152,3 +152,23 @@ The raw API answers are kept locally in `tmp/roda-ingest-2026-10-13/`.
 - **Search index:** unchanged from the entry above.
 
 The raw API answers are kept locally in `tmp/roda-ingest-2026-10-13/job-ce425946/`.
+
+### 2026-10-13, later still: updates
+
+- **RODA:** as in the entries above.
+- **Packages:** for each UGent profile an update holding only the description, with
+  " [updated]" added to the title, no representations, and the `OBJID` of the AIP
+  ingested in the entry above (`uuid-91139f53-…` and `uuid-a249f62f-…`). Two sets: one
+  built with `--status replacement --updates <id>`, and a copy of each with
+  `RECORDSTATUS` changed by hand to `UPDATE`, which the tool cannot write. All four
+  reported VALID under commons-ip 2.11.2 and 2.8.0, with the two SHOULD warnings of a
+  package without representations (CSIPSTR11, CSIPSTR13).
+- **Verdict:** the `REPLACEMENT` set failed with "Unknown IP Status: REPLACEMENT". The
+  `UPDATE` set succeeded, and the UI shows the new titles.
+- **Row that did not hold:** the row on updates assumed `RECORDSTATUS="UPDATE"`, which
+  the tool never writes. Section 4 now has the observed row, and
+  [TODO.md](TODO.md) holds the decision.
+- **Also confirmed in the UI:** the Dublin Core record of `ugent/basic` renders and
+  can be edited in RODA's form.
+
+The update packages are kept locally in `tmp/updates/`.
