@@ -14,7 +14,7 @@ import (
 func init() {
 	addProfileFlag(createCmd)
 	createCmd.Flags().Bool("no-zip", false, "Skip zipping; the package directory is the deliverable (e.g. for external bagging)")
-	createCmd.Flags().String("status", "", "Record status of the package (SIP3 vocabulary: new, supplement, replacement, test, version, delete); omitted means new")
+	createCmd.Flags().String("status", "", "Record status of the package: new, supplement, replacement, test, version or delete (SIP3), or update; the profile may allow fewer; omitted means new")
 	createCmd.Flags().String("updates", "", "Identifier of the package this one updates; reused as this package's identifier (mets/@OBJID)")
 	createCmd.Flags().String("content-category", "", "Content category of the package (mets/@TYPE, CSIP vocabulary); overrides SIP_CONTENT_CATEGORY and the profile default")
 	rootCmd.AddCommand(createCmd)
@@ -107,7 +107,7 @@ var createCmd = &cobra.Command{
 // recordStatusFromFlags returns the record status given with --status and
 // the identifier given with --updates. The two come as a pair: an update
 // status names an earlier package, and naming one needs an update status.
-// It returns an error if the status is not in the SIP3 vocabulary or the
+// It returns an error if the status is not one the tool knows or the
 // flags do not come as a pair. The pairing is a rule of the CLI only: the
 // library also accepts an identifier on a new package, for a program that
 // mints identifiers itself.
@@ -126,7 +126,7 @@ func recordStatusFromFlags(cmd *cobra.Command) (sip.RecordStatus, string, error)
 
 	switch {
 	case updates != "" && !status.IsUpdate():
-		return "", "", fmt.Errorf("--updates names an earlier package, which needs --status supplement, replacement, version or delete")
+		return "", "", fmt.Errorf("--updates names an earlier package, which needs --status update, supplement, replacement, version or delete")
 	case updates == "" && status.IsUpdate():
 		return "", "", fmt.Errorf("--status %s updates an earlier package; pass its identifier with --updates", statusText)
 	}

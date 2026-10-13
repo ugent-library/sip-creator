@@ -12,7 +12,11 @@ func TestParseRecordStatus(t *testing.T) {
 			t.Errorf("ParseRecordStatus(%q) = %q, %v; want REPLACEMENT", text, got, err)
 		}
 	}
-	for _, bad := range []string{"UPDATE", ""} {
+	if got, err := ParseRecordStatus("update"); err != nil || got != RecordStatusUpdate {
+		t.Errorf("ParseRecordStatus(%q) = %q, %v; want UPDATE", "update", got, err)
+	}
+	// OTHER is in SIP3, but the tool leaves it out.
+	for _, bad := range []string{"OTHER", ""} {
 		if _, err := ParseRecordStatus(bad); err == nil {
 			t.Errorf("ParseRecordStatus(%q) = nil error, want error", bad)
 		}
@@ -20,13 +24,13 @@ func TestParseRecordStatus(t *testing.T) {
 }
 
 func TestRecordStatusIsValid(t *testing.T) {
-	for _, ok := range []RecordStatus{RecordStatusNew, RecordStatusSupplement, RecordStatusReplacement, RecordStatusTest, RecordStatusVersion, RecordStatusDelete} {
+	for _, ok := range []RecordStatus{RecordStatusNew, RecordStatusSupplement, RecordStatusReplacement, RecordStatusTest, RecordStatusVersion, RecordStatusDelete, RecordStatusUpdate} {
 		if !ok.IsValid() {
 			t.Errorf("%q.IsValid() = false, want true", ok)
 		}
 	}
 	// Case matters.
-	for _, bad := range []RecordStatus{"new", "UPDATE", ""} {
+	for _, bad := range []RecordStatus{"new", "update", "OTHER", ""} {
 		if bad.IsValid() {
 			t.Errorf("%q.IsValid() = true, want false", bad)
 		}
@@ -34,7 +38,7 @@ func TestRecordStatusIsValid(t *testing.T) {
 }
 
 func TestRecordStatusIsUpdate(t *testing.T) {
-	for _, yes := range []RecordStatus{RecordStatusSupplement, RecordStatusReplacement, RecordStatusVersion, RecordStatusDelete} {
+	for _, yes := range []RecordStatus{RecordStatusSupplement, RecordStatusReplacement, RecordStatusVersion, RecordStatusDelete, RecordStatusUpdate} {
 		if !yes.IsUpdate() {
 			t.Errorf("%q.IsUpdate() = false, want true", yes)
 		}

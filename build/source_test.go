@@ -53,12 +53,12 @@ func TestSourcePackageValidate(t *testing.T) {
 		{"malformed package identifier", func(c *build.SourcePackage) {
 			c.PackageIdentifier = "not-a-uuid"
 		}, "uuid-<uuid> form"},
-		{"record status outside the vocabulary", func(c *build.SourcePackage) {
+		{"record status the tool does not know", func(c *build.SourcePackage) {
 			c.RecordStatus = "supplement"
-		}, "SIP3 vocabulary"},
+		}, "not one the tool knows"},
 		{"update status without the updated package's identifier", func(c *build.SourcePackage) {
 			c.RecordStatus = "REPLACEMENT"
-		}, "PackageIdentifier must carry"},
+		}, "PackageIdentifier must hold"},
 		{"invalid representation descriptive", func(c *build.SourcePackage) {
 			c.Representations[0].Description = meemoo.Terms{{Key: "dcterms:titel", Value: "x"}}
 		}, "unknown element"},

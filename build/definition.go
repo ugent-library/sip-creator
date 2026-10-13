@@ -45,6 +45,12 @@ type Definition struct {
 	// representation's name MUST be one of preservation, archival and
 	// access, exactly, in lowercase.").
 	Representations map[string]RepresentationDefinition
+	// RecordStatuses lists the record statuses a package under the profile
+	// may state. When it is nil, every status sip.RecordStatus.IsValid
+	// accepts is allowed. The UGent profiles allow NEW and UPDATE, the two
+	// statuses RODA acts on (ADR-0038). A package without a record status
+	// is always allowed: the E-ARK SIP specification reads it as NEW.
+	RecordStatuses []sip.RecordStatus
 	// AllowRepresentationDescriptions allows a representation to carry its
 	// own description. When it is false, only the package carries a
 	// description. Meemoo SIP 1.2's basic profile leaves it false: "There
@@ -152,7 +158,7 @@ func (d Definition) WithSubmitter(name, orID string) (Definition, error) {
 // metadata model. A supplied document passes only when the model
 // implements DocumentFormat and accepts its root element. Then it checks
 // the package against MinRepresentations, MaxRepresentations,
-// Representations and AllowRepresentationDescriptions. It returns an
+// Representations, RecordStatuses and AllowRepresentationDescriptions. It returns an
 // error if a description is not in the model. Otherwise it returns an
 // error naming each profile rule the package breaks, or nil. It writes
 // nothing, so a program can check a source package against a profile
@@ -180,6 +186,13 @@ func (d Definition) ValidateSource(source *SourcePackage) error {
 				errs = append(errs, fmt.Errorf("under profile %q a representation's type follows from its name and cannot be set; %q has type %q", d.Name, r.Name, r.Type))
 			}
 		}
+	}
+	if d.RecordStatuses != nil && source.RecordStatus != "" && !slices.Contains(d.RecordStatuses, source.RecordStatus) {
+		statuses := make([]string, len(d.RecordStatuses))
+		for i, s := range d.RecordStatuses {
+			statuses[i] = string(s)
+		}
+		errs = append(errs, fmt.Errorf("profile %q allows the record statuses %s; %q is not one of them", d.Name, strings.Join(statuses, ", "), source.RecordStatus))
 	}
 	if !d.AllowRepresentationDescriptions {
 		for _, r := range source.Representations {

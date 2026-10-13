@@ -226,8 +226,8 @@ These values span many packages or belong to the run, so they do not live in the
 | record status | `--status` |
 | identifier of the package this one updates | `--updates` |
 
-- Without `--status` the package carries no record status, which the E-ARK SIP specification reads as new.
-- To submit a package that supplements or replaces an earlier one, pass the kind of update and the original package identifier (e.g. `--status replacement --updates <original-package-id>`). The tool reuses the original identifier as the package identifier, so the archive can match the update to the package it holds.
+- Without `--status` the package states no record status, which the E-ARK SIP specification reads as new.
+- To submit a package that updates an earlier one, pass the kind of update and the original package identifier (e.g. `--status update --updates <original-package-id>`). Under the UGent profiles the kind of update is `update`, the status RODA updates an AIP on ([ADR-0038](decisions/0038-ugent-updates-state-update.md)); they refuse every other status but `new`. The tool reuses the original identifier as the package identifier, so the archive can match the update to the package it holds.
 - Under the UGent profiles an update may carry metadata only: a folder with the new `description.csv` (or document) and no `representations/`, built with `--status` and `--updates`.
 
 Because the submitting organization comes from configuration, the folder alone does not determine the package. The generated METS records the values used: audit the output, not the input.
@@ -249,7 +249,7 @@ Because the submitting organization comes from configuration, the folder alone d
 | `[lang]` suffixes | `xml:lang` attributes |
 | `SIP_SUBMITTER_NAME`, `SIP_SUBMITTER_OR_ID` | METS `metsHdr/agent ROLE="CREATOR" TYPE="ORGANIZATION"` with the name; under `meemoo/basic` the OR-id as its `note NOTETYPE="IDENTIFICATIONCODE"` |
 | content category | METS `@TYPE` (CSIP vocabulary) |
-| `--status` | METS `metsHdr/@RECORDSTATUS` (SIP3 vocabulary: NEW, SUPPLEMENT, REPLACEMENT, TEST, VERSION, DELETE); omitted without the flag |
+| `--status` | METS `metsHdr/@RECORDSTATUS`: NEW, SUPPLEMENT, REPLACEMENT, TEST, VERSION, DELETE (SIP3) or UPDATE, as the profile allows; omitted without the flag |
 | `--updates <id>` | `mets/@OBJID` reuses the original package's identifier; the E-ARK SIP specification defines no separate pointer to the earlier package |
 | `premis/` files | `metadata/preservation/` (package or representation), referenced from METS amdSec/digiprovMD |
 | checksums and sizes; formats from `siegfried.json` | METS fileSec, and under `meemoo/basic` PREMIS fixity and format ([ADR-0009](decisions/0009-characterization-as-sidecar-input.md)) |

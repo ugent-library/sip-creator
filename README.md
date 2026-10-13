@@ -154,8 +154,11 @@ Further flags:
 * `--content-category` sets the package's content category (`mets/@TYPE`,
   CSIP vocabulary), overriding `SIP_CONTENT_CATEGORY` and the profile default.
 * `--status` sets the record status, one of the SIP3 vocabulary values `new`,
-  `supplement`, `replacement`, `test`, `version` and `delete`. Without it the
-  METS carries no status, which the E-ARK SIP specification reads as `new`.
+  `supplement`, `replacement`, `test`, `version` and `delete`, or `update`.
+  Without it the METS states no status, which the E-ARK SIP specification
+  reads as `new`. The UGent profiles allow only `new` and `update`, because
+  RODA updates an AIP only on `update`
+  ([ADR-0038](docs/decisions/0038-ugent-updates-state-update.md)).
 * `--updates <identifier>` names the earlier package this one updates. A status
   that updates an earlier package requires it. The original package's identifier
   becomes this package's identifier (`mets/@OBJID`). Build the update into a

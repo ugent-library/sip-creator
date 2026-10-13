@@ -22,7 +22,9 @@ producer's essence files and descriptive metadata.
   anything, and its exit status tells a script whether the folder has
   problems. `--version` prints the version.
 - **Updates.** `--status` sets the record status, and `--updates` names the
-  package this one updates and reuses its identifier.
+  package this one updates and reuses its identifier. Under the UGent profiles
+  an update states `UPDATE`, the status RODA updates an AIP on. It is not in
+  the E-ARK vocabulary.
 - **Format information.** A Siegfried report in `siegfried.json` adds PRONOM
   identifiers, and its MD5 checksums are taken as the package's fixity.
 - **Three profiles:**
@@ -44,9 +46,6 @@ producer's essence files and descriptive metadata.
 
 - `meemoo/basic` targets Meemoo SIP 1.2. A later version moves it to 2.1 and
   drops 1.2.
-- No package the tool writes updates an AIP in RODA: RODA runs an update only
-  for the record status `UPDATE`, which is not in the E-ARK vocabulary the tool
-  writes.
 - No package has been ingested by Meemoo yet. The packages are validated with
   commons-ip 2.11.2 and xmllint only.
 - EDTF dates under `meemoo/basic` are not checked: a `created` value that is

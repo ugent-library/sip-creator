@@ -20,7 +20,7 @@ type MetsDeclaration struct {
 	ContentInformationType string
 	// OtherContentInformationType is mets/@csip:OTHERCONTENTINFORMATIONTYPE.
 	OtherContentInformationType string
-	// RecordStatus is metsHdr/@RECORDSTATUS (SIP3). Only the package METS
+	// RecordStatus is metsHdr/@RECORDSTATUS. Only the package METS
 	// carries it, and only when it is set, because the E-ARK SIP
 	// specification reads an absent status as NEW.
 	RecordStatus RecordStatus
@@ -31,9 +31,12 @@ type MetsDeclaration struct {
 	Agents []Agent
 }
 
-// RecordStatus is metsHdr/@RECORDSTATUS in the E-ARK SIP vocabulary (SIP3):
-// what the package does to the archive's holdings. The vocabulary is
-// closed.
+// RecordStatus is metsHdr/@RECORDSTATUS: what the package does to the
+// archive's holdings. The values the tool knows are the E-ARK SIP
+// vocabulary (SIP3) and UPDATE. A profile can narrow them to the ones its
+// archive acts on (build.Definition.RecordStatuses). SIP3 also lists
+// OTHER, which the tool leaves out: METS has no attribute that says which
+// other status is meant, so an archive cannot act on it.
 type RecordStatus string
 
 // The SIP3 vocabulary.
@@ -46,22 +49,31 @@ const (
 	RecordStatusDelete      RecordStatus = "DELETE"
 )
 
-// ParseRecordStatus returns the vocabulary value that text names, in any
-// case. It returns an error if text names none.
+// RecordStatusUpdate is the status that makes RODA update an existing AIP.
+// It is not in SIP3. commons-ip and RODA read the record status against
+// their own list, which has UPDATE and lacks SUPPLEMENT, VERSION and
+// DELETE (ADR-0038, keeps/commons-ip#389).
+const RecordStatusUpdate RecordStatus = "UPDATE"
+
+// ParseRecordStatus returns the record status that text names, in any
+// case. It returns an error if text names none of the values the tool
+// knows.
 func ParseRecordStatus(text string) (RecordStatus, error) {
 	s := RecordStatus(strings.ToUpper(text))
 	if !s.IsValid() {
-		return "", fmt.Errorf("record status %q is not in the SIP3 vocabulary (NEW, SUPPLEMENT, REPLACEMENT, TEST, VERSION, DELETE)", text)
+		return "", fmt.Errorf("record status %q is not one of NEW, SUPPLEMENT, REPLACEMENT, TEST, VERSION, DELETE (SIP3) and UPDATE", text)
 	}
 	return s, nil
 }
 
-// IsValid reports whether s is one of the vocabulary's values, in the same
-// case. Case matters because the METS template writes the value as it is.
+// IsValid reports whether s is one of the values the tool knows, in the
+// same case. Case matters because the METS template writes the value as it
+// is.
 func (s RecordStatus) IsValid() bool {
 	switch s {
 	case RecordStatusNew, RecordStatusSupplement, RecordStatusReplacement,
-		RecordStatusTest, RecordStatusVersion, RecordStatusDelete:
+		RecordStatusTest, RecordStatusVersion, RecordStatusDelete,
+		RecordStatusUpdate:
 		return true
 	}
 	return false
@@ -72,7 +84,8 @@ func (s RecordStatus) IsValid() bool {
 // mets/@OBJID.
 func (s RecordStatus) IsUpdate() bool {
 	switch s {
-	case RecordStatusSupplement, RecordStatusReplacement, RecordStatusVersion, RecordStatusDelete:
+	case RecordStatusSupplement, RecordStatusReplacement, RecordStatusVersion, RecordStatusDelete,
+		RecordStatusUpdate:
 		return true
 	}
 	return false

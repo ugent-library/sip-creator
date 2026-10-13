@@ -97,7 +97,8 @@ type SourcePackage struct {
 	// is empty, the profile's value applies. The profiles in this module
 	// declare none, which the E-ARK SIP spec reads as NEW. An update status
 	// says this package supplements or replaces an earlier one, whose
-	// identifier must then travel in PackageIdentifier.
+	// identifier must then be in PackageIdentifier. The profile may narrow
+	// the statuses a package can state (Definition.RecordStatuses).
 	RecordStatus sip.RecordStatus
 	// ContentCategory optionally declares this package's mets/@TYPE, its
 	// content category in the CSIP vocabulary. When it is empty, the
@@ -182,7 +183,7 @@ func (sp *SourcePackage) Validate() error {
 		}
 	}
 	if sp.RecordStatus != "" && !sp.RecordStatus.IsValid() {
-		return fmt.Errorf("record status %q is not in the SIP3 vocabulary; use the sip.RecordStatus constants", sp.RecordStatus)
+		return fmt.Errorf("record status %q is not one the tool knows; use the sip.RecordStatus constants", sp.RecordStatus)
 	}
 	// An update status names the earlier package by reusing its
 	// identifier. Without one, the package claims to update a package
@@ -190,7 +191,7 @@ func (sp *SourcePackage) Validate() error {
 	// identifier minted before the build, for instance by a system that
 	// registers a package before building it.
 	if sp.RecordStatus.IsUpdate() && sp.PackageIdentifier == "" {
-		return fmt.Errorf("record status %s updates an earlier package, so PackageIdentifier must carry that package's identifier", sp.RecordStatus)
+		return fmt.Errorf("record status %s updates an earlier package, so PackageIdentifier must hold that package's identifier", sp.RecordStatus)
 	}
 	if err := ValidateXMLText(sp.ContentCategory); err != nil {
 		return fmt.Errorf("content category: %w", err)

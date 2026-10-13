@@ -1,6 +1,6 @@
 # 0020 — The profile is builder configuration; a package's own METS values ride on the source package
 
-Status: **Accepted** (2026-09-29).
+Status: **Accepted** (2026-09-29). **Note, 2026-10-13:** `sip.RecordStatus` knows `UPDATE` as well as the SIP3 values, and `Definition.RecordStatuses` lets a profile narrow them ([ADR-0038](0038-ugent-updates-state-update.md)).
 
 ## Context
 

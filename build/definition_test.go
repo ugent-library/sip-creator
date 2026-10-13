@@ -133,6 +133,49 @@ func TestValidateSourceAppliesProfileRules(t *testing.T) {
 	}
 }
 
+// Under the UGent profiles a package states no record status, NEW or
+// UPDATE, the statuses RODA acts on (ADR-0038). meemoo/basic sets no list,
+// so every status the tool knows passes.
+func TestValidateSourceAppliesRecordStatuses(t *testing.T) {
+	const earlier = "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e"
+	cases := []struct {
+		name   string
+		status sip.RecordStatus
+		want   string // "" when the source is accepted
+	}{
+		{"no status", "", ""},
+		{"new", sip.RecordStatusNew, ""},
+		{"update", sip.RecordStatusUpdate, ""},
+		{"replacement", sip.RecordStatusReplacement, `profile "ugent/basic" allows the record statuses NEW, UPDATE; "REPLACEMENT" is not one of them`},
+		{"supplement", sip.RecordStatusSupplement, `"SUPPLEMENT" is not one of them`},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			_, in, _ := newTestBuilder(t, ugentBasicDef(t))
+			in.Description = identityTerms()
+			in.Representations[0].Name = "preservation"
+			in.RecordStatus = tt.status
+			if tt.status.IsUpdate() {
+				in.PackageIdentifier = earlier
+			}
+			err := ugentBasicDef(t).ValidateSource(in)
+			switch {
+			case tt.want == "" && err != nil:
+				t.Errorf("ValidateSource = %v, want the source accepted", err)
+			case tt.want != "" && (err == nil || !strings.Contains(err.Error(), tt.want)):
+				t.Errorf("ValidateSource = %v, want %q", err, tt.want)
+			}
+		})
+	}
+
+	_, in, _ := newTestBuilder(t, basicDef(t))
+	in.RecordStatus = sip.RecordStatusReplacement
+	in.PackageIdentifier = earlier
+	if err := basicDef(t).ValidateSource(in); err != nil {
+		t.Errorf("meemoo/basic sets no record statuses, yet ValidateSource refused REPLACEMENT: %v", err)
+	}
+}
+
 // Under representation definitions a representation's name must
 // be one of the set, and its type cannot be set, not even to the type the
 // name maps to. Without a vocabulary, as under meemoo/basic, neither rule

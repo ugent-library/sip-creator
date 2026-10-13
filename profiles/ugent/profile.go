@@ -28,6 +28,11 @@ var Basic = build.Definition{
 		"archival":     {Type: "Archival"},
 		"access":       {Type: "Access"},
 	},
+	// docs/profiles/ugent-basic.md §8: "A package states no record status,
+	// or NEW, or UPDATE." RODA ingests NEW and updates the AIP on UPDATE.
+	// It rejects REPLACEMENT and TEST, and ingests every other status as a
+	// new AIP (ADR-0038).
+	RecordStatuses: []sip.RecordStatus{sip.RecordStatusNew, sip.RecordStatusUpdate},
 	// docs/profiles/ugent-basic.md §4: "A package MAY hold no
 	// representation at all: a description of an intellectual entity whose
 	// content is not, or not yet, in the archive." CSIP58 allows a package
@@ -80,6 +85,8 @@ var Bibliographic = build.Definition{
 	// MUST be one of preservation, archival and access, exactly, in
 	// lowercase." The type and the status are Basic's.
 	Representations: Basic.Representations,
+	// docs/profiles/ugent-bibliographic.md §8: Basic's record statuses.
+	RecordStatuses: Basic.RecordStatuses,
 	// docs/profiles/ugent-bibliographic.md §4: a package may hold no
 	// representation at all.
 	MinRepresentations:              0,

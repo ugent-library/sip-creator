@@ -293,9 +293,11 @@ func Example_ownProfile() {
 	// schemas/xlink.xsd
 }
 
-// Build a package that replaces an earlier one. The earlier package's
+// Build a package that updates an earlier one. The earlier package's
 // identifier becomes this package's identifier (mets/@OBJID). RecordStatus
-// is metsHdr/@RECORDSTATUS and ContentCategory is mets/@TYPE. Left empty,
+// is metsHdr/@RECORDSTATUS: under the UGent profiles an update states
+// UPDATE, the status RODA updates an AIP on. ContentCategory is
+// mets/@TYPE. Left empty,
 // the identifier is minted, and the status and the category take the
 // profile's values. The E-ARK SIP specification reads a package without a
 // status as NEW.
@@ -325,7 +327,7 @@ func ExampleBuilder_Build_update() {
 
 	pkg, err := builder.Build(&build.SourcePackage{
 		PackageIdentifier: "uuid-0e7a2c4f-3f6e-4f3f-8f4b-2f8a9d3c1b5e",
-		RecordStatus:      sip.RecordStatusReplacement,
+		RecordStatus:      sip.RecordStatusUpdate,
 		ContentCategory:   "Photographs – Digital",
 		Description: ugent.Terms{
 			{Key: "identifier", Value: "example-0001"},

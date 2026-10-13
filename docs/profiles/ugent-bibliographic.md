@@ -165,9 +165,14 @@ The input specification §1 and §2 hold the rules for file names and for the re
 
 ## 8. Updates
 
-- A package that updates an earlier one MUST carry the record status of the update and
+- A package that updates an earlier one MUST state the record status of the update and
   the earlier package's identifier, which becomes its `mets/@OBJID`. **Checked**, given
   with `--status` and `--updates`.
+- A package states no record status, or NEW, or UPDATE. **Checked.** RODA ingests a
+  package without a status or with NEW as a new AIP, and updates the AIP on UPDATE. It
+  rejects REPLACEMENT and TEST, and ingests the other SIP3 values as a new AIP. UPDATE is
+  not in the E-ARK SIP vocabulary (SIP3)
+  ([ADR-0038](../decisions/0038-ugent-updates-state-update.md)).
 - An update MAY hold no representations, to bring the description in line with a changed
   catalogue record.
 

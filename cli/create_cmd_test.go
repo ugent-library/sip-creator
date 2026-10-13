@@ -13,7 +13,7 @@ import (
 )
 
 // --status and --updates come as a pair. A status matches in upper or
-// lower case. One outside the SIP3 vocabulary is refused. The
+// lower case. One the tool does not know is refused. The
 // identifier's form is the library's rule (SourcePackage.Validate), not
 // checked here.
 func TestRecordStatusFromFlags(t *testing.T) {
@@ -29,7 +29,8 @@ func TestRecordStatusFromFlags(t *testing.T) {
 		{"a test package", "TEST", "", sip.RecordStatusTest, ""},
 		{"an update with the earlier package", "Replacement", earlier, sip.RecordStatusReplacement, ""},
 		{"delete, also an update", "delete", earlier, sip.RecordStatusDelete, ""},
-		{"a status outside the vocabulary", "update", earlier, "", "SIP3 vocabulary"},
+		{"an update for RODA", "update", earlier, sip.RecordStatusUpdate, ""},
+		{"a status the tool does not know", "other", earlier, "", "is not one of"},
 		{"an update without the earlier package", "supplement", "", "", "--status supplement updates an earlier package; pass its identifier with --updates"},
 		{"an earlier package without a status", "", earlier, "", "--updates names an earlier package"},
 		{"an earlier package for a new package", "new", earlier, "", "--updates names an earlier package"},
@@ -109,7 +110,7 @@ func TestCreateCarriesFlagsAndConfiguration(t *testing.T) {
 	}{
 		{"the profile's values and a zip", "meemoo/basic", "", nil, "", "", basicDefault, true},
 		{"an update of an earlier package", "ugent/basic", "",
-			[]string{"--status", "replacement", "--updates", earlier}, earlier, "REPLACEMENT", "Mixed", true},
+			[]string{"--status", "update", "--updates", earlier}, earlier, "UPDATE", "Mixed", true},
 		{"the configured content category", "ugent/basic", "Textual works – Print", nil, "", "", "Textual works – Print", true},
 		{"the flag before the configured content category", "ugent/basic", "Textual works – Print",
 			[]string{"--content-category", "Maps"}, "", "", "Maps", true},
@@ -189,7 +190,7 @@ func TestCreateRefusesBeforeWriting(t *testing.T) {
 		if err := os.WriteFile(oldZip, []byte("old"), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		_, _, err := runCLI(t, "create", "--profile", "ugent/basic", "--status", "replacement", "--updates", earlier,
+		_, _, err := runCLI(t, "create", "--profile", "ugent/basic", "--status", "update", "--updates", earlier,
 			filepath.Join("..", "examples", "ugent", "basic"), dest)
 		if err == nil || !strings.Contains(err.Error(), "already exists") {
 			t.Errorf("error = %v, want one saying the zip already exists", err)
