@@ -86,6 +86,10 @@ go get github.com/ugent-library/sip-creator
 ## Command-line tool
 
 The `sip-creator` command builds a package from an input folder you prepare.
+The recording below runs `check` and `create` on the `ugent/basic` example
+folder, then lists the package directory and the zip they leave behind.
+
+![sip-creator check and create on an example folder, then the package directory](docs/demo.gif)
 
 ### Creating a package
 
@@ -102,6 +106,48 @@ This writes the package directory `sip-out/uuid-<uuid>/` and zips it
 (uncompressed) to `sip-out/uuid-<uuid>.zip`. To try it before preparing your own
 input, build one of the [example folders](examples/):
 `./bin/sip-creator create --profile ugent/basic examples/ugent/basic sip-out`.
+
+Built from that example, the package directory looks like this (shown three
+levels deep):
+
+```text
+sip-out/uuid-<uuid>/
+├── documentation
+│   └── README.txt
+├── metadata
+│   ├── descriptive
+│   │   └── dc.xml
+│   └── preservation
+│       └── digitization-events.xml
+├── METS.xml
+├── representations
+│   ├── access
+│   │   ├── data
+│   │   ├── metadata
+│   │   └── METS.xml
+│   └── archival
+│       ├── data
+│       ├── documentation
+│       ├── metadata
+│       └── METS.xml
+└── schemas
+    ├── DILCISExtensionMETS.xsd
+    ├── DILCISExtensionSIPMETS.xsd
+    ├── mets1_12.xsd
+    ├── simpledc.xsd
+    ├── xlink.xsd
+    └── xml.xsd
+```
+
+* `METS.xml` is the package METS, the entry point of the package.
+* `metadata/` holds the package's descriptive metadata (`dc.xml`, written from
+  `description.csv`) and the preservation files from the input folder's
+  `premis/`.
+* `representations/` has one folder per representation folder of the input.
+  Each has its own `METS.xml`, its content files under `data/`, and its own
+  `metadata/` and `documentation/` where the input supplied them.
+* `schemas/` holds the XSDs the METS documents reference.
+* `documentation/` is the input folder's `documentation/`, copied as it is.
 
 Further flags:
 

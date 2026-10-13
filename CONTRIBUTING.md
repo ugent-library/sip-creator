@@ -14,6 +14,9 @@ the [README](README.md).
     because `build.sh` generates a `siegfried.json` for the input before building;
   * `xmllint` (part of libxml2, present on macOS and most Linux systems), which checks
     every descriptive document in the package against the schema the package ships.
+* For re-recording `docs/demo.gif`, the terminal recording in the README:
+  [VHS](https://github.com/charmbracelet/vhs) (`brew install vhs` also installs `ttyd` and
+  `ffmpeg`, which it needs) and `tree`.
 
 `scripts/fetch-commons-ip.sh` pins the commons-ip version and the jar's sha256, downloads
 the jar into `tmp/commons-ip/` on the first run and verifies the checksum on every run
@@ -115,6 +118,9 @@ Update the docs in the same change as the code:
   [CONFIG.md](CONFIG.md), which is never edited by hand;
 * changed usage or input requirements: [README.md](README.md) and
   [docs/input-spec.md](docs/input-spec.md);
+* a changed package layout, or changed console output of `check` or `create`: the
+  output tree under "Creating a package" in [README.md](README.md), and the recording
+  `docs/demo.gif`, re-recorded from the repository root with `vhs scripts/demo.tape`;
 * changed library usage: the runnable examples in
   [build/example_test.go](build/example_test.go), which pkg.go.dev shows;
 * a changed design: [docs/sip-creator-design.md](docs/sip-creator-design.md), and an ADR
@@ -141,9 +147,11 @@ raise the minor version when the command line, the library API or a profile's
 output changes, and the patch version for a fix that changes none of them.
 
 1. Check `main`: `go test ./...` passes, `./build.sh <profile>` reports `VALID` for
-   every profile, `./scripts/reference-diff.sh` shows no difference, and the GitHub
-   Actions run of the last commit passed. Build with the latest patch release of the Go
-   version `go.mod` names.
+   every profile, `./scripts/reference-diff.sh` shows no difference, the GitHub
+   Actions run of the last commit passed, and `docs/demo.gif` shows the current console
+   output. Re-record it with `vhs scripts/demo.tape` when `check`, `create` or the
+   package layout changed since the last recording. Build with the latest patch release
+   of the Go version `go.mod` names.
 2. In [CHANGELOG.md](CHANGELOG.md), rename `Unreleased` to `X.Y.Z - YYYY-MM-DD` and add
    an empty `Unreleased` above it. Commit with `Changed: CHANGELOG.md names version
    X.Y.Z` and push `main`.
