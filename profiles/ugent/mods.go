@@ -60,10 +60,10 @@ func (mods) ValidateDocumentRoot(root xml.StartElement) error {
 
 // Encode writes d as a MODS 3.7 document. A record without items gets no
 // mods:location at all: an empty holdingSimple would claim the library
-// holds no copy.
+// holds no copy. A record without an identifier gets no mods:recordInfo.
 func (mods) Encode(w io.Writer, d sip.Description, schemasDir string) error {
 	var buf bytes.Buffer
-	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemasDir, localIdentifierType, modsNamespace, modsVersion}); err != nil {
+	if err := modsTemplate.ExecuteTemplate(&buf, "mods", recordDoc{d.(Record), schemasDir, recordIdentifierSource, modsNamespace, modsVersion}); err != nil {
 		return err
 	}
 	_, err := w.Write(buf.Bytes())
@@ -88,25 +88,23 @@ func (mods) Schemas() []build.Schema {
 	return build.BundledSchemas("mods-3-7.xsd")
 }
 
-// localIdentifierType is the type attribute on the mods:identifier written
-// for the record's identifier. MODS leaves the type vocabulary open.
-// "local" is the value its own list suggests for an identifier local to
-// the describing institution's system, such as a record number in a
-// library catalogue, which the MMS ID is.
-const localIdentifierType = "local"
+// recordIdentifierSource is the source attribute on the
+// mods:recordIdentifier written for the record's identifier: UGent
+// Library's code in the MARC Code List for Organizations. The Library of
+// Congress's MARC to MODS mapping takes the source from 003. The catalogue
+// does not deliver 003, and every MMS ID this profile writes is a number in
+// UGent Library's catalogue, so the code is fixed here.
+const recordIdentifierSource = "BE-GnUNI"
 
 // modsTemplate escapes every value from the record. The only values it
-// writes unescaped are constants (the identifier's type, the namespace and
-// the version) and the schemas path the writer supplies.
+// writes unescaped are constants (the record identifier's source, the
+// namespace and the version) and the schemas path the writer supplies.
 var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
 	"esc": escapeXML,
 }).Parse(`
 {{ define "mods" -}}
 <?xml version='1.0' encoding='UTF-8'?>
 <mods:mods xmlns:mods="{{ .Namespace }}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="{{ .Version }}" xsi:schemaLocation="{{ .Namespace }} {{ .SchemasDir }}/mods-3-7.xsd">
-{{- with .Record.Identifier }}
-  <mods:identifier type="{{ $.IdentifierType }}">{{ esc . }}</mods:identifier>
-{{- end }}
 {{- range .Record.OtherIdentifiers }}
   <mods:identifier>{{ esc . }}</mods:identifier>
 {{- end }}
@@ -139,18 +137,23 @@ var modsTemplate = template.Must(template.New("").Funcs(template.FuncMap{
     </mods:holdingSimple>
   </mods:location>
 {{- end }}
+{{- with .Record.Identifier }}
+  <mods:recordInfo>
+    <mods:recordIdentifier source="{{ $.RecordIdentifierSource }}">{{ esc . }}</mods:recordIdentifier>
+  </mods:recordInfo>
+{{- end }}
 </mods:mods>
 {{ end }}
 `))
 
 // recordDoc is one MODS document to render: the record, the path of the
-// package's schemas/ directory relative to the document, the type
-// attribute the identifier carries, and the namespace and version the
-// root declares.
+// package's schemas/ directory relative to the document, the source
+// attribute the record identifier carries, and the namespace and version
+// the root declares.
 type recordDoc struct {
-	Record         Record
-	SchemasDir     string
-	IdentifierType string
-	Namespace      string
-	Version        string
+	Record                 Record
+	SchemasDir             string
+	RecordIdentifierSource string
+	Namespace              string
+	Version                string
 }

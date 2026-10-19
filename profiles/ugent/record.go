@@ -18,8 +18,9 @@ import (
 type Record struct {
 	// Identifier is the record's local identifier: the catalogue number the
 	// describing institution finds it by, such as the record number in a
-	// library catalogue. It is written as a mods:identifier of type local.
-	// A package-level record always states one. A representation's record
+	// library catalogue. It is written as mods:recordInfo/mods:recordIdentifier,
+	// with UGent Library's MARC organization code as its source. A
+	// package-level record always states one. A representation's record
 	// may leave it empty.
 	Identifier string
 	// OtherIdentifiers are the record's identifiers besides Identifier, in

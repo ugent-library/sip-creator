@@ -21,7 +21,6 @@ func encodeRecord(t *testing.T, r Record, schemasDir string) string {
 // any change to what the template writes for that record fails the test.
 const goldenDocument = `<?xml version='1.0' encoding='UTF-8'?>
 <mods:mods xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.7" xsi:schemaLocation="http://www.loc.gov/mods/v3 ../../schemas/mods-3-7.xsd">
-  <mods:identifier type="local">example-0001</mods:identifier>
   <mods:titleInfo xml:lang="nl">
     <mods:title>Fotoalbum 2026</mods:title>
   </mods:titleInfo>
@@ -40,6 +39,9 @@ const goldenDocument = `<?xml version='1.0' encoding='UTF-8'?>
       </mods:copyInformation>
     </mods:holdingSimple>
   </mods:location>
+  <mods:recordInfo>
+    <mods:recordIdentifier source="BE-GnUNI">example-0001</mods:recordIdentifier>
+  </mods:recordInfo>
 </mods:mods>
 `
 
@@ -59,7 +61,7 @@ func TestRecordEncode(t *testing.T) {
 		`<mods:mods xmlns:mods="http://www.loc.gov/mods/v3"`,
 		`version="3.7"`,
 		`xsi:schemaLocation="http://www.loc.gov/mods/v3 ../../schemas/mods-3-7.xsd"`,
-		`<mods:identifier type="` + localIdentifierType + `">example-0001</mods:identifier>`,
+		"<mods:recordInfo>\n    <mods:recordIdentifier source=\"" + recordIdentifierSource + "\">example-0001</mods:recordIdentifier>\n  </mods:recordInfo>",
 		"<mods:titleInfo xml:lang=\"nl\">\n    <mods:title>Fotoalbum 2026</mods:title>\n  </mods:titleInfo>",
 		`<mods:titleInfo xml:lang="en">`,
 		// no language tag, so no xml:lang, and producer values escaped
@@ -76,7 +78,8 @@ func TestRecordEncode(t *testing.T) {
 		}
 	}
 	for element, want := range map[string]int{
-		"<mods:identifier":       1,
+		"<mods:identifier":       0,
+		"<mods:recordInfo>":      1,
 		"<mods:titleInfo":        3,
 		"<mods:location>":        1,
 		"<mods:holdingSimple>":   1,
@@ -96,6 +99,9 @@ func TestRecordEncode(t *testing.T) {
 	if strings.Index(out, "<mods:location>") < strings.LastIndex(out, "</mods:titleInfo>") {
 		t.Error("location must follow the titles")
 	}
+	if strings.Index(out, "<mods:recordInfo>") < strings.Index(out, "</mods:location>") {
+		t.Error("recordInfo must follow the location")
+	}
 }
 
 // A record without items has no location at all: an empty holdingSimple
@@ -108,13 +114,13 @@ func TestRecordEncodeWithoutItems(t *testing.T) {
 	}
 }
 
-// Other identifiers follow the catalogue identifier, in the record's order,
-// each without a type, and before the titles.
+// Other identifiers come first, in the record's order, each without a
+// type, and before the titles.
 func TestRecordEncodeOtherIdentifiers(t *testing.T) {
 	r := testRecord()
 	r.OtherIdentifiers = []string{"9789000000000", "(RUG01)000000001 & <x>"}
 	out := encodeRecord(t, r, "../../schemas")
-	want := `  <mods:identifier type="local">example-0001</mods:identifier>
+	want := `version="3.7" xsi:schemaLocation="http://www.loc.gov/mods/v3 ../../schemas/mods-3-7.xsd">
   <mods:identifier>9789000000000</mods:identifier>
   <mods:identifier>(RUG01)000000001 &amp; &lt;x&gt;</mods:identifier>
   <mods:titleInfo xml:lang="nl">`
@@ -157,11 +163,11 @@ func TestRecordEncodeItemWithoutCallNumber(t *testing.T) {
 }
 
 // A representation's record may state no identifier. The document then
-// carries none rather than an empty element.
+// has no recordInfo rather than an empty one.
 func TestRecordEncodeWithoutIdentifier(t *testing.T) {
 	r := Record{Titles: []Title{{Value: "PDF-versie", Lang: "nl"}}}
 	out := encodeRecord(t, r, "../../../../schemas")
-	if strings.Contains(out, "<mods:identifier") {
+	if strings.Contains(out, "<mods:recordInfo") {
 		t.Errorf("identifier emitted for a record without one\n%s", out)
 	}
 	if !strings.Contains(out, "<mods:title>PDF-versie</mods:title>") {
