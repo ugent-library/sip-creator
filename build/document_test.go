@@ -20,9 +20,9 @@ const (
 `
 	modsDocument = `<?xml version='1.0' encoding='UTF-8'?>
 <mods:mods xmlns:mods="http://www.loc.gov/mods/v3" version="3.7">
-  <mods:identifier type="local">example-0001</mods:identifier>
   <mods:titleInfo><mods:title>Example book</mods:title></mods:titleInfo>
   <mods:name type="personal"><mods:namePart>Doe, Jane</mods:namePart></mods:name>
+  <mods:recordInfo><mods:recordIdentifier source="BE-GnUNI">example-0001</mods:recordIdentifier></mods:recordInfo>
 </mods:mods>
 `
 	modsOldVersion    = `<mods:mods xmlns:mods="http://www.loc.gov/mods/v3" version="3.6"><mods:titleInfo><mods:title>x</mods:title></mods:titleInfo></mods:mods>`

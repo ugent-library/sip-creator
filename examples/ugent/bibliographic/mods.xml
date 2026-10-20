@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mods:mods xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.7" xsi:schemaLocation="http://www.loc.gov/mods/v3 ../../schemas/mods-3-7.xsd">
-  <mods:identifier type="local">example-0001</mods:identifier>
+  <mods:identifier>9789000000000</mods:identifier>
+  <mods:identifier type="local">(RUG01)000000001</mods:identifier>
   <mods:titleInfo xml:lang="en">
     <mods:title>Example book</mods:title>
   </mods:titleInfo>
@@ -16,4 +17,7 @@
       </mods:copyInformation>
     </mods:holdingSimple>
   </mods:location>
+  <mods:recordInfo>
+    <mods:recordIdentifier source="BE-GnUNI">example-0001</mods:recordIdentifier>
+  </mods:recordInfo>
 </mods:mods>
