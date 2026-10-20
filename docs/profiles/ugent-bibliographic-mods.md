@@ -25,7 +25,7 @@ delivers the subfields.
 
 | what the record states | from MARC (Alma) | `ugent.Record` field | MODS 3.7 |
 |---|---|---|---|
-| the catalogue record's identifier, the MMS ID | 001 | `Identifier` | `mods:identifier type="local"` |
+| the catalogue record's identifier, the MMS ID | 001 | `Identifier` | `mods:recordInfo/mods:recordIdentifier source="BE-GnUNI"` |
 | other identifiers: ISBN, ISSN, other standard numbers, call number from the holdings | 020 $a, 022 $a, 024 $a, 852 $j | `OtherIdentifiers` | `mods:identifier`, without `type` |
 | legacy and external system numbers: the Aleph `RUG01` number, Ufora, Plato, Antilope | 035 $a | `OtherIdentifiers` | `mods:identifier`, without `type` |
 | title, with its statement of responsibility | 245, all subfields, joined with spaces | `Titles` | `mods:titleInfo/mods:title` |
@@ -40,6 +40,13 @@ Notes on the rows:
   the one identifier a package-level record must state, next to at least one title. The
   catalogue gives `unknown` for a record without a 001. That is not an MMS ID, and a
   program must not pass it on as one.
+- The MMS ID is written as `mods:recordInfo/mods:recordIdentifier`, where the Library of
+  Congress's MARC to MODS mapping writes 001. MODS defines `recordIdentifier` as the
+  system control number that the organization creating or holding the record assigns to
+  it, which the MMS ID is. A `mods:identifier` identifies the resource, not the record.
+- The LoC mapping takes the identifier's `source` from 003. The catalogue does not
+  deliver 003, so `source` is always `BE-GnUNI`, UGent Library's code in the
+  [MARC Code List for Organizations](https://www.loc.gov/marc/organizations/).
 - The other identifiers carry no `type`, because the catalogue joins them into one list
   and does not say which MARC field each came from. MODS allows an identifier without a
   type. The catalogue does not deliver 035 yet, but will.

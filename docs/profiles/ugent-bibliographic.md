@@ -57,10 +57,11 @@ was ingested earlier, the value gains one.
   tool checks only its root element.
 - The identifier MUST be the record's Alma MMS ID. **Operator.** The tool takes the
   identifier as given and does not check its syntax. The tool writes it as
-  `mods:identifier type="local"`. The package's `mets/@OBJID` is a UUID the tool mints.
+  `mods:recordInfo/mods:recordIdentifier`, with `source="BE-GnUNI"`, UGent Library's
+  MARC organization code. The package's `mets/@OBJID` is a UUID the tool mints.
 - The description MAY state the record's other identifiers: standard numbers such as an
   ISBN or ISSN, and the numbers other systems know the record by. The tool writes each
-  as a `mods:identifier` without `type`, after the MMS ID. In `description.csv` each is an
+  as a `mods:identifier` without `type`, before the titles. In `description.csv` each is an
   `otheridentifier` row.
 - The description MAY state the record's contributors: every name the catalogue lists
   for it, the main author included. The tool writes each as a `mods:name` with one

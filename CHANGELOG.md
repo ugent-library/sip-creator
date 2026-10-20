@@ -10,6 +10,14 @@ agent of its METS.
 
 ## Unreleased
 
+### Changed
+
+- **The MMS ID under `ugent/bibliographic`.** The profile writes the catalogue
+  record's identifier as `mods:recordInfo/mods:recordIdentifier` with
+  `source="BE-GnUNI"`, where it wrote `mods:identifier type="local"`. That is
+  where the Library of Congress's MARC to MODS mapping puts 001. A supplied
+  `mods.xml` is copied as it is and does not change.
+
 ## 0.1.0 - 2026-10-13
 
 The first version. SIP Creator builds an
